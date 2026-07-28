@@ -1,0 +1,203 @@
+/* ============================================================================
+   Deresegn v3 — Tailwind v4 theme
+   Paste into apps/web/app/globals.css. Tailwind v4 is CSS-first: this @theme
+   block IS the config, so tailwind.config.ts is not needed for tokens.
+
+   Every token below generates utilities automatically:
+     --color-brand      -> bg-brand, text-brand, border-brand, ring-brand
+     --radius-card      -> rounded-card
+     --shadow-card      -> shadow-card
+     --text-stem        -> text-stem
+     --ease-spring      -> ease-spring
+   ============================================================================ */
+
+@import "tailwindcss";
+
+/* Dark mode is class-driven so the Telegram Mini App can force a theme
+   independently of the OS preference. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ---- brand ------------------------------------------------------------ */
+  --color-brand:        #5B4BE0;   /* primary action, active nav, focus ring  */
+  --color-brand-hover:  #4A3AD0;
+  --color-brand-soft:   #EDEBFF;   /* selected option, your own row           */
+  --color-on-brand:     #FFFFFF;
+
+  /* ---- semantic state — never remapped, not even inside Telegram --------- */
+  --color-correct:      #067049;   /* text + icon weight, AA on surface       */
+  --color-correct-soft: #E3F8EF;
+  --color-wrong:        #C22A22;
+  --color-wrong-soft:   #FEECEB;
+  --color-pending:      #9A6209;   /* awaiting verification, timer at 20%     */
+  --color-pending-soft: #FDF3DC;
+  --color-reward:       #8A6200;   /* streaks, points, badges — text weight   */
+  --color-reward-fill:  #F5B301;   /* reward fill — pairs with on-reward, never white */
+  --color-on-reward:    #16162B;   /* fixed: ink on yellow in BOTH themes */
+
+  /* ---- neutrals: slate with a violet bias, so they belong to the brand --- */
+  --color-bg:           #F6F6FB;
+  --color-surface:      #FFFFFF;
+  --color-surface-2:    #F0F0F7;
+  --color-border:       #E3E3EF;
+  --color-ink:          #16162B;
+  --color-ink-2:        #5B5B75;
+
+  /* ---- type ------------------------------------------------------------- */
+  --font-display: "Gabarito", "Noto Sans Ethiopic", system-ui, sans-serif;
+  --font-sans:    "Figtree", "Noto Sans Ethiopic", system-ui, -apple-system,
+                  "Segoe UI", Roboto, sans-serif;
+
+  --text-display:      2.125rem;  /* 34px — countdown, score, readiness      */
+  --text-display--line-height: 2.5rem;
+  --text-display--font-weight: 800;
+  --text-display--letter-spacing: -0.03em;
+
+  --text-title:        1.5rem;    /* 24px — screen titles                    */
+  --text-title--line-height: 1.875rem;
+  --text-title--font-weight: 700;
+  --text-title--letter-spacing: -0.02em;
+
+  --text-stem:         1.1875rem; /* 19px — the question. Largest on screen. */
+  --text-stem--line-height: 1.8125rem;
+  --text-stem--font-weight: 600;
+
+  --text-body:         1rem;      /* 16px — floor on mobile, never smaller   */
+  --text-body--line-height: 1.625rem;
+
+  --text-label:        0.9375rem; /* 15px — buttons, tabs, chips             */
+  --text-label--line-height: 1.25rem;
+  --text-label--font-weight: 600;
+
+  --text-caption:      0.8125rem; /* 13px — field labels, weights, meta      */
+  --text-caption--line-height: 1.125rem;
+  --text-caption--font-weight: 600;
+  --text-caption--letter-spacing: 0.04em;
+
+  /* ---- shape ------------------------------------------------------------ */
+  --radius-control: 12px;   /* buttons, inputs, option rows                  */
+  --radius-card:    16px;   /* cards, sheets, wells                          */
+  --radius-panel:   24px;   /* bottom sheets, modals                         */
+  --radius-full:    999px;  /* chips, badges, avatars, progress tracks       */
+
+  /* ---- elevation: every shadow carries an offset AND a blur -------------- */
+  --shadow-card:  0 1px 2px rgb(22 22 43 / .05), 0 6px 16px rgb(22 22 43 / .07);
+  --shadow-lift:  0 2px 4px rgb(22 22 43 / .06), 0 12px 28px rgb(22 22 43 / .10);
+  --shadow-panel: 0 4px 8px rgb(22 22 43 / .07), 0 24px 48px rgb(22 22 43 / .16);
+  --shadow-brand: 0 2px 4px rgb(91 75 224 / .18), 0 10px 24px rgb(91 75 224 / .22);
+
+  /* ---- motion ----------------------------------------------------------- */
+  --ease-spring: cubic-bezier(.34, 1.4, .64, 1);   /* the answer moment      */
+  --ease-out:    cubic-bezier(.16, 1, .3, 1);      /* everything else        */
+  --animate-pop:    pop .26s var(--ease-spring) both;
+  --animate-rise:   rise .28s var(--ease-out) both;
+  --animate-draw:   draw .34s var(--ease-out) both;
+}
+
+/* Dark — the same product at 11pm, not a dimmed sheet.
+   Semantic hues are re-derived for a dark ground, never merely darkened. */
+.dark {
+  --color-brand:        #8B7CFF;
+  --color-brand-hover:  #9E92FF;
+  --color-brand-soft:   #241F4D;
+  --color-on-brand:     #101018;
+
+  --color-correct:      #4ADE9B;
+  --color-correct-soft: #10291F;
+  --color-wrong:        #FF8A82;
+  --color-wrong-soft:   #331615;
+  --color-pending:      #F0B95B;
+  --color-pending-soft: #2B1F0C;
+  --color-reward:       #FFD24D;
+  --color-reward-fill:  #F5B301;
+
+  --color-bg:           #101018;
+  --color-surface:      #191926;
+  --color-surface-2:    #232333;
+  --color-border:       #2E2E42;
+  --color-ink:          #ECECF5;
+  --color-ink-2:        #A0A0BC;
+
+  --shadow-card:  0 1px 2px rgb(0 0 0 / .40), 0 6px 16px rgb(0 0 0 / .44);
+  --shadow-lift:  0 2px 4px rgb(0 0 0 / .44), 0 12px 28px rgb(0 0 0 / .50);
+  --shadow-panel: 0 4px 8px rgb(0 0 0 / .48), 0 24px 48px rgb(0 0 0 / .60);
+  --shadow-brand: 0 2px 4px rgb(0 0 0 / .40), 0 10px 24px rgb(139 124 255 / .24);
+}
+
+@keyframes pop  { 0% { transform: scale(.96) } 60% { transform: scale(1.02) } 100% { transform: scale(1) } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+@keyframes draw { from { stroke-dashoffset: 32 } to { stroke-dashoffset: 0 } }
+
+/* Motion is a reward, never a requirement. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+  h1, h2, h3 { font-family: var(--font-display); }
+  /* Any figure that is compared, summed or timed lines up. */
+  .num, table td, time, output { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+}
+
+/* ---------------------------------------------------------------------------
+   Component classes. Everything below is expressible as utilities; these exist
+   only for the patterns repeated on every screen. Prefer utilities elsewhere.
+   --------------------------------------------------------------------------- */
+@layer components {
+
+  /* Primary action. 52px is the floor — this is a one-handed product. */
+  .btn-primary {
+    @apply w-full min-h-[52px] px-6 rounded-control bg-brand text-on-brand
+           text-label inline-flex items-center justify-center gap-2
+           transition-[background-color,box-shadow,transform] duration-150
+           shadow-brand active:scale-[.98];
+  }
+  .btn-primary:hover { @apply bg-brand-hover; }
+  .btn-primary:disabled {
+    @apply bg-surface-2 text-ink-2 shadow-none cursor-not-allowed active:scale-100;
+  }
+
+  .btn-ghost {
+    @apply w-full min-h-[52px] px-6 rounded-control bg-surface text-ink text-label
+           border border-border inline-flex items-center justify-center gap-2
+           transition-colors duration-150 hover:bg-surface-2;
+  }
+
+  /* The answer option. Whole row is the target; 56px tall, always. */
+  .option {
+    @apply w-full min-h-[56px] flex items-center gap-3 p-3 text-left
+           rounded-control border-2 border-border bg-surface text-body
+           transition-[background-color,border-color,transform] duration-200;
+  }
+  .option:active           { @apply scale-[.99]; }
+  .option[data-state="selected"] { @apply border-brand bg-brand-soft; }
+  .option[data-state="correct"]  { @apply border-correct bg-correct-soft; }
+  .option[data-state="wrong"]    { @apply border-wrong bg-wrong-soft; }
+
+  /* Letter badge inside an option. */
+  .option-key {
+    @apply size-8 shrink-0 rounded-full bg-surface-2 text-caption
+           inline-flex items-center justify-center num;
+  }
+
+  .card    { @apply bg-surface rounded-card shadow-card p-4; }
+  .chip    { @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                    bg-surface-2 text-caption text-ink-2; }
+  .field   { @apply w-full min-h-[52px] px-4 rounded-control bg-surface
+                    border border-border text-body
+                    focus:border-brand focus:outline-none; }
+  .field[aria-invalid="true"] { @apply border-wrong border-2; }
+}
