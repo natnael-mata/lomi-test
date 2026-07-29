@@ -101,9 +101,12 @@ piece runs before moving on — every later phase assumes a green baseline.
 Next.js + Tailwind v4 (`apps/web`, serving both web PWA and Telegram Mini App) ·
 grammY (`apps/bot`) · TypeScript throughout.
 
-- [ ] **T-001** Create the root `package.json`: private, `"workspaces": ["apps/*"]`,
-      `"engines": { "node": ">=20" }`.
-      **Test:** `npm install` exits 0 and creates `node_modules/` at the root.
+- [x] **T-001** Create the root `package.json`: private, `"workspaces": ["apps/*"]`,
+      `"engines": { "node": ">=20" }`. ✅ 2026-07-29
+      **Test:** `npm install` exits 0 and writes `package-lock.json`; `npm pkg get workspaces`
+      returns `"apps/*"`, `npm pkg get private` returns `true`.
+      _(Original test asserted `node_modules/` is created — false for a dependency-free root;
+      npm writes no `node_modules` until something is depended on. Corrected.)_
 - [ ] **T-002** Create the three workspace folders each with a minimal `package.json`:
       `apps/api` (name `api`), `apps/web` (`web`), `apps/bot` (`bot`).
       **Test:** `npm ls --workspaces --depth=0` lists all three with no `UNMET`.

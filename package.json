@@ -1,0 +1,12 @@
+{
+  "name": "lomi-test",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lomi-Test (ሎሚ) — exit-exam preparation for Ethiopian university students",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
