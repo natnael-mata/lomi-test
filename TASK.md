@@ -28,6 +28,7 @@ Executable build backlog for Claude Code. Derived from `PLAN.md`, `CONTENT-PIPEL
 - No unrelated files touched.
 
 ### Standing commands
+These do not exist yet — Phase 0 creates them. From Phase 1 onward they are assumed.
 ```bash
 npm run db:dev          # embedded Postgres — keep running in its own terminal
 npm run prisma:migrate  # apply schema changes
@@ -37,7 +38,17 @@ npm run dev:web         # :3000
 npm run dev:bot         # long-polling (needs TELEGRAM_BOT_TOKEN)
 npm run build           # all workspaces
 npm test                # unit + integration
+npm run typecheck       # tsc --noEmit everywhere
+npm run lint            # eslint, zero warnings
 ```
+
+### Stack
+npm workspaces · **NestJS + Prisma + PostgreSQL** (`apps/api`) ·
+**Next.js + Tailwind v4** (`apps/web` — web PWA *and* Telegram Mini App from one build) ·
+**grammY** (`apps/bot`) · TypeScript, strict.
+
+`docs/PLAN.md` §6 suggests Express/Fastify and Vite; it is superseded here. Where any document
+disagrees with this file on stack, this file wins.
 
 ### Legend
 `[ ]` todo · `[x]` done + tested · `BLOCKED` needs a human decision first
@@ -81,40 +92,68 @@ the UI must never imply they are. The interim rule:
 
 ---
 
-## Phase 0 — Reconcile with the existing repo
+## Phase 0 — Scaffold the monorepo
 
-The repo is already ~11 of 12 planned weeks in. **Do not rebuild what works.** For each task
-below, inspect first; if it already exists and its test passes, tick it and move on.
+Greenfield. Nothing exists but the documents in this folder. Build the skeleton and prove each
+piece runs before moving on — every later phase assumes a green baseline.
 
-- [ ] **T-001** Run `npm install` at the repo root; confirm all three workspaces resolve.
-      **Test:** `npm ls --workspaces --depth=0` lists `api`, `web`, `bot` with no `UNMET`.
-- [ ] **T-002** Start embedded Postgres and confirm it accepts connections.
-      **Test:** `npm run db:dev` then `psql $DATABASE_URL -c 'select 1'` returns `1`.
-- [ ] **T-003** Apply all existing migrations to a clean database.
-      **Test:** `npm run prisma:migrate` exits 0; `npx prisma migrate status` says "up to date".
-- [ ] **T-004** Seed and confirm sample data loads.
-      **Test:** `npm run db:seed` exits 0; `Field` table has ≥1 row.
-- [ ] **T-005** Boot the API and hit the health endpoint.
-      **Test:** `curl -s localhost:4000/health` returns 200.
-- [ ] **T-006** Boot the web app and confirm it renders.
-      **Test:** `curl -s localhost:3000` returns 200 and contains `<html`.
-- [ ] **T-007** Run the full build.
-      **Test:** `npm run build` exits 0 for all three workspaces.
-- [ ] **T-008** Run the existing test suite and record the baseline.
-      **Test:** `npm test` exits 0. If it fails, fix before proceeding — a red baseline makes
-      every later task unverifiable.
-- [ ] **T-009** Confirm CI runs the same commands as local.
-      **Test:** `.github/workflows/ci.yml` invokes `npm run build` and `npm test`.
-- [ ] **T-010** Write `.env.example` entries for every variable the code reads.
-      **Test:** `grep -rhoE "process\.env\.[A-Z_]+" apps/*/src | sort -u` — every name appears
-      in `.env.example`.
-- [ ] **T-011** Add `npm run typecheck` running `tsc --noEmit` in all workspaces.
-      **Test:** `npm run typecheck` exits 0.
-- [ ] **T-012** Add `npm run lint` and fix existing violations.
+**Stack (decided):** npm workspaces · NestJS + Prisma + PostgreSQL (`apps/api`) ·
+Next.js + Tailwind v4 (`apps/web`, serving both web PWA and Telegram Mini App) ·
+grammY (`apps/bot`) · TypeScript throughout.
+
+- [ ] **T-001** Create the root `package.json`: private, `"workspaces": ["apps/*"]`,
+      `"engines": { "node": ">=20" }`.
+      **Test:** `npm install` exits 0 and creates `node_modules/` at the root.
+- [ ] **T-002** Create the three workspace folders each with a minimal `package.json`:
+      `apps/api` (name `api`), `apps/web` (`web`), `apps/bot` (`bot`).
+      **Test:** `npm ls --workspaces --depth=0` lists all three with no `UNMET`.
+- [ ] **T-003** Add a root `tsconfig.base.json` with `strict: true`, and have each workspace
+      extend it.
+      **Test:** `npx tsc --noEmit -p apps/api` exits 0 on an empty project.
+- [ ] **T-004** Scaffold the NestJS app in `apps/api` with a `/health` route returning
+      `{ status: "ok" }`.
+      **Test:** `npm run dev:api` then `curl -s localhost:4000/health` returns 200 with that body.
+- [ ] **T-005** Scaffold the Next.js app in `apps/web` (App Router, TypeScript).
+      **Test:** `npm run dev:web` then `curl -s localhost:3000` returns 200 containing `<html`.
+- [ ] **T-006** Install Tailwind v4 in `apps/web` and import
+      `design-system/tailwind-theme.css` from `app/globals.css`.
+      **Test:** A page using `bg-brand` renders `rgb(91, 75, 224)` in `getComputedStyle`.
+- [ ] **T-007** Scaffold the grammY bot in `apps/bot` with a `/start` handler.
+      **Test:** `npm run dev:bot` boots without throwing when `TELEGRAM_BOT_TOKEN` is set;
+      exits with a clear message when it is not.
+- [ ] **T-008** Add dev Postgres with no Docker requirement (`embedded-postgres`, data in
+      `apps/api/.pgdata`, which is gitignored).
+      **Test:** `npm run db:dev` starts; `psql "$DATABASE_URL" -c 'select 1'` returns `1`.
+- [ ] **T-009** Initialise Prisma in `apps/api` with a `datasource` reading `DATABASE_URL`, and
+      one throwaway model to prove the toolchain.
+      **Test:** `npm run prisma:migrate` creates a migration and applies it; `npx prisma migrate
+      status` reports up to date.
+- [ ] **T-010** Add root scripts: `dev:api`, `dev:web`, `dev:bot`, `build`, `test`, `typecheck`,
+      `lint`, `db:dev`, `prisma:migrate`, `prisma:generate`, `db:seed`.
+      **Test:** Every script runs and exits 0 (or with a clear "nothing to do").
+- [ ] **T-011** Write `.env.example` covering every variable the apps read: `DATABASE_URL`,
+      `API_PORT`, `JWT_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `TELEGRAM_BOT_TOKEN`,
+      `SMS_API_KEY`, `SMS_SENDER_ID`, `CHAPA_SECRET_KEY`, `CHAPA_WEBHOOK_SECRET`,
+      `API_BASE_URL`, `BOT_INTERNAL_TOKEN`, `NEXT_PUBLIC_API_BASE_URL`.
+      **Test:** `grep -rhoE "process\.env\.[A-Z_]+" apps/*/src | sort -u` — every name found
+      appears in `.env.example`.
+- [ ] **T-012** Confirm `.gitignore` covers `node_modules`, `.next`, `dist`, `.env`, `.pgdata`.
+      **Test:** `git status --short` is clean after a full install, dev-db start and build.
+- [ ] **T-013** Set up the test runner (Vitest or Jest) with one passing smoke test per workspace.
+      **Test:** `npm test` exits 0 and reports 3 passing tests.
+- [ ] **T-014** Add ESLint + Prettier and make the tree clean.
       **Test:** `npm run lint` exits 0 with zero warnings.
-- [ ] **T-013** Document the reconciliation result: append to this file which Phase 1–9 tasks
-      were already satisfied by existing code.
-      **Test:** A `## Reconciliation notes` section exists listing skipped task IDs.
+- [ ] **T-015** Add `.github/workflows/ci.yml` running install, typecheck, lint, build, test.
+      **Test:** `act` or a pushed branch shows the workflow green; locally, all five commands
+      pass in sequence.
+- [ ] **T-016** Verify the whole skeleton builds together.
+      **Test:** `npm run build` exits 0 for all three workspaces.
+- [ ] **T-017** Commit the scaffold as the green baseline.
+      **Test:** `git log --oneline` shows the scaffold commit and `git status` is clean.
+
+> **Baseline rule.** From here on, `npm test`, `npm run lint`, `npm run typecheck` and
+> `npm run build` must all be green before any task is ticked. A red baseline makes every
+> later task's test meaningless.
 
 ---
 
@@ -549,6 +588,6 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
 
 ---
 
-## Reconciliation notes
+## Build log
 
-_(T-013 appends here: which tasks were already satisfied by existing code.)_
+_Append a line per completed phase: date, what landed, anything deferred and why._
