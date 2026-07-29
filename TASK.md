@@ -110,9 +110,15 @@ grammY (`apps/bot`) · TypeScript throughout.
 - [x] **T-002** Create the three workspace folders each with a minimal `package.json`:
       `apps/api` (name `api`), `apps/web` (`web`), `apps/bot` (`bot`). ✅ 2026-07-29
       **Test:** `npm ls --workspaces --depth=0` lists all three with no `UNMET`.
-- [ ] **T-003** Add a root `tsconfig.base.json` with `strict: true`, and have each workspace
-      extend it.
-      **Test:** `npx tsc --noEmit -p apps/api` exits 0 on an empty project.
+- [x] **T-003** Add a root `tsconfig.base.json` with `strict: true`, and have each workspace
+      extend it. ✅ 2026-07-29
+      **Test:** `npx tsc --noEmit -p apps/api` exits 0, and
+      `npx tsc --showConfig -p apps/api` shows `"strict": true` inherited from the base.
+      _(Original test said "on an empty project" — impossible: `tsc` raises TS18003 when
+      `include` matches no files. Placeholder `src/index.ts` files added to `api` and `bot`,
+      replaced by T-004 and T-007.)_
+      Base also enables `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
+      `noImplicitOverride`, `noFallthroughCasesInSwitch`.
 - [ ] **T-004** Scaffold the NestJS app in `apps/api` with a `/health` route returning
       `{ status: "ok" }`.
       **Test:** `npm run dev:api` then `curl -s localhost:4000/health` returns 200 with that body.
