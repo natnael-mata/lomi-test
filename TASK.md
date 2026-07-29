@@ -149,9 +149,18 @@ grammY (`apps/bot`) · TypeScript throughout.
       Probe elements live in `app/page.tsx` and are replaced when real screens land in Phase 4.
       Note: font *families* resolve (Gabarito stack) but the faces are not self-hosted yet —
       that is T-091.
-- [ ] **T-007** Scaffold the grammY bot in `apps/bot` with a `/start` handler.
-      **Test:** `npm run dev:bot` boots without throwing when `TELEGRAM_BOT_TOKEN` is set;
-      exits with a clear message when it is not.
+- [x] **T-007** Scaffold the grammY bot in `apps/bot` with a `/start` handler. ✅ 2026-07-30
+      **Test:** `npm run check -w bot` (which runs `src/main.ts --check`) exits 0 with
+      `bot wiring ok` when `TELEGRAM_BOT_TOKEN` is set, and exits 1 naming the variable and the
+      fix when it is not. _Both branches verified._
+      _Why `--check` rather than `dev:bot`: booting long-polling for real requires a live token,
+      makes an outbound call to Telegram, and would collide with any other running instance over
+      `getUpdates`. `--check` proves config validation and handler registration deterministically
+      with no network. **The live long-poll path is therefore not yet exercised** — it is covered
+      when the bot gains real behaviour in Phase 10 (T-180+)._
+      `createBot()` is deliberately separate from starting the bot so wiring is unit-testable;
+      T-013 adds an assertion that the `/start` handler is registered. `apps/bot` is ESM
+      (`"type": "module"`), unlike `apps/api` which NestJS requires to be CommonJS.
 - [ ] **T-008** Add dev Postgres with no Docker requirement (`embedded-postgres`, data in
       `apps/api/.pgdata`, which is gitignored).
       **Test:** `npm run db:dev` starts; `psql "$DATABASE_URL" -c 'select 1'` returns `1`.
@@ -171,6 +180,7 @@ grammY (`apps/bot`) · TypeScript throughout.
 - [ ] **T-012** Confirm `.gitignore` covers `node_modules`, `.next`, `dist`, `.env`, `.pgdata`.
       **Test:** `git status --short` is clean after a full install, dev-db start and build.
 - [ ] **T-013** Set up the test runner (Vitest or Jest) with one passing smoke test per workspace.
+      Include an assertion that the bot's `/start` handler is registered (deferred from T-007).
       **Test:** `npm test` exits 0 and reports 3 passing tests.
 - [ ] **T-014** Add ESLint + Prettier and make the tree clean.
       **Test:** `npm run lint` exits 0 with zero warnings.
