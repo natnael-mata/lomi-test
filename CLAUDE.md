@@ -29,7 +29,7 @@ npm run db:dev          # embedded Postgres, no Docker; keep running in its own 
 npm run prisma:migrate  # apply schema changes
 npm run db:seed
 npm run dev:api         # :4000
-npm run dev:web         # :3001 (3000 is taken by chaw-driver)
+npm run dev:web         # :3100 (chaw-driver owns 3000-3002)
 npm run dev:bot         # long-polling; needs TELEGRAM_BOT_TOKEN
 npm run build           # all workspaces
 npm test

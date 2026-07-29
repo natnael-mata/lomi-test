@@ -34,7 +34,7 @@ npm run db:dev          # embedded Postgres — keep running in its own terminal
 npm run prisma:migrate  # apply schema changes
 npm run db:seed         # sample data
 npm run dev:api         # :4000
-npm run dev:web         # :3001 (3000 is taken by chaw-driver)
+npm run dev:web         # :3100 (chaw-driver owns 3000-3002)
 npm run dev:bot         # long-polling (needs TELEGRAM_BOT_TOKEN)
 npm run build           # all workspaces
 npm test                # unit + integration
@@ -128,11 +128,11 @@ grammY (`apps/bot`) · TypeScript throughout.
       constructor parameter types from decorator metadata at runtime and cannot work without
       them. Port reads `API_PORT`, defaulting to 4000.
 - [x] **T-005** Scaffold the Next.js app in `apps/web` (App Router, TypeScript). ✅ 2026-07-30
-      **Test:** `npm run dev:web` then `curl -s localhost:3001` returns 200 containing `<html`.
+      **Test:** `npm run dev:web` then `curl -s localhost:3100` returns 200 containing `<html`.
       _Verified: 200, `<html>` present, `<title>Lomi-Test</title>`._
-      **Port changed 3000 → 3001.** Port 3000 on this machine is permanently occupied by the
-      user's Chaw-Driver backend (`/home/beki-dev/dev/chaw-driver/backend`). Every reference to
-      the web dev port in this file, `CLAUDE.md` and `README.md` uses 3001.
+      **Port changed 3000 → 3100.** Ports 3000–3002 on this machine belong to chaw-driver (backend,
+      web admin, miniapp). Every reference to
+      the web dev port in this file, `CLAUDE.md` and `README.md` uses 3100.
       Written by hand rather than via `create-next-app`, so the workspace package name and the
       `tsconfig` `extends` chain survive. Next 15 + React 19.
 - [x] **T-006** Install Tailwind v4 in `apps/web` and import
