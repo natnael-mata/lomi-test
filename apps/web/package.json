@@ -1,0 +1,6 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lomi-Test web — Next.js + Tailwind v4. Serves the web PWA and the Telegram Mini App from one build."
+}

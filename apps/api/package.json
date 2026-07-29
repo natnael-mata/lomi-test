@@ -1,0 +1,6 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lomi-Test API — NestJS + Prisma + PostgreSQL. The single source of truth."
+}

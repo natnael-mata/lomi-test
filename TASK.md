@@ -107,8 +107,8 @@ grammY (`apps/bot`) · TypeScript throughout.
       returns `"apps/*"`, `npm pkg get private` returns `true`.
       _(Original test asserted `node_modules/` is created — false for a dependency-free root;
       npm writes no `node_modules` until something is depended on. Corrected.)_
-- [ ] **T-002** Create the three workspace folders each with a minimal `package.json`:
-      `apps/api` (name `api`), `apps/web` (`web`), `apps/bot` (`bot`).
+- [x] **T-002** Create the three workspace folders each with a minimal `package.json`:
+      `apps/api` (name `api`), `apps/web` (`web`), `apps/bot` (`bot`). ✅ 2026-07-29
       **Test:** `npm ls --workspaces --depth=0` lists all three with no `UNMET`.
 - [ ] **T-003** Add a root `tsconfig.base.json` with `strict: true`, and have each workspace
       extend it.
