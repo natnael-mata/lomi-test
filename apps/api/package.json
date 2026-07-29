@@ -2,5 +2,21 @@
   "name": "api",
   "version": "0.1.0",
   "private": true,
-  "description": "Lomi-Test API — NestJS + Prisma + PostgreSQL. The single source of truth."
+  "description": "Lomi-Test API — NestJS + Prisma + PostgreSQL. The single source of truth.",
+  "dependencies": {
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "tsx": "^4.23.1"
+  },
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p .",
+    "start": "node dist/main.js"
+  }
 }

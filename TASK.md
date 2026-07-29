@@ -119,9 +119,14 @@ grammY (`apps/bot`) · TypeScript throughout.
       replaced by T-004 and T-007.)_
       Base also enables `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
       `noImplicitOverride`, `noFallthroughCasesInSwitch`.
-- [ ] **T-004** Scaffold the NestJS app in `apps/api` with a `/health` route returning
-      `{ status: "ok" }`.
+- [x] **T-004** Scaffold the NestJS app in `apps/api` with a `/health` route returning
+      `{ status: "ok" }`. ✅ 2026-07-29
       **Test:** `npm run dev:api` then `curl -s localhost:4000/health` returns 200 with that body.
+      _Verified: status 200, body exactly `{"status":"ok"}`._
+      Note: `apps/api/tsconfig.json` overrides the base to `module: CommonJS` +
+      `experimentalDecorators` + `emitDecoratorMetadata` — NestJS's DI container reads
+      constructor parameter types from decorator metadata at runtime and cannot work without
+      them. Port reads `API_PORT`, defaulting to 4000.
 - [ ] **T-005** Scaffold the Next.js app in `apps/web` (App Router, TypeScript).
       **Test:** `npm run dev:web` then `curl -s localhost:3000` returns 200 containing `<html`.
 - [ ] **T-006** Install Tailwind v4 in `apps/web` and import

@@ -3,7 +3,16 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+
+    // NestJS needs CommonJS and decorator metadata for its DI container to
+    // resolve constructor parameter types at runtime. This deliberately
+    // overrides the base's NodeNext module setting.
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "isolatedModules": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["dist", "node_modules"]
