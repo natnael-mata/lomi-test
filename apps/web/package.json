@@ -4,9 +4,11 @@
   "private": true,
   "description": "Lomi-Test web — Next.js + Tailwind v4. Serves the web PWA and the Telegram Mini App from one build.",
   "dependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "next": "^15.5.22",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

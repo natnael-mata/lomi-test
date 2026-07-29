@@ -148,8 +148,15 @@
   }
   h1, h2, h3 { font-family: var(--font-display); }
   /* Any figure that is compared, summed or timed lines up. */
-  .num, table td, time, output { font-variant-numeric: tabular-nums; }
+  table td, time, output { font-variant-numeric: tabular-nums; }
   :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+}
+
+/* A first-class utility, not a bare class: `num` must be usable in markup AND
+   inside @apply. Declaring it in @layer base would make @apply fail with
+   "Cannot apply unknown utility class". */
+@utility num {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------------------------------------------------------------------------

@@ -14,3 +14,6 @@ out/
 coverage/
 .turbo/
 *.tsbuildinfo
+
+# local editor/agent config
+.claude/

@@ -135,9 +135,20 @@ grammY (`apps/bot`) · TypeScript throughout.
       the web dev port in this file, `CLAUDE.md` and `README.md` uses 3001.
       Written by hand rather than via `create-next-app`, so the workspace package name and the
       `tsconfig` `extends` chain survive. Next 15 + React 19.
-- [ ] **T-006** Install Tailwind v4 in `apps/web` and import
-      `design-system/tailwind-theme.css` from `app/globals.css`.
+- [x] **T-006** Install Tailwind v4 in `apps/web` and import
+      `design-system/tailwind-theme.css` from `app/globals.css`. ✅ 2026-07-30
       **Test:** A page using `bg-brand` renders `rgb(91, 75, 224)` in `getComputedStyle`.
+      _Verified in a real browser: `#probe-brand` → `rgb(91, 75, 224)`. Also confirmed
+      `body` → `rgb(246, 246, 251)`, `.btn-primary` → 52px min-height / 12px radius / brand
+      fill, `.num` → `tabular-nums`, and `correct` → `rgb(6, 112, 73)` on `rgb(227, 248, 239)`._
+      **Bug found and fixed in the design system:** `.option-key` did `@apply … num`, but `num`
+      was declared as a bare class in `@layer base`, so Tailwind raised
+      *"Cannot apply unknown utility class `num`"* and the whole stylesheet failed to compile
+      (page 500'd). Promoted it to `@utility num { font-variant-numeric: tabular-nums }` so it
+      works in both `@apply` and markup.
+      Probe elements live in `app/page.tsx` and are replaced when real screens land in Phase 4.
+      Note: font *families* resolve (Gabarito stack) but the faces are not self-hosted yet —
+      that is T-091.
 - [ ] **T-007** Scaffold the grammY bot in `apps/bot` with a `/start` handler.
       **Test:** `npm run dev:bot` boots without throwing when `TELEGRAM_BOT_TOKEN` is set;
       exits with a clear message when it is not.
