@@ -14,6 +14,7 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "dev:api": "npm run dev -w api"
+    "dev:api": "npm run dev -w api",
+    "dev:web": "npm run dev -w web"
   }
 }
