@@ -16,6 +16,7 @@
   "scripts": {
     "dev:api": "npm run dev -w api",
     "dev:web": "npm run dev -w web",
-    "dev:bot": "npm run dev -w bot"
+    "dev:bot": "npm run dev -w bot",
+    "db:dev": "npm run db:dev -w api"
   }
 }

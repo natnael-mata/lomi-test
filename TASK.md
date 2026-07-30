@@ -161,9 +161,18 @@ grammY (`apps/bot`) · TypeScript throughout.
       `createBot()` is deliberately separate from starting the bot so wiring is unit-testable;
       T-013 adds an assertion that the `/start` handler is registered. `apps/bot` is ESM
       (`"type": "module"`), unlike `apps/api` which NestJS requires to be CommonJS.
-- [ ] **T-008** Add dev Postgres with no Docker requirement (`embedded-postgres`, data in
-      `apps/api/.pgdata`, which is gitignored).
+- [x] **T-008** Add dev Postgres with no Docker requirement (`embedded-postgres`, data in
+      `apps/api/.pgdata`, which is gitignored). ✅ 2026-07-30
       **Test:** `npm run db:dev` starts; `psql "$DATABASE_URL" -c 'select 1'` returns `1`.
+      _Verified: cluster initialised, `lomi_test` created, `select 1` → `1` (exit 0)._
+      **Port 5433, not 5432** — the system Postgres 16 (chaw-driver's) already owns 5432.
+      `DATABASE_URL=postgresql://postgres:postgres@localhost:5433/lomi_test`, written to a
+      gitignored `.env`.
+      Two things to keep an eye on: `embedded-postgres` is on a **beta release**
+      (`18.4.0-beta.17`) and ships **Postgres 18.4**, while production will run a managed
+      Postgres — pin the production major deliberately rather than inheriting whatever this
+      package bundles. The script is idempotent: it only runs `initialise()` when
+      `.pgdata/PG_VERSION` is absent, and tolerates the database already existing.
 - [ ] **T-009** Initialise Prisma in `apps/api` with a `datasource` reading `DATABASE_URL`, and
       one throwaway model to prove the toolchain.
       **Test:** `npm run prisma:migrate` creates a migration and applies it; `npx prisma migrate
