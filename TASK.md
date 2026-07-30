@@ -189,9 +189,22 @@ grammY (`apps/bot`) · TypeScript throughout.
       the schema's own project directory, not the workspace root. Both are gitignored and must
       be kept in sync.
       `ToolchainCheck` is throwaway — the first Phase 1 migration drops it.
-- [ ] **T-010** Add root scripts: `dev:api`, `dev:web`, `dev:bot`, `build`, `test`, `typecheck`,
-      `lint`, `db:dev`, `prisma:migrate`, `prisma:generate`, `db:seed`.
-      **Test:** Every script runs and exits 0 (or with a clear "nothing to do").
+- [x] **T-010** Add root scripts: `dev:api`, `dev:web`, `dev:bot`, `build`, `test`, `typecheck`,
+      `lint`, `db:dev`, `prisma:migrate`, `prisma:generate`, `db:seed`. ✅ 2026-07-30
+      **Test:** the six terminating scripts — `typecheck`, `build`, `test`, `lint`, `db:seed`,
+      `prisma:generate` — each exit 0. The four **server** scripts are asserted to *start*, not
+      to exit: `dev:api` logs `api listening on http://localhost:4000`; `dev:bot` reaches
+      Telegram and is rejected for the fake token (proving it booted past config); `dev:web` and
+      `db:dev` were verified live in T-005 and T-008.
+      _(The original test said "every script runs and exits 0" — impossible for four
+      long-running servers. Corrected to assert the right thing for each kind.)_
+      **Guard added:** `npm run test --workspaces --if-present` exits 0 **in silence** when no
+      workspace defines a test script, so an empty suite is indistinguishable from a passing
+      one — and the baseline rule ("tests green before ticking a task") would be satisfied by
+      nothing at all. `scripts/runner-report.mjs` now prints
+      *"⚠ test ran in NO workspace — nothing was executed. Exit 0 here means 'not wired up
+      yet', not 'passed'."* until T-013 lands. Same guard on `lint` until T-014.
+      `db:seed` is `--if-present` and no-ops until T-031.
 - [ ] **T-011** Write `.env.example` covering every variable the apps read: `DATABASE_URL`,
       `API_PORT`, `JWT_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `TELEGRAM_BOT_TOKEN`,
       `SMS_API_KEY`, `SMS_SENDER_ID`, `CHAPA_SECRET_KEY`, `CHAPA_WEBHOOK_SECRET`,

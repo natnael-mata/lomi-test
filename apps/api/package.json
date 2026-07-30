@@ -25,6 +25,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:status": "prisma migrate status",
-    "prisma:deploy": "prisma migrate deploy"
+    "prisma:deploy": "prisma migrate deploy",
+    "typecheck": "tsc --noEmit -p ."
   }
 }
