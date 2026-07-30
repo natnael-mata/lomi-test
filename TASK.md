@@ -173,10 +173,22 @@ grammY (`apps/bot`) · TypeScript throughout.
       Postgres — pin the production major deliberately rather than inheriting whatever this
       package bundles. The script is idempotent: it only runs `initialise()` when
       `.pgdata/PG_VERSION` is absent, and tolerates the database already existing.
-- [ ] **T-009** Initialise Prisma in `apps/api` with a `datasource` reading `DATABASE_URL`, and
-      one throwaway model to prove the toolchain.
-      **Test:** `npm run prisma:migrate` creates a migration and applies it; `npx prisma migrate
-      status` reports up to date.
+- [x] **T-009** Initialise Prisma in `apps/api` with a `datasource` reading `DATABASE_URL`, and
+      one throwaway model to prove the toolchain. ✅ 2026-07-30
+      **Test:** `prisma migrate diff` generates the migration, `npm run prisma:deploy` applies it,
+      and `npx prisma migrate status` reports *"Database schema is up to date!"* (exit 0).
+      _Verified end to end: migration `20260730143950_init_toolchain_check` applied, and the
+      `ToolchainCheck` table confirmed present via `psql \d`. `prisma generate` also succeeds._
+      **Deliberately not `prisma migrate dev`.** That command can **reset the database** when it
+      detects drift, and it prompts — neither is acceptable for an unattended agent run. The
+      split is now explicit:
+      · `npm run prisma:migrate` → `prisma migrate dev` — **humans only**, interactive, may reset.
+      · `npm run prisma:deploy` → `prisma migrate deploy` — **agents and CI**, applies only,
+        never resets, never prompts.
+      `apps/api/.env` exists separately from the repo-root `.env` because the Prisma CLI reads
+      the schema's own project directory, not the workspace root. Both are gitignored and must
+      be kept in sync.
+      `ToolchainCheck` is throwaway — the first Phase 1 migration drops it.
 - [ ] **T-010** Add root scripts: `dev:api`, `dev:web`, `dev:bot`, `build`, `test`, `typecheck`,
       `lint`, `db:dev`, `prisma:migrate`, `prisma:generate`, `db:seed`.
       **Test:** Every script runs and exits 0 (or with a clear "nothing to do").

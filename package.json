@@ -17,6 +17,9 @@
     "dev:api": "npm run dev -w api",
     "dev:web": "npm run dev -w web",
     "dev:bot": "npm run dev -w bot",
-    "db:dev": "npm run db:dev -w api"
+    "db:dev": "npm run db:dev -w api",
+    "prisma:migrate": "npm run prisma:migrate -w api",
+    "prisma:generate": "npm run prisma:generate -w api",
+    "prisma:deploy": "npm run prisma:deploy -w api"
   }
 }

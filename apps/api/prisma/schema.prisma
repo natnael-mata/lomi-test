@@ -1,0 +1,21 @@
+// Lomi-Test schema.
+//
+// The real taxonomy — Field → Course → Topic → Question, with Option and Step —
+// lands in Phase 1 (T-020 onward). ToolchainCheck below exists only to prove
+// migrate/generate work end to end and is dropped by the first Phase 1 migration.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Throwaway. Replaced in Phase 1 — do not build on it.
+model ToolchainCheck {
+  id        String   @id @default(cuid())
+  note      String
+  createdAt DateTime @default(now())
+}
