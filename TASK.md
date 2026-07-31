@@ -389,8 +389,27 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       a comment telling future readers to watch for a `DROP` of it.
       `NULL` is permitted deliberately — a topic is unweighted until T-134 derives it.
 
-- [ ] **T-024** Add a service method `assertFieldWeightsSumTo100(fieldId)`.
+- [x] **T-024** Add a service method `assertFieldWeightsSumTo100(fieldId)`. ✅ 2026-08-01
       **Test:** Unit test: weights `[40,60]` pass; `[40,50]` throw with the shortfall named.
+      _Verified — 8 unit tests, `[40,60]` passes and `[40,50]` throws
+      "Topic weights sum to 90.00%, short by 10.00% (must be 100.00%)."_
+      The arithmetic lives in a **Prisma-free** `taxonomy/weights.ts` so it tests without a
+      database and can be reused by the importer, the admin weight editor and readiness.
+      `TaxonomyService.assertFieldWeightsSumTo100(fieldId)` loads topics and delegates to it.
+      **All arithmetic in integer hundredths**, matching `numeric(5,2)`. This is where the T-022
+      float concern actually bites: `33.33 + 33.33 + 33.34` is exactly 100 in decimal but
+      `100.00000000000001` as floats, so a float implementation would reject a correct field.
+      Covered by a test, as is the one-hundredth near-miss (`33.33 × 3` → "short by 0.01").
+      Three failure modes are distinguished rather than lumped into one message, each with a
+      `code`: `SUM_MISMATCH` names the shortfall **or excess**; `UNWEIGHTED_TOPIC` names the
+      offending topics by name; `NO_TOPICS` rejects an empty field instead of letting a sum of 0
+      look like a legitimate answer.
+      **Also verified against the real database**, not just in unit tests — the relation filter
+      `where: { course: { fieldId } }` is the kind of thing that silently returns `[]` and throws
+      the wrong error. Confirmed live: 40+60 passes, 40+50 reports the shortfall, a nulled weight
+      names `Payroll`, and an unknown field id gives `NO_TOPICS`.
+      Adds a global `PrismaModule`/`PrismaService` — the first DB wiring, needed by every later
+      service.
 - [ ] **T-025** Confirm `Question` has `qType (CONCEPT|CALCULATION)`, `stem`, `conceptLine`,
       `explanation`, `timeLimitSec`, `status`, `authorId`, `reviewerId`, `sourceRef`, `year`.
       **Test:** `npx prisma validate` passes; all columns present.
