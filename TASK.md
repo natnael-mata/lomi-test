@@ -314,7 +314,7 @@ grammY (`apps/bot`) · TypeScript throughout.
       The scaffold was committed **per task rather than as one lump**, so each piece of the
       skeleton carries the reasoning and the verification that produced it.
       **Baseline at close of Phase 0:** `typecheck 0 · build 0 · lint 0 · format 0 · 3 tests
-  passing`. From here the rule in this file's header applies — all five green before any
+passing`. From here the rule in this file's header applies — all five green before any
       task is ticked.
       `CLAUDE.md` updated: it no longer claims the repo is documents-only, and records the two
       Phase 0 conventions that are easiest to break later (the `tsconfig.build.json` split, and
