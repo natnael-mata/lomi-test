@@ -4,3 +4,6 @@ dist
 .pgdata
 package-lock.json
 apps/web/next-env.d.ts
+
+# prettier has no .prisma parser
+*.prisma
