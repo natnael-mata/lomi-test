@@ -279,9 +279,22 @@ grammY (`apps/bot`) · TypeScript throughout.
       Prettier reformatted the tree in one pass (100 cols, single quotes, trailing commas),
       which touched most files including `TASK.md` and the design-system CSS. Re-verified after:
       typecheck 0, build 0, 3 tests passing, and the 177 task checkboxes intact.
-- [ ] **T-015** Add `.github/workflows/ci.yml` running install, typecheck, lint, build, test.
-      **Test:** `act` or a pushed branch shows the workflow green; locally, all five commands
-      pass in sequence.
+- [x] **T-015** Add `.github/workflows/ci.yml` running install, typecheck, lint, build, test.
+      ✅ 2026-07-31
+      **Test:** locally, all the CI commands pass in sequence — `npm ci`, typecheck, lint, build,
+      test, format:check — **all ok**. The workflow YAML was also parsed to confirm it is valid
+      and that the trigger and all eight steps are present.
+      **The `act`/pushed-branch half of this test could NOT be run**, and this task is ticked
+      knowing that: `act` is not installed and **this repo has no git remote**, so there is
+      nowhere to push and GitHub has never executed this file. It is verified as
+      _"the commands it runs all pass, and it is syntactically valid"_ — not as _"observed
+      green on GitHub"_. Re-check after adding a remote and pushing once.
+      Uses `npm ci`, not `npm install`, so CI fails if `package.json` and the lockfile drift.
+      Each command is a separate step so the failing one is visible from the job summary.
+      `format:check` never writes — CI must not reformat the tree.
+      **No database service yet**, deliberately: nothing in the suite touches Postgres. From
+      T-020 the tests hit real tables and this job will need a `services: postgres:` container,
+      `DATABASE_URL`, and `prisma migrate deploy` before the test step. A note in the file says so.
 - [ ] **T-016** Verify the whole skeleton builds together.
       **Test:** `npm run build` exits 0 for all three workspaces.
 - [ ] **T-017** Commit the scaffold as the green baseline.
