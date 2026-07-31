@@ -103,6 +103,70 @@ model Topic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  questions Question[]
+
   @@unique([courseId, slug])
   @@index([courseId])
+}
+
+/// How a question is answered, which decides how the answer view renders:
+/// CONCEPT gets prose, CALCULATION gets a numbered step list whose final step
+/// must state the answer choice.
+enum QType {
+  CONCEPT
+  CALCULATION
+}
+
+/// Only PUBLISHED is ever served to a student. RETIRED is how a bad question is
+/// withdrawn — rows are never deleted, because prior attempts reference them.
+enum QStatus {
+  DRAFT
+  IN_REVIEW
+  PUBLISHED
+  RETIRED
+}
+
+/// The product. Everything else exists to get one of these in front of a
+/// student with an answer it can defend.
+model Question {
+  id      String @id @default(cuid())
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  qType QType
+
+  /// The question itself — the most-read text in the product.
+  stem  String
+
+  /// One sentence naming what is being tested. Nullable while a question is a
+  /// draft; the publish gate (T-042) requires it and rejects multiple sentences.
+  conceptLine String?
+
+  /// Prose rationale, for CONCEPT questions. CALCULATION questions carry
+  /// ordered `Step` rows instead (T-027), so this stays null for them.
+  explanation String?
+
+  /// Pacing budget in seconds. Per D4: 60 for CONCEPT, 180 for CALCULATION —
+  /// applied by T-119. Bounded 15..600 by the publish gate (T-045).
+  timeLimitSec Int
+
+  status QStatus @default(DRAFT)
+
+  /// Who wrote it and who approved it. Plain ids, not foreign keys, because the
+  /// User model does not exist until Phase 3 — T-044's gate rule (reviewer must
+  /// differ from author) compares these, and the FKs land with User.
+  authorId   String?
+  reviewerId String?
+
+  /// Provenance: which source file this came from, e.g.
+  /// "Computer_Science_Exit_Exam_2018", plus the exam year when known. Content
+  /// operations need to trace a bad question back to the paper it came from.
+  sourceRef String?
+  year      Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([topicId])
+  @@index([status])
 }

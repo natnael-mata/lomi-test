@@ -410,9 +410,24 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       names `Payroll`, and an unknown field id gives `NO_TOPICS`.
       Adds a global `PrismaModule`/`PrismaService` — the first DB wiring, needed by every later
       service.
-- [ ] **T-025** Confirm `Question` has `qType (CONCEPT|CALCULATION)`, `stem`, `conceptLine`,
+- [x] **T-025** Confirm `Question` has `qType (CONCEPT|CALCULATION)`, `stem`, `conceptLine`,
       `explanation`, `timeLimitSec`, `status`, `authorId`, `reviewerId`, `sourceRef`, `year`.
-      **Test:** `npx prisma validate` passes; all columns present.
+      **Test:** `npx prisma validate` passes; all columns present. ✅ 2026-08-01
+      _Verified against `information_schema` — all ten named columns exist with the intended
+      nullability. Both enums are **real Postgres types**, not strings: inserting
+      `qType = 'ESSAY'` is rejected with "invalid input value for enum", and `status` defaults
+      to `DRAFT`._
+      Nullability is deliberate: `conceptLine` and `explanation` are nullable so a **draft can
+      exist while incomplete** — the publish gate, not the column, is what refuses to serve an
+      unexplained question. Making them `NOT NULL` would force authors to write placeholder text,
+      which is worse than an honest empty field.
+      `explanation` stays null for CALCULATION questions, which carry ordered `Step` rows
+      instead (T-027).
+      **`authorId`/`reviewerId` are plain ids, not foreign keys** — the `User` model does not
+      exist until Phase 3. T-044's rule (reviewer ≠ author) compares them; the FK constraints
+      land with `User`.
+      `RETIRED` exists so a bad question is withdrawn rather than deleted: prior attempts
+      reference it, and deleting would corrupt every past score that included it.
 - [ ] **T-026** Confirm `Option` has `label A–D`, `text`, `isCorrect`, `whyWrong`.
       **Test:** Unique constraint on `(questionId, label)` exists.
 - [ ] **T-027** Add `Step` model for CALCULATION questions: `order`, `text`, `formula?`.
