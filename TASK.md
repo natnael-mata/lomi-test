@@ -333,7 +333,7 @@ passing`. From here the rule in this file's header applies — all five green be
       **Test:** `npx prisma validate` passes; the model has its fields.
       _Verified: schema valid, migration `field_taxonomy_root` applied, and the real
       `public."Field"` table confirmed via `psql \d` — `id, name, slug, examDate, isPublished,
-  createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublished`.
+createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublished`.
       `ToolchainCheck` is dropped._
       **`priceEtb` was deliberately NOT created.** This task was written before D2/D3; access is
       now sold by **duration** (6 or 12 months), so price belongs to `Plan`, not `Field`.
