@@ -447,8 +447,19 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       per question. T-040 makes that a publish-gate rule, and a raw DB error would preempt the
       gate's much better message ("Exactly one correct option (have 2)"). Worth revisiting if a
       path ever writes options without going through the gate.
-- [ ] **T-027** Add `Step` model for CALCULATION questions: `order`, `text`, `formula?`.
-      **Test:** Migration applies; steps round-trip ordered by `order`.
+- [x] **T-027** Add `Step` model for CALCULATION questions: `order`, `text`, `formula?`.
+      **Test:** Migration applies; steps round-trip ordered by `order`. ✅ 2026-08-01
+      _Verified with real rows: four steps of the AF-0003 VAT solution inserted **deliberately
+      out of order (3, 1, 4, 2)** and read back 1, 2, 3, 4. Inserting them in order would have
+      passed even if ordering were broken, since Postgres would likely return insertion order._
+      Also exercised: a duplicate `stepNo` is **rejected**, and deleting the question removed its
+      steps (Cascade), 4 → 0.
+      **Named `stepNo`, not `order`.** `ORDER` is a reserved SQL keyword; this schema gets
+      queried by hand often enough that needing `"order"` quoted in every statement is a standing
+      papercut.
+      `formula` is nullable — it renders in its own well above the step's prose
+      (`1,150,000 × 15/115`) and is absent when a step is purely narrative.
+      Cascade, like `Option`: a step has no meaning apart from its question.
 - [ ] **T-028** Add `stableId` to `Question` (e.g. `AF-0003`), unique, matching the CSV column.
       **Test:** Inserting a duplicate `stableId` raises a unique violation.
 - [ ] **T-029** Add index on `Question(fieldId, status)` — the hot path for question serving.

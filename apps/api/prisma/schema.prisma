@@ -168,9 +168,40 @@ model Question {
   updatedAt DateTime @updatedAt
 
   options Option[]
+  steps   Step[]
 
   @@index([topicId])
   @@index([status])
+}
+
+/// One line of a worked solution, for CALCULATION questions only.
+///
+/// The answer view renders these as a numbered list, and the publish gate
+/// (T-043) requires the LAST step to state the answer choice — "= 8,500 →
+/// answer C" — so a student is never left to infer which option the working
+/// arrived at.
+model Step {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// 1-based position. Named `stepNo`, not `order`: ORDER is a reserved SQL
+  /// keyword, and this schema is queried by hand often enough that needing
+  /// `"order"` quoted in every statement is a standing papercut.
+  stepNo Int
+
+  text String
+
+  /// Optional formula line rendered in its own well above the step's prose,
+  /// e.g. "1,150,000 × 15/115". Null when the step is purely narrative.
+  formula String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// No two steps may occupy the same position in one solution.
+  @@unique([questionId, stepNo])
+  @@index([questionId])
 }
 
 /// A–D. An enum rather than free text so the database itself refuses an
