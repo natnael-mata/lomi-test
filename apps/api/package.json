@@ -19,7 +19,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "db:dev": "node scripts/db-dev.mjs",
     "prisma:migrate": "prisma migrate dev",

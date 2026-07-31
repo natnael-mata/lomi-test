@@ -12,7 +12,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "check": "tsx src/main.ts --check",
     "typecheck": "tsc --noEmit -p .",

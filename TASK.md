@@ -295,8 +295,19 @@ grammY (`apps/bot`) · TypeScript throughout.
       **No database service yet**, deliberately: nothing in the suite touches Postgres. From
       T-020 the tests hit real tables and this job will need a `services: postgres:` container,
       `DATABASE_URL`, and `prisma migrate deploy` before the test step. A note in the file says so.
-- [ ] **T-016** Verify the whole skeleton builds together.
-      **Test:** `npm run build` exits 0 for all three workspaces.
+- [x] **T-016** Verify the whole skeleton builds together. ✅ 2026-07-31
+      **Test:** `npm run build` exits 0 for all three workspaces. _Verified from a **cold** start —
+      `dist/`, `.next/` and tsbuildinfo deleted first, since a warm build proves little._
+      Beyond exit 0, the emitted output was checked to exist **and run**:
+      `require('apps/api/dist/health/health.controller.js')` returns `{"status":"ok"}`, and
+      `apps/bot/dist/bot.js` exports `createBot`.
+      **Defect found and fixed: test files were being compiled into `dist`.** `tsc -p .` matched
+      `**/*.test.ts`, so six test artifacts shipped — including `bot.test.js`, which imports
+      **vitest, a devDependency absent from a production install**. Fixed with a separate
+      `tsconfig.build.json` per Node workspace that excludes `*.test.ts`, while `tsconfig.json`
+      keeps including them so `npm run typecheck` still covers tests.
+      Both halves were then proven rather than assumed: a deliberate type error added to
+      `bot.test.ts` makes **typecheck exit 2** and **build exit 0**.
 - [ ] **T-017** Commit the scaffold as the green baseline.
       **Test:** `git log --oneline` shows the scaffold commit and `git status` is clean.
 

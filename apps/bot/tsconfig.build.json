@@ -1,0 +1,11 @@
+{
+  // Build config. Identical to tsconfig.json except that tests are excluded, so
+  // `dist` never ships test code — api/bot test files import vitest, which is a
+  // devDependency and absent from a production install.
+  //
+  // tsconfig.json still INCLUDES tests, deliberately: `npm run typecheck` must
+  // type-check them (Vitest transpiles without checking types, so the compiler
+  // is the only thing that does).
+  "extends": "./tsconfig.json",
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]
+}
