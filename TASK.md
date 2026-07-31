@@ -350,7 +350,7 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       the parent succeeds._
       **Chose `onDelete: Restrict`, not Cascade.** Both satisfy the literal test — cascade leaves
       no orphans because it deletes the children — but cascade here means **one `DELETE FROM
-    "Field"` silently destroys every course, topic and question beneath it**, and the question
+  "Field"` silently destroys every course, topic and question beneath it**, and the question
       bank is the product's asset. Fields are retired by setting `isPublished = false`, which
       stops them being served without destroying content. Deletion is only possible after the
       contents have been dealt with deliberately.
