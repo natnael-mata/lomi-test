@@ -234,9 +234,25 @@ grammY (`apps/bot`) · TypeScript throughout.
       `apps/web/.next`, `apps/api/dist`, `apps/bot/dist`, `apps/api/.pgdata`, `.env`,
       `apps/api/.env`. A clean tree proves nothing if the things it should be hiding were never
       generated, which is the failure mode this ordering rules out.
-- [ ] **T-013** Set up the test runner (Vitest or Jest) with one passing smoke test per workspace.
+- [x] **T-013** Set up the test runner (Vitest or Jest) with one passing smoke test per workspace.
       Include an assertion that the bot's `/start` handler is registered (deferred from T-007).
-      **Test:** `npm test` exits 0 and reports 3 passing tests.
+      ✅ 2026-07-31
+      **Test:** `npm test` exits 0 and reports 3 passing tests. _Verified: 1 + 1 + 1 = 3 passing
+      across api, web and bot._ Vitest 3.
+      **Also asserted, because "3 passing" alone does not prove a runner works:** a deliberately
+      failing canary test makes the workspace run exit 1 **and** the root `npm test` exit 1. A
+      suite that cannot go red is not a suite. The T-010 warning is now retired and the script
+      reports `"test" ran in: api, web, bot`.
+      **The `/start` assertion (deferred from T-007) is now real.** It builds the bot, installs an
+      API transformer that captures outbound calls instead of letting them reach Telegram, feeds
+      a genuine `/start` update through `handleUpdate`, and asserts exactly one `sendMessage`
+      carrying the product name. `createBot` gained an optional `BotConfig` parameter purely so
+      the test can supply `botInfo` and avoid a `getMe` network call — production passes nothing.
+      **Lesson worth keeping: Vitest does not type-check.** `bot.test.ts` passed while being
+      type-invalid — this grammY version's `UserFromGetMe` needs four fields I had omitted
+      (`has_topics_enabled`, `allows_users_to_create_topics`, `can_manage_bots`,
+      `supports_join_request_queries`). Only `npm run typecheck` caught it. Green tests are not
+      evidence of a compiling codebase; the baseline rule needs all four commands, not just this one.
 - [ ] **T-014** Add ESLint + Prettier and make the tree clean.
       **Test:** `npm run lint` exits 0 with zero warnings.
 - [ ] **T-015** Add `.github/workflows/ci.yml` running install, typecheck, lint, build, test.

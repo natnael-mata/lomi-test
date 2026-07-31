@@ -1,4 +1,5 @@
-import { Bot } from 'grammy';
+import { Bot, type BotConfig } from 'grammy';
+import type { Context } from 'grammy';
 
 /**
  * Wires the bot without contacting Telegram.
@@ -10,8 +11,10 @@ import { Bot } from 'grammy';
  * The bot is deliberately thin: it holds no business logic. Anything that
  * decides *what* a student sees belongs in the API.
  */
-export function createBot(token: string): Bot {
-  const bot = new Bot(token);
+export function createBot(token: string, config?: BotConfig<Context>): Bot {
+  // `config` exists so tests can supply `botInfo` and dispatch updates without
+  // grammY calling getMe over the network. Production passes nothing.
+  const bot = new Bot(token, config);
 
   bot.command('start', async (ctx) => {
     await ctx.reply(

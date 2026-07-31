@@ -15,6 +15,7 @@
     "build": "tsc -p .",
     "start": "node dist/main.js",
     "check": "tsx src/main.ts --check",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
   }
 }
