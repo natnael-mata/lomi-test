@@ -1,8 +1,8 @@
 // Lomi-Test schema.
 //
-// The real taxonomy — Field → Course → Topic → Question, with Option and Step —
-// lands in Phase 1 (T-020 onward). ToolchainCheck below exists only to prove
-// migrate/generate work end to end and is dropped by the first Phase 1 migration.
+// Everything hangs off Field → Course → Topic → Question. Per-topic results,
+// exam sampling and readiness all roll up through that chain, so the taxonomy
+// is built before anything that reads it.
 
 generator client {
   provider = "prisma-client-js"
@@ -13,9 +13,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Throwaway. Replaced in Phase 1 — do not build on it.
-model ToolchainCheck {
-  id        String   @id @default(cuid())
-  note      String
+/// An academic programme a student sits the exit exam in — Computer Science,
+/// Public Health, Accounting & Finance. Scopes every question that student sees.
+///
+/// No price column: access is sold by DURATION (6 or 12 months, see PRODUCT.md
+/// and TASK.md D2/D3), not per field, so price belongs to Plan. T-020 originally
+/// specified `priceEtb` here; that predates the decision and T-140c would have
+/// removed it again.
+model Field {
+  id   String @id @default(cuid())
+  /// Display name, e.g. "Accounting & Finance".
+  name String
+  /// URL-safe identifier used by public routes, e.g. "accounting-finance".
+  slug String @unique
+
+  /// The sitting this field is counting down to. Null until the date is known —
+  /// the countdown and study plan both key off it.
+  examDate DateTime?
+
+  /// Nothing in an unpublished field is served to students, whatever the state
+  /// of its questions.
+  isPublished Boolean @default(false)
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublished])
 }

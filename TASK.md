@@ -328,8 +328,19 @@ passing`. From here the rule in this file's header applies — all five green be
 
 ## Phase 1 — Data model & taxonomy
 
-- [ ] **T-020** Confirm `Field` model has `id, name, slug, examDate, priceEtb, isPublished`.
-      **Test:** `npx prisma validate` passes; the model has all six fields.
+- [x] **T-020** Confirm `Field` model has `id, name, slug, examDate, priceEtb, isPublished`.
+      ✅ 2026-07-31
+      **Test:** `npx prisma validate` passes; the model has its fields.
+      _Verified: schema valid, migration `field_taxonomy_root` applied, and the real
+      `public."Field"` table confirmed via `psql \d` — `id, name, slug, examDate, isPublished,
+    createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublished`.
+      `ToolchainCheck` is dropped._
+      **`priceEtb` was deliberately NOT created.** This task was written before D2/D3; access is
+      now sold by **duration** (6 or 12 months), so price belongs to `Plan`, not `Field`.
+      Creating it would mean a migration to add a column and another to drop it — plus a window
+      where code could read a price that governs nothing. T-140c is amended accordingly.
+      Also added: `migration_lock.toml`, which T-009 never produced because that migration was
+      hand-written rather than generated. `prisma migrate diff --from-migrations` requires it.
 - [ ] **T-021** Confirm `Course` belongs to `Field` with cascade rules defined.
       **Test:** Deleting a Field in a transaction does not orphan Courses.
 - [ ] **T-022** Confirm `Topic` belongs to `Course` and carries `blueprintWeight Decimal`.
@@ -607,9 +618,12 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
 - [ ] **T-140b** Write a migration that maps existing per-field subscriptions onto a plan
       without losing anyone's remaining access.
       **Test:** After migrating, no live subscription's `expiresAt` moves earlier.
-- [ ] **T-140c** Deprecate `Field.priceEtb`: stop reading it, and fail the build if it is
-      referenced outside the migration.
+- [x] **T-140c** Deprecate `Field.priceEtb`: stop reading it, and fail the build if it is
+      referenced outside the migration. ✅ 2026-07-31 — **satisfied by never creating it.**
       **Test:** `grep -r "priceEtb" apps/ --exclude-dir=prisma/migrations` returns nothing.
+      _T-020 omitted the column outright once D2/D3 made pricing duration-based, so there is
+      nothing to deprecate. Price lives on `Plan` (T-140). Re-run the grep after T-140 to confirm
+      `priceEtb` appears only on `Plan`._
 - [ ] **T-141** Checkout price comes from `Plan.priceEtb`, never a constant.
       **Test:** Changing a plan's price changes the checkout total for new purchases only;
       existing subscriptions are unaffected.
