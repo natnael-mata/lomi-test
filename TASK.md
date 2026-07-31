@@ -341,8 +341,21 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       where code could read a price that governs nothing. T-140c is amended accordingly.
       Also added: `migration_lock.toml`, which T-009 never produced because that migration was
       hand-written rather than generated. `prisma migrate diff --from-migrations` requires it.
-- [ ] **T-021** Confirm `Course` belongs to `Field` with cascade rules defined.
+- [x] **T-021** Confirm `Course` belongs to `Field` with cascade rules defined. ✅ 2026-07-31
       **Test:** Deleting a Field in a transaction does not orphan Courses.
+      _Verified against the live database: with one Field and one Course,
+      `BEGIN; DELETE FROM "Field" …; COMMIT;` → **ERROR: violates RESTRICT setting of foreign key
+      constraint "Course_fieldId_fkey"**. Afterwards: 1 field, 1 course, **0 orphans**. Also
+      verified the safe paths — unpublishing leaves courses intact, and deleting the child then
+      the parent succeeds._
+      **Chose `onDelete: Restrict`, not Cascade.** Both satisfy the literal test — cascade leaves
+      no orphans because it deletes the children — but cascade here means **one `DELETE FROM
+    "Field"` silently destroys every course, topic and question beneath it**, and the question
+      bank is the product's asset. Fields are retired by setting `isPublished = false`, which
+      stops them being served without destroying content. Deletion is only possible after the
+      contents have been dealt with deliberately.
+      `slug` is unique **per field**, not globally — two fields can each have a
+      "research-methods" course.
 - [ ] **T-022** Confirm `Topic` belongs to `Course` and carries `blueprintWeight Decimal`.
       **Test:** `npx prisma validate` passes; weight column is decimal, not float.
 - [ ] **T-023** Add a DB check constraint: `blueprintWeight` between 0 and 100.

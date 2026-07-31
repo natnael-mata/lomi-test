@@ -38,5 +38,34 @@ model Field {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  courses Course[]
+
   @@index([isPublished])
+}
+
+/// A subject within a field — "Data Structures & Algorithms", "Taxation".
+/// Groups topics so results can roll up per course as well as per topic.
+model Course {
+  id      String @id @default(cuid())
+  fieldId String
+  /// onDelete: Restrict — deleting a field that still has courses is REFUSED.
+  ///
+  /// Cascade would be catastrophic here: the question bank is the product's
+  /// asset, and one delete would silently take every course, topic and question
+  /// under it. Fields are retired by setting `isPublished = false`, which stops
+  /// them being served without destroying anything. A field is only ever
+  /// genuinely deleted after its contents have been dealt with deliberately.
+  field   Field  @relation(fields: [fieldId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// Display name, e.g. "Data Structures & Algorithms".
+  name String
+  /// URL-safe identifier, unique within its field — two fields may both have
+  /// a "research-methods" course.
+  slug String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fieldId, slug])
+  @@index([fieldId])
 }
