@@ -20,8 +20,8 @@ Situation: students arrive stressed, often in the weeks immediately before the e
 **panic week is the peak usage window**. Predominantly on low-end 5-inch Android phones over
 slow, metered networks; many reach the product through Telegram rather than a browser.
 
-Job: *know what I will actually be tested on, find out where I am weak, and fix it before
-exam day* — not merely to drill questions.
+Job: _know what I will actually be tested on, find out where I am weak, and fix it before
+exam day_ — not merely to drill questions.
 
 Internal users (roles enforced in `Role`): **WRITER** (authors questions), **REVIEWER**
 (approves against the publish gate; never their own work), **ADMIN** (operations, payments,
@@ -43,7 +43,7 @@ sittings — not a student who has answered a large number of questions.
 Three things a neighboring prep app cannot truthfully copy without doing the same work:
 
 1. **The explanation is the product.** The publish gate
-   (`apps/api/src/questions/publish-gate.ts`) makes an unexplained question *unpublishable*:
+   (`apps/api/src/questions/publish-gate.ts`) makes an unexplained question _unpublishable_:
    exactly one correct option, a `whyWrong` on every distractor, a single-sentence concept
    line, and — for CALCULATION questions — a final step that states the answer choice.
    Reviewer ≠ author. This is enforced in code, not promised in copy.
@@ -61,7 +61,7 @@ Three things a neighboring prep app cannot truthfully copy without doing the sam
 - **Content operations are a permanent workflow, not a launch task.** MoE source material
   arrives as inconsistent files and moves through: clean → parse → stage → enrich → review →
   publish (`CONTENT-PIPELINE.md`). Question lifecycle in code: `DRAFT → IN_REVIEW →
-  PUBLISHED → RETIRED`.
+PUBLISHED → RETIRED`.
 - **Payment reality:** Chapa (Telebirr / CBE Birr) for automated payment, plus a manual
   "Pay & Share" path where a student pastes a bank/Telebirr transaction reference that is
   verified via verify.et before activation. Manual payments sit in an admin queue.
@@ -133,11 +133,11 @@ product truth**; PLAN.md is a wish-list to reconcile.
 ## Brand Commitments
 
 - **Name: Lomi-Test (ሎሚ)** — confirmed. Assets on disk at
-  `apps/web/public/brand/lomi-test-{logo,icon,appicon}` stand. *Fetena* is retired.
+  `apps/web/public/brand/lomi-test-{logo,icon,appicon}` stand. _Fetena_ is retired.
 - **Voice (confirmed, `MASTER.md` §8):** plain, direct, second person, active. Numbers are
   motivation ("43 days left · 62% ready"). Effort routes to value ("worth 12% of your exam").
-  Errors state cause *and* fix. **Never shame** a wrong answer or a missed day — the
-  explanation is the reward for getting it wrong, and a missed day *adjusts the plan*, it
+  Errors state cause _and_ fix. **Never shame** a wrong answer or a missed day — the
+  explanation is the reward for getting it wrong, and a missed day _adjusts the plan_, it
   does not break a streak.
 - **Privacy commitment:** the Fayda-verified legal name never appears on a public surface.
 - **Anti-piracy commitment:** no downloadable or printable content views.
@@ -177,7 +177,7 @@ until confirmed.
 - Real usage scene: low-end 5-inch Android phones, slow/metered networks, high-stress
   moments. Body text never below 16px on mobile; touch targets ≥48dp.
 - **Colour never carries meaning alone** — correct, wrong, pending, focus, and deltas always
-  pair colour with an icon or word. Badge tiers must differ by *shape* as well as colour so
+  pair colour with an icon or word. Badge tiers must differ by _shape_ as well as colour so
   they read in greyscale.
 - Contrast floor 4.5:1; no gray-on-gray below it; no hover-only affordances.
 - `prefers-reduced-motion` renders final state instantly; nothing decorative animates during

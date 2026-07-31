@@ -10,8 +10,14 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/node": "^22.20.1",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^15.15.0",
+    "prettier": "^3.9.6",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^3.2.7"
   },
   "scripts": {
@@ -25,7 +31,9 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present && node scripts/runner-report.mjs test",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present && node scripts/runner-report.mjs lint",
-    "db:seed": "npm run db:seed --workspace api --if-present"
+    "lint": "eslint . --max-warnings=0",
+    "db:seed": "npm run db:seed --workspace api --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   }
 }

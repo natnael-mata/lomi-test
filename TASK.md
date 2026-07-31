@@ -22,13 +22,16 @@ Executable build backlog for Claude Code. Derived from `PLAN.md`, `CONTENT-PIPEL
 **Never tick a box you have not tested.** A test that "should pass" is not a pass.
 
 ### Definition of done (every task)
+
 - Code compiles: `npm run build` clean.
 - Types clean: no new `any`, no `@ts-ignore`.
 - The task's own Test command passes.
 - No unrelated files touched.
 
 ### Standing commands
+
 These do not exist yet — Phase 0 creates them. From Phase 1 onward they are assumed.
+
 ```bash
 npm run db:dev          # embedded Postgres — keep running in its own terminal
 npm run prisma:migrate  # apply schema changes
@@ -43,14 +46,16 @@ npm run lint            # eslint, zero warnings
 ```
 
 ### Stack
+
 npm workspaces · **NestJS + Prisma + PostgreSQL** (`apps/api`) ·
-**Next.js + Tailwind v4** (`apps/web` — web PWA *and* Telegram Mini App from one build) ·
+**Next.js + Tailwind v4** (`apps/web` — web PWA _and_ Telegram Mini App from one build) ·
 **grammY** (`apps/bot`) · TypeScript, strict.
 
 `docs/PLAN.md` §6 suggests Express/Fastify and Vite; it is superseded here. Where any document
 disagrees with this file on stack, this file wins.
 
 ### Legend
+
 `[ ]` todo · `[x]` done + tested · `BLOCKED` needs a human decision first
 
 ---
@@ -59,16 +64,16 @@ disagrees with this file on stack, this file wins.
 
 These are unresolved in the source documents. Tasks that need them are marked `BLOCKED`.
 
-| # | Decision | Status |
-|---|---|---|
-| D1 | Product name | ✅ **Lomi-Test** |
-| D2 | Plan structure | ✅ **Duration-based: 6-month and 12-month**, measured from purchase |
-| D3 | Price | ✅ **6 months = Br 500 · 12 months = Br 800** |
-| D4 | Exam config | ✅ **100 questions · 180 minutes.** Per-question budget: **60s concept, 180s calculation** |
-| D5 | Blueprint weights | ✅ **No official blueprint exists.** Use derived weights — see below |
-| D6 | verify.et credentials + which response field authorises activation | ⛔ still open — blocks T-150…T-154 |
-| D7 | Fayda relying-party approval status | ⛔ still open — blocks T-147, T-148 |
-| D8 | Retaker differentiation | ✅ **No difference for now.** `isRetaker` is captured but drives nothing |
+| #   | Decision                                                           | Status                                                                                     |
+| --- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| D1  | Product name                                                       | ✅ **Lomi-Test**                                                                           |
+| D2  | Plan structure                                                     | ✅ **Duration-based: 6-month and 12-month**, measured from purchase                        |
+| D3  | Price                                                              | ✅ **6 months = Br 500 · 12 months = Br 800**                                              |
+| D4  | Exam config                                                        | ✅ **100 questions · 180 minutes.** Per-question budget: **60s concept, 180s calculation** |
+| D5  | Blueprint weights                                                  | ✅ **No official blueprint exists.** Use derived weights — see below                       |
+| D6  | verify.et credentials + which response field authorises activation | ⛔ still open — blocks T-150…T-154                                                         |
+| D7  | Fayda relying-party approval status                                | ⛔ still open — blocks T-147, T-148                                                        |
+| D8  | Retaker differentiation                                            | ✅ **No difference for now.** `isRetaker` is captured but drives nothing                   |
 
 ### D4 — the implied type mix
 
@@ -85,8 +90,8 @@ the UI must never imply they are. The interim rule:
 - **Derive weights from the source papers.** Count questions per topic across the real past
   papers in hand; a topic's weight is its observed share, rounded to whole percent and
   normalised to 100.
-- **Label them honestly.** Student-facing copy reads *"share of past papers"*, never
-  *"% of exam"* — the second is a claim we cannot support.
+- **Label them honestly.** Student-facing copy reads _"share of past papers"_, never
+  _"% of exam"_ — the second is a claim we cannot support.
 - A reviewer may override a derived weight; overrides are recorded with a reason.
 - Revisit if an official blueprint ever appears.
 
@@ -143,11 +148,11 @@ grammY (`apps/bot`) · TypeScript throughout.
       fill, `.num` → `tabular-nums`, and `correct` → `rgb(6, 112, 73)` on `rgb(227, 248, 239)`._
       **Bug found and fixed in the design system:** `.option-key` did `@apply … num`, but `num`
       was declared as a bare class in `@layer base`, so Tailwind raised
-      *"Cannot apply unknown utility class `num`"* and the whole stylesheet failed to compile
+      _"Cannot apply unknown utility class `num`"_ and the whole stylesheet failed to compile
       (page 500'd). Promoted it to `@utility num { font-variant-numeric: tabular-nums }` so it
       works in both `@apply` and markup.
       Probe elements live in `app/page.tsx` and are replaced when real screens land in Phase 4.
-      Note: font *families* resolve (Gabarito stack) but the faces are not self-hosted yet —
+      Note: font _families_ resolve (Gabarito stack) but the faces are not self-hosted yet —
       that is T-091.
 - [x] **T-007** Scaffold the grammY bot in `apps/bot` with a `/start` handler. ✅ 2026-07-30
       **Test:** `npm run check -w bot` (which runs `src/main.ts --check`) exits 0 with
@@ -176,7 +181,7 @@ grammY (`apps/bot`) · TypeScript throughout.
 - [x] **T-009** Initialise Prisma in `apps/api` with a `datasource` reading `DATABASE_URL`, and
       one throwaway model to prove the toolchain. ✅ 2026-07-30
       **Test:** `prisma migrate diff` generates the migration, `npm run prisma:deploy` applies it,
-      and `npx prisma migrate status` reports *"Database schema is up to date!"* (exit 0).
+      and `npx prisma migrate status` reports _"Database schema is up to date!"_ (exit 0).
       _Verified end to end: migration `20260730143950_init_toolchain_check` applied, and the
       `ToolchainCheck` table confirmed present via `psql \d`. `prisma generate` also succeeds._
       **Deliberately not `prisma migrate dev`.** That command can **reset the database** when it
@@ -184,7 +189,7 @@ grammY (`apps/bot`) · TypeScript throughout.
       split is now explicit:
       · `npm run prisma:migrate` → `prisma migrate dev` — **humans only**, interactive, may reset.
       · `npm run prisma:deploy` → `prisma migrate deploy` — **agents and CI**, applies only,
-        never resets, never prompts.
+      never resets, never prompts.
       `apps/api/.env` exists separately from the repo-root `.env` because the Prisma CLI reads
       the schema's own project directory, not the workspace root. Both are gitignored and must
       be kept in sync.
@@ -192,7 +197,7 @@ grammY (`apps/bot`) · TypeScript throughout.
 - [x] **T-010** Add root scripts: `dev:api`, `dev:web`, `dev:bot`, `build`, `test`, `typecheck`,
       `lint`, `db:dev`, `prisma:migrate`, `prisma:generate`, `db:seed`. ✅ 2026-07-30
       **Test:** the six terminating scripts — `typecheck`, `build`, `test`, `lint`, `db:seed`,
-      `prisma:generate` — each exit 0. The four **server** scripts are asserted to *start*, not
+      `prisma:generate` — each exit 0. The four **server** scripts are asserted to _start_, not
       to exit: `dev:api` logs `api listening on http://localhost:4000`; `dev:bot` reaches
       Telegram and is rejected for the fake token (proving it booted past config); `dev:web` and
       `db:dev` were verified live in T-005 and T-008.
@@ -202,8 +207,8 @@ grammY (`apps/bot`) · TypeScript throughout.
       workspace defines a test script, so an empty suite is indistinguishable from a passing
       one — and the baseline rule ("tests green before ticking a task") would be satisfied by
       nothing at all. `scripts/runner-report.mjs` now prints
-      *"⚠ test ran in NO workspace — nothing was executed. Exit 0 here means 'not wired up
-      yet', not 'passed'."* until T-013 lands. Same guard on `lint` until T-014.
+      _"⚠ test ran in NO workspace — nothing was executed. Exit 0 here means 'not wired up
+      yet', not 'passed'."_ until T-013 lands. Same guard on `lint` until T-014.
       `db:seed` is `--if-present` and no-ops until T-031.
 - [x] **T-011** Write `.env.example` covering every variable the apps read: `DATABASE_URL`,
       `API_PORT`, `JWT_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `TELEGRAM_BOT_TOKEN`,
@@ -253,8 +258,27 @@ grammY (`apps/bot`) · TypeScript throughout.
       (`has_topics_enabled`, `allows_users_to_create_topics`, `can_manage_bots`,
       `supports_join_request_queries`). Only `npm run typecheck` caught it. Green tests are not
       evidence of a compiling codebase; the baseline rule needs all four commands, not just this one.
-- [ ] **T-014** Add ESLint + Prettier and make the tree clean.
-      **Test:** `npm run lint` exits 0 with zero warnings.
+- [x] **T-014** Add ESLint + Prettier and make the tree clean. ✅ 2026-07-31
+      **Test:** `npm run lint` exits 0 with zero warnings. _Verified: exit 0 with
+      `--max-warnings=0`; `npm run format:check` also passes._
+      **One flat config at the root**, run as a single `eslint .` pass rather than per-workspace,
+      so a rule can never be enforced in one workspace and silently skipped in another. The
+      T-010 "nothing ran" guard is therefore dropped from `lint` — `eslint .` errors on its own
+      if it matches no files. The guard stays on `test`, where it now reports which workspaces ran.
+      **Type-aware linting is deliberately off.** It needs a program per workspace and roughly
+      triples lint time, while `npm run typecheck` already runs the real compiler with stricter
+      settings than any lint rule could apply.
+      Rules that matter here: `no-explicit-any` as an **error** (it erases exactly the guarantees
+      the definition of done relies on), `no-unused-vars` as an error with `^_` escape,
+      `eqeqeq`, and `no-console` warned except in entry points and operational scripts.
+      **Found and removed a stale suppression:** `apps/api/src/main.ts` carried an
+      `// eslint-disable-next-line no-console` that I added speculatively in T-004, before any
+      linter existed. ESLint flagged it as an unused directive — the config already allows
+      `console` in `main.ts`. Deleted rather than kept, since a suppression that suppresses
+      nothing is a lie about the code.
+      Prettier reformatted the tree in one pass (100 cols, single quotes, trailing commas),
+      which touched most files including `TASK.md` and the design-system CSS. Re-verified after:
+      typecheck 0, build 0, 3 tests passing, and the 177 task checkboxes intact.
 - [ ] **T-015** Add `.github/workflows/ci.yml` running install, typecheck, lint, build, test.
       **Test:** `act` or a pushed branch shows the workflow green; locally, all five commands
       pass in sequence.
@@ -671,7 +695,7 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
 - [ ] **T-200** Axe accessibility scan on every student route, zero critical violations.
       **Test:** `npm run test:a11y` exits 0.
 - [ ] **T-201** Apply **Lomi-Test (ሎሚ)** across UI, metadata, manifest and README; remove every
-      remaining *Fetena* reference (D1).
+      remaining _Fetena_ reference (D1).
       **Test:** `grep -ri "fetena" --exclude-dir=node_modules .` returns nothing outside
       changelog history.
 - [ ] **T-202** PWA manifest, icons and offline shell using the existing

@@ -1,7 +1,7 @@
 /* The design system lives at the repo root so the theme is reviewable
    independently of the app. It is the normative source for every token —
    see DESIGN.md. Do not redefine tokens here. */
-@import "../../../design-system/tailwind-theme.css";
+@import '../../../design-system/tailwind-theme.css';
 
 /* Tailwind v4 auto-detects sources from the CSS file's location; declared
    explicitly so utilities used in this workspace are always generated. */

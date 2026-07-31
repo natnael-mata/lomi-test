@@ -25,16 +25,16 @@ one-time upload. Below is the raw assessment, the target schema, and how to clos
 
 Counts are approximate — extraction gaps and inconsistent numbering make exact counts unreliable.
 
-| File (field)              | ~Questions | Answer key     | Explanations | Topic tags | Format / condition |
-|---------------------------|-----------|----------------|--------------|------------|--------------------|
-| Accounting & Finance      | ~62–102   | **Full**       | None         | None       | Moodle "attempt review" export — clean, "The correct answer is: …". Many multi-line numeric scenarios. |
-| Computer Science          | ~95       | **Full** (`Ans.`) | None      | None       | Mostly clean; some OCR noise ("Question 2Answer"); includes code blocks. |
-| Public Health (HO)        | ~75       | **Full** (`Ans.`) | None      | None       | Clean, consistent. |
-| Exit Model 2015 (IT/multimedia) | ~96 | **None**       | None         | None       | Numbered, a–d options; inconsistent lettering; some question numbers skipped. |
-| Geography                 | ~36       | **None**       | None         | None       | Clean options, no answers. |
-| Economics (MoE 2023)      | ~90+      | **None**       | None         | None       | OCR, one question per page; **formulas corrupted** (e.g. `y, = 0.75' yp`) — math unreliable. |
-| Biology                   | partial   | ~4 only        | None         | None       | Partial extraction; most answers missing. |
-| Management                | few usable| few worked     | few (embedded "Assistant" text) | None | Heavily corrupted — repeated page headers, form-feeds, chat interjections mixed in. |
+| File (field)                    | ~Questions | Answer key        | Explanations                    | Topic tags | Format / condition                                                                                     |
+| ------------------------------- | ---------- | ----------------- | ------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------ |
+| Accounting & Finance            | ~62–102    | **Full**          | None                            | None       | Moodle "attempt review" export — clean, "The correct answer is: …". Many multi-line numeric scenarios. |
+| Computer Science                | ~95        | **Full** (`Ans.`) | None                            | None       | Mostly clean; some OCR noise ("Question 2Answer"); includes code blocks.                               |
+| Public Health (HO)              | ~75        | **Full** (`Ans.`) | None                            | None       | Clean, consistent.                                                                                     |
+| Exit Model 2015 (IT/multimedia) | ~96        | **None**          | None                            | None       | Numbered, a–d options; inconsistent lettering; some question numbers skipped.                          |
+| Geography                       | ~36        | **None**          | None                            | None       | Clean options, no answers.                                                                             |
+| Economics (MoE 2023)            | ~90+       | **None**          | None                            | None       | OCR, one question per page; **formulas corrupted** (e.g. `y, = 0.75' yp`) — math unreliable.           |
+| Biology                         | partial    | ~4 only           | None                            | None       | Partial extraction; most answers missing.                                                              |
+| Management                      | few usable | few worked        | few (embedded "Assistant" text) | None       | Heavily corrupted — repeated page headers, form-feeds, chat interjections mixed in.                    |
 
 **Cross-cutting noise to strip:** repeated running headers, form-feed (`\f`) characters,
 "Question N" concatenated onto option text, double lettering ("A. a."), OCR artifacts,
@@ -48,26 +48,27 @@ the file.
 Every question, from every file, is normalized into this one shape. This is what the
 admin bulk-importer targets (see `question_import_template.csv`).
 
-| Column         | Required | Notes |
-|----------------|----------|-------|
-| `question_id`  | yes      | Stable ID, e.g. `CS-0001`. |
-| `field`        | yes      | Computer Science, Biology, … (from source file). |
-| `course`       | yes*     | e.g. Data Structures & Algorithms. **Needs tagging.** |
-| `topic`        | optional | Finer grain, e.g. Sorting. **Needs tagging.** |
-| `question_text`| yes      | Cleaned stem. |
-| `code_block`   | optional | For CS/code questions; kept separate from prose. |
-| `option_a..d`  | yes      | Four options, letters normalized to a–d. |
-| `correct_option` | yes*   | One of a/b/c/d. **Missing in several files.** |
-| `explanation`  | yes*     | Why correct + why the wrong ones are wrong. **Missing everywhere.** |
-| `difficulty`   | optional | easy/medium/hard. |
-| `source`       | yes      | Origin file. |
-| `year`         | optional | Exam year. |
-| `status`       | yes      | Workflow flag (below). |
+| Column           | Required | Notes                                                               |
+| ---------------- | -------- | ------------------------------------------------------------------- |
+| `question_id`    | yes      | Stable ID, e.g. `CS-0001`.                                          |
+| `field`          | yes      | Computer Science, Biology, … (from source file).                    |
+| `course`         | yes*     | e.g. Data Structures & Algorithms. **Needs tagging.**               |
+| `topic`          | optional | Finer grain, e.g. Sorting. **Needs tagging.**                       |
+| `question_text`  | yes      | Cleaned stem.                                                       |
+| `code_block`     | optional | For CS/code questions; kept separate from prose.                    |
+| `option_a..d`    | yes      | Four options, letters normalized to a–d.                            |
+| `correct_option` | yes*     | One of a/b/c/d. **Missing in several files.**                       |
+| `explanation`    | yes*     | Why correct + why the wrong ones are wrong. **Missing everywhere.** |
+| `difficulty`     | optional | easy/medium/hard.                                                   |
+| `source`         | yes      | Origin file.                                                        |
+| `year`           | optional | Exam year.                                                          |
+| `status`         | yes      | Workflow flag (below).                                              |
 
 `*` = required for a question to go **live**, but the importer accepts it blank so
 partial questions can be staged and finished in the admin queue.
 
 ### `status` values (the content workflow)
+
 - `raw` — imported, not yet cleaned
 - `needs_answer` — no verified correct option
 - `needs_explanation` — no explanation authored
@@ -82,22 +83,28 @@ appear in training/exam. This lets you **import everything now** and finish it o
 ## 3. Closing the three gaps
 
 ### Gap A — Answers (missing for Geography, Economics, Exit-2015, most of Biology)
+
 An exam-prep app that tells students the wrong answer is worse than useless. So:
+
 - Where the file has answers → parse and keep.
 - Where missing → a **subject-matter reviewer supplies the answer**; optionally AI drafts
   a proposed answer, but a human must confirm before `ready`. Never auto-publish a guessed
   answer.
 
 ### Gap B — Explanations (missing everywhere)
+
 This is the largest effort. Recommended: **AI-drafted + expert-reviewed**.
+
 - AI drafts an explanation per question (correct rationale + why each distractor is wrong).
 - Reviewer edits/approves. Only then → `ready`.
-- **Fallback for a faster V1:** training mode can launch showing the correct answer *without*
+- **Fallback for a faster V1:** training mode can launch showing the correct answer _without_
   explanation, with explanations rolling out per field afterward. (Trades off the headline
   "why" feature for speed — your call.)
 
 ### Gap C — Topic tags (missing everywhere)
+
 Needed for the results-by-topic feature.
+
 - Define a **course/topic taxonomy per field** first (e.g. CS → DSA, DB, Web, OS, Networks,
   SE, PM…). MoE's exit-exam blueprint per program is the natural source.
 - AI proposes `course`/`topic` per question against that taxonomy; reviewer confirms.
@@ -120,6 +127,7 @@ Build the **admin review queue** as part of Phase 1 — it's the tool that turns
 input into a trustworthy bank, and you'll use it continuously as more exams come in.
 
 ### Practical starting point
+
 1. Start with the **three fields that already have answer keys** — Computer Science,
    Public Health, Accounting & Finance — so the first live content only needs
    explanations + topic tags, not answer authoring.

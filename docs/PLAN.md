@@ -25,6 +25,7 @@ where they are weak, per department/stream.
 ## 3. Release Scope
 
 ### V1 — MVP (launch)
+
 1. Easy registration + login
 2. Free trial (10 sample questions on signup)
 3. Training mode (self-test with feedback)
@@ -34,6 +35,7 @@ where they are weak, per department/stream.
 7. Admin panel (users, content upload, payment issues)
 
 ### V2 — Engagement
+
 8. Community
 9. Badging / achievements
 10. Streaks & challenges (daily / weekly / monthly leaderboards)
@@ -43,7 +45,9 @@ where they are weak, per department/stream.
 ## 4. Feature Specs
 
 ### 4.1 Registration & Auth
+
 Two sign-in paths into **one shared account/user record**:
+
 - **Web:** name, phone/email, password → verify → in.
 - **Telegram Mini App:** near-zero friction — the app receives Telegram `initData`,
   the backend **validates it (HMAC against the bot token)**, and the student is
@@ -57,6 +61,7 @@ Two sign-in paths into **one shared account/user record**:
   for "easy registration"? Options: optional Fayda for verified badge, or none at V1.
 
 ### 4.2 Question taxonomy (the backbone)
+
 Everything hangs off this hierarchy, because per-topic results depend on it:
 
 ```
@@ -69,10 +74,11 @@ Field / Department  (Computer Science, ...)
                   └─ explanation (why correct / why the others are wrong)
 ```
 
-Each question is tagged so the platform can (a) show "this question is from *Data
-Structures & Algorithms*" and (b) roll results up into a per-course/per-topic score.
+Each question is tagged so the platform can (a) show "this question is from _Data
+Structures & Algorithms_" and (b) roll results up into a per-course/per-topic score.
 
 ### 4.3 Training mode (self-test)
+
 - Student answers a question.
 - **Immediate feedback:** correct / incorrect.
 - **Explanation** shown for why it's correct (and why the chosen wrong option is wrong).
@@ -83,6 +89,7 @@ Structures & Algorithms*" and (b) roll results up into a per-course/per-topic sc
   - Weakest topic: Sorting → suggests where to focus.
 
 ### 4.4 Exam mode (timed mock)
+
 - Mirrors the real exit exam: fixed question count + **countdown timer**.
 - **One question at a time**, with **Next** and **Back** navigation.
 - **No feedback during the exam** (like the real one).
@@ -91,6 +98,7 @@ Structures & Algorithms*" and (b) roll results up into a per-course/per-topic sc
 - **Decision needed:** exact question count and time limit per field — confirm from MoE.
 
 ### 4.5 Payment & subscription
+
 Two payment paths, both ending in an active subscription:
 
 1. **Chapa** — automated gateway; on success, subscription activates automatically.
@@ -103,6 +111,7 @@ Two payment paths, both ending in an active subscription:
 - Subscription state drives access (active / expired / trial).
 
 ### 4.6 Admin panel
+
 - **Users:** view, search, activate/deactivate, reset, manage subscription state.
 - **Content:** upload questions (bulk import — CSV/Excel with columns for field,
   course, topic, question, options, answer, explanation), edit, retire.
@@ -110,6 +119,7 @@ Two payment paths, both ending in an active subscription:
 - **Dashboard:** signups, active subs, revenue, most-missed topics.
 
 ### 4.7 Community & gamification (V2)
+
 - **Community:** discussion/Q&A space per field or topic.
 - **Badges:** milestones (first exam, 100 questions, topic mastery, streaks).
 - **Streaks & challenges:** track questions solved daily; leaderboards for
@@ -144,6 +154,7 @@ app are built and shipped separately but share the same API and data.
   package so both frontends stay in sync.
 
 ### Suggested monorepo layout
+
 ```
 /server            Node + Express + PostgreSQL (the single API)
 /apps/web          React web app
@@ -153,17 +164,18 @@ app are built and shipped separately but share the same API and data.
 ```
 
 ### Web vs Telegram — what's actually different
+
 Same features, two surfaces. Build the differences in, don't fork the whole app:
 
-| Concern        | Web app                          | Telegram Mini App                              |
-|----------------|----------------------------------|------------------------------------------------|
-| Auth           | email/phone + password           | validate Telegram `initData`, ID = Telegram ID |
-| Registration   | full form                        | near-instant (identity comes from Telegram)    |
-| UI chrome      | own header/nav                   | Telegram theme params + MainButton/BackButton  |
-| Layout         | full responsive design           | constrained webview viewport, keep it compact  |
-| Notifications  | email / web push                 | **bot messages** — ideal for streaks & challenges |
-| Payment        | Chapa redirect + bank/verify.et  | Chapa in webview + bank/verify.et (Telegram Stars optional) |
-| Distribution   | public URL                       | bot + Mini App launch button                   |
+| Concern       | Web app                         | Telegram Mini App                                           |
+| ------------- | ------------------------------- | ----------------------------------------------------------- |
+| Auth          | email/phone + password          | validate Telegram `initData`, ID = Telegram ID              |
+| Registration  | full form                       | near-instant (identity comes from Telegram)                 |
+| UI chrome     | own header/nav                  | Telegram theme params + MainButton/BackButton               |
+| Layout        | full responsive design          | constrained webview viewport, keep it compact               |
+| Notifications | email / web push                | **bot messages** — ideal for streaks & challenges           |
+| Payment       | Chapa redirect + bank/verify.et | Chapa in webview + bank/verify.et (Telegram Stars optional) |
+| Distribution  | public URL                      | bot + Mini App launch button                                |
 
 The exam engine, question API, scoring, subscriptions, and admin are **identical
 across both** — only the shell (auth, chrome, navigation, notifications) differs.
@@ -175,6 +187,7 @@ streak nudges, leaderboard pings).
 ## 7. Build Roadmap
 
 **Phase 1 — Foundations**
+
 - Monorepo (server / web / telegram / shared), DB schema, taxonomy
   (Field/Course/Topic/Question), admin question upload.
 - Dual auth: web password login + Telegram `initData` validation into one user record.
@@ -182,17 +195,21 @@ streak nudges, leaderboard pings).
   so every later feature lands on both surfaces at once.
 
 **Phase 2 — Core exam engine**
+
 - Training mode + feedback + explanations + per-topic scoring.
 - Exam mode: timer, one-at-a-time nav, submit + review.
 
 **Phase 3 — Access & payments**
+
 - Free-trial gating (10 questions), Chapa integration, manual bank + verify.et flow,
   subscription lifecycle.
 
 **Phase 4 — Admin & polish**
+
 - Full admin panel (users, payments, dashboard), content management, QA.
 
 **Phase 5 — V2 engagement**
+
 - Community, badges, streaks, leaderboards, challenges.
 
 ---

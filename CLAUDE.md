@@ -8,7 +8,7 @@ This repository contains governing documents only. The monorepo has not been sca
 
 **Start at `TASK.md`.** It is an ordered backlog of 177 micro-tasks, each with its own test.
 Phase 0 (T-001…T-017) creates the monorepo, the apps, the toolchain and the scripts. Every
-command listed below is *created by Phase 0* and does not work before then.
+command listed below is _created by Phase 0_ and does not work before then.
 
 Working protocol, from `TASK.md`:
 
@@ -72,6 +72,7 @@ Lifecycle: `DRAFT → IN_REVIEW → PUBLISHED → RETIRED`. Only `PUBLISHED` is 
 These are not style preferences. Most have a test in `TASK.md` that must never be deleted.
 
 **The question bank is the asset.**
+
 - `GET /questions/next` must never contain `isCorrect`, `whyWrong`, `conceptLine`,
   `explanation` or `steps`. Only `POST /attempts` returns answer content (T-106).
 - No bulk question endpoint may exist (T-107).
@@ -87,7 +88,7 @@ reviewer ≠ author.
 mean of the rows shown — with an explicit "N other topics" row when rows are elided. A figure
 that is derived rather than summed must not be dressed as a total.
 
-**There is no official exam blueprint.** Weights are *derived* from each topic's observed share
+**There is no official exam blueprint.** Weights are _derived_ from each topic's observed share
 of past papers. Student-facing copy says **"share of past papers"**, never "% of exam" — the
 second is a claim the product cannot support (T-097a lints for it).
 
@@ -141,10 +142,10 @@ Non-obvious constraints:
 
 ## Voice
 
-Plain, direct, second person, active. Errors state cause *and* fix. Numbers are motivation
+Plain, direct, second person, active. Errors state cause _and_ fix. Numbers are motivation
 ("43 days left · 62% ready"); effort routes to value. **Never shame** a wrong answer or a
-missed day — the explanation is the reward for getting it wrong, and a missed day *adjusts the
-plan*, it does not break a streak.
+missed day — the explanation is the reward for getting it wrong, and a missed day _adjusts the
+plan_, it does not break a streak.
 
 ## Do not fabricate
 

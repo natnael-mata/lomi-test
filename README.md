@@ -13,15 +13,15 @@ exists to hold that line.
 
 ## Read these before writing code
 
-| File | What it governs |
-|---|---|
-| `PRODUCT.md` | Product truth — users, capabilities, constraints, confirmed decisions. |
-| `DESIGN.md` | The visual system — tokens, type, components, do's and don'ts. |
-| `design-system/tailwind-theme.css` | Normative Tailwind v4 `@theme`. Paste into `globals.css`. |
-| `TASK.md` | **The build backlog.** 173 micro-tasks, each with its own test. Start here. |
-| `docs/PLAN.md` | Original product brief. Superseded by `PRODUCT.md` where they disagree. |
-| `docs/CONTENT-PIPELINE.md` | State of the source question files and how to get them live. |
-| `docs/question_import_template.csv` | Canonical 16-column import schema, with worked examples. |
+| File                                | What it governs                                                             |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| `PRODUCT.md`                        | Product truth — users, capabilities, constraints, confirmed decisions.      |
+| `DESIGN.md`                         | The visual system — tokens, type, components, do's and don'ts.              |
+| `design-system/tailwind-theme.css`  | Normative Tailwind v4 `@theme`. Paste into `globals.css`.                   |
+| `TASK.md`                           | **The build backlog.** 173 micro-tasks, each with its own test. Start here. |
+| `docs/PLAN.md`                      | Original product brief. Superseded by `PRODUCT.md` where they disagree.     |
+| `docs/CONTENT-PIPELINE.md`          | State of the source question files and how to get them live.                |
+| `docs/question_import_template.csv` | Canonical 16-column import schema, with worked examples.                    |
 
 ## How to build this
 
@@ -44,7 +44,7 @@ Do not batch tasks, and never tick a box you have not actually tested.
   which implies a 60/40 concept-to-calculation mix.
 - **Identity:** signup is light (phone + OTP, or Telegram). Fayda binds once, at purchase.
 - **Retakers:** captured via `isRetaker`, but drives no behaviour yet.
-- **No official blueprint exists.** Topic weights are *derived* from the observed share of
+- **No official blueprint exists.** Topic weights are _derived_ from the observed share of
   questions in past papers. Student-facing copy says **"share of past papers"**, never
   "% of exam".
 
