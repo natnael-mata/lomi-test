@@ -205,12 +205,26 @@ grammY (`apps/bot`) · TypeScript throughout.
       *"⚠ test ran in NO workspace — nothing was executed. Exit 0 here means 'not wired up
       yet', not 'passed'."* until T-013 lands. Same guard on `lint` until T-014.
       `db:seed` is `--if-present` and no-ops until T-031.
-- [ ] **T-011** Write `.env.example` covering every variable the apps read: `DATABASE_URL`,
+- [x] **T-011** Write `.env.example` covering every variable the apps read: `DATABASE_URL`,
       `API_PORT`, `JWT_SECRET`, `JWT_ACCESS_TTL`, `JWT_REFRESH_TTL`, `TELEGRAM_BOT_TOKEN`,
       `SMS_API_KEY`, `SMS_SENDER_ID`, `CHAPA_SECRET_KEY`, `CHAPA_WEBHOOK_SECRET`,
       `API_BASE_URL`, `BOT_INTERNAL_TOKEN`, `NEXT_PUBLIC_API_BASE_URL`.
       **Test:** `grep -rhoE "process\.env\.[A-Z_]+" apps/*/src | sort -u` — every name found
-      appears in `.env.example`.
+      appears in `.env.example`. ✅ 2026-07-31
+      _Verified: the grep currently finds only `API_PORT` (little code exists yet), so the check
+      was widened to also cover the `PG*` vars read by `apps/api/scripts/db-dev.mjs` — outside
+      `src`, so the original grep misses them — plus all thirteen names this task lists. All
+      present. Also asserted: `.env` and `apps/api/.env` are ignored, both `.env.example` files
+      are tracked, and every secret field is empty._
+      **Two env files, and they must agree.** `apps/api/.env.example` exists because the Prisma
+      CLI reads the schema's own project directory and does not read the workspace root.
+      `DATABASE_URL` is duplicated there deliberately; if the two drift, migrations run against
+      a different database than the app. Both files say so at the top.
+      Documented in place rather than left as bare names: `SMS_API_KEY` empty in dev returns the
+      OTP in the API response (and must be set in production, or codes leak to the caller);
+      `TELEGRAM_BOT_TOKEN` doubles as the HMAC key for Mini App `initData`, so rotating it signs
+      every Telegram user out; `NEXT_PUBLIC_*` is inlined into the browser bundle and can never
+      hold a secret.
 - [ ] **T-012** Confirm `.gitignore` covers `node_modules`, `.next`, `dist`, `.env`, `.pgdata`.
       **Test:** `git status --short` is clean after a full install, dev-db start and build.
 - [ ] **T-013** Set up the test runner (Vitest or Jest) with one passing smoke test per workspace.
