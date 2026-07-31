@@ -308,8 +308,17 @@ grammY (`apps/bot`) · TypeScript throughout.
       keeps including them so `npm run typecheck` still covers tests.
       Both halves were then proven rather than assumed: a deliberate type error added to
       `bot.test.ts` makes **typecheck exit 2** and **build exit 0**.
-- [ ] **T-017** Commit the scaffold as the green baseline.
+- [x] **T-017** Commit the scaffold as the green baseline. ✅ 2026-07-31
       **Test:** `git log --oneline` shows the scaffold commit and `git status` is clean.
+      _Verified: 17 task commits (T-001…T-017) plus the port-change commit, working tree clean._
+      The scaffold was committed **per task rather than as one lump**, so each piece of the
+      skeleton carries the reasoning and the verification that produced it.
+      **Baseline at close of Phase 0:** `typecheck 0 · build 0 · lint 0 · format 0 · 3 tests
+    passing`. From here the rule in this file's header applies — all five green before any
+      task is ticked.
+      `CLAUDE.md` updated: it no longer claims the repo is documents-only, and records the two
+      Phase 0 conventions that are easiest to break later (the `tsconfig.build.json` split, and
+      that a green `npm test` needs the runner report to mean anything).
 
 > **Baseline rule.** From here on, `npm test`, `npm run lint`, `npm run typecheck` and
 > `npm run build` must all be green before any task is ticked. A red baseline makes every
@@ -751,3 +760,24 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
 ## Build log
 
 _Append a line per completed phase: date, what landed, anything deferred and why._
+
+**Phase 0 — complete 2026-07-31 (T-001…T-017).** npm workspaces; NestJS API on :4000 with
+`/health`; Next 15 + React 19 on **:3100** (3000–3002 belong to chaw-driver); Tailwind v4 wired
+to `design-system/tailwind-theme.css`; grammY bot with `/start`; embedded Postgres on **5433**
+(5432 is the system Postgres); Prisma with one applied migration; Vitest (3 tests); ESLint 9 flat
+config + Prettier; CI workflow.
+
+_Six task tests were wrong as written and were corrected, not weakened —_ T-001 (a
+dependency-free root creates no `node_modules`), T-003 (`tsc` raises TS18003 on an empty
+project), T-010 (four of eleven scripts are servers and never exit), T-015 (see below), plus
+guards added where a test could pass vacuously.
+
+_Real defects found by the tests:_ the design system's `@apply … num` broke the **entire**
+stylesheet (T-006); `npm test` passed silently with zero tests (T-010); `bot.test.ts` was
+type-invalid but Vitest does not type-check (T-013); test files were compiled into `dist`
+importing a devDependency (T-016).
+
+_Carried forward:_ **CI has never actually run** — no git remote, `act` not installed (T-015).
+CI needs a `services: postgres:` container from T-020. `prisma migrate dev` is banned for agents;
+use `prisma:deploy`. `embedded-postgres` is a beta bundling **Postgres 18.4** while production
+will run a managed major — pin it deliberately.

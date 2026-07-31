@@ -2,13 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state: no application code exists
+## Current state: Phase 0 complete, no product behaviour yet
 
-This repository contains governing documents only. The monorepo has not been scaffolded yet.
+The monorepo is scaffolded and the baseline is green. What exists is skeleton only: a `/health`
+route, a placeholder page, a `/start` handler, and one throwaway Prisma model
+(`ToolchainCheck`, dropped by the first Phase 1 migration). **No product feature is
+implemented.**
 
-**Start at `TASK.md`.** It is an ordered backlog of 177 micro-tasks, each with its own test.
-Phase 0 (T-001…T-017) creates the monorepo, the apps, the toolchain and the scripts. Every
-command listed below is _created by Phase 0_ and does not work before then.
+**Start at `TASK.md`.** It is an ordered backlog of 177 micro-tasks, each with its own test;
+T-001…T-017 are done. Phase 1 (T-020 onward) builds the real Field → Course → Topic → Question
+taxonomy.
+
+Two conventions established in Phase 0 that are easy to break later:
+
+- **`tsconfig.json` includes tests; `tsconfig.build.json` excludes them.** Build with the
+  latter — otherwise test files land in `dist` and import vitest, which is absent from a
+  production install. Typecheck uses the former on purpose: **Vitest does not type-check**, so
+  the compiler is the only thing that checks test code.
+- **A green `npm test` is not automatically meaningful.** `--if-present` exits 0 when nothing
+  runs, so `scripts/runner-report.mjs` prints which workspaces actually ran.
 
 Working protocol, from `TASK.md`:
 
