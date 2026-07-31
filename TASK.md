@@ -356,9 +356,26 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       contents have been dealt with deliberately.
       `slug` is unique **per field**, not globally — two fields can each have a
       "research-methods" course.
-- [ ] **T-022** Confirm `Topic` belongs to `Course` and carries `blueprintWeight Decimal`.
+- [x] **T-022** Confirm `Topic` belongs to `Course` and carries `blueprintWeight Decimal`.
+      ✅ 2026-07-31
       **Test:** `npx prisma validate` passes; weight column is decimal, not float.
-- [ ] **T-023** Add a DB check constraint: `blueprintWeight` between 0 and 100.
+      _Verified: schema valid, migration applied, and `information_schema` reports
+      `weightPct -> numeric(5,2)`. Decimal confirmed at the database, not just in the Prisma
+      schema. Foreign key is `ON DELETE RESTRICT`, matching T-021._
+      **Renamed `blueprintWeight` → `weightPct`.** D5 established there is **no official MoE
+      blueprint**. A column named "blueprint" invites the UI to print "% of exam", which is
+      precisely the claim the product cannot support — student-facing copy says "share of past
+      papers". Cheap to rename now, expensive once a dozen files read it. T-023's reference
+      updated to match.
+      **Why decimal, honestly stated:** the guarantee is that `numeric` is exact, so a column of
+      weights sums to exactly 100 and an equality check behaves. I tried twice to demonstrate
+      float failing on realistic weight spreads and **both summed to exactly 100** — the error
+      cancelled. The canonical case does show it: `0.1::float8 * 3 = 0.30000000000000004`, which
+      is `= 0.3 → false`, while `numeric` gives `0.3 → true`. So the justification rests on the
+      guarantee, not on my demonstrations, which were unconvincing.
+      `weightPct` is nullable until T-134 derives it; T-046 refuses to publish a question whose
+      topic has no weight.
+- [ ] **T-023** Add a DB check constraint: `weightPct` between 0 and 100.
       **Test:** Inserting weight `150` raises a constraint error.
 - [ ] **T-024** Add a service method `assertFieldWeightsSumTo100(fieldId)`.
       **Test:** Unit test: weights `[40,60]` pass; `[40,50]` throw with the shortfall named.

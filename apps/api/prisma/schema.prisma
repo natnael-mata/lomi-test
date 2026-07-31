@@ -66,6 +66,43 @@ model Course {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  topics Topic[]
+
   @@unique([fieldId, slug])
   @@index([fieldId])
+}
+
+/// The finest unit of the taxonomy — "Sorting", "VAT", "Process Costing".
+/// Results roll up per topic, and exam sampling draws against topic weight.
+model Topic {
+  id       String @id @default(cuid())
+  courseId String
+  /// Restrict, for the same reason as Course → Field: deleting a course must
+  /// not silently take its topics and their questions with it.
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  name String
+  slug String
+
+  /// This topic's share of the exam, 0–100, as a percentage.
+  ///
+  /// DECIMAL, never Float. Weights must sum to exactly 100 (T-024) and binary
+  /// floating point cannot represent 0.1 exactly, so a column of Floats will
+  /// sum to 99.99999999999999 and fail a check that should pass.
+  ///
+  /// Null until derived — T-134 computes it from each topic's observed share of
+  /// the real past papers, and T-046 refuses to publish a question whose topic
+  /// has no weight.
+  ///
+  /// NOT named `blueprintWeight`, which is what T-022 originally asked for:
+  /// there is no official MoE blueprint (decision D5), and a column called
+  /// "blueprint" invites the UI to claim "% of exam" — the exact claim the
+  /// product cannot support. Student-facing copy says "share of past papers".
+  weightPct Decimal? @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, slug])
+  @@index([courseId])
 }
