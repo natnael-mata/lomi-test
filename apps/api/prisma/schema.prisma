@@ -167,6 +167,43 @@ model Question {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  options Option[]
+
   @@index([topicId])
   @@index([status])
+}
+
+/// A–D. An enum rather than free text so the database itself refuses an
+/// option "E" or a lowercase "b" — the import pipeline normalises lettering
+/// from messy source files, and this is the backstop when it gets it wrong.
+enum OptionLabel {
+  A
+  B
+  C
+  D
+}
+
+/// One of the four answers. Deleted with its question (Cascade) because an
+/// option has no meaning apart from it — unlike a question, which is retired
+/// rather than deleted precisely so attempts keep referencing it.
+model Option {
+  id         String      @id @default(cuid())
+  questionId String
+  question   Question    @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  label      OptionLabel
+
+  text      String
+  isCorrect Boolean @default(false)
+
+  /// Why this option is wrong, and why it tempted the student. Required on every
+  /// distractor before publish (T-041); null on the correct option, which is
+  /// explained by `conceptLine` plus the explanation or steps.
+  whyWrong String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One A, one B, one C, one D per question — no duplicate letters.
+  @@unique([questionId, label])
+  @@index([questionId])
 }

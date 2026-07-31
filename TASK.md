@@ -428,8 +428,25 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       land with `User`.
       `RETIRED` exists so a bad question is withdrawn rather than deleted: prior attempts
       reference it, and deleting would corrupt every past score that included it.
-- [ ] **T-026** Confirm `Option` has `label A–D`, `text`, `isCorrect`, `whyWrong`.
-      **Test:** Unique constraint on `(questionId, label)` exists.
+- [x] **T-026** Confirm `Option` has `label A–D`, `text`, `isCorrect`, `whyWrong`.
+      **Test:** Unique constraint on `(questionId, label)` exists. ✅ 2026-08-01
+      _Verified — `Option_questionId_label_key` exists, and rather than just reading the index
+      definition it was exercised: a second option `A` on the same question is **rejected**
+      (duplicate key), while `B` on that question is accepted._
+      **`label` is an enum, not free text.** The import pipeline normalises lettering from messy
+      source files — CONTENT-PIPELINE.md lists double lettering like `"A. a."` among the noise —
+      so the database is the backstop when that normalisation gets it wrong. Confirmed: label
+      `'E'` is rejected with "invalid input value for enum".
+      **`onDelete: Cascade`, unlike every other relation so far.** An option has no meaning apart
+      from its question, so it should not outlive it. That is the opposite of Question itself,
+      which is `RETIRED` rather than deleted precisely because attempts reference it. Verified:
+      deleting the question took both its options with it, 2 → 0.
+      `whyWrong` is nullable — required on every distractor at publish (T-041), null on the
+      correct option, which is explained by the concept line plus the explanation or steps.
+      _Not added, deliberately:_ a partial unique index enforcing **at most one correct option**
+      per question. T-040 makes that a publish-gate rule, and a raw DB error would preempt the
+      gate's much better message ("Exactly one correct option (have 2)"). Worth revisiting if a
+      path ever writes options without going through the gate.
 - [ ] **T-027** Add `Step` model for CALCULATION questions: `order`, `text`, `formula?`.
       **Test:** Migration applies; steps round-trip ordered by `order`.
 - [ ] **T-028** Add `stableId` to `Question` (e.g. `AF-0003`), unique, matching the CSV column.
