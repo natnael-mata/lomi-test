@@ -375,8 +375,30 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       guarantee, not on my demonstrations, which were unconvincing.
       `weightPct` is nullable until T-134 derives it; T-046 refuses to publish a question whose
       topic has no weight.
-- [ ] **T-023** Add a DB check constraint: `weightPct` between 0 and 100.
-      **Test:** Inserting weight `150` raises a constraint error.
+- [x] **T-023** Add a DB check constraint: `weightPct` between 0 and 100. ✅ 2026-07-31
+      **Test:** Inserting weight `150` raises a constraint error. _Verified, along with the
+      boundaries either side:_
+
+      | value    | result                        |
+          | -------- | ----------------------------- |
+          | `150`    | REJECTED — check constraint   |
+          | `-1`     | REJECTED — check constraint   |
+          | `100.01` | REJECTED — check constraint   |
+          | `0`      | accepted                      |
+          | `100`    | accepted                      |
+          | `50`     | accepted                      |
+          | `NULL`   | accepted (unweighted topic)   |
+
+          Testing only `150` would have passed against a constraint as sloppy as `< 200`; the
+          boundaries are what prove it is actually `0..100`.
+          **Hand-written SQL — Prisma's schema language has no CHECK constraint**, so this cannot
+          live in `schema.prisma`. The obvious hazard is a later generated migration silently
+          dropping something Prisma does not know about, so that was checked rather than assumed:
+          `migrate diff` afterwards returns **"This is an empty migration"**, `migrate status` reports
+          up to date, and the constraint is still present in `pg_constraint`. The migration file
+          carries a comment telling future readers to watch for a `DROP` of it.
+          `NULL` is permitted deliberately — a topic is unweighted until T-134 derives it.
+
 - [ ] **T-024** Add a service method `assertFieldWeightsSumTo100(fieldId)`.
       **Test:** Unit test: weights `[40,60]` pass; `[40,50]` throw with the shortfall named.
 - [ ] **T-025** Confirm `Question` has `qType (CONCEPT|CALCULATION)`, `stem`, `conceptLine`,
