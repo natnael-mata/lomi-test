@@ -225,8 +225,15 @@ grammY (`apps/bot`) · TypeScript throughout.
       `TELEGRAM_BOT_TOKEN` doubles as the HMAC key for Mini App `initData`, so rotating it signs
       every Telegram user out; `NEXT_PUBLIC_*` is inlined into the browser bundle and can never
       hold a secret.
-- [ ] **T-012** Confirm `.gitignore` covers `node_modules`, `.next`, `dist`, `.env`, `.pgdata`.
+- [x] **T-012** Confirm `.gitignore` covers `node_modules`, `.next`, `dist`, `.env`, `.pgdata`.
+      ✅ 2026-07-31
       **Test:** `git status --short` is clean after a full install, dev-db start and build.
+      _Verified: `npm install` + `npm run build` (all three workspaces) with Postgres running,
+      then `git status --short` → **empty**._
+      Each artifact was confirmed to **exist first**, then confirmed ignored — `node_modules`,
+      `apps/web/.next`, `apps/api/dist`, `apps/bot/dist`, `apps/api/.pgdata`, `.env`,
+      `apps/api/.env`. A clean tree proves nothing if the things it should be hiding were never
+      generated, which is the failure mode this ordering rules out.
 - [ ] **T-013** Set up the test runner (Vitest or Jest) with one passing smoke test per workspace.
       Include an assertion that the bot's `/start` handler is registered (deferred from T-007).
       **Test:** `npm test` exits 0 and reports 3 passing tests.
