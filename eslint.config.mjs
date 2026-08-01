@@ -48,7 +48,12 @@ export default tseslint.config(
 
   // Entry points and operational scripts are meant to print.
   {
-    files: ['apps/*/src/main.ts', 'apps/api/scripts/**/*.{ts,mjs,js}', 'scripts/**/*.{ts,mjs,js}'],
+    files: [
+      'apps/*/src/main.ts',
+      'apps/api/scripts/**/*.{ts,mjs,js}',
+      'apps/api/prisma/seed.ts',
+      'scripts/**/*.{ts,mjs,js}',
+    ],
     rules: { 'no-console': 'off' },
   },
 
