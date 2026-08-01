@@ -594,8 +594,26 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       two plain sentences through — a false negative, the worse direction. Every entry on that
       list costs real detection, so the list is now only `e.g. i.e. etc. vs. cf. approx.`, each
       with a test, and the regression is pinned.
-- [ ] **T-043** Confirm the gate requires a CALCULATION's final step to state the answer choice.
-      **Test:** Unit: last step `"= 8,500"` → error; `"= 8,500 → answer C"` → pass.
+- [x] **T-043** Confirm the gate requires a CALCULATION's final step to state the answer choice.
+      **Test:** Unit: last step `"= 8,500"` → error; `"= 8,500 → answer C"` → pass. ✅ 2026-08-01
+      _Verified, 10 tests, using AF-0004's real working (977,500 inclusive → 850,000, answer A)._
+      **The case worth having: a final step that names the WRONG letter is blocked.** Working
+      that confidently says "→ answer C" when the answer is A is worse than working that names
+      none — the student is told the arithmetic landed somewhere it did not. A regex that merely
+      looked for `/answer\s+[A-D]/` would have passed it; this checks against the _correct_
+      option's label.
+      **Sorts by `stepNo` before taking the last step**, since a drag-reordered step builder sends
+      rows in whatever order they were edited. Tested both ways round — array order alone would
+      pass a question whose answer line sits first.
+      Also accepts the answer being stated in the `formula` line rather than `text`, and is
+      case-insensitive.
+      **No final-step blocker fires when there is no verified answer** — with 0 or 2 correct
+      options the letter is unknowable, and a second message about a letter nobody has chosen is
+      noise on top of the real problem.
+      Adds the CONCEPT counterpart: an explanation is required, and steps are not. A CONCEPT
+      question's explanation is the entire reward for getting it wrong.
+      _Against real content, the gate now reports:_ 5 blockers on each Accounting question,
+      4 on CS-0001, **7 on GEO-0001** — still 0 of 7 publishable.
 - [ ] **T-044** Confirm the gate rejects reviewer == author.
       **Test:** Unit: same user id in both roles → error.
 - [ ] **T-045** Confirm `timeLimitSec` is bounded 15–600.

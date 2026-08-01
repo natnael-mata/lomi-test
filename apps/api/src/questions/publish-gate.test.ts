@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { gateBlockers, isPublishable, type DraftOption, type DraftQuestion } from './publish-gate';
+import {
+  gateBlockers,
+  isPublishable,
+  type DraftOption,
+  type DraftQuestion,
+  type DraftStep,
+} from './publish-gate';
 
 const opt = (label: DraftOption['label'], isCorrect: boolean): DraftOption => ({
   label,
@@ -194,5 +200,115 @@ describe('publish gate — single-sentence concept line (T-042)', () => {
     expect(withConcept('The answer is no. It is not deductible.')).toEqual([
       'Concept line must be a single sentence — split it or shorten it.',
     ]);
+  });
+});
+
+describe('publish gate — solution complete for its type (T-043)', () => {
+  /** AF-0004's real working: 977,500 inclusive → 850,000 net, answer A. */
+  const calc = (steps: readonly DraftStep[], correctLabel: DraftOption['label'] = 'A') =>
+    gateBlockers(
+      question({
+        qType: 'CALCULATION',
+        explanation: null,
+        steps,
+        options: [
+          { label: 'A', text: '850,000', isCorrect: correctLabel === 'A', whyWrong: 'w' },
+          { label: 'B', text: '977,500', isCorrect: correctLabel === 'B', whyWrong: 'w' },
+          { label: 'C', text: '830,875', isCorrect: correctLabel === 'C', whyWrong: 'w' },
+          { label: 'D', text: '127,500', isCorrect: correctLabel === 'D', whyWrong: 'w' },
+        ],
+      }),
+    );
+
+  it('blocks when the final step does not state the answer choice', () => {
+    expect(
+      calc([
+        { stepNo: 1, text: 'Divide the inclusive amount by 1.15', formula: '977,500 / 1.15' },
+        { stepNo: 2, text: '= 850,000' },
+      ]),
+    ).toEqual(['Final step must state the answer choice — e.g. "… → answer A".']);
+  });
+
+  it('passes when the final step names the answer', () => {
+    expect(
+      calc([
+        { stepNo: 1, text: 'Divide the inclusive amount by 1.15', formula: '977,500 / 1.15' },
+        { stepNo: 2, text: '= 850,000 → answer A' },
+      ]),
+    ).toEqual([]);
+  });
+
+  it('accepts the answer being stated in the formula line', () => {
+    expect(
+      calc([{ stepNo: 1, text: 'Strip the VAT', formula: '977,500 / 1.15 = 850,000 → answer A' }]),
+    ).toEqual([]);
+  });
+
+  it('is case-insensitive about "answer"', () => {
+    expect(calc([{ stepNo: 1, text: '= 850,000 → ANSWER a' }])).toEqual([]);
+  });
+
+  // The dangerous case: working that confidently cites the WRONG letter is
+  // worse than working that cites none — a student is told the arithmetic
+  // arrived somewhere it did not.
+  it('blocks when the final step names a different option than the correct one', () => {
+    expect(calc([{ stepNo: 1, text: '= 850,000 → answer C' }], 'A')).toEqual([
+      'Final step must state the answer choice — e.g. "… → answer A".',
+    ]);
+  });
+
+  it('checks the LAST step by stepNo, not by array position', () => {
+    // Stored out of order, as they arrive from a drag-reordered step builder.
+    expect(
+      calc([
+        { stepNo: 2, text: '= 850,000 → answer A' },
+        { stepNo: 1, text: 'Divide by 1.15' },
+      ]),
+    ).toEqual([]);
+    expect(
+      calc([
+        { stepNo: 2, text: 'Divide by 1.15' },
+        { stepNo: 1, text: '= 850,000 → answer A' },
+      ]),
+    ).toEqual(['Final step must state the answer choice — e.g. "… → answer A".']);
+  });
+
+  it('blocks a calculation question with no steps at all', () => {
+    expect(calc([])).toEqual([
+      'Add the worked steps — a calculation question needs its working shown.',
+    ]);
+  });
+
+  // With no verified answer we cannot know which letter the working should
+  // cite, so only the missing-answer blocker fires — not a second one about a
+  // letter nobody has chosen.
+  it('does not add a final-step blocker when no correct option is marked', () => {
+    const blockers = gateBlockers(
+      question({
+        qType: 'CALCULATION',
+        explanation: null,
+        steps: [{ stepNo: 1, text: '= 850,000' }],
+        options: [
+          { label: 'A', text: 'a', isCorrect: false, whyWrong: 'w' },
+          { label: 'B', text: 'b', isCorrect: false, whyWrong: 'w' },
+        ],
+      }),
+    );
+    expect(blockers).toEqual([
+      'No correct option marked — a reviewer must supply and confirm the answer.',
+    ]);
+  });
+
+  it('requires an explanation on a CONCEPT question instead of steps', () => {
+    expect(gateBlockers(question({ qType: 'CONCEPT', explanation: '' }))).toEqual([
+      'Explanation is missing.',
+    ]);
+    expect(gateBlockers(question({ qType: 'CONCEPT', explanation: 'Because ×15/115.' }))).toEqual(
+      [],
+    );
+  });
+
+  it('does not demand steps from a CONCEPT question', () => {
+    expect(gateBlockers(question({ qType: 'CONCEPT', steps: [] }))).toEqual([]);
   });
 });

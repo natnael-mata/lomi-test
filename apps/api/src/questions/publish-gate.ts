@@ -94,6 +94,28 @@ export function gateBlockers(q: DraftQuestion): string[] {
     blockers.push('Concept line must be a single sentence — split it or shorten it.');
   }
 
+  // T-043 — the solution has to be complete for the question's type.
+  if (q.qType === 'CALCULATION') {
+    const steps = [...(q.steps ?? [])].sort((a, b) => a.stepNo - b.stepNo);
+    if (steps.length === 0) {
+      blockers.push('Add the worked steps — a calculation question needs its working shown.');
+    } else if (correct.length === 1) {
+      // Only checkable once the answer is known; with 0 or 2 correct options
+      // the blocker above already covers it, and a second message about a
+      // letter we cannot identify would just be noise.
+      const label = correct[0]!.label;
+      const last = steps[steps.length - 1]!;
+      const text = `${last.text} ${last.formula ?? ''}`;
+      if (!new RegExp(String.raw`\banswer\s+${label}\b`, 'i').test(text)) {
+        blockers.push(`Final step must state the answer choice — e.g. "… → answer ${label}".`);
+      }
+    }
+  } else if ((q.explanation ?? '').trim() === '') {
+    // A CONCEPT question's explanation is the whole reward for getting it
+    // wrong. Without one there is nothing to show after the verdict.
+    blockers.push('Explanation is missing.');
+  }
+
   return blockers;
 }
 
