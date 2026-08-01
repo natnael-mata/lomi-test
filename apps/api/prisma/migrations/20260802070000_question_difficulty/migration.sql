@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "Difficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
+
+-- AlterTable
+ALTER TABLE "Question" ADD COLUMN     "difficulty" "Difficulty";
+

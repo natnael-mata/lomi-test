@@ -146,6 +146,18 @@ enum ImportFlag {
   READY
 }
 
+/// How hard a question is, as the source file rated it — CONTENT-PIPELINE.md §2's
+/// optional `difficulty` column.
+///
+/// A claim by whoever prepared the paper, not a measurement. Once attempts exist
+/// the observed success rate is the better signal, and this becomes the starting
+/// estimate for a question nobody has answered yet.
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 /// The product. Everything else exists to get one of these in front of a
 /// student with an answer it can defend.
 model Question {
@@ -211,6 +223,14 @@ model Question {
   /// differ from author) compares these, and the FKs land with User.
   authorId   String?
   reviewerId String?
+
+  /// The source file's difficulty rating, where it gave one. Null for a question
+  /// authored in the app, and for the many source rows that leave it blank.
+  ///
+  /// Stored rather than dropped (T-053a): the ministry files already carry it,
+  /// discarding data on import is the irreversible option, and it is the only
+  /// difficulty signal that exists before anyone has attempted the question.
+  difficulty Difficulty?
 
   /// Why the last reviewer sent this back, and what the author has to fix.
   ///

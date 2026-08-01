@@ -11,7 +11,7 @@
  * close the gaps over time. So rejection is reserved for rows that could not
  * become a question no matter how much work someone put in.
  */
-import type { ImportFlag, QType } from '@prisma/client';
+import type { Difficulty, ImportFlag, QType } from '@prisma/client';
 
 import { cleanOptionText, cleanText, type CleanChange } from './clean-text';
 import type { ImportRow, ImportStatus } from './csv-schema';
@@ -43,6 +43,8 @@ export interface MappedRow {
   codeBlock: string | null;
   explanation: string | null;
   timeLimitSec: number;
+  /** The source file's rating, where it gave a usable one. */
+  difficulty: Difficulty | null;
   sourceRef: string | null;
   year: number | null;
   options: MappedOption[];
@@ -182,11 +184,11 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
     else notes.push(`year "${row.year}" is not a usable year — dropped`);
   }
 
-  if (row.difficulty.trim() !== '') {
-    // Honest rather than silent: the column is in the CSV contract but has no
-    // column here yet (T-053a). Worded without the row's own value so the report
-    // can collapse it — it is one fact about the schema, not 500 facts.
-    notes.push('difficulty is not stored yet — the value in the file is dropped');
+  const difficulty = parseDifficulty(row.difficulty);
+  if (row.difficulty.trim() !== '' && difficulty === null) {
+    // Worded without the row's own value so the report can collapse it — one
+    // fact about the file, not 500 facts.
+    notes.push(`difficulty "${row.difficulty.trim()}" is not one of easy, medium, hard — dropped`);
   }
 
   const stem = row.question_text.trim();
@@ -214,6 +216,7 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
       codeBlock: row.code_block.trim() || null,
       explanation: row.explanation.trim() || null,
       timeLimitSec: TIME_LIMIT_SEC[qType],
+      difficulty,
       sourceRef: row.source.trim() || null,
       year,
       options,
@@ -298,3 +301,15 @@ const clip = (s: string): string => {
   const oneLine = s.replace(/\n/g, '⏎');
   return oneLine.length <= CLIP_AT ? oneLine : `${oneLine.slice(0, CLIP_AT - 1)}…`;
 };
+
+/**
+ * The source file's difficulty rating.
+ *
+ * Case-insensitive, and anything outside the three values is dropped with a note
+ * rather than guessed at. "moderate" might mean MEDIUM, but a rating invented by
+ * the importer is worse than no rating: it looks like the paper said so.
+ */
+function parseDifficulty(raw: string): Difficulty | null {
+  const value = raw.trim().toUpperCase();
+  return value === 'EASY' || value === 'MEDIUM' || value === 'HARD' ? value : null;
+}

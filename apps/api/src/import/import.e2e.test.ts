@@ -417,3 +417,80 @@ describe('ImportService is idempotent (T-055)', () => {
     expect((await options()).find((o) => o.isCorrect)?.label).toBe('C');
   });
 });
+
+describe('difficulty round-trips (T-053a)', () => {
+  let service: ImportService;
+  let prisma: PrismaService;
+  let moduleRef: Awaited<ReturnType<ReturnType<typeof Test.createTestingModule>['compile']>>;
+
+  const SFX = 'e2e-difficulty';
+  const FLD = `E2E Difficulty ${SFX}`;
+  const line = (id: string, difficulty: string): string =>
+    `${id},${FLD},Taxation,VAT,Which statement about VAT is correct?,,One,Two,Three,Four,a,Because one.,${difficulty},authored,,ready`;
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.option.deleteMany({ where: { question: { stableId: { contains: SFX } } } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX } } });
+    await prisma.topic.deleteMany({ where: { course: { field: { name: FLD } } } });
+    await prisma.course.deleteMany({ where: { field: { name: FLD } } });
+    await prisma.field.deleteMany({ where: { name: FLD } });
+  };
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    service = moduleRef.get(ImportService);
+    prisma = moduleRef.get(PrismaService);
+    await cleanup();
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await moduleRef.close();
+  });
+
+  it('stores each rating the CSV gives', async () => {
+    await service.importCsv(
+      csv(
+        line(`D-EASY-${SFX}`, 'easy'),
+        line(`D-MED-${SFX}`, 'medium'),
+        line(`D-HARD-${SFX}`, 'hard'),
+      ),
+    );
+    const rows = await prisma.question.findMany({
+      where: { stableId: { contains: SFX } },
+      orderBy: { stableId: 'asc' },
+      select: { stableId: true, difficulty: true },
+    });
+    expect(rows.map((r) => r.difficulty)).toEqual(['EASY', 'HARD', 'MEDIUM']);
+  });
+
+  it('stores null for a blank rating, and reports an unusable one', async () => {
+    const report = await service.importCsv(
+      csv(line(`D-BLANK-${SFX}`, ''), line(`D-ODD-${SFX}`, 'moderate')),
+    );
+    const rows = await prisma.question.findMany({
+      where: { stableId: { in: [`D-BLANK-${SFX}`, `D-ODD-${SFX}`] } },
+      orderBy: { stableId: 'asc' },
+      select: { difficulty: true },
+    });
+    expect(rows.map((r) => r.difficulty)).toEqual([null, null]);
+
+    const odd = report.rows.find((r) => r.stableId === `D-ODD-${SFX}`);
+    expect(odd?.messages.join(' ')).toContain('not one of easy, medium, hard');
+  });
+
+  it('carries the real template’s ratings through to the database', async () => {
+    await service.importCsv(readFileSync(repoFile('docs/question_import_template.csv'), 'utf8'));
+    const rows = await prisma.question.findMany({
+      where: { stableId: { in: ['CS-0001', 'AF-0001', 'AF-0005', 'GEO-0001'] } },
+      orderBy: { stableId: 'asc' },
+      select: { stableId: true, difficulty: true },
+    });
+    expect(rows).toEqual([
+      { stableId: 'AF-0001', difficulty: 'MEDIUM' },
+      { stableId: 'AF-0005', difficulty: 'HARD' },
+      { stableId: 'CS-0001', difficulty: 'EASY' },
+      { stableId: 'GEO-0001', difficulty: null },
+    ]);
+  });
+});

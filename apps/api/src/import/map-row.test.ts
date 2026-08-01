@@ -197,8 +197,23 @@ describe('mapRow — field handling', () => {
     expect(bad.notes.join(' ')).toContain('not a usable year');
   });
 
-  it('says out loud that difficulty is not stored yet', () => {
-    expect(mapped({ difficulty: 'easy' }).notes.join(' ')).toContain('difficulty');
+  it('stores the difficulty the file gave, case-insensitively', () => {
+    expect(mapped({ difficulty: 'easy' }).difficulty).toBe('EASY');
+    expect(mapped({ difficulty: ' Medium ' }).difficulty).toBe('MEDIUM');
+    expect(mapped({ difficulty: 'HARD' }).difficulty).toBe('HARD');
+    expect(mapped({ difficulty: 'easy' }).notes).toEqual([]);
+  });
+
+  it('leaves difficulty null when the file said nothing', () => {
+    expect(mapped({ difficulty: '' }).difficulty).toBeNull();
+  });
+
+  // "moderate" might mean MEDIUM, but a rating invented by the importer looks
+  // like the paper said so.
+  it('drops an unrecognised rating with a note rather than guessing', () => {
+    const m = mapped({ difficulty: 'moderate' });
+    expect(m.difficulty).toBeNull();
+    expect(m.notes.join(' ')).toContain('not one of easy, medium, hard');
   });
 
   it('nulls empty optional text rather than storing an empty string', () => {

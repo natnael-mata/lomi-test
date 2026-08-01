@@ -123,6 +123,7 @@ export class ImportService {
       codeBlock: row.codeBlock,
       explanation: row.explanation,
       timeLimitSec: row.timeLimitSec,
+      difficulty: row.difficulty,
       sourceRef: row.sourceRef,
       year: row.year,
       importFlags: row.flags,

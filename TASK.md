@@ -779,12 +779,19 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       `prisma/seed-questions.ts` now runs this importer instead of its own copy of the mapping
       (same lesson as T-051's parser); re-seeded, **7/7 still verbatim**, no duplicate fields,
       all 7 DRAFT, Geography still unpublished.
-- [ ] **T-053a** `difficulty` is in the CSV contract but has no column in the schema, so it is
-      dropped on import. The mapper says so in its per-row notes rather than discarding it
-      silently. Decide whether to store it (it is a plausible input to practice-set difficulty
-      mixing) or remove it from the template.
-      **Test:** either `Question.difficulty` exists and round-trips, or the column is gone from
-      `question_import_template.csv` and CONTENT-PIPELINE.md.
+- [x] **T-053a** `difficulty` is in the CSV contract but has no column in the schema, so it is
+      dropped on import. **Decided: store it.**
+      **Test:** `Question.difficulty` exists and round-trips. ✅ 2026-08-02 — 6 tests, migration
+      `20260802070000_question_difficulty`.
+      Nothing in PRODUCT.md or DESIGN.md consumes difficulty yet, so the case for the column is
+      not a feature — it is that **the ministry files already carry the rating**, discarding
+      data on import is the irreversible choice, and it is the only difficulty signal that
+      exists before anyone has attempted the question. Removing the column instead would mean
+      asking content operators to stop recording something they already record.
+      An unrecognised rating is **dropped with a note, never guessed at**. "moderate" probably
+      means MEDIUM, but a rating invented by the importer looks exactly like one the paper gave.
+      Verified against the real template: CS-0001 EASY, AF-0001 MEDIUM, AF-0005 HARD,
+      GEO-0001 null.
 - [x] **T-054** Import refuses to set `PUBLISHED` on any row, whatever the CSV says.
       **Test:** A row with `status=ready` imports as `DRAFT`; only the review flow publishes.
       ✅ 2026-08-01 — 6 tests. `ready`, `raw`, `needs_answer` and even a literal `published`
