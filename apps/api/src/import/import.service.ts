@@ -1,9 +1,19 @@
 import { Injectable } from '@nestjs/common';
+import type { QStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import type { ImportRow } from './csv-schema';
 import { mapRow, type MappedRow } from './map-row';
 import { parseImportCsv } from './parse-csv';
+
+/** The fields of an existing question an import needs in order to decide safely. */
+interface ExistingQuestion {
+  id: string;
+  status: QStatus;
+  stem: string;
+  explanation: string | null;
+  codeBlock: string | null;
+}
 
 export interface RowOutcome {
   stableId: string;
@@ -106,19 +116,20 @@ export class ImportService {
       sourceRef: row.sourceRef,
       year: row.year,
       importFlags: row.flags,
-      // T-054: not negotiable, and not conditional on what the file claimed.
-      status: 'DRAFT' as const,
     };
 
     const before = await this.prisma.question.findUnique({
       where: { stableId: row.stableId },
-      select: { id: true },
+      select: { id: true, status: true, stem: true, explanation: true, codeBlock: true },
     });
 
+    const messages = [...row.notes];
     const question = await this.prisma.question.upsert({
       where: { stableId: row.stableId },
-      update: data,
-      create: { stableId: row.stableId, ...data },
+      // On update, `status` is absent — see `nextStatus`.
+      update: { ...data, ...this.nextStatus(before, row, messages) },
+      // T-054: a new row is always a DRAFT, whatever the file claimed.
+      create: { stableId: row.stableId, ...data, status: 'DRAFT' },
     });
 
     // Options are replaced, not merged: the CSV is the source of truth for them,
@@ -131,8 +142,49 @@ export class ImportService {
     return {
       stableId: row.stableId,
       action: before ? 'updated' : 'created',
-      messages: row.notes,
+      messages,
     };
+  }
+
+  /**
+   * What an import may do to a question's lifecycle: as little as possible.
+   *
+   * The importer does not decide what students see — that is the publish gate's
+   * job and a reviewer's action (T-054). Two failures follow from forgetting it,
+   * and the obvious implementation (`status: 'DRAFT'` on both branches) commits
+   * the second one:
+   *
+   * - **Promotion.** A file saying `ready` must never become PUBLISHED.
+   * - **Demotion.** Re-running an import must not knock a reviewed, published
+   *   question back to DRAFT. That silently withdraws working content, and it
+   *   happens on the most routine action there is — re-importing a corrected file.
+   *
+   * The exception is real content change. If the source file now says something
+   * different, what is published no longer matches what was reviewed, so the
+   * question goes to IN_REVIEW: it stops being served, and it lands in the queue
+   * with the reason attached, rather than a student reading an unreviewed edit.
+   */
+  private nextStatus(
+    before: ExistingQuestion | null,
+    row: MappedRow,
+    messages: string[],
+  ): { status?: QStatus } {
+    if (!before) return {};
+
+    const changed =
+      before.stem !== row.stem ||
+      before.explanation !== row.explanation ||
+      before.codeBlock !== row.codeBlock;
+
+    if (before.status === 'PUBLISHED' && changed) {
+      messages.push('published question changed by the import — sent back to review');
+      return { status: 'IN_REVIEW' };
+    }
+
+    // Unchanged, or not published: leave the lifecycle exactly where the humans
+    // left it. Notably a RETIRED question stays retired — an import is not an
+    // argument for bringing a withdrawn question back.
+    return {};
   }
 }
 

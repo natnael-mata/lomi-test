@@ -124,3 +124,96 @@ describe('ImportService (T-053)', () => {
     expect(field.isPublished).toBe(false);
   });
 });
+
+describe('ImportService never decides the lifecycle (T-054)', () => {
+  let service: ImportService;
+  let prisma: PrismaService;
+  let moduleRef: Awaited<ReturnType<ReturnType<typeof Test.createTestingModule>['compile']>>;
+
+  const SFX = 'e2e-lifecycle';
+  const FLD = `E2E Lifecycle ${SFX}`;
+  const line = (id: string, stem: string, status = 'ready'): string =>
+    `${id},${FLD},Taxation,VAT,${stem},,One,Two,Three,Four,a,Because one.,,authored,,${status}`;
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.option.deleteMany({ where: { question: { stableId: { contains: SFX } } } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX } } });
+    await prisma.topic.deleteMany({ where: { course: { field: { name: FLD } } } });
+    await prisma.course.deleteMany({ where: { field: { name: FLD } } });
+    await prisma.field.deleteMany({ where: { name: FLD } });
+  };
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    service = moduleRef.get(ImportService);
+    prisma = moduleRef.get(PrismaService);
+    await cleanup();
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await moduleRef.close();
+  });
+
+  const statusOf = async (stableId: string): Promise<string> =>
+    (await prisma.question.findUniqueOrThrow({ where: { stableId } })).status;
+
+  // The task's own test.
+  it('imports a status=ready row as DRAFT', async () => {
+    await service.importCsv(csv(line(`LC-READY-${SFX}`, 'A ready-claimed question?')));
+    expect(await statusOf(`LC-READY-${SFX}`)).toBe('DRAFT');
+    // The claim is recorded, it just grants nothing.
+    const q = await prisma.question.findUniqueOrThrow({ where: { stableId: `LC-READY-${SFX}` } });
+    expect(q.importFlags).toContain('READY');
+  });
+
+  it('never sets PUBLISHED, for any status the file can carry', async () => {
+    for (const status of ['ready', 'raw', 'needs_answer', 'published', 'PUBLISHED']) {
+      const id = `LC-${status.toUpperCase()}-${SFX}`;
+      await service.importCsv(csv(line(id, 'Some question?', status)));
+      expect(await statusOf(id)).toBe('DRAFT');
+    }
+  });
+
+  // The failure the obvious implementation (`status: 'DRAFT'` on both branches)
+  // causes: re-running an import silently withdraws reviewed, working content.
+  it('leaves a PUBLISHED question published when the import changes nothing', async () => {
+    const id = `LC-PUB-${SFX}`;
+    await service.importCsv(csv(line(id, 'A question that gets published?')));
+    await prisma.question.update({ where: { stableId: id }, data: { status: 'PUBLISHED' } });
+
+    await service.importCsv(csv(line(id, 'A question that gets published?')));
+    expect(await statusOf(id)).toBe('PUBLISHED');
+  });
+
+  it('sends a PUBLISHED question back to review when the import changes its text', async () => {
+    const id = `LC-EDIT-${SFX}`;
+    await service.importCsv(csv(line(id, 'The original wording?')));
+    await prisma.question.update({ where: { stableId: id }, data: { status: 'PUBLISHED' } });
+
+    const report = await service.importCsv(csv(line(id, 'The corrected wording?')));
+    expect(await statusOf(id)).toBe('IN_REVIEW');
+
+    const q = await prisma.question.findUniqueOrThrow({ where: { stableId: id } });
+    expect(q.stem).toBe('The corrected wording?');
+    expect(report.rows[0]?.messages.join(' ')).toContain('sent back to review');
+  });
+
+  it('leaves a RETIRED question retired — an import is not a case for reinstating it', async () => {
+    const id = `LC-RET-${SFX}`;
+    await service.importCsv(csv(line(id, 'A withdrawn question?')));
+    await prisma.question.update({ where: { stableId: id }, data: { status: 'RETIRED' } });
+
+    await service.importCsv(csv(line(id, 'A withdrawn question?')));
+    expect(await statusOf(id)).toBe('RETIRED');
+  });
+
+  it('leaves an IN_REVIEW question in review', async () => {
+    const id = `LC-REV-${SFX}`;
+    await service.importCsv(csv(line(id, 'A question under review?')));
+    await prisma.question.update({ where: { stableId: id }, data: { status: 'IN_REVIEW' } });
+
+    await service.importCsv(csv(line(id, 'A question under review?')));
+    expect(await statusOf(id)).toBe('IN_REVIEW');
+  });
+});

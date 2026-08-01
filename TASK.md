@@ -765,8 +765,23 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       mixing) or remove it from the template.
       **Test:** either `Question.difficulty` exists and round-trips, or the column is gone from
       `question_import_template.csv` and CONTENT-PIPELINE.md.
-- [ ] **T-054** Import refuses to set `PUBLISHED` on any row, whatever the CSV says.
+- [x] **T-054** Import refuses to set `PUBLISHED` on any row, whatever the CSV says.
       **Test:** A row with `status=ready` imports as `DRAFT`; only the review flow publishes.
+      ✅ 2026-08-01 — 6 tests. `ready`, `raw`, `needs_answer` and even a literal `published`
+      in the status cell all import as DRAFT.
+      **The stated test passed on the first line of code, and the rule was still broken.**
+      Writing it exposed the opposite failure: `status: 'DRAFT'` on the update branch means
+      **re-importing a corrected file silently unpublishes reviewed questions**. Same rule —
+      the importer does not decide what students see — but the demotion direction is the one
+      that withdraws working content, and it fires on the most routine action there is.
+      Fixed by setting `status` only on **create**. On update the lifecycle is left where the
+      humans put it, with one exception: if the row is PUBLISHED and the file now says something
+      different, it goes to **IN_REVIEW** — what is published no longer matches what was
+      reviewed, so it stops being served and lands in the queue with the reason attached rather
+      than a student reading an unreviewed edit. RETIRED stays retired; an import is not an
+      argument for reinstating a withdrawn question.
+      All four lifecycle tests were **confirmed to fail** against the naive implementation
+      before being kept.
 - [ ] **T-055** Import is idempotent on `stableId` — re-importing updates, never duplicates.
       **Test:** Import the template twice; question count is 6, not 12.
 - [ ] **T-056** Import writes a per-run report: rows read, created, updated, rejected + reasons.
