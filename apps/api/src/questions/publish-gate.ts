@@ -82,7 +82,43 @@ export function gateBlockers(q: DraftQuestion): string[] {
     }
   }
 
+  // T-042 — a concept line, and exactly one sentence of it.
+  //
+  // It is the "what was being tested" anchor, shown before any solution. One
+  // sentence is the whole point: a paragraph there is a second explanation, and
+  // the student stops reading the thing they were meant to remember.
+  const concept = (q.conceptLine ?? '').trim();
+  if (concept === '') {
+    blockers.push('Concept line is missing.');
+  } else if (countSentences(concept) > 1) {
+    blockers.push('Concept line must be a single sentence — split it or shorten it.');
+  }
+
   return blockers;
+}
+
+/**
+ * Sentence count, tolerant of the things that look like sentence ends but are not.
+ *
+ * A naive `/[.!?]\s+\S/` flags "extract with ×15/115, e.g. 150,000." as two
+ * sentences and would reject a perfectly good concept line, so common
+ * abbreviations are masked first. Decimals need no special handling: "1.15" has
+ * no whitespace after the point.
+ */
+/**
+ * Kept deliberately short. Every entry here is a word the checker will stop
+ * treating as a sentence end, so a common word costs real detection: `no.` was
+ * in this list and made "The answer is no. It is not deductible." — two plain
+ * sentences — pass. Only abbreviations that genuinely appear mid-concept-line
+ * earn a place, and each is tested.
+ */
+const ABBREVIATIONS = /\b(e\.g|i\.e|etc|vs|cf|approx)\./gi;
+
+function countSentences(text: string): number {
+  const masked = text.replace(ABBREVIATIONS, (m) => '·'.repeat(m.length));
+  // A terminator followed by whitespace and more content starts a new sentence.
+  const interior = masked.match(/[.!?]+\s+\S/g)?.length ?? 0;
+  return interior + 1;
 }
 
 /** True when nothing blocks publication. */

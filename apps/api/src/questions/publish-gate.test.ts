@@ -139,3 +139,60 @@ describe('publish gate — why-wrong on every distractor (T-041)', () => {
     ]);
   });
 });
+
+describe('publish gate — single-sentence concept line (T-042)', () => {
+  const withConcept = (conceptLine: string | null) => gateBlockers(question({ conceptLine }));
+
+  it('accepts a single sentence', () => {
+    expect(withConcept('A single sentence.')).toEqual([]);
+  });
+
+  it('rejects two sentences', () => {
+    expect(withConcept('A. B.')).toEqual([
+      'Concept line must be a single sentence — split it or shorten it.',
+    ]);
+  });
+
+  it('rejects a missing concept line', () => {
+    expect(withConcept('')).toEqual(['Concept line is missing.']);
+    expect(withConcept(null)).toEqual(['Concept line is missing.']);
+    expect(withConcept('   ')).toEqual(['Concept line is missing.']);
+  });
+
+  it('accepts a sentence with no terminal punctuation', () => {
+    expect(withConcept('VAT inside an inclusive price is extracted with ×15/115')).toEqual([]);
+  });
+
+  // A decimal is not a sentence boundary — there is no space after the point.
+  it('accepts a sentence containing a decimal', () => {
+    expect(withConcept('Divide the inclusive amount by 1.15 to strip VAT.')).toEqual([]);
+  });
+
+  // A naive /[.!?]\s+\S/ would call this two sentences and reject a good line.
+  it('accepts abbreviations that end in a period', () => {
+    expect(withConcept('Extract with ×15/115, e.g. 1,150,000 becomes 150,000.')).toEqual([]);
+    expect(withConcept('Use the inclusive divisor, i.e. 1.15, not 0.85.')).toEqual([]);
+    expect(withConcept('Applies to VAT, sales tax, etc. in the same way.')).toEqual([]);
+  });
+
+  it('still rejects two real sentences that also contain an abbreviation', () => {
+    expect(
+      withConcept('Divide by 1.15, e.g. 977,500 becomes 850,000. Never multiply by 0.85.'),
+    ).toEqual(['Concept line must be a single sentence — split it or shorten it.']);
+  });
+
+  it('rejects a question mark followed by another sentence', () => {
+    expect(withConcept('What is the divisor? It is 1.15.')).toEqual([
+      'Concept line must be a single sentence — split it or shorten it.',
+    ]);
+  });
+
+  // Regression: "no" was on the abbreviation list, which masked the sentence
+  // end in "The answer is no." and let two plain sentences through. Every entry
+  // on that list costs real detection, so common words must stay off it.
+  it('does not let a common word ending in a period hide a second sentence', () => {
+    expect(withConcept('The answer is no. It is not deductible.')).toEqual([
+      'Concept line must be a single sentence — split it or shorten it.',
+    ]);
+  });
+});
