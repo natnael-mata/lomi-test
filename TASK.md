@@ -947,12 +947,35 @@ these…"` at the start of a stem is prose.
       A bounce returns the question to `DRAFT`, which also **removes it from every queue at
       once** — otherwise the next reviewer picks up something already rejected. Asserted.
       A refused bounce leaves the question in review with no note: nothing half-applies.
-- [ ] **T-068a** `PATCH /admin/review/:id` lets a reviewer author the text that is deliberately
+- [x] **T-068a** `PATCH /admin/review/:id` lets a reviewer author the text that is deliberately
       absent from the import: each distractor's `whyWrong`, the `conceptLine`, the
       `explanation`, and the correct option where the file had none. This is the write path
       T-031a's decision depends on — without it nothing imported can ever be published.
       **Test:** Patching GEO-0001 with an answer, a concept line and three why-wrongs turns a
-      422 from T-067 into a successful publish.
+      422 from T-067 into a successful publish. ✅ 2026-08-02 — 27 tests (15 pure + 12 against
+      the database), including the full sequence: **8 blockers → patch → 1 blocker → weight the
+      topic → PUBLISHED.**
+      The test drives a **copy** of GEO-0001, not the seeded row: taking the real one to
+      PUBLISHED would leave the seed data changed for every later run.
+      **Only the fields present in the body are touched.** A patch that wrote every field would
+      let two reviewers editing different parts of one question overwrite each other, and the
+      loser would never know. An **empty patch is refused** rather than silently succeeding — a
+      "saved" that saved nothing is how a reviewer walks away believing they wrote something.
+      Marking an option correct **and** giving it a why-wrong is refused: it would satisfy the
+      gate's "exactly one correct" rule while the answer view explained the right answer as
+      wrong. Setting a new correct option **clears the old one first** — two correct options is
+      a state the gate rejects and the view cannot render, so it must not exist even briefly.
+      Editing a PUBLISHED question sends it to `IN_REVIEW`, the same rule the importer follows
+      (T-054). Topic weight is **deliberately not patchable here** — it is a taxonomy decision
+      about a whole field, not an edit to one question, and the test asserts it stays blocking.
+      Also adds `POST /admin/review/:id/submit` (DRAFT → `IN_REVIEW`, **clearing `bounceNote`**),
+      which is the clearing T-068 said would land here. A stale note shows the next reviewer a
+      complaint about a fix already made.
+      **Defect found by a test that had passed for days:** `publish` loaded options with no
+      `orderBy`, so the gate's blocker list came back in Postgres **heap order** — and a
+      re-import that rewrote one option's row reshuffled it. The same unpublishable question
+      handed a reviewer the same complaints in a different order each time. Both `options` and
+      `steps` are now explicitly ordered.
 - [ ] **T-069** Publishing writes an `AuditLog` row with actor, action, question, timestamp.
       **Test:** After publish, exactly one audit row exists with the reviewer's id.
 - [ ] **T-070** `POST /admin/questions/:id/retire` sets `RETIRED` and records blast radius.

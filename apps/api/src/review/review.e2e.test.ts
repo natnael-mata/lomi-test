@@ -442,3 +442,285 @@ describe('POST /admin/review/:id/bounce (T-068)', () => {
       .expect(404);
   });
 });
+
+describe('PATCH /admin/review/:id — the review write path (T-068a)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  const SFX4 = 'e2e-patch';
+  let questionId = '';
+  let topicId = '';
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.option.deleteMany({ where: { question: { stableId: { contains: SFX4 } } } });
+    await prisma.step.deleteMany({ where: { question: { stableId: { contains: SFX4 } } } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX4 } } });
+    await prisma.topic.deleteMany({ where: { slug: { contains: SFX4 } } });
+    await prisma.course.deleteMany({ where: { slug: { contains: SFX4 } } });
+    await prisma.field.deleteMany({ where: { slug: { contains: SFX4 } } });
+  };
+
+  /**
+   * A copy of the real GEO-0001 — same four options, same missing answer and
+   * missing rationale — rather than the seeded row itself, so the test can drive
+   * it all the way to PUBLISHED without leaving the seed data changed.
+   */
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    prisma = app.get(PrismaService);
+    await cleanup();
+
+    const field = await prisma.field.create({
+      data: { name: `Patch ${SFX4}`, slug: `field-${SFX4}` },
+    });
+    const course = await prisma.course.create({
+      data: { fieldId: field.id, name: 'Research Methods', slug: `course-${SFX4}` },
+    });
+    const topic = await prisma.topic.create({
+      // Unweighted, exactly like the real Sampling topic — the 8th blocker.
+      data: { courseId: course.id, name: 'Sampling', slug: `topic-${SFX4}` },
+    });
+    topicId = topic.id;
+
+    const q = await prisma.question.create({
+      data: {
+        stableId: `GEO-COPY-${SFX4}`,
+        topicId: topic.id,
+        fieldId: field.id,
+        qType: 'CONCEPT',
+        stem: 'To ensure every household has an equal chance of selection, you would use:',
+        timeLimitSec: 60,
+        status: 'IN_REVIEW',
+        importFlags: ['NEEDS_ANSWER', 'NEEDS_EXPLANATION', 'NEEDS_TOPIC_REVIEW'],
+        options: {
+          create: [
+            { label: 'A', text: 'Purposive sampling', isCorrect: false },
+            { label: 'B', text: 'Snowball sampling', isCorrect: false },
+            { label: 'C', text: 'Simple random sampling', isCorrect: false },
+            { label: 'D', text: 'Convenience sampling', isCorrect: false },
+          ],
+        },
+      },
+    });
+    questionId = q.id;
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await app.close();
+  });
+
+  const patch = async (body: object, expectStatus = 200) =>
+    (
+      await request(app.getHttpServer())
+        .patch(`/admin/review/${questionId}`)
+        .send(body)
+        .expect(expectStatus)
+    ).body;
+
+  const publish = async (expectStatus: number) =>
+    (
+      await request(app.getHttpServer())
+        .post(`/admin/review/${questionId}/publish`)
+        .send({ reviewerId: 'reviewer-z' })
+        .expect(expectStatus)
+    ).body;
+
+  // The task's own test, and the whole of T-031a's decision in one sequence.
+  it('turns an unpublishable import into a published question', async () => {
+    // Before: the same wall of blockers T-067 asserts for the real GEO-0001.
+    const before = await publish(422);
+    expect(before.blockers).toHaveLength(8);
+
+    await patch({
+      correctOption: 'c',
+      conceptLine: 'Equal probability for every unit is simple random sampling.',
+      explanation: 'Only simple random sampling gives every household the same chance.',
+      whyWrong: {
+        A: 'Purposive sampling picks units deliberately, not by chance.',
+        B: 'Snowball sampling recruits through referral, so chances are unequal.',
+        D: 'Convenience sampling takes whoever is reachable.',
+      },
+    });
+
+    // The one blocker a reviewer cannot close from this endpoint: topic weight
+    // is a taxonomy decision, not an edit to this question.
+    const stillBlocked = await publish(422);
+    expect(stillBlocked.blockers).toEqual([
+      'Topic "Sampling" has no weight — set it before publishing.',
+    ]);
+
+    await prisma.topic.update({ where: { id: topicId }, data: { weightPct: 100 } });
+
+    const published = await publish(201);
+    expect(published.status).toBe('PUBLISHED');
+  });
+
+  it('reports what it changed', async () => {
+    const body = await patch({ conceptLine: 'A revised concept line.' });
+    expect(body.changed).toContain('concept line');
+  });
+
+  it('sends a published question back to review when it is edited', async () => {
+    // The previous test left it PUBLISHED; this one edited it, so it must have
+    // stopped being served — the same rule the importer follows (T-054).
+    const after = await prisma.question.findUniqueOrThrow({ where: { id: questionId } });
+    expect(after.status).toBe('IN_REVIEW');
+  });
+
+  it('clears exactly one correct option when a new one is set', async () => {
+    await patch({ correctOption: 'a' });
+    const options = await prisma.option.findMany({
+      where: { questionId },
+      orderBy: { label: 'asc' },
+    });
+    expect(options.filter((o) => o.isCorrect).map((o) => o.label)).toEqual(['A']);
+  });
+
+  it('leaves untouched fields alone', async () => {
+    const before = await prisma.question.findUniqueOrThrow({ where: { id: questionId } });
+    await patch({ timeLimitSec: 90 });
+    const after = await prisma.question.findUniqueOrThrow({ where: { id: questionId } });
+    expect(after.conceptLine).toBe(before.conceptLine);
+    expect(after.explanation).toBe(before.explanation);
+    expect(after.timeLimitSec).toBe(90);
+  });
+
+  it('422s on an invalid patch, naming every reason', async () => {
+    const body = await patch({ correctOption: 'z', timeLimitSec: 9 }, 422);
+    expect(body.error).toBe('INVALID_PATCH');
+    expect(body.reasons).toHaveLength(2);
+  });
+
+  it('422s when the patch names an option this question does not have', async () => {
+    const solo = await prisma.question.create({
+      data: {
+        stableId: `SOLO-${SFX4}`,
+        topicId,
+        fieldId: (await prisma.field.findFirstOrThrow({ where: { slug: `field-${SFX4}` } })).id,
+        qType: 'CONCEPT',
+        stem: 'Two options only',
+        timeLimitSec: 60,
+        options: {
+          create: [
+            { label: 'A', text: 'a', isCorrect: true },
+            { label: 'B', text: 'b', isCorrect: false },
+          ],
+        },
+      },
+    });
+    const body = (
+      await request(app.getHttpServer())
+        .patch(`/admin/review/${solo.id}`)
+        .send({ whyWrong: { D: 'no such option' } })
+        .expect(422)
+    ).body;
+    expect(body.reasons.join(' ')).toContain('no option D');
+  });
+
+  it('404s for a question that does not exist', async () => {
+    await request(app.getHttpServer())
+      .patch('/admin/review/does-not-exist')
+      .send({ conceptLine: 'anything' })
+      .expect(404);
+  });
+
+  it('writes and replaces the worked steps', async () => {
+    await patch({
+      steps: [
+        { stepNo: 2, text: 'second' },
+        { stepNo: 1, text: 'first' },
+      ],
+    });
+    const first = await prisma.step.findMany({ where: { questionId }, orderBy: { stepNo: 'asc' } });
+    expect(first.map((s) => s.text)).toEqual(['first', 'second']);
+
+    await patch({ steps: [{ stepNo: 1, text: 'only' }] });
+    const second = await prisma.step.findMany({ where: { questionId } });
+    expect(second.map((s) => s.text)).toEqual(['only']);
+  });
+});
+
+describe('POST /admin/review/:id/submit (T-068a)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  const SFX5 = 'e2e-submit';
+  let questionId = '';
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX5 } } });
+    await prisma.topic.deleteMany({ where: { slug: { contains: SFX5 } } });
+    await prisma.course.deleteMany({ where: { slug: { contains: SFX5 } } });
+    await prisma.field.deleteMany({ where: { slug: { contains: SFX5 } } });
+  };
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    prisma = app.get(PrismaService);
+    await cleanup();
+
+    const field = await prisma.field.create({
+      data: { name: `Submit ${SFX5}`, slug: `field-${SFX5}` },
+    });
+    const course = await prisma.course.create({
+      data: { fieldId: field.id, name: 'Course', slug: `course-${SFX5}` },
+    });
+    const topic = await prisma.topic.create({
+      data: { courseId: course.id, name: 'Topic', slug: `topic-${SFX5}` },
+    });
+    const q = await prisma.question.create({
+      data: {
+        stableId: `SUB-${SFX5}`,
+        topicId: topic.id,
+        fieldId: field.id,
+        qType: 'CONCEPT',
+        stem: 'A bounced question',
+        timeLimitSec: 60,
+        status: 'DRAFT',
+        bounceNote: 'Option C repeats option A — replace it.',
+      },
+    });
+    questionId = q.id;
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await app.close();
+  });
+
+  // The reason submit exists at all: a stale note shows the next reviewer a
+  // complaint about a fix that has already been made.
+  it('puts the question back in review and clears the bounce note', async () => {
+    const body = (
+      await request(app.getHttpServer())
+        .post(`/admin/review/${questionId}/submit`)
+        .send({})
+        .expect(201)
+    ).body;
+    expect(body.status).toBe('IN_REVIEW');
+
+    const after = await prisma.question.findUniqueOrThrow({ where: { id: questionId } });
+    expect(after.bounceNote).toBeNull();
+  });
+
+  it('refuses to submit a published question', async () => {
+    await prisma.question.update({ where: { id: questionId }, data: { status: 'PUBLISHED' } });
+    await request(app.getHttpServer())
+      .post(`/admin/review/${questionId}/submit`)
+      .send({})
+      .expect(400);
+  });
+
+  it('refuses to submit a retired question', async () => {
+    await prisma.question.update({ where: { id: questionId }, data: { status: 'RETIRED' } });
+    await request(app.getHttpServer())
+      .post(`/admin/review/${questionId}/submit`)
+      .send({})
+      .expect(400);
+  });
+});

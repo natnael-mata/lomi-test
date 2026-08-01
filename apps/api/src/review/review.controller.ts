@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { QuestionsService } from '../questions/questions.service';
+import type { ReviewPatch } from './review-patch';
 import { ReviewService, type ReviewItem } from './review.service';
 
 @Controller('admin/review')
@@ -25,6 +26,23 @@ export class ReviewController {
    * places, and a second copy of the gate call is a second place for the rule to
    * drift. The gate itself runs server-side on every publish regardless of route.
    */
+  /**
+   * Where a reviewer writes the answer content the import could not carry —
+   * why-wrongs, the concept line, the answer itself (T-031a).
+   */
+  @Patch(':id')
+  patch(
+    @Param('id') id: string,
+    @Body() body: ReviewPatch,
+  ): Promise<{ id: string; status: string; changed: string[] }> {
+    return this.review.patch(id, body ?? {});
+  }
+
+  @Post(':id/submit')
+  submit(@Param('id') id: string): Promise<{ id: string; status: string }> {
+    return this.review.submit(id);
+  }
+
   @Post(':id/bounce')
   bounce(
     @Param('id') id: string,

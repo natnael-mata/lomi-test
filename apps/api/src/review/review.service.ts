@@ -1,7 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { toAnswerView, type AnswerView } from '../questions/answer-view';
+import { normalisePatch, type ReviewPatch } from './review-patch';
 
 /**
  * A question waiting for review.
@@ -111,6 +117,137 @@ export class ReviewService {
       // queue immediately — otherwise the next reviewer picks up a question
       // somebody has already rejected.
       data: { status: 'DRAFT', bounceNote: trimmed },
+    });
+    return { id: updated.id, status: updated.status };
+  }
+
+  /**
+   * A reviewer authoring the answer content the import could not carry.
+   *
+   * This is the write path T-031a's decision depends on: why-wrongs and the
+   * concept line are deliberately not columns in the import template, so without
+   * this endpoint **nothing imported could ever be published**.
+   *
+   * Only the fields present in the body are touched. A patch that sent every
+   * field would make two reviewers editing different parts of one question
+   * overwrite each other, and the loser would never know.
+   */
+  async patch(
+    id: string,
+    body: ReviewPatch,
+  ): Promise<{ id: string; status: string; changed: string[] }> {
+    const result = normalisePatch(body);
+    if (!result.ok) {
+      throw new UnprocessableEntityException({
+        error: 'INVALID_PATCH',
+        reasons: result.reasons,
+      });
+    }
+    const { patch } = result;
+
+    const question = await this.prisma.question.findUnique({
+      where: { id },
+      select: { id: true, status: true, options: { select: { label: true } } },
+    });
+    if (!question) throw new NotFoundException(`No question ${id}`);
+
+    const known = new Set(question.options.map((o) => o.label as string));
+    const unknown = [
+      ...(patch.correctOption && !known.has(patch.correctOption) ? [patch.correctOption] : []),
+      ...patch.whyWrong.filter((w) => !known.has(w.label)).map((w) => w.label),
+    ];
+    if (unknown.length > 0) {
+      throw new UnprocessableEntityException({
+        error: 'INVALID_PATCH',
+        reasons: [`This question has no option ${[...new Set(unknown)].join(', ')}.`],
+      });
+    }
+
+    const changed: string[] = [];
+
+    if (patch.correctOption !== undefined) {
+      // Cleared first, then set: two correct options is a state the gate rejects
+      // and the answer view cannot render, so it must not exist even briefly.
+      await this.prisma.option.updateMany({
+        where: { questionId: id, isCorrect: true },
+        data: { isCorrect: false },
+      });
+      await this.prisma.option.update({
+        where: { questionId_label: { questionId: id, label: patch.correctOption } },
+        data: { isCorrect: true },
+      });
+      changed.push(`correct option = ${patch.correctOption}`);
+    }
+
+    for (const { label, value } of patch.whyWrong) {
+      await this.prisma.option.update({
+        where: { questionId_label: { questionId: id, label } },
+        data: { whyWrong: value },
+      });
+      changed.push(value === null ? `cleared why-wrong ${label}` : `why-wrong ${label}`);
+    }
+
+    if (patch.steps !== undefined) {
+      // Replaced wholesale, unlike options: steps have no identity of their own
+      // beyond their order, and half-updated working is worse than none.
+      await this.prisma.step.deleteMany({ where: { questionId: id } });
+      if (patch.steps.length > 0) {
+        await this.prisma.step.createMany({
+          data: patch.steps.map((s) => ({ questionId: id, ...s })),
+        });
+      }
+      changed.push(`${patch.steps.length} step(s)`);
+    }
+
+    const fields: Record<string, unknown> = {};
+    if (patch.conceptLine !== undefined) {
+      fields.conceptLine = patch.conceptLine;
+      changed.push('concept line');
+    }
+    if (patch.explanation !== undefined) {
+      fields.explanation = patch.explanation;
+      changed.push('explanation');
+    }
+    if (patch.timeLimitSec !== undefined) {
+      fields.timeLimitSec = patch.timeLimitSec;
+      changed.push('time limit');
+    }
+
+    // Editing a PUBLISHED question sends it back to review — the same rule the
+    // importer follows (T-054). What is live no longer matches what was
+    // approved, so it stops being served until somebody approves it again.
+    if (question.status === 'PUBLISHED') {
+      fields.status = 'IN_REVIEW';
+      changed.push('sent back to review — a published question was edited');
+    }
+
+    const updated = await this.prisma.question.update({ where: { id }, data: fields });
+    return { id: updated.id, status: updated.status, changed };
+  }
+
+  /**
+   * Puts a question into the review queue and clears the note that sent it back.
+   *
+   * The clearing is the point: `bounceNote` is a live instruction, and leaving a
+   * stale one attached shows the next reviewer a complaint about a fix that has
+   * already been made.
+   */
+  async submit(id: string): Promise<{ id: string; status: string }> {
+    const question = await this.prisma.question.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+    if (!question) throw new NotFoundException(`No question ${id}`);
+
+    if (question.status === 'PUBLISHED' || question.status === 'RETIRED') {
+      throw new BadRequestException(
+        `A ${question.status} question cannot be submitted for review; retire or edit it first.`,
+      );
+    }
+
+    const updated = await this.prisma.question.update({
+      where: { id },
+      data: { status: 'IN_REVIEW', bounceNote: null },
     });
     return { id: updated.id, status: updated.status };
   }

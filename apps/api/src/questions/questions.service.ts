@@ -18,7 +18,16 @@ export class QuestionsService {
   async publish(id: string, reviewerId: string): Promise<{ id: string; status: string }> {
     const q = await this.prisma.question.findUnique({
       where: { id },
-      include: { options: true, steps: true, topic: true },
+      // Ordered, not incidental. Without this the blockers come back in
+      // Postgres heap order, which an UPDATE reshuffles — so the same
+      // unpublishable question hands a reviewer the same complaints in a
+      // different order each time they press the button. Caught by a test that
+      // had been passing for days, after a re-import moved one option's row.
+      include: {
+        options: { orderBy: { label: 'asc' } },
+        steps: { orderBy: { stepNo: 'asc' } },
+        topic: true,
+      },
     });
     if (!q) throw new NotFoundException(`No question ${id}`);
 
