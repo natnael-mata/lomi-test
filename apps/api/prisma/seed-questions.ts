@@ -2,8 +2,8 @@
  * Seeds the worked examples from `docs/question_import_template.csv`.
  *
  * Reads the CSV rather than hard-coding the rows, so "verbatim" is a property of
- * the code and not of my typing. The parser here is deliberately minimal — the
- * real importer, with cleaning passes and per-row reporting, is T-051.
+ * the code and not of my typing. Uses the real parser from T-051 — the seed had
+ * its own minimal copy until that landed.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -11,51 +11,12 @@ import { fileURLToPath } from 'node:url';
 
 import { PrismaClient, type QType } from '@prisma/client';
 
+import { parseImportCsv } from '../src/import/parse-csv';
+
 const CSV = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '../../../docs/question_import_template.csv',
 );
-
-/** RFC4180-ish: handles quoted fields containing commas, newlines and "". */
-function parseCsv(text: string): Record<string, string>[] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = '';
-  let quoted = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          cell += '"';
-          i++;
-        } else quoted = false;
-      } else cell += ch;
-      continue;
-    }
-    if (ch === '"') quoted = true;
-    else if (ch === ',') {
-      row.push(cell);
-      cell = '';
-    } else if (ch === '\n') {
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = '';
-    } else if (ch !== '\r') cell += ch;
-  }
-  if (cell !== '' || row.length > 0) {
-    row.push(cell);
-    rows.push(row);
-  }
-
-  const header = rows.shift();
-  if (!header) return [];
-  return rows
-    .filter((r) => r.some((c) => c.trim() !== ''))
-    .map((r) => Object.fromEntries(header.map((h, i) => [h, r[i] ?? ''])));
-}
 
 const slugify = (s: string): string =>
   s
@@ -67,7 +28,7 @@ const slugify = (s: string): string =>
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
-  const rows = parseCsv(readFileSync(CSV, 'utf8'));
+  const rows = parseImportCsv(readFileSync(CSV, 'utf8'));
   let seeded = 0;
 
   for (const r of rows) {

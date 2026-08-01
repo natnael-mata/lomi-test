@@ -525,7 +525,7 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       **7 rows, not 6** — the template has seven. All seven are seeded; verbatim is _checked_, not
       asserted: stem, explanation and `code_block` compared **byte-for-byte against the CSV for
       every row, 7/7 match**. The seed reads the file rather than hard-coding rows, so it cannot
-      drift. Its parser is minimal — the real importer is T-051.
+      drift. Its parser was minimal at the time — replaced by the real one in T-051.
       **Bug I introduced and caught:** `slugify` turns "Accounting & Finance" into
       `accounting-and-finance`, but T-030 seeded `accounting-finance`. That created a **second,
       unpublished Accounting field** with all five AF questions hanging off it — invisible unless
@@ -702,9 +702,20 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       `IMPORT_STATUSES` covers the five values CONTENT-PIPELINE.md defines, and every status the
       template actually uses is asserted to be among them. `ready` is recorded as a **claim by the
       source file, not a grant** — T-054 makes the importer refuse to publish regardless.
-- [ ] **T-051** Write a CSV parser that handles quoted fields containing commas and newlines.
-      **Test:** Parsing `question_import_template.csv` yields exactly 6 rows, and AF-0001's
-      explanation retains its internal commas.
+- [x] **T-051** Write a CSV parser that handles quoted fields containing commas and newlines.
+      **Test:** Parsing `question_import_template.csv` yields exactly ~~6~~ **7** rows, and
+      AF-0001's explanation retains its internal commas. ✅ 17 tests.
+      **Correction:** the task said 6 rows; the template has **7** — the same miscount already
+      fixed in T-031, where all 7 were verified verbatim. Corrected rather than made to pass.
+      `parse-csv.ts` is hand-written RFC4180 (quoted commas, embedded newlines, `""` escapes,
+      CRLF, BOM) rather than a dependency, because every failure has to name a **line number** —
+      a generic parser's "unexpected token" helps nobody staring at a 500-row ministry export.
+      Header validation names _what_ differs (missing / unexpected / out of order), since a
+      renamed column would otherwise be read silently as a different field.
+      `prisma/seed-questions.ts` now calls this parser instead of the minimal copy it carried;
+      re-seeded and re-verified **7/7 verbatim** against the CSV.
+      **Lint caught a real hazard:** the BOM and the header-mismatch guard both held _literal_
+      U+FEFF characters — invisible in review. Rewritten as the escape `\uFEFF`.
 - [ ] **T-052** Map `status` column values (`raw`, `needs_answer`, `needs_explanation`,
       `needs_topic_review`, `ready`) including semicolon-combined values.
       **Test:** `needs_answer;needs_explanation` parses to a 2-element array.
