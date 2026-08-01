@@ -130,6 +130,19 @@ enum QStatus {
 /// student with an answer it can defend.
 model Question {
   id      String @id @default(cuid())
+
+  /// Human-quotable identifier from the import file — `AF-0003`, `CS-0001`,
+  /// `GEO-0001`. Maps to `question_id` in question_import_template.csv.
+  ///
+  /// Separate from `id` on purpose: `id` is a cuid nobody can read down a phone
+  /// line, while this is what a reviewer cites in a bounce note, what content
+  /// operations track a bad question by, and what makes re-import idempotent
+  /// (T-055 upserts on it rather than creating duplicates).
+  ///
+  /// Globally unique, not per-field: the prefix already carries the field, and a
+  /// collision across fields would mean two questions answering to one name.
+  stableId String @unique
+
   topicId String
   topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 

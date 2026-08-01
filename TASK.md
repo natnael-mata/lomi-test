@@ -460,8 +460,23 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       `formula` is nullable — it renders in its own well above the step's prose
       (`1,150,000 × 15/115`) and is absent when a step is purely narrative.
       Cascade, like `Option`: a step has no meaning apart from its question.
-- [ ] **T-028** Add `stableId` to `Question` (e.g. `AF-0003`), unique, matching the CSV column.
-      **Test:** Inserting a duplicate `stableId` raises a unique violation.
+- [x] **T-028** Add `stableId` to `Question` (e.g. `AF-0003`), unique, matching the CSV column.
+      **Test:** Inserting a duplicate `stableId` raises a unique violation. ✅ 2026-08-01
+      _Verified: a second `AF-0003` is rejected with **P2002**, `AF-0004` is accepted, and
+      `AF-0003` reused **in a different field** is also rejected — uniqueness is global, not
+      per-field._
+      **Separate from `id` on purpose.** `id` is a cuid nobody can read down a phone line;
+      `stableId` is what a reviewer cites in a bounce note, what content operations track a bad
+      question by, and what CONTENT-PIPELINE.md's `question_id` column actually contains.
+      **Global uniqueness, not per-field:** the prefix (`AF-`, `CS-`, `GEO-`) already carries the
+      field, so a per-field constraint would allow two questions answering to one name — exactly
+      the ambiguity the identifier exists to remove.
+      Also verified the property T-055 depends on: `upsert({ where: { stableId } })` **updated in
+      place** rather than creating a second row, so re-importing the same CSV converges instead
+      of duplicating. Question count stayed at 2.
+      _Migration note:_ this adds a `NOT NULL` column with no default, which only applies cleanly
+      because `Question` is empty at this point in history. Confirmed 0 rows before applying. Any
+      later `NOT NULL` addition to a populated table will need a default or a backfill step.
 - [ ] **T-029** Add index on `Question(fieldId, status)` — the hot path for question serving.
       **Test:** `EXPLAIN` on the next-question query shows an index scan, not a seq scan.
 - [ ] **T-030** Write a seed that creates the three launch fields: Computer Science,
