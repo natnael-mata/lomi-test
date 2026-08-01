@@ -554,8 +554,20 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
 
 ### 2a — Publish gate
 
-- [ ] **T-040** Confirm `publish-gate.ts` rejects a question with ≠1 correct option.
-      **Test:** Unit: 0 correct → error; 2 correct → error; 1 correct → pass.
+- [x] **T-040** Confirm `publish-gate.ts` rejects a question with ≠1 correct option.
+      **Test:** Unit: 0 correct → error; 2 correct → error; 1 correct → pass. ✅ 2026-08-01
+      _Verified, 5 tests: 1 correct passes; 0 correct blocks with "No correct option marked";
+      2 correct blocks **naming which** ("have 2: A, B"); 4 correct blocks likewise._
+      **Returns a list of blockers, not a throw.** A reviewer fixing a question wants everything
+      wrong with it at once, and the submit button shows the remaining count — a gate that throws
+      on the first problem forces one round trip per defect.
+      The two failure modes get **different messages**, because they are different problems:
+      _zero_ correct means nobody has verified the answer (the common case — five of eight source
+      files arrived with no key), while _two_ correct means the bank contradicts itself, which is
+      worse than having no question at all: a student picking the other correct option is marked
+      wrong and shown a why-wrong for an answer that was right.
+      Prisma-free, like `weights.ts`, so the importer, the creator form and the review queue can
+      all share it and it tests without a database.
 - [ ] **T-041** Confirm the gate rejects a blank `whyWrong` on any distractor.
       **Test:** Unit: 3 distractors, one blank → error names the option letter.
 - [ ] **T-042** Confirm the gate rejects a multi-sentence `conceptLine`.
