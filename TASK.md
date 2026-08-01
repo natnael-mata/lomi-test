@@ -683,8 +683,25 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
 
 ### 2b — Importer
 
-- [ ] **T-050** Define the canonical import row type matching the CSV's 16 columns exactly.
-      **Test:** Type has all 16 keys; compile fails if one is removed.
+- [x] **T-050** Define the canonical import row type matching the CSV's 16 columns exactly.
+      **Test:** Type has all 16 keys; compile fails if one is removed. ✅ 2026-08-01
+      _Verified by actually removing a column and checking: **typecheck exits 2** whether the
+      column is dropped from the tuple or the field from the interface, and 0 once restored._
+      **My first version failed this test and I nearly did not notice.** I derived
+      `ImportRow = Record<ImportColumn, string>` from the tuple, which made the exhaustiveness
+      guards **tautological** — the two can never disagree, so deleting a column shrank both and
+      compiled clean. Typecheck stayed green; only the runtime test caught it. The interface is
+      now written longhand, so there are two independent declarations for the guards to compare.
+      A checker that cannot fail is worse than none: it reports safety it never verified.
+      **The strongest assertion is against the file itself** — `IMPORT_COLUMNS` is compared to the
+      real template's header, in order, so a renamed or reordered column fails here rather than
+      being silently read as a different field mid-import.
+      Also: `import.meta` is a **syntax error** in this workspace (`apps/api` compiles as CommonJS
+      for NestJS's decorator metadata) even though Vitest runs it happily — caught by typecheck,
+      not tests. The test locates the repo root by walking up from `process.cwd()` instead.
+      `IMPORT_STATUSES` covers the five values CONTENT-PIPELINE.md defines, and every status the
+      template actually uses is asserted to be among them. `ready` is recorded as a **claim by the
+      source file, not a grant** — T-054 makes the importer refuse to publish regardless.
 - [ ] **T-051** Write a CSV parser that handles quoted fields containing commas and newlines.
       **Test:** Parsing `question_import_template.csv` yields exactly 6 rows, and AF-0001's
       explanation retains its internal commas.
