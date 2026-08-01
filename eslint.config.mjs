@@ -51,7 +51,7 @@ export default tseslint.config(
     files: [
       'apps/*/src/main.ts',
       'apps/api/scripts/**/*.{ts,mjs,js}',
-      'apps/api/prisma/seed.ts',
+      'apps/api/prisma/seed*.ts',
       'scripts/**/*.{ts,mjs,js}',
     ],
     rules: { 'no-console': 'off' },

@@ -519,8 +519,32 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       pass the gate. A seed must never be how a field goes live.
       `examDate` is left null — no real sitting date has been supplied, and inventing one would
       put a fabricated countdown on screen.
-- [ ] **T-031** Seed the 6 sample questions from `question_import_template.csv` verbatim.
+- [x] **T-031** Seed the 6 sample questions from `question_import_template.csv` verbatim.
       **Test:** `AF-0003` exists with 4 options, correct = `b`, and a non-empty explanation.
+      ✅ 2026-08-01 — _Verified: 4 options, **B = 150,000** correct, explanation non-empty._
+      **7 rows, not 6** — the template has seven. All seven are seeded; verbatim is _checked_, not
+      asserted: stem, explanation and `code_block` compared **byte-for-byte against the CSV for
+      every row, 7/7 match**. The seed reads the file rather than hard-coding rows, so it cannot
+      drift. Its parser is minimal — the real importer is T-051.
+      **Bug I introduced and caught:** `slugify` turns "Accounting & Finance" into
+      `accounting-and-finance`, but T-030 seeded `accounting-finance`. That created a **second,
+      unpublished Accounting field** with all five AF questions hanging off it — invisible unless
+      you look. Fixed by matching an existing field by name before deriving a slug, then wiping
+      and reseeding; all seven now attach to the right field.
+      **Geography is created UNPUBLISHED.** It is not a launch field, but GEO-0001 is the
+      template's `needs_answer` example and T-067's review-queue fixture. It exists in the
+      pipeline without being servable, which is exactly its real state.
+      **All seven seed as DRAFT, and none can currently be published** — see T-031a.
+- [ ] **T-031a** The import template cannot produce a publishable question. **Needs a decision.**
+      The publish gate requires a `whyWrong` on every distractor (T-041) and a single-sentence
+      concept line (T-042). `question_import_template.csv` has **neither column** — 16 columns,
+      one `explanation`, no `why_wrong_*`, no `concept_line`. So every imported question is
+      permanently stuck short of publishable, including the five hand-authored Accounting rows
+      that were written as worked examples.
+      Options: add `why_wrong_a..d` and `concept_line` to the canonical schema (changes
+      CONTENT-PIPELINE.md's contract), or treat both as authored-in-review rather than imported.
+      **Test:** the template gains the columns the gate requires, or CONTENT-PIPELINE.md records
+      that they are authored in the review queue and the importer stages accordingly.
 
 ---
 

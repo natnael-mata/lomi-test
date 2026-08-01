@@ -167,6 +167,12 @@ model Question {
   /// The question itself — the most-read text in the product.
   stem  String
 
+  /// Code shown with the question, kept OUT of the stem so the answer view can
+  /// render it in its own monospaced well (DESIGN.md: "code sits in its own
+  /// well, separate from prose"). Maps to `code_block` in the import CSV.
+  /// Null for the great majority of questions.
+  codeBlock String?
+
   /// One sentence naming what is being tested. Nullable while a question is a
   /// draft; the publish gate (T-042) requires it and rejects multiple sentences.
   conceptLine String?
