@@ -1014,8 +1014,22 @@ these…"` at the start of a stem is prose.
       `RETIRED` is in the enum ready for T-070.
 - [ ] **T-070** `POST /admin/questions/:id/retire` sets `RETIRED` and records blast radius.
       **Test:** Retiring returns counts of affected attempts and live sittings.
+
+  > blocked: the blast-radius half cannot be written yet — `Attempt` and `Sitting` do not exist
+  > until Phase 4 (T-105+). The **retire action itself is built and tested** (5 tests):
+  > `RETIRED` never deleted, since prior attempts reference the question and a student's
+  > history pointing at nothing is worse than a question nobody is served; idempotent, with no
+  > second audit row for a repeated withdrawal; audited with the actor and the reason.
+  > `blastRadius` returns `{ attempts: null, liveSittings: null, measurable: false }` —
+  > **null means not yet measurable, not zero.** Reporting 0 would tell a reviewer that
+  > retiring this question disturbs nobody, which is a claim the code cannot make. Finish this
+  > task when the attempt tables land.
+
 - [ ] **T-071** A retired question never appears in any student query.
       **Test:** Integration: retire, then request 100 next-questions — it never appears.
+
+  > blocked: there is no student query yet. `GET /questions/next` is T-105; this test cannot be
+  > written before the endpoint it tests. Revisit immediately after T-105.
 
 ---
 

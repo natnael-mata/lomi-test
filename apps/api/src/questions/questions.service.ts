@@ -81,4 +81,82 @@ export class QuestionsService {
     });
     return { id: updated.id, status: updated.status };
   }
+
+  /**
+   * Withdraws a question from service.
+   *
+   * `RETIRED`, never deleted: prior attempts reference the question, and a
+   * student's history that points at nothing is a worse artefact than a bad
+   * question nobody is served any more.
+   *
+   * Idempotent — retiring an already-retired question is not an error, it is
+   * somebody making sure. It writes no second audit row either, so the log
+   * records the withdrawal once.
+   */
+  async retire(id: string, actorId: string, reason?: string): Promise<RetireResult> {
+    const q = await this.prisma.question.findUnique({
+      where: { id },
+      select: { id: true, stableId: true, status: true },
+    });
+    if (!q) throw new NotFoundException(`No question ${id}`);
+
+    if (q.status === 'RETIRED') {
+      return {
+        id: q.id,
+        status: q.status,
+        alreadyRetired: true,
+        blastRadius: BLAST_RADIUS_UNKNOWN,
+      };
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.question.update({ where: { id }, data: { status: 'RETIRED' } });
+      await this.audit.record(
+        {
+          actorId,
+          action: 'RETIRED',
+          questionId: row.id,
+          stableId: row.stableId,
+          detail: reason?.trim() || null,
+        },
+        tx,
+      );
+      return row;
+    });
+
+    return {
+      id: updated.id,
+      status: updated.status,
+      alreadyRetired: false,
+      blastRadius: BLAST_RADIUS_UNKNOWN,
+    };
+  }
 }
+
+export interface RetireResult {
+  id: string;
+  status: string;
+  alreadyRetired: boolean;
+  blastRadius: BlastRadius;
+}
+
+/**
+ * How much a retirement disturbs — how many attempts referenced the question,
+ * and how many exam sittings are in progress with it on the paper.
+ *
+ * `null` means **not yet measurable**, not zero. `Attempt` and `Sitting` land in
+ * Phase 4; reporting 0 before those tables exist would tell a reviewer that
+ * retiring a question disturbs nobody, which is a claim this code cannot make.
+ * T-070 stays open for exactly this half.
+ */
+export interface BlastRadius {
+  attempts: number | null;
+  liveSittings: number | null;
+  measurable: boolean;
+}
+
+export const BLAST_RADIUS_UNKNOWN: BlastRadius = {
+  attempts: null,
+  liveSittings: null,
+  measurable: false,
+};
