@@ -497,12 +497,25 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       The cost is drift: a stale `fieldId` means **a student is served another programme's
       question**. Written from the topic at insert time; T-029a makes the database enforce it.
       Seeded rows removed afterwards; the table is back to 0.
-- [ ] **T-029a** Enforce that `Question.fieldId` matches its topic's real field.
+- [x] **T-029a** Enforce that `Question.fieldId` matches its topic's real field.
       Denormalisation (T-029) invites drift, and a drifted row serves a student the wrong
       programme's question — silently, and looking entirely normal.
       **Test:** a trigger rejects an insert or update whose `fieldId` differs from
       `topic → course → fieldId`; moving a question to a topic in another field either updates
-      `fieldId` or is refused.
+      `fieldId` or is refused. ✅ 2026-08-02 — 7 tests, migration
+      `20260802060000_question_field_matches_topic`.
+      **It raises rather than silently correcting.** Auto-deriving the value would make drift
+      impossible too, but it would also hide the bug that caused it — including the exact case
+      this exists for: moving a question to a topic in another field and forgetting `fieldId`.
+      A write that disagrees with the taxonomy is a caller bug and should say so.
+      `BEFORE`, not `AFTER`: the row must never exist in a drifted state, not even inside the
+      transaction that would go on to read it. Scoped to `UPDATE OF "topicId", "fieldId"`, so
+      editing a stem does not pay for the lookup.
+      Hand-written, like the `weightPct` CHECK — Prisma's schema language cannot express a
+      trigger, so it will not appear in `migrate diff` output. **Future generated migrations
+      must be reviewed for a DROP of it.**
+      Verified it obstructs nothing that already works: the seed, the importer and all 265
+      tests still pass, and the three seeded questions are asserted to match their topics.
 - [x] **T-030** Write a seed that creates the three launch fields: Computer Science,
       Public Health, Accounting & Finance.
       **Test:** After `npm run db:seed`, exactly 3 published fields exist. ✅ 2026-08-01
