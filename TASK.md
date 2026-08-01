@@ -834,13 +834,44 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       while scanning and `parseImportCsv` returns `{ row, line }`. Naming the wrong line is
       worse than naming none — it sends somebody to edit an innocent row. Every report entry
       now carries its line, not just this rule's.
-- [ ] **T-058** Add a cleaning pass: strip form feeds, repeated running headers, and
+- [x] **T-058** Add a cleaning pass: strip form feeds, repeated running headers, and
       `"Question N"` concatenated onto option text (CONTENT-PIPELINE §1).
-      **Test:** Unit: `"Question 2Answer: foo"` → `"foo"`.
-- [ ] **T-059** Add a cleaning pass for double lettering (`"A. a."` → `"a."`).
-      **Test:** Unit covers `A. a.`, `(a) a)`, and leaves clean text untouched.
-- [ ] **T-060** Log, do not silently drop, every row the cleaner modifies.
-      **Test:** Report lists modified rows with before/after.
+      **Test:** Unit: `"Question 2Answer: foo"` → `"foo"`. ✅ 2026-08-02 — 20 tests.
+      Form feeds and the other control characters, zero-width and non-breaking spaces,
+      collapsed spacing, running headers, the welded question number, and stray `Ans.` labels.
+      **The governing rule is that a too-clever cleaner is worse than none.** A question
+      silently missing its first three words is harder to notice than an obviously dirty one,
+      so each pass only fires where the noise is certain:
+      · the question-number strip requires **no space** after the digits (what "concatenated"
+      means), leaving `"Question 3 asked households…"` intact;
+      · running headers are matched **only at the ends** of a field, because a header's words
+      can legitimately appear mid-sentence, and are supplied **per file** rather than guessed;
+      · **newlines survive** the whitespace collapse — code blocks and the multi-line Accounting
+      scenarios are nonsense on one line.
+      Cleaning runs **before** every mapping rule, so a stem that was nothing but a page header
+      fails "there is no question" loudly instead of being half-cleaned into something
+      plausible. Verified the real template is left **byte-identical** — no row reports a
+      cleaning change, and re-seeding still reads 7/7 verbatim.
+      Character classes are written as `\uXXXX` escapes: a control character pasted into source
+      is invisible to every reviewer, which is the same trap as T-051's literal BOM.
+- [x] **T-059** Add a cleaning pass for double lettering (`"A. a."` → `"a."`).
+      **Test:** Unit covers `A. a.`, `(a) a)`, and leaves clean text untouched. ✅ 2026-08-02 —
+      10 tests, also `b) B.`, `(C) (c)`, `d.d.`.
+      Only fires when the letter is **doubled and the two agree**. A single leading `a)` is left
+      alone: nothing in the text says whether it is the option's own label or part of the
+      answer, and `"a) and c) are both correct"` is a real option in these papers. One wrong
+      strip that changes an answer's meaning costs more than a hundred tidy ones gain.
+      Applied to **options only** — a stem never carries an option label, and `"a) b) Which of
+    these…"` at the start of a stem is prose.
+- [x] **T-060** Log, do not silently drop, every row the cleaner modifies.
+      **Test:** Report lists modified rows with before/after. ✅ 2026-08-02 — 4 tests.
+      Every pass returns its changes rather than just its output, and `mapRow` turns each into
+      a report note naming **the field, the rule, and both sides**:
+      `cleaned option C (double lettering): "C. c. Three" → "Three"`.
+      Quoted and clipped at 60 characters rather than summarised — "cleaned the stem" is
+      unreviewable, and the entire point of logging this is that a person can check the cleaner
+      did the right thing to their file. Rows needing no cleaning say nothing at all, and
+      T-056's collapsing keeps a file-wide pattern to one line.
 
 ### 2c — Review queue
 

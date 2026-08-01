@@ -252,7 +252,7 @@ describe('inferQType', () => {
 
 describe('mapRow — the real template', () => {
   it('accepts all 7 rows', () => {
-    expect(TEMPLATE.map(mapRow).filter((r) => r.ok)).toHaveLength(7);
+    expect(TEMPLATE.map((r) => mapRow(r)).filter((r) => r.ok)).toHaveLength(7);
   });
 
   it('stages GEO-0001, the deliberately unfinished row', () => {
@@ -269,5 +269,69 @@ describe('mapRow — the real template', () => {
     const af = mapRow(TEMPLATE.find((r) => r.question_id === 'AF-0001')!);
     if (!af.ok) throw new Error('AF-0001 rejected');
     expect(af.row.flags).toEqual(['READY']);
+  });
+});
+
+describe('mapRow — cleaning (T-058, T-059, T-060)', () => {
+  it('cleans the stem before any rule looks at it', () => {
+    expect(mapped({ question_text: 'Question 2Answer: What is the VAT rate?' }).stem).toBe(
+      'What is the VAT rate?',
+    );
+  });
+
+  it('strips double lettering from options', () => {
+    const m = mapped({ option_a: 'A. a. Simple random sampling', correct_option: 'a' });
+    expect(m.options[0]!.text).toBe('Simple random sampling');
+  });
+
+  it('does not apply the double-letter pass to the stem', () => {
+    // "a) and b) are..." at the start of a stem is prose, not a doubled label.
+    const stem = 'a) b) Which of these is correct?';
+    expect(mapped({ question_text: stem }).stem).toBe(stem);
+  });
+
+  it('strips a running header when the caller supplies one', () => {
+    const HEADER = 'MoE Exit Exam 2015';
+    const result = mapRow(row({ question_text: `${HEADER} What is the VAT rate?` }), {
+      runningHeaders: [HEADER],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.row.stem).toBe('What is the VAT rate?');
+  });
+
+  // T-060: nothing is fixed quietly.
+  it('reports every change with its before and after', () => {
+    const m = mapped({ question_text: 'Question 2Answer: foo' });
+    const cleaned = m.notes.filter((n) => n.startsWith('cleaned'));
+    expect(cleaned.length).toBeGreaterThan(0);
+    expect(cleaned.join(' ')).toContain('question_text');
+    expect(cleaned.join(' ')).toContain('Question 2Answer: foo');
+    expect(cleaned.join(' ')).toContain('foo');
+  });
+
+  it('names the option a change was made to', () => {
+    const m = mapped({ option_c: 'C. c. Three', correct_option: 'a' });
+    expect(m.notes.join(' ')).toContain('cleaned option C (double lettering)');
+  });
+
+  it('says nothing when a row needed no cleaning', () => {
+    expect(mapped().notes.filter((n) => n.startsWith('cleaned'))).toEqual([]);
+  });
+
+  // The cleaner running first is what makes this loud rather than plausible.
+  it('rejects a stem that was nothing but a page header', () => {
+    const HEADER = 'MoE Exit Exam 2015';
+    const result = mapRow(row({ question_text: HEADER }), { runningHeaders: [HEADER] });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reasons.join(' ')).toContain('there is no question');
+  });
+
+  it('leaves every row of the real template untouched', () => {
+    for (const raw of TEMPLATE) {
+      const result = mapRow(raw);
+      if (!result.ok) throw new Error(`${raw.question_id} rejected`);
+      expect(result.row.notes.filter((n) => n.startsWith('cleaned'))).toEqual([]);
+      expect(result.row.stem).toBe(raw.question_text);
+    }
   });
 });

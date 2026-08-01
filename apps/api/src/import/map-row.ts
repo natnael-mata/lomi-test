@@ -13,6 +13,7 @@
  */
 import type { ImportFlag, QType } from '@prisma/client';
 
+import { cleanOptionText, cleanText, type CleanChange } from './clean-text';
 import type { ImportRow, ImportStatus } from './csv-schema';
 import { parseStatuses } from './status';
 
@@ -97,7 +98,16 @@ export function inferQTypeWithBasis(
   return { qType: 'CONCEPT', certain: true };
 }
 
-export function mapRow(row: ImportRow): MapResult {
+export interface MapOptions {
+  /** Page headers seen repeating in THIS file — per-file strings, not a fixed list. */
+  runningHeaders?: readonly string[];
+}
+
+export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
+  // Cleaning runs FIRST, before any rule looks at the text. A stem that is
+  // nothing but a page header should fail the "there is no question" check, and
+  // it only can if the header is gone by the time that check runs (T-058).
+  const { row, cleanChanges } = cleanRow(raw, opts.runningHeaders ?? []);
   const stableId = row.question_id.trim();
   const reasons: string[] = [];
   const notes: string[] = [];
@@ -135,6 +145,9 @@ export function mapRow(row: ImportRow): MapResult {
   if (reasons.length > 0) return { ok: false, stableId: stableId || '(no id)', reasons };
 
   // ---- staging decisions: everything below is recoverable by a human ----
+
+  // T-060: nothing the cleaner touched is fixed quietly.
+  for (const change of cleanChanges) notes.push(describeChange(change));
 
   const claimed = parseStatuses(row.status);
   for (const u of claimed.unknown) notes.push(`unrecognised status "${u}" ignored`);
@@ -229,3 +242,59 @@ const FLAG_BY_STATUS = {
 function toFlag(status: ImportStatus): ImportFlag {
   return FLAG_BY_STATUS[status];
 }
+
+/** Fields cleaned as prose, in the order they are reported. */
+const TEXT_FIELDS = ['question_text', 'explanation', 'code_block'] as const;
+
+/**
+ * Runs the cleaning passes over a raw row.
+ *
+ * `code_block` gets the same treatment as prose apart from the whitespace
+ * collapse being harmless there — its newlines survive `cleanText`, which is why
+ * that function keeps them.
+ */
+function cleanRow(
+  raw: ImportRow,
+  runningHeaders: readonly string[],
+): { row: ImportRow; cleanChanges: LabelledChange[] } {
+  const row = { ...raw };
+  const cleanChanges: LabelledChange[] = [];
+
+  for (const field of TEXT_FIELDS) {
+    const { text, changes } = cleanText(raw[field], runningHeaders);
+    row[field] = text;
+    cleanChanges.push(...changes.map((c) => ({ ...c, field })));
+  }
+
+  for (const label of OPTION_LABELS) {
+    const field = `option_${label.toLowerCase()}` as keyof ImportRow;
+    // Options additionally get the double-lettering pass (T-059) — the doubled
+    // label is an option-level artifact, and a stem never carries one.
+    const { text, changes } = cleanOptionText(raw[field], runningHeaders);
+    row[field] = text;
+    cleanChanges.push(...changes.map((c) => ({ ...c, field: `option ${label}` })));
+  }
+
+  return { row, cleanChanges };
+}
+
+interface LabelledChange extends CleanChange {
+  field: string;
+}
+
+/**
+ * One line describing a cleaning change, for the run report (T-060).
+ *
+ * Both sides are quoted and truncated rather than summarised: "cleaned the stem"
+ * is unreviewable, and the whole point of logging this is that someone can see
+ * the cleaner did the right thing to their file.
+ */
+function describeChange(change: LabelledChange): string {
+  return `cleaned ${change.field} (${change.rule}): "${clip(change.before)}" → "${clip(change.after)}"`;
+}
+
+const CLIP_AT = 60;
+const clip = (s: string): string => {
+  const oneLine = s.replace(/\n/g, '⏎');
+  return oneLine.length <= CLIP_AT ? oneLine : `${oneLine.slice(0, CLIP_AT - 1)}…`;
+};
