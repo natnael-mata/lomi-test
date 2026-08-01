@@ -1043,8 +1043,31 @@ these…"` at the start of a stem is prose.
       **Test:** Correct code → 200 + token; wrong code → 401; expired code → 401.
 - [ ] **T-078** OTP codes expire after 5 minutes and are single-use.
       **Test:** Reusing a consumed code → 401.
-- [ ] **T-079** Telegram `initData` HMAC validation against the bot token.
-      **Test:** Unit: a known-good fixture validates; a tampered fixture fails.
+
+  > blocked: T-075–T-078 are the SMS OTP flow, which the project owner is handling in a separate
+  > session. Left untouched by standing instruction. Note that T-077 issues the JWT the rest of
+  > Phase 3 authenticates with, so the session work below stands up its own token issuance and
+  > the OTP route plugs into it rather than the reverse.
+
+- [x] **T-079** Telegram `initData` HMAC validation against the bot token.
+      **Test:** Unit: a known-good fixture validates; a tampered fixture fails. ✅ 2026-08-02 —
+      24 tests. Tampering is covered field by field: changed id, changed username, changed
+      `auth_date`, flipped hash, added field, removed field, wrong bot token.
+      **The fixture's digest is a pinned literal, not recomputed by the test.** A test that
+      signs its own fixture with the code it is checking passes even when the algorithm is
+      wrong, because both sides are wrong together. **Confirmed by inverting the first HMAC**
+      (`HMAC(botToken, "WebAppData")` instead of `HMAC("WebAppData", botToken)` — the classic
+      mistake, and one that reads like a config problem and gets "fixed" by disabling the
+      check): **11 of 24 tests fail.** Fixture signed with a throwaway token; no real
+      credential is in the repo.
+      **`auth_date` is enforced, not just parsed.** Without it a single captured `initData` is a
+      permanent credential. 24-hour limit, injectable clock, small backward skew tolerated and
+      a future date refused.
+      Comparison is `timingSafeEqual` on the decoded bytes, with a length mismatch answered
+      `false` rather than thrown — a throw would leak the same fact the constant-time compare
+      exists to hide.
+      The Telegram id is kept as a **string**: it is an identifier, not a quantity, and ids past
+      2^53 must not round.
 - [ ] **T-080** Telegram sign-in creates or finds a user by `telegramId`.
       **Test:** Two sign-ins with the same id yield one user row.
 - [ ] **T-081** Link a Telegram identity to an existing phone account.
