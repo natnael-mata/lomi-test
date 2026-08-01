@@ -46,9 +46,9 @@ export class ReviewController {
   @Post(':id/bounce')
   bounce(
     @Param('id') id: string,
-    @Body() body: { note?: string },
+    @Body() body: { note?: string; reviewerId?: string },
   ): Promise<{ id: string; status: string }> {
-    return this.review.bounce(id, body.note ?? '');
+    return this.review.bounce(id, body.note ?? '', body.reviewerId ?? 'unknown-reviewer');
   }
 
   @Post(':id/publish')

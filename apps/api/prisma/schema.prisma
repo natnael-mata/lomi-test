@@ -314,3 +314,45 @@ model Option {
   @@unique([questionId, label])
   @@index([questionId])
 }
+
+/// What was done to a question, by whom, and when.
+///
+/// Append-only history, deliberately separate from `Question.bounceNote`: that
+/// column is the outstanding instruction and gets overwritten, this is the record
+/// and never does. Conflating them means either losing the history or showing an
+/// author a complaint about a fix they already made.
+///
+/// Not a foreign key to Question on purpose — an audit row must outlive whatever
+/// it describes. Questions are retired rather than deleted today, but a log that
+/// a delete can erase is not a log.
+model AuditLog {
+  id String @id @default(cuid())
+
+  /// Who did it. A plain id, like `Question.authorId`: the User model lands in
+  /// Phase 3, and the FK lands with it.
+  actorId String
+
+  action AuditAction
+
+  /// The question this concerns, by `id`, plus its `stableId` copied in so the
+  /// log stays readable after the row it points at is gone.
+  questionId String
+  stableId   String
+
+  /// Free text for the action that needs it — the note a bounce carried, the
+  /// blast radius a retirement reported.
+  detail String?
+
+  createdAt DateTime @default(now())
+
+  @@index([questionId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+/// The actions worth a permanent record: the ones that change what a student
+/// can see, or that a person may later have to answer for.
+enum AuditAction {
+  PUBLISHED
+  BOUNCED
+  RETIRED
+}

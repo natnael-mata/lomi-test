@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { gateBlockers, type DraftQuestion } from './publish-gate';
 
 @Injectable()
 export class QuestionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Publishes a question, or refuses with the list of reasons.
@@ -57,9 +61,23 @@ export class QuestionsService {
       throw new UnprocessableEntityException({ error: 'GATE_BLOCKED', blockers });
     }
 
-    const updated = await this.prisma.question.update({
-      where: { id },
-      data: { status: 'PUBLISHED', reviewerId },
+    // One transaction: an audit row that survives a rolled-back publish is a lie
+    // about what happened, and a publish with no audit row is worse.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.question.update({
+        where: { id },
+        data: { status: 'PUBLISHED', reviewerId },
+      });
+      await this.audit.record(
+        {
+          actorId: reviewerId,
+          action: 'PUBLISHED',
+          questionId: row.id,
+          stableId: row.stableId,
+        },
+        tx,
+      );
+      return row;
     });
     return { id: updated.id, status: updated.status };
   }

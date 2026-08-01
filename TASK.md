@@ -976,8 +976,22 @@ these…"` at the start of a stem is prose.
       re-import that rewrote one option's row reshuffled it. The same unpublishable question
       handed a reviewer the same complaints in a different order each time. Both `options` and
       `steps` are now explicitly ordered.
-- [ ] **T-069** Publishing writes an `AuditLog` row with actor, action, question, timestamp.
+- [x] **T-069** Publishing writes an `AuditLog` row with actor, action, question, timestamp.
       **Test:** After publish, exactly one audit row exists with the reviewer's id.
+      ✅ 2026-08-02 — 6 tests. Migration `20260802040000_audit_log`.
+      **Written inside the caller's transaction.** An audit row that survives a rolled-back
+      publish is a lie about what happened, and a publish with no audit row is worse. Asserted
+      both ways: a gate-refused publish and a refused bounce each leave **zero** rows — a log
+      that records attempts as if they succeeded is not evidence of anything.
+      **No foreign key to Question, deliberately.** A log a delete can erase is not a log. The
+      `stableId` is **copied into the row** rather than joined to, so the history stays readable
+      after the question is gone — asserted by deleting one.
+      Bounces are logged too, with the note copied in. `Question.bounceNote` is overwritten by
+      the next bounce; the history has to survive that, and the test bounces twice to prove the
+      column holds the latest while the log holds both.
+      One `AuditService` rather than three inline `create` calls, so "did this action get
+      logged" is one place to check and the shape cannot drift between routes.
+      `RETIRED` is in the enum ready for T-070.
 - [ ] **T-070** `POST /admin/questions/:id/retire` sets `RETIRED` and records blast radius.
       **Test:** Retiring returns counts of affected attempts and live sittings.
 - [ ] **T-071** A retired question never appears in any student query.

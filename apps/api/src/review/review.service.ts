@@ -5,6 +5,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { toAnswerView, type AnswerView } from '../questions/answer-view';
 import { normalisePatch, type ReviewPatch } from './review-patch';
@@ -44,7 +45,10 @@ export const MIN_BOUNCE_NOTE = 10;
 
 @Injectable()
 export class ReviewService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * The next question for this reviewer to look at, or `null` when the queue is
@@ -100,7 +104,7 @@ export class ReviewService {
    * always answer "what is still wrong with me"; the permanent record of who
    * bounced it and when is the audit log (T-069).
    */
-  async bounce(id: string, note: string): Promise<{ id: string; status: string }> {
+  async bounce(id: string, note: string, actorId: string): Promise<{ id: string; status: string }> {
     const trimmed = note.trim();
     if (trimmed.length < MIN_BOUNCE_NOTE) {
       throw new BadRequestException(
@@ -108,15 +112,33 @@ export class ReviewService {
       );
     }
 
-    const question = await this.prisma.question.findUnique({ where: { id }, select: { id: true } });
+    const question = await this.prisma.question.findUnique({
+      where: { id },
+      select: { id: true, stableId: true },
+    });
     if (!question) throw new NotFoundException(`No question ${id}`);
 
-    const updated = await this.prisma.question.update({
-      where: { id },
-      // Back to DRAFT: it is the author's again, and it must leave the review
-      // queue immediately — otherwise the next reviewer picks up a question
-      // somebody has already rejected.
-      data: { status: 'DRAFT', bounceNote: trimmed },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.question.update({
+        where: { id },
+        // Back to DRAFT: it is the author's again, and it must leave the review
+        // queue immediately — otherwise the next reviewer picks up a question
+        // somebody has already rejected.
+        data: { status: 'DRAFT', bounceNote: trimmed },
+      });
+      // The note is copied into the log as well as onto the question. The column
+      // is overwritten by the next bounce; the history has to survive it.
+      await this.audit.record(
+        {
+          actorId,
+          action: 'BOUNCED',
+          questionId: row.id,
+          stableId: row.stableId,
+          detail: trimmed,
+        },
+        tx,
+      );
+      return row;
     });
     return { id: updated.id, status: updated.status };
   }
