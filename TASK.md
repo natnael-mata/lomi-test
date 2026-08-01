@@ -896,8 +896,25 @@ these…"` at the start of a stem is prose.
       **every author-less question silently vanished from every queue**. I had even written the
       comment warning about it above the line that did it. Rewritten as an explicit
       `OR: [{ authorId: null }, { authorId: { not: reviewerId } }]`.
-- [ ] **T-066** Review response includes the full render payload (options, why-wrongs, steps).
-      **Test:** Response shape matches the student answer-view contract exactly.
+- [x] **T-066** Review response includes the full render payload (options, why-wrongs, steps).
+      **Test:** Response shape matches the student answer-view contract exactly. ✅ 2026-08-02 —
+      7 tests. `Object.keys(answerView)` is asserted to equal `ANSWER_VIEW_FIELDS` **in order**,
+      so a field added in the wrong place or quietly dropped fails.
+      The contract now lives in one place, `questions/answer-view.ts`, shared by the review
+      payload and (T-100s) the attempt response. **A reviewer who can see more of a question
+      than the student can is approving a different question**, so the payload is not a
+      reviewer-shaped variant — it is the same object.
+      Field order follows PRODUCT.md's fixed render order (verdict → concept → solution →
+      why-wrongs). `chosenLabel` is present but **null** in review: nobody has attempted it, and
+      a renderer must never branch on which keys exist. `explanation` and `steps` are both
+      always present for the same reason — only which one is populated varies by `qType`.
+      `correctLabel` is null when a draft has **more than one** correct option, not just when it
+      has none: naming one of two would be picking a winner the gate has not accepted.
+      Reviewer-only context (author, taxonomy, import flags, whether the topic is weighted) sits
+      **outside** `answerView`, so the boundary between "what a student sees" and "what helps
+      you judge" is visible in the JSON. That file is also the single home for answer content —
+      `isCorrect`, `whyWrong`, `conceptLine`, explanation, steps — which `GET /questions/next`
+      must never carry.
 - [ ] **T-067** `POST /admin/review/:id/publish` runs the gate and returns 422 with a blocker
       list when it fails.
       **Test:** GEO-0001 (no answer) → 422 with 3 named blockers.
