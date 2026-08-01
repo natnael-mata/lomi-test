@@ -869,7 +869,7 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       answer, and `"a) and c) are both correct"` is a real option in these papers. One wrong
       strip that changes an answer's meaning costs more than a hundred tidy ones gain.
       Applied to **options only** — a stem never carries an option label, and `"a) b) Which of
-  these…"` at the start of a stem is prose.
+these…"` at the start of a stem is prose.
 - [x] **T-060** Log, do not silently drop, every row the cleaner modifies.
       **Test:** Report lists modified rows with before/after. ✅ 2026-08-02 — 4 tests.
       Every pass returns its changes rather than just its output, and `mapRow` turns each into
@@ -882,9 +882,20 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
 
 ### 2c — Review queue
 
-- [ ] **T-065** `GET /admin/review/next` returns the oldest `IN_REVIEW` question not authored
+- [x] **T-065** `GET /admin/review/next` returns the oldest `IN_REVIEW` question not authored
       by the requesting user.
-      **Test:** Integration: author A's question is not returned to A.
+      **Test:** Integration: author A's question is not returned to A. ✅ 2026-08-02 — 5 tests.
+      **Oldest first**, by `updatedAt`: a queue that hands out the newest item leaves the
+      awkward questions at the bottom forever, and the awkward ones are exactly the ones a
+      student eventually reads.
+      Skipping your own question here is **not redundant** with the gate's self-review rule
+      (T-044). The gate refuses at the end of the process, after the reviewer has read the
+      whole thing; the queue simply never offers it. One is politeness, the other is the rule.
+      **Bug caught by its own test:** `NOT: { authorId: reviewerId }` compiles to
+      `NOT (authorId = $1)`, which is NULL rather than true for an unattributed question — so
+      **every author-less question silently vanished from every queue**. I had even written the
+      comment warning about it above the line that did it. Rewritten as an explicit
+      `OR: [{ authorId: null }, { authorId: { not: reviewerId } }]`.
 - [ ] **T-066** Review response includes the full render payload (options, why-wrongs, steps).
       **Test:** Response shape matches the student answer-view contract exactly.
 - [ ] **T-067** `POST /admin/review/:id/publish` runs the gate and returns 422 with a blocker
