@@ -643,8 +643,21 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       _Why these bounds:_ this drives the "1:12 / 2:00" pacing line, so a nonsense value quietly
       misinforms every student who sees it. Under 15s nobody can read a stem and four options; over
       600s one question is 5% of a 180-minute sitting — a data-entry slip, not an intention.
-- [ ] **T-046** Add a gate rule: a question cannot publish if its Topic has no blueprint weight.
-      **Test:** Unit: topic weight null → error naming the topic.
+- [x] **T-046** Add a gate rule: a question cannot publish if its Topic has no blueprint weight.
+      **Test:** Unit: topic weight null → error naming the topic. ✅ 2026-08-01
+      _Verified, 4 tests: `Topic "VAT" has no weight — set it before publishing.`_
+      Readiness is a weighted mean and exam sampling draws against topic weight, so a published
+      question on an unweighted topic is **invisible to both** — it contributes nothing to a
+      student's readiness figure and can never be sampled into a mock. It looks published and is
+      effectively inert, which is the worst kind of broken: nothing reports it.
+      **A weight of `0` counts as set, not missing** — a topic can legitimately carry 0% and simply
+      contribute nothing. Treating `0` as unset would block a deliberate choice; tested.
+      Only checked when the topic is supplied, same boundary as T-044: the publish endpoint loads
+      it (T-067), while the creator form would otherwise show a blocker the author cannot clear
+      from that screen.
+      **The gate is now complete (T-040…T-046) — 47 tests.** Against the seeded template every
+      question reports 6 blockers and GEO-0001 reports 8; **0 of 7 publishable**, each for a named,
+      actionable reason.
 - [ ] **T-047** Confirm the gate runs server-side on every publish, not only on save.
       **Test:** Integration: POST publish with a crafted invalid payload → 422, status unchanged.
 

@@ -49,6 +49,11 @@ export interface DraftQuestion {
   authorId?: string | null;
   /** Who is approving it. Absent while the question is still being written. */
   reviewerId?: string | null;
+  /**
+   * The topic this question belongs to, with its weight. Supplied by the publish
+   * endpoint, which loads it; the creator form may not have it to hand — see T-046.
+   */
+  topic?: { name: string; weightPct: number | null };
 }
 
 /**
@@ -143,6 +148,20 @@ export function gateBlockers(q: DraftQuestion): string[] {
     blockers.push(
       `Time limit must be a whole number of seconds between ${MIN_TIME_LIMIT_SEC} and ${MAX_TIME_LIMIT_SEC} (have ${limit}).`,
     );
+  }
+
+  // T-046 — the question's topic has to be weighted.
+  //
+  // Readiness is a weighted mean and exam sampling draws against topic weight,
+  // so a published question hanging off an unweighted topic is invisible to both:
+  // it contributes nothing to a student's readiness figure and can never be
+  // sampled into a mock. It looks published and is effectively inert.
+  //
+  // Only checked when the topic is supplied — the publish endpoint loads it
+  // (T-067); the creator form need not, and would otherwise show a blocker the
+  // author cannot act on from that screen.
+  if (q.topic && q.topic.weightPct == null) {
+    blockers.push(`Topic "${q.topic.name}" has no weight — set it before publishing.`);
   }
 
   // T-044 — nobody approves their own question.

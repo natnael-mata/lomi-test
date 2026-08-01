@@ -400,3 +400,31 @@ describe('publish gate — pacing budget in range (T-045)', () => {
     expect(withLimit(60.5)).toHaveLength(1);
   });
 });
+
+describe('publish gate — topic must be weighted (T-046)', () => {
+  const withTopic = (topic: DraftQuestion['topic']) =>
+    gateBlockers(question(topic === undefined ? {} : { topic })).filter((b) =>
+      b.startsWith('Topic'),
+    );
+
+  it('blocks an unweighted topic, naming it', () => {
+    expect(withTopic({ name: 'VAT', weightPct: null })).toEqual([
+      'Topic "VAT" has no weight — set it before publishing.',
+    ]);
+  });
+
+  it('passes a weighted topic', () => {
+    expect(withTopic({ name: 'VAT', weightPct: 12 })).toEqual([]);
+  });
+
+  // A topic legitimately carrying 0% is weighted — it just contributes nothing.
+  // Treating 0 as "unset" would block a deliberate choice.
+  it('treats a weight of zero as set, not missing', () => {
+    expect(withTopic({ name: 'Deprecated topic', weightPct: 0 })).toEqual([]);
+  });
+
+  // The creator form has no topic loaded; a blocker it cannot act on is noise.
+  it('says nothing when the topic was not supplied', () => {
+    expect(withTopic(undefined)).toEqual([]);
+  });
+});
