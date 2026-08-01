@@ -799,8 +799,27 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       Option changes also count as the question changing for T-054's demotion rule. A moved
       answer key is the worst case: a published question would go on being served while
       marking students wrong for the answer it used to accept.
-- [ ] **T-056** Import writes a per-run report: rows read, created, updated, rejected + reasons.
-      **Test:** Report for the template CSV shows 6 read, 6 created, 0 rejected.
+- [x] **T-056** Import writes a per-run report: rows read, created, updated, rejected + reasons.
+      **Test:** Report for the template CSV shows ~~6 read, 6 created~~ **7 read, 7 created**,
+      0 rejected. ✅ 2026-08-01 — 8 tests (7 pure + the counts against the real file).
+      Fourth instance of the 6-vs-7 miscount.
+      `formatReport` is pure and separate from the service: what a report _says_ is the whole
+      point of it, and that deserves testing without a database.
+      **Rejections print first**, then rows that imported with notes. A report that only says
+      "7 rows imported" gets skimmed, and the rejected row nobody read is a question that
+      silently never entered the bank.
+      **Notes shared by ≥4 rows collapse to one line.** Running the CLI for real is what showed
+      why: every calculation row printed "typed as CALCULATION by inference" and every row
+      printed its difficulty, so a 500-row ministry file would bury the two rows that actually
+      need a human. Two fixes — the type-inference note now fires **only for the uncertain
+      rule** (numeric options, not an explicit "how much" stem), and the difficulty note is
+      worded without the row's own value so it collapses. Real template output went from 13
+      lines of noise to one.
+      `npm run import:csv -w api -- <file>` runs it. A **CLI, not an HTTP endpoint**: importing
+      writes into the question bank, and that is an operator's decision, not a request the app
+      should accept. Exits 1 on any rejected row and on a header mismatch — verified by running
+      all three cases (clean file, rejected row, wrong header).
+      ESLint's `no-console` now exempts `*.cli.ts` alongside the other operational scripts.
 - [ ] **T-057** Reject a row whose `option_a..d` are not all present, with the row number.
       **Test:** A crafted 3-option row is rejected and names its line number.
 - [ ] **T-058** Add a cleaning pass: strip form feeds, repeated running headers, and

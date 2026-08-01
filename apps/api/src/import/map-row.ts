@@ -75,11 +75,26 @@ const slugifyable = (s: string): boolean => /[a-z0-9]/i.test(s);
  * demands worked steps. Both end at a human, neither ends at a student.
  */
 export function inferQType(stem: string, options: readonly string[]): QType {
-  if (QUANTITY_STEM.test(stem)) return 'CALCULATION';
+  return inferQTypeWithBasis(stem, options).qType;
+}
+
+/**
+ * The same inference, saying which rule fired.
+ *
+ * The two rules are not equally trustworthy. A stem that asks "how much" is
+ * about as certain as this gets; options that merely look numeric is a guess,
+ * and only that one is worth putting in the run report — a note on every
+ * confident row is noise, and noise is how the one uncertain row goes unread.
+ */
+export function inferQTypeWithBasis(
+  stem: string,
+  options: readonly string[],
+): { qType: QType; certain: boolean } {
+  if (QUANTITY_STEM.test(stem)) return { qType: 'CALCULATION', certain: true };
   const filled = options.filter((o) => o.trim() !== '');
   const numeric = filled.filter((o) => NUMERIC_OPTION.test(o.trim()));
-  if (filled.length >= 3 && numeric.length >= 3) return 'CALCULATION';
-  return 'CONCEPT';
+  if (filled.length >= 3 && numeric.length >= 3) return { qType: 'CALCULATION', certain: false };
+  return { qType: 'CONCEPT', certain: true };
 }
 
 export function mapRow(row: ImportRow): MapResult {
@@ -154,13 +169,16 @@ export function mapRow(row: ImportRow): MapResult {
 
   if (row.difficulty.trim() !== '') {
     // Honest rather than silent: the column is in the CSV contract but has no
-    // column here yet (T-053a).
-    notes.push(`difficulty "${row.difficulty.trim()}" is not stored yet`);
+    // column here yet (T-053a). Worded without the row's own value so the report
+    // can collapse it — it is one fact about the schema, not 500 facts.
+    notes.push('difficulty is not stored yet — the value in the file is dropped');
   }
 
   const stem = row.question_text.trim();
-  const qType = inferQType(stem, optionTexts);
-  if (qType === 'CALCULATION') notes.push('typed as CALCULATION by inference — no type column');
+  const { qType, certain } = inferQTypeWithBasis(stem, optionTexts);
+  if (!certain) {
+    notes.push(`typed as ${qType} from its numeric options alone — no type column, worth a look`);
+  }
 
   const options: MappedOption[] = [];
   OPTION_LABELS.forEach((label, i) => {

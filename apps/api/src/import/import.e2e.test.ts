@@ -16,6 +16,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { IMPORT_COLUMNS } from './csv-schema';
+import { formatReport } from './format-report';
 import { ImportService, type ImportReport } from './import.service';
 
 function repoFile(relative: string): string {
@@ -349,6 +350,36 @@ describe('ImportService is idempotent (T-055)', () => {
     const report = await service.importCsv(csv(row({ d: '' })));
     expect((await options()).map((o) => o.label)).toEqual(['A', 'B', 'C']);
     expect(report.rows[0]?.messages.join(' ')).toContain('no longer in the file');
+  });
+
+  // T-056's own test, on the real file. Corrected from 6 to 7 rows.
+  it('reports 7 read, 7 created, 0 rejected for a first run of the template', async () => {
+    const template = readFileSync(repoFile('docs/question_import_template.csv'), 'utf8');
+    const stableIds = [
+      'CS-0001',
+      'GEO-0001',
+      'AF-0001',
+      'AF-0002',
+      'AF-0003',
+      'AF-0004',
+      'AF-0005',
+    ];
+
+    // A first run means the rows are not there yet. The seed puts them there, so
+    // clear them; the import immediately puts them back.
+    await prisma.option.deleteMany({ where: { question: { stableId: { in: stableIds } } } });
+    await prisma.question.deleteMany({ where: { stableId: { in: stableIds } } });
+
+    const report = await service.importCsv(template);
+    expect(report).toMatchObject({ read: 7, created: 7, updated: 0, rejected: 0 });
+    expect(report.rows).toHaveLength(7);
+
+    // GEO-0001 imported, and the report says what it is still missing.
+    const geo = report.rows.find((r) => r.stableId === 'GEO-0001');
+    expect(geo?.action).toBe('created');
+
+    const printed = formatReport(report);
+    expect(printed).toContain('read 7 · created 7 · updated 0 · rejected 0');
   });
 
   it('sends a published question back to review when the answer key moves', async () => {

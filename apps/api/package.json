@@ -2,7 +2,7 @@
   "name": "api",
   "version": "0.1.0",
   "private": true,
-  "description": "Lomi-Test API — NestJS + Prisma + PostgreSQL. The single source of truth.",
+  "description": "Lomi-Test API \u2014 NestJS + Prisma + PostgreSQL. The single source of truth.",
   "dependencies": {
     "@nestjs/common": "^11.1.28",
     "@nestjs/core": "^11.1.28",
@@ -33,6 +33,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
-    "db:seed": "tsx prisma/seed.ts && tsx prisma/seed-questions.ts"
+    "db:seed": "tsx prisma/seed.ts && tsx prisma/seed-questions.ts",
+    "import:csv": "tsx src/import/import.cli.ts"
   }
 }
