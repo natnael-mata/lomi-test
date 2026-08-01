@@ -13,6 +13,14 @@
  * the importer, the creator form and the review queue alike.
  */
 
+/**
+ * Pacing-budget bounds. Below 15s nobody can read a stem and four options;
+ * above 600s a single question is 5% of a 180-minute sitting. D4's real
+ * budgets (60s CONCEPT, 180s CALCULATION) sit well inside.
+ */
+export const MIN_TIME_LIMIT_SEC = 15;
+export const MAX_TIME_LIMIT_SEC = 600;
+
 export type DraftOptionLabel = 'A' | 'B' | 'C' | 'D';
 
 export interface DraftOption {
@@ -118,6 +126,23 @@ export function gateBlockers(q: DraftQuestion): string[] {
     // A CONCEPT question's explanation is the whole reward for getting it
     // wrong. Without one there is nothing to show after the verdict.
     blockers.push('Explanation is missing.');
+  }
+
+  // T-045 — the pacing budget has to be usable.
+  //
+  // This drives the "1:12 / 2:00" line on the answer view and the per-question
+  // pacing feedback, so a nonsense value quietly misinforms every student who
+  // sees it. Below 15s nobody can read a stem and four options; above 600s
+  // (10 minutes) one question eats 5% of a 180-minute sitting, which is a
+  // data-entry slip rather than an intention. D4's real budgets — 60s CONCEPT,
+  // 180s CALCULATION — sit comfortably inside.
+  const limit = q.timeLimitSec;
+  if (limit == null) {
+    blockers.push('Time limit is missing.');
+  } else if (!Number.isInteger(limit) || limit < MIN_TIME_LIMIT_SEC || limit > MAX_TIME_LIMIT_SEC) {
+    blockers.push(
+      `Time limit must be a whole number of seconds between ${MIN_TIME_LIMIT_SEC} and ${MAX_TIME_LIMIT_SEC} (have ${limit}).`,
+    );
   }
 
   // T-044 — nobody approves their own question.

@@ -627,8 +627,22 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       **Requiring a reviewer to be present is deliberately NOT here.** That is a workflow question
       for the publish endpoint (T-067). This function answers "is the question sound", not "was the
       process followed" — mixing the two would make the creator form unusable.
-- [ ] **T-045** Confirm `timeLimitSec` is bounded 15–600.
-      **Test:** Unit: 10 → error; 700 → error; 120 → pass.
+- [x] **T-045** Confirm `timeLimitSec` is bounded 15–600.
+      **Test:** Unit: 10 → error; 700 → error; 120 → pass. ✅ 2026-08-01
+      _Verified, 8 tests._
+      **The boundaries are tested, not just the task's three values.** `15` and `600` are accepted;
+      `14` and `601` are not. A bound written `< 15` instead of `<= 15` passes the 10/700/120 check
+      the task specifies and still rejects a legitimate 15-second question — the given values are
+      too far from the edge to catch it.
+      Also rejects `0`, negatives and fractions, and asserts **D4's own budgets (60s and 180s) are
+      not rejected by their own gate** — a bound that excluded the product's real values would be
+      an expensive thing to discover during import.
+      Bounds live in exported constants (`MIN_TIME_LIMIT_SEC` / `MAX_TIME_LIMIT_SEC`) so the
+      creator form shows the same numbers the server enforces, and the message quotes the offending
+      value back.
+      _Why these bounds:_ this drives the "1:12 / 2:00" pacing line, so a nonsense value quietly
+      misinforms every student who sees it. Under 15s nobody can read a stem and four options; over
+      600s one question is 5% of a 180-minute sitting — a data-entry slip, not an intention.
 - [ ] **T-046** Add a gate rule: a question cannot publish if its Topic has no blueprint weight.
       **Test:** Unit: topic weight null → error naming the topic.
 - [ ] **T-047** Confirm the gate runs server-side on every publish, not only on save.

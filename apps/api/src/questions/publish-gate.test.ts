@@ -350,3 +350,53 @@ describe('publish gate — reviewer is not the author (T-044)', () => {
     ]);
   });
 });
+
+describe('publish gate — pacing budget in range (T-045)', () => {
+  const withLimit = (timeLimitSec: number | undefined) =>
+    gateBlockers(question(timeLimitSec === undefined ? {} : { timeLimitSec })).filter((b) =>
+      b.startsWith('Time limit'),
+    );
+
+  it('rejects a limit below the floor', () => {
+    expect(withLimit(10)).toEqual([
+      'Time limit must be a whole number of seconds between 15 and 600 (have 10).',
+    ]);
+  });
+
+  it('rejects a limit above the ceiling', () => {
+    expect(withLimit(700)).toEqual([
+      'Time limit must be a whole number of seconds between 15 and 600 (have 700).',
+    ]);
+  });
+
+  it('accepts a limit inside the range', () => {
+    expect(withLimit(120)).toEqual([]);
+  });
+
+  // Off-by-one at both ends: a bound written as < or > instead of <= or >=
+  // passes the 10-and-700 test above and still rejects a legitimate question.
+  it('accepts the boundaries themselves', () => {
+    expect(withLimit(15)).toEqual([]);
+    expect(withLimit(600)).toEqual([]);
+  });
+
+  it('rejects just outside the boundaries', () => {
+    expect(withLimit(14)).toHaveLength(1);
+    expect(withLimit(601)).toHaveLength(1);
+  });
+
+  // D4's actual budgets must not be rejected by their own gate.
+  it('accepts D4s concept and calculation budgets', () => {
+    expect(withLimit(60)).toEqual([]);
+    expect(withLimit(180)).toEqual([]);
+  });
+
+  it('rejects zero and negatives rather than treating them as unset', () => {
+    expect(withLimit(0)).toHaveLength(1);
+    expect(withLimit(-60)).toHaveLength(1);
+  });
+
+  it('rejects a fractional limit', () => {
+    expect(withLimit(60.5)).toHaveLength(1);
+  });
+});
