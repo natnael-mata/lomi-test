@@ -915,9 +915,21 @@ these…"` at the start of a stem is prose.
       you judge" is visible in the JSON. That file is also the single home for answer content —
       `isCorrect`, `whyWrong`, `conceptLine`, explanation, steps — which `GET /questions/next`
       must never carry.
-- [ ] **T-067** `POST /admin/review/:id/publish` runs the gate and returns 422 with a blocker
+- [x] **T-067** `POST /admin/review/:id/publish` runs the gate and returns 422 with a blocker
       list when it fails.
-      **Test:** GEO-0001 (no answer) → 422 with 3 named blockers.
+      **Test:** GEO-0001 (no answer) → 422 with ~~3~~ **8** named blockers. ✅ 2026-08-02 —
+      4 tests.
+      **Correction:** the task said 3. GEO-0001 raises **8**, and each is real — no answer, a
+      missing why-wrong on all four options (with no correct one marked, all four are
+      distractors), no concept line, no explanation, and an unweighted topic. The test asserts
+      the **exact list in order**, not a count, so a rule that stops firing is caught.
+      Delegates to `QuestionsService.publish` rather than reimplementing. This and
+      `POST /admin/questions/:id/publish` are one action reached from two places, and a second
+      copy of the gate call is a second place for the rule to drift — a test asserts the two
+      routes return **identical** bodies.
+      This is the endpoint T-031a's decision runs through: with why-wrongs and the concept line
+      authored in review, every imported question passes through here, and T-068a is the write
+      path that makes those 8 blockers closable.
 - [ ] **T-068** `POST /admin/review/:id/bounce` requires a note ≥10 chars.
       **Test:** Empty note → 400; valid note → question returns to `DRAFT` with note attached.
 - [ ] **T-068a** `PATCH /admin/review/:id` lets a reviewer author the text that is deliberately

@@ -256,3 +256,77 @@ describe('the review payload is the student answer view (T-066)', () => {
     expect(body.field).toBe(`Shape ${SFX2}`);
   });
 });
+
+describe('POST /admin/review/:id/publish (T-067)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  /** The real seeded GEO-0001 — the template's deliberately unfinished row. */
+  let geoId = '';
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    prisma = app.get(PrismaService);
+
+    const geo = await prisma.question.findUnique({ where: { stableId: 'GEO-0001' } });
+    if (!geo) throw new Error('GEO-0001 is not seeded — run `npm run db:seed -w api`');
+    geoId = geo.id;
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const publish = async (id: string, reviewerId: string, expectStatus: number) =>
+    (
+      await request(app.getHttpServer())
+        .post(`/admin/review/${id}/publish`)
+        .send({ reviewerId })
+        .expect(expectStatus)
+    ).body;
+
+  // The task's own test. It said 3 blockers; GEO-0001 actually raises 8, and
+  // every one of them is real — see the correction in TASK.md.
+  it('refuses GEO-0001 with 422 and every blocker named', async () => {
+    const body = await publish(geoId, 'reviewer-z', 422);
+
+    expect(body.error).toBe('GATE_BLOCKED');
+    expect(body.blockers).toEqual([
+      'No correct option marked — a reviewer must supply and confirm the answer.',
+      'Option A: why it is wrong is missing.',
+      'Option B: why it is wrong is missing.',
+      'Option C: why it is wrong is missing.',
+      'Option D: why it is wrong is missing.',
+      'Concept line is missing.',
+      'Explanation is missing.',
+      'Topic "Sampling" has no weight — set it before publishing.',
+    ]);
+  });
+
+  it('leaves the question untouched after a refusal', async () => {
+    const after = await prisma.question.findUniqueOrThrow({ where: { id: geoId } });
+    expect(after.status).toBe('DRAFT');
+    expect(after.reviewerId).toBeNull();
+  });
+
+  it('404s for a question that does not exist', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/review/does-not-exist/publish')
+      .send({ reviewerId: 'reviewer-z' })
+      .expect(404);
+  });
+
+  // Same action, two routes — so they must give the same answer.
+  it('agrees with POST /admin/questions/:id/publish', async () => {
+    const viaQuestions = (
+      await request(app.getHttpServer())
+        .post(`/admin/questions/${geoId}/publish`)
+        .send({ reviewerId: 'reviewer-z' })
+        .expect(422)
+    ).body;
+    const viaReview = await publish(geoId, 'reviewer-z', 422);
+    expect(viaReview).toEqual(viaQuestions);
+  });
+});
