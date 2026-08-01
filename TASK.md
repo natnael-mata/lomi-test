@@ -658,8 +658,28 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       **The gate is now complete (T-040…T-046) — 47 tests.** Against the seeded template every
       question reports 6 blockers and GEO-0001 reports 8; **0 of 7 publishable**, each for a named,
       actionable reason.
-- [ ] **T-047** Confirm the gate runs server-side on every publish, not only on save.
+- [x] **T-047** Confirm the gate runs server-side on every publish, not only on save.
       **Test:** Integration: POST publish with a crafted invalid payload → 422, status unchanged.
+      ✅ 2026-08-01 — _Verified over real HTTP against the real database, 5 tests._
+      `POST /admin/questions/:id/publish` with a question that has no why-wrongs and no concept
+      line → **422** carrying `{ error: 'GATE_BLOCKED', blockers: [...] }`, and the row is then
+      re-read: **still `DRAFT`, `reviewerId` still null**. A refused publish must not half-apply.
+      Also covered: a fully-explained question publishes (201), a **self-review is refused using
+      the caller's id** rather than whatever is stored on the row, and an unknown id 404s.
+      **Two real problems surfaced here, both invisible to the unit tests:**
+      **1. NestJS DI did not work under Vitest at all.** Vitest transforms with esbuild, which
+      honours `experimentalDecorators` but **not** `emitDecoratorMetadata` — so every injected
+      service arrived `undefined` and the endpoint 500'd. Fixed with `unplugin-swc` in
+      `apps/api/vitest.config.ts`, so the container behaves in tests as it does under `tsc`. This
+      is the same metadata dependency noted in T-004, now load-bearing.
+      **2. My assertion was wrong about the response shape.** Nest uses an object passed to
+      `UnprocessableEntityException` as the body directly, so the blockers are at `res.body.blockers`,
+      not `res.body.message.blockers`. The test failed loudly rather than passing on a wrong path.
+      Also set `fileParallelism: false` — integration suites share one database, and parallel files
+      let one suite's cleanup delete another's fixtures mid-run.
+      **CI now provisions Postgres** (the follow-up T-015 recorded): a `postgres:16` service, a
+      `DATABASE_URL`, and a `prisma migrate deploy` step before the tests. **Pinned to 16, not the
+      18 the dev `embedded-postgres` bundles** — CI should match what production will run.
 
 ### 2b — Importer
 
