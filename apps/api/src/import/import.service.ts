@@ -1,10 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import type { QStatus } from '@prisma/client';
+import type { OptionLabel, QStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import type { ImportRow } from './csv-schema';
 import { mapRow, type MappedRow } from './map-row';
 import { parseImportCsv } from './parse-csv';
+
+interface ExistingOption {
+  label: OptionLabel;
+  text: string;
+  isCorrect: boolean;
+  whyWrong: string | null;
+}
 
 /** The fields of an existing question an import needs in order to decide safely. */
 interface ExistingQuestion {
@@ -13,6 +20,7 @@ interface ExistingQuestion {
   stem: string;
   explanation: string | null;
   codeBlock: string | null;
+  options: ExistingOption[];
 }
 
 export interface RowOutcome {
@@ -120,7 +128,14 @@ export class ImportService {
 
     const before = await this.prisma.question.findUnique({
       where: { stableId: row.stableId },
-      select: { id: true, status: true, stem: true, explanation: true, codeBlock: true },
+      select: {
+        id: true,
+        status: true,
+        stem: true,
+        explanation: true,
+        codeBlock: true,
+        options: { select: { label: true, text: true, isCorrect: true, whyWrong: true } },
+      },
     });
 
     const messages = [...row.notes];
@@ -132,18 +147,63 @@ export class ImportService {
       create: { stableId: row.stableId, ...data, status: 'DRAFT' },
     });
 
-    // Options are replaced, not merged: the CSV is the source of truth for them,
-    // and a merge would leave a deleted distractor in place forever.
-    await this.prisma.option.deleteMany({ where: { questionId: question.id } });
-    await this.prisma.option.createMany({
-      data: row.options.map((o) => ({ questionId: question.id, ...o })),
-    });
+    await this.syncOptions(question.id, row, before?.options ?? [], messages);
 
     return {
       stableId: row.stableId,
       action: before ? 'updated' : 'created',
       messages,
     };
+  }
+
+  /**
+   * Brings a question's options in line with the file — without throwing away
+   * what a reviewer added.
+   *
+   * Delete-all-and-recreate is the obvious implementation and it is destructive:
+   * `whyWrong` is authored in the review queue, exists in no CSV column, and is
+   * required by the publish gate. Wiping it on every re-import means a reviewed
+   * question quietly becomes unpublishable again, and the person who wrote those
+   * lines has to write them a second time.
+   *
+   * So each option is matched by label and its `whyWrong` kept — unless the
+   * option's own text changed, in which case the old reasoning is about a
+   * different sentence and keeping it would be worse than losing it.
+   */
+  private async syncOptions(
+    questionId: string,
+    row: MappedRow,
+    existing: readonly ExistingOption[],
+    messages: string[],
+  ): Promise<void> {
+    const byLabel = new Map(existing.map((o) => [o.label, o]));
+    const incoming = new Set(row.options.map((o) => o.label));
+
+    for (const option of row.options) {
+      const prev = byLabel.get(option.label);
+      const staleReasoning = prev != null && prev.whyWrong != null && prev.text !== option.text;
+      if (staleReasoning) {
+        messages.push(`option ${option.label} was reworded — its why-wrong note was cleared`);
+      }
+
+      await this.prisma.option.upsert({
+        where: { questionId_label: { questionId, label: option.label } },
+        update: {
+          text: option.text,
+          isCorrect: option.isCorrect,
+          ...(staleReasoning ? { whyWrong: null } : {}),
+        },
+        create: { questionId, ...option },
+      });
+    }
+
+    // A distractor dropped from the file is dropped here too — otherwise a
+    // removed wrong answer would keep being shown forever.
+    const removed = existing.filter((o) => !incoming.has(o.label)).map((o) => o.label);
+    if (removed.length > 0) {
+      await this.prisma.option.deleteMany({ where: { questionId, label: { in: removed } } });
+      messages.push(`option(s) ${removed.join(', ')} no longer in the file — removed`);
+    }
   }
 
   /**
@@ -174,7 +234,11 @@ export class ImportService {
     const changed =
       before.stem !== row.stem ||
       before.explanation !== row.explanation ||
-      before.codeBlock !== row.codeBlock;
+      before.codeBlock !== row.codeBlock ||
+      // Options count as the question changing. A published question whose
+      // answer key moved is the worst version of this: it would go on being
+      // served while marking students wrong for the answer it used to accept.
+      optionsDiffer(before.options, row.options);
 
     if (before.status === 'PUBLISHED' && changed) {
       messages.push('published question changed by the import — sent back to review');
@@ -186,6 +250,19 @@ export class ImportService {
     // argument for bringing a withdrawn question back.
     return {};
   }
+}
+
+/** Whether the file's options say anything different from the stored ones. */
+function optionsDiffer(
+  stored: readonly ExistingOption[],
+  incoming: readonly MappedRow['options'][number][],
+): boolean {
+  if (stored.length !== incoming.length) return true;
+  const byLabel = new Map(stored.map((o) => [o.label, o]));
+  return incoming.some((o) => {
+    const prev = byLabel.get(o.label);
+    return prev == null || prev.text !== o.text || prev.isCorrect !== o.isCorrect;
+  });
 }
 
 /**

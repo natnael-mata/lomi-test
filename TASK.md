@@ -782,8 +782,23 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       argument for reinstating a withdrawn question.
       All four lifecycle tests were **confirmed to fail** against the naive implementation
       before being kept.
-- [ ] **T-055** Import is idempotent on `stableId` — re-importing updates, never duplicates.
-      **Test:** Import the template twice; question count is 6, not 12.
+- [x] **T-055** Import is idempotent on `stableId` — re-importing updates, never duplicates.
+      **Test:** Import the template twice; question count is ~~6, not 12~~ **7, not 14**.
+      ✅ 2026-08-01 — 7 tests. Second run reports 0 created / 7 updated; options stay at 4
+      apiece, and the same option **rows** survive (ids compared, so it is not churning and
+      recreating them).
+      **Correction:** 6 → 7 again, the third instance of the same miscount (T-031, T-051).
+      **Found and fixed: re-import destroyed reviewer work.** Options were deleted and
+      recreated wholesale, and `whyWrong` is authored in the review queue, exists in **no CSV
+      column**, and is **required by the publish gate**. So every re-import quietly made
+      reviewed questions unpublishable again and made someone write those lines a second time.
+      Options are now matched by label and their notes preserved — unless that option's own
+      text changed, in which case the old reasoning is about a different sentence and is
+      cleared **with a line in the report**. A distractor dropped from the file is still
+      removed, otherwise a withdrawn wrong answer would be shown forever.
+      Option changes also count as the question changing for T-054's demotion rule. A moved
+      answer key is the worst case: a published question would go on being served while
+      marking students wrong for the answer it used to accept.
 - [ ] **T-056** Import writes a per-run report: rows read, created, updated, rejected + reasons.
       **Test:** Report for the template CSV shows 6 read, 6 created, 0 rejected.
 - [ ] **T-057** Reject a row whose `option_a..d` are not all present, with the row number.

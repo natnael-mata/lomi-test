@@ -7,6 +7,9 @@
  *
  * Needs Postgres (`npm run db:dev`). CI provides it as a service container.
  */
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -14,6 +17,16 @@ import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { IMPORT_COLUMNS } from './csv-schema';
 import { ImportService, type ImportReport } from './import.service';
+
+function repoFile(relative: string): string {
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i++) {
+    const candidate = resolve(dir, relative);
+    if (existsSync(candidate)) return candidate;
+    dir = dirname(dir);
+  }
+  throw new Error(`could not locate ${relative}`);
+}
 
 const SUFFIX = 'e2e-import';
 const FIELD = `E2E Import ${SUFFIX}`;
@@ -215,5 +228,137 @@ describe('ImportService never decides the lifecycle (T-054)', () => {
 
     await service.importCsv(csv(line(id, 'A question under review?')));
     expect(await statusOf(id)).toBe('IN_REVIEW');
+  });
+});
+
+describe('ImportService is idempotent (T-055)', () => {
+  let service: ImportService;
+  let prisma: PrismaService;
+  let moduleRef: Awaited<ReturnType<ReturnType<typeof Test.createTestingModule>['compile']>>;
+
+  const SFX = 'e2e-idem';
+  const FLD = `E2E Idempotent ${SFX}`;
+  const ID = `IDEM-1-${SFX}`;
+  const row = (opts: { b?: string; d?: string; correct?: string } = {}): string =>
+    `${ID},${FLD},Taxation,VAT,Which statement about VAT is correct?,,One,${opts.b ?? 'Two'},Three,${opts.d ?? 'Four'},${opts.correct ?? 'a'},Because one.,,authored,,ready`;
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.option.deleteMany({ where: { question: { stableId: { contains: SFX } } } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX } } });
+    await prisma.topic.deleteMany({ where: { course: { field: { name: FLD } } } });
+    await prisma.course.deleteMany({ where: { field: { name: FLD } } });
+    await prisma.field.deleteMany({ where: { name: FLD } });
+  };
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    service = moduleRef.get(ImportService);
+    prisma = moduleRef.get(PrismaService);
+    await cleanup();
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await moduleRef.close();
+  });
+
+  const options = async () =>
+    prisma.option.findMany({
+      where: { question: { stableId: ID } },
+      orderBy: { label: 'asc' },
+    });
+
+  // The task's own test — corrected from 6 to 7, the real row count (T-031/T-051).
+  it('imports the real template twice and leaves 7 questions, not 14', async () => {
+    const template = readFileSync(repoFile('docs/question_import_template.csv'), 'utf8');
+    const first = await service.importCsv(template);
+    const second = await service.importCsv(template);
+
+    expect(first.read).toBe(7);
+    expect(second.read).toBe(7);
+    expect(second.created).toBe(0);
+    expect(second.updated).toBe(7);
+
+    const stableIds = [
+      'CS-0001',
+      'GEO-0001',
+      'AF-0001',
+      'AF-0002',
+      'AF-0003',
+      'AF-0004',
+      'AF-0005',
+    ];
+    expect(await prisma.question.count({ where: { stableId: { in: stableIds } } })).toBe(7);
+    // And no duplicated options either — 4 apiece, not 8.
+    expect(await prisma.option.count({ where: { question: { stableId: 'AF-0001' } } })).toBe(4);
+  });
+
+  it('reports the second run as updated rather than created', async () => {
+    const created = await service.importCsv(csv(row()));
+    expect(created).toMatchObject({ created: 1, updated: 0 });
+
+    const updated = await service.importCsv(csv(row()));
+    expect(updated).toMatchObject({ created: 0, updated: 1 });
+  });
+
+  it('does not churn option rows on an unchanged re-import', async () => {
+    await service.importCsv(csv(row()));
+    const before = await options();
+
+    await service.importCsv(csv(row()));
+    const after = await options();
+
+    expect(after.map((o) => o.id)).toEqual(before.map((o) => o.id));
+  });
+
+  // The destructive default: whyWrong is authored in review, exists in no CSV
+  // column, and the publish gate requires it. Delete-and-recreate wipes it.
+  it("preserves a reviewer's why-wrong notes across a re-import", async () => {
+    await service.importCsv(csv(row()));
+    await prisma.option.updateMany({
+      where: { question: { stableId: ID }, label: 'B' },
+      data: { whyWrong: 'B confuses input tax with output tax.' },
+    });
+
+    await service.importCsv(csv(row()));
+
+    const b = (await options()).find((o) => o.label === 'B');
+    expect(b?.whyWrong).toBe('B confuses input tax with output tax.');
+  });
+
+  it('clears a why-wrong note when its own option was reworded', async () => {
+    await service.importCsv(csv(row()));
+    await prisma.option.updateMany({
+      where: { question: { stableId: ID }, label: 'B' },
+      data: { whyWrong: 'About the old wording.' },
+    });
+
+    // Quoted, so the comma inside it also proves the parser end to end.
+    const report = await service.importCsv(csv(row({ b: '"Two, restated"' })));
+
+    const b = (await options()).find((o) => o.label === 'B');
+    expect(b?.text).toBe('Two, restated');
+    expect(b?.whyWrong).toBeNull();
+    expect(report.rows[0]?.messages.join(' ')).toContain('why-wrong note was cleared');
+  });
+
+  it('removes a distractor the file has dropped', async () => {
+    await service.importCsv(csv(row()));
+    expect(await options()).toHaveLength(4);
+
+    const report = await service.importCsv(csv(row({ d: '' })));
+    expect((await options()).map((o) => o.label)).toEqual(['A', 'B', 'C']);
+    expect(report.rows[0]?.messages.join(' ')).toContain('no longer in the file');
+  });
+
+  it('sends a published question back to review when the answer key moves', async () => {
+    await service.importCsv(csv(row({ d: 'Four' })));
+    await prisma.question.update({ where: { stableId: ID }, data: { status: 'PUBLISHED' } });
+
+    await service.importCsv(csv(row({ d: 'Four', correct: 'c' })));
+
+    const q = await prisma.question.findUniqueOrThrow({ where: { stableId: ID } });
+    expect(q.status).toBe('IN_REVIEW');
+    expect((await options()).find((o) => o.isCorrect)?.label).toBe('C');
   });
 });
