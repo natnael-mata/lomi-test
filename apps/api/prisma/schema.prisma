@@ -212,6 +212,18 @@ model Question {
   authorId   String?
   reviewerId String?
 
+  /// Why the last reviewer sent this back, and what the author has to fix.
+  ///
+  /// A live instruction, not history: "is there a note" is meant to answer "is
+  /// there outstanding work". Clearing it on re-submission lands with T-068a,
+  /// which is the only path that will put a question back into review — until
+  /// then a note simply persists.
+  ///
+  /// The permanent record of who bounced what and when is the audit log (T-069).
+  /// These are different questions, and conflating them means either losing the
+  /// history or showing the author a note about a fix they already made.
+  bounceNote String?
+
   /// Provenance: which source file this came from, e.g.
   /// "Computer_Science_Exit_Exam_2018", plus the exam year when known. Content
   /// operations need to trace a bad question back to the paper it came from.

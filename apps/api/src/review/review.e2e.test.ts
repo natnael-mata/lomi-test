@@ -245,6 +245,7 @@ describe('the review payload is the student answer view (T-066)', () => {
     expect(Object.keys(body).sort()).toEqual([
       'answerView',
       'authorId',
+      'bounceNote',
       'course',
       'field',
       'importFlags',
@@ -328,5 +329,116 @@ describe('POST /admin/review/:id/publish (T-067)', () => {
     ).body;
     const viaReview = await publish(geoId, 'reviewer-z', 422);
     expect(viaReview).toEqual(viaQuestions);
+  });
+});
+
+describe('POST /admin/review/:id/bounce (T-068)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  const SFX3 = 'e2e-bounce';
+  let questionId = '';
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.option.deleteMany({ where: { question: { stableId: { contains: SFX3 } } } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX3 } } });
+    await prisma.topic.deleteMany({ where: { slug: { contains: SFX3 } } });
+    await prisma.course.deleteMany({ where: { slug: { contains: SFX3 } } });
+    await prisma.field.deleteMany({ where: { slug: { contains: SFX3 } } });
+  };
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    prisma = app.get(PrismaService);
+    await cleanup();
+
+    const field = await prisma.field.create({
+      data: { name: `Bounce ${SFX3}`, slug: `field-${SFX3}` },
+    });
+    const course = await prisma.course.create({
+      data: { fieldId: field.id, name: 'Course', slug: `course-${SFX3}` },
+    });
+    const topic = await prisma.topic.create({
+      data: { courseId: course.id, name: 'Topic', slug: `topic-${SFX3}` },
+    });
+    const q = await prisma.question.create({
+      data: {
+        stableId: `BOUNCE-${SFX3}`,
+        topicId: topic.id,
+        fieldId: field.id,
+        qType: 'CONCEPT',
+        stem: 'A question under review',
+        timeLimitSec: 60,
+        status: 'IN_REVIEW',
+        authorId: 'author-b',
+      },
+    });
+    questionId = q.id;
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await app.close();
+  });
+
+  const bounce = async (note: unknown, expectStatus: number) =>
+    (
+      await request(app.getHttpServer())
+        .post(`/admin/review/${questionId}/bounce`)
+        .send({ note })
+        .expect(expectStatus)
+    ).body;
+
+  // The task's own test, first half.
+  it('refuses an empty note with 400', async () => {
+    await bounce('', 400);
+    await bounce(undefined, 400);
+  });
+
+  it('refuses a note that is too short to act on', async () => {
+    const body = await bounce('fix it', 400);
+    expect(body.message).toContain('at least 10 characters');
+  });
+
+  it('counts the note after trimming, so spaces do not pad it past the bar', async () => {
+    await bounce('  fix  ', 400);
+  });
+
+  it('leaves the question in review after a refusal', async () => {
+    const after = await prisma.question.findUniqueOrThrow({ where: { id: questionId } });
+    expect(after.status).toBe('IN_REVIEW');
+    expect(after.bounceNote).toBeNull();
+  });
+
+  // The task's own test, second half.
+  it('accepts a real note, returning the question to DRAFT with the note attached', async () => {
+    const note = 'Option C repeats option A — replace it with a distinct distractor.';
+    const body = await bounce(note, 201);
+    expect(body.status).toBe('DRAFT');
+
+    const after = await prisma.question.findUniqueOrThrow({ where: { id: questionId } });
+    expect(after.status).toBe('DRAFT');
+    expect(after.bounceNote).toBe(note);
+  });
+
+  // A bounced question must leave the queue at once, or the next reviewer picks
+  // up something already rejected.
+  it('removes the question from every reviewer queue', async () => {
+    const body = (
+      await request(app.getHttpServer())
+        .get('/admin/review/next')
+        .query({ reviewerId: 'reviewer-new' })
+        .expect(200)
+    ).body;
+    expect(body?.answerView?.stableId).not.toBe(`BOUNCE-${SFX3}`);
+  });
+
+  it('404s for a question that does not exist', async () => {
+    await request(app.getHttpServer())
+      .post('/admin/review/does-not-exist/bounce')
+      .send({ note: 'A perfectly valid note about nothing.' })
+      .expect(404);
   });
 });

@@ -930,8 +930,23 @@ these…"` at the start of a stem is prose.
       This is the endpoint T-031a's decision runs through: with why-wrongs and the concept line
       authored in review, every imported question passes through here, and T-068a is the write
       path that makes those 8 blockers closable.
-- [ ] **T-068** `POST /admin/review/:id/bounce` requires a note ≥10 chars.
+- [x] **T-068** `POST /admin/review/:id/bounce` requires a note ≥10 chars.
       **Test:** Empty note → 400; valid note → question returns to `DRAFT` with note attached.
+      ✅ 2026-08-02 — 7 tests.
+      **Ten characters is a typo bar, not a quality bar.** "no" and "fix" send the author back
+      to a question with no idea what is wrong with it, and that round trip costs more than the
+      reviewer saved. Counted **after trimming**, so spaces cannot pad a note past the bar.
+      Anything that clears it is the reviewer's judgement, not the system's.
+      **Schema:** `Question.bounceNote` (migration `20260802020000_question_bounce_note`). It is
+      the **live instruction**, not history — the question can always answer "what is still
+      wrong with me". Who bounced what and when is the audit log (T-069); conflating the two
+      means either losing the history or showing an author a note about a fix they already made.
+      Clearing the note on re-submission belongs to T-068a, the only path that will put a
+      question back into review — until then it persists, which is stated in the schema rather
+      than assumed.
+      A bounce returns the question to `DRAFT`, which also **removes it from every queue at
+      once** — otherwise the next reviewer picks up something already rejected. Asserted.
+      A refused bounce leaves the question in review with no note: nothing half-applies.
 - [ ] **T-068a** `PATCH /admin/review/:id` lets a reviewer author the text that is deliberately
       absent from the import: each distractor's `whyWrong`, the `conceptLine`, the
       `explanation`, and the correct option where the file had none. This is the write path

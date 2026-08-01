@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { toAnswerView, type AnswerView } from '../questions/answer-view';
@@ -22,7 +22,19 @@ export interface ReviewItem {
   topic: string;
   /** Whether the topic is weighted — a blocker the gate will raise (T-046). */
   topicWeighted: boolean;
+  /** What a previous reviewer asked for, if this has been round before. */
+  bounceNote: string | null;
 }
+
+/**
+ * The shortest bounce note worth sending.
+ *
+ * Ten characters is not a quality bar — it is a typo bar. "no" and "fix" send
+ * the author back to a question with no idea what is wrong with it, and the
+ * round trip costs more than the reviewer saved. Anything that clears this is
+ * the reviewer's judgement, not the system's.
+ */
+export const MIN_BOUNCE_NOTE = 10;
 
 @Injectable()
 export class ReviewService {
@@ -69,6 +81,37 @@ export class ReviewService {
       course: question.topic.course.name,
       topic: question.topic.name,
       topicWeighted: question.topic.weightPct !== null,
+      bounceNote: question.bounceNote,
     };
+  }
+
+  /**
+   * Sends a question back to its author with a note.
+   *
+   * The note is required because a bounce without one is not a review — the
+   * author receives "no" and has to guess. It is stored on the question as the
+   * outstanding instruction rather than appended to a log, so the question can
+   * always answer "what is still wrong with me"; the permanent record of who
+   * bounced it and when is the audit log (T-069).
+   */
+  async bounce(id: string, note: string): Promise<{ id: string; status: string }> {
+    const trimmed = note.trim();
+    if (trimmed.length < MIN_BOUNCE_NOTE) {
+      throw new BadRequestException(
+        `A bounce note must say what is wrong — at least ${MIN_BOUNCE_NOTE} characters, got ${trimmed.length}.`,
+      );
+    }
+
+    const question = await this.prisma.question.findUnique({ where: { id }, select: { id: true } });
+    if (!question) throw new NotFoundException(`No question ${id}`);
+
+    const updated = await this.prisma.question.update({
+      where: { id },
+      // Back to DRAFT: it is the author's again, and it must leave the review
+      // queue immediately — otherwise the next reviewer picks up a question
+      // somebody has already rejected.
+      data: { status: 'DRAFT', bounceNote: trimmed },
+    });
+    return { id: updated.id, status: updated.status };
   }
 }

@@ -25,6 +25,14 @@ export class ReviewController {
    * places, and a second copy of the gate call is a second place for the rule to
    * drift. The gate itself runs server-side on every publish regardless of route.
    */
+  @Post(':id/bounce')
+  bounce(
+    @Param('id') id: string,
+    @Body() body: { note?: string },
+  ): Promise<{ id: string; status: string }> {
+    return this.review.bounce(id, body.note ?? '');
+  }
+
   @Post(':id/publish')
   publish(
     @Param('id') id: string,
