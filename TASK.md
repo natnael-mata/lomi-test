@@ -568,8 +568,19 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       wrong and shown a why-wrong for an answer that was right.
       Prisma-free, like `weights.ts`, so the importer, the creator form and the review queue can
       all share it and it tests without a database.
-- [ ] **T-041** Confirm the gate rejects a blank `whyWrong` on any distractor.
-      **Test:** Unit: 3 distractors, one blank → error names the option letter.
+- [x] **T-041** Confirm the gate rejects a blank `whyWrong` on any distractor.
+      **Test:** Unit: 3 distractors, one blank → error names the option letter. ✅ 2026-08-01
+      _Verified, 6 tests: a blank why-wrong on C yields exactly
+      `Option C: why it is wrong is missing.` Whitespace-only, `null` and `undefined` all count as
+      missing; the **correct** option needs none._
+      **One blocker per offending option**, not a summary line — the creator form anchors each
+      message to its own field, and "3 why-wrongs missing" on the submit button is just the count.
+      **Ran against the real seeded content, and the result is the point of the whole product:**
+      all 7 template questions block, **0 of 7 publishable**. The six with answer keys each block
+      on their 3 distractors; GEO-0001 blocks on 5 (no correct option, plus all four distractors).
+      That is not a defect — CONTENT-PIPELINE.md records that **zero authored explanations exist
+      in any source file**, and the gate is what stops that reaching a student. Pinned as a test
+      so it stays true.
 - [ ] **T-042** Confirm the gate rejects a multi-sentence `conceptLine`.
       **Test:** Unit: `"A. B."` → error; `"A single sentence."` → pass.
 - [ ] **T-043** Confirm the gate requires a CALCULATION's final step to state the answer choice.

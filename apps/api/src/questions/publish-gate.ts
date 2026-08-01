@@ -62,6 +62,26 @@ export function gateBlockers(q: DraftQuestion): string[] {
     );
   }
 
+  // T-041 — every distractor explains why it tempted the student.
+  //
+  // One blocker per offending option, not a single summary line: the creator
+  // form anchors each message to its own field, and a reviewer needs to know
+  // WHICH letter is unexplained, not merely that something is.
+  //
+  // The correct option carries no why-wrong — it is explained by the concept
+  // line plus the explanation or the worked steps.
+  //
+  // This is the rule the whole product rests on. CONTENT-PIPELINE.md records
+  // that ZERO authored explanations exist in any source file, so on real
+  // imported content this blocker fires on every distractor of every question
+  // until someone writes them. That is the honest state, not a bug.
+  for (const o of q.options) {
+    if (o.isCorrect) continue;
+    if (!o.whyWrong || o.whyWrong.trim() === '') {
+      blockers.push(`Option ${o.label}: why it is wrong is missing.`);
+    }
+  }
+
   return blockers;
 }
 
