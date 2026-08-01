@@ -38,7 +38,8 @@ model Field {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses Course[]
+  courses   Course[]
+  questions Question[]
 
   @@index([isPublished])
 }
@@ -146,6 +147,21 @@ model Question {
   topicId String
   topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
+  /// DENORMALISED from topic → course → field.
+  ///
+  /// Serving a question is the hottest path in the product — every practice
+  /// fetch, and 100 rows per mock sitting — and it always filters "published,
+  /// in this student's field". Normalised, that is a three-table join on every
+  /// request; here it is one index.
+  ///
+  /// The cost is that it can drift from the topic's real field, and a drifted
+  /// row means a student is served another programme's question. It is written
+  /// from the topic at insert time and must be rewritten if a question is ever
+  /// moved between topics. T-029a adds a trigger so the database enforces that
+  /// rather than trusting every future write path.
+  fieldId String
+  field   Field  @relation(fields: [fieldId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
   qType QType
 
   /// The question itself — the most-read text in the product.
@@ -185,6 +201,8 @@ model Question {
 
   @@index([topicId])
   @@index([status])
+  /// The question-serving hot path: published questions in one field.
+  @@index([fieldId, status])
 }
 
 /// One line of a worked solution, for CALCULATION questions only.

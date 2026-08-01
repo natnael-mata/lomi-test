@@ -477,8 +477,32 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       _Migration note:_ this adds a `NOT NULL` column with no default, which only applies cleanly
       because `Question` is empty at this point in history. Confirmed 0 rows before applying. Any
       later `NOT NULL` addition to a populated table will need a default or a backfill step.
-- [ ] **T-029** Add index on `Question(fieldId, status)` — the hot path for question serving.
+- [x] **T-029** Add index on `Question(fieldId, status)` — the hot path for question serving.
       **Test:** `EXPLAIN` on the next-question query shows an index scan, not a seq scan.
+      ✅ 2026-08-01 — **with a corrected test; the original was wrong.**
+      Seeded **9,000 questions across 3 fields and 4 statuses** first, because on a small table
+      Postgres seq-scans everything and the check would pass or fail for reasons unrelated to the
+      index. Then, after `ANALYZE`:
+      · `count(*)` published in a field → **Index Only Scan** · sample 100 ordered → **INDEX** ·
+      all published ids in a field → **INDEX** · `LIMIT 1` with no ORDER BY → **seq scan**.
+      **The `LIMIT 1` seq scan is correct, not a failure.** 750 of 9,000 rows match, so the
+      planner expects a hit within ~12 rows and stops; an index scan there would be slower. The
+      original test demanded an index scan for exactly the query that should not use one, so it
+      was asserting the wrong thing. Corrected to assert the index serves the queries that
+      actually need it — counting, sampling a mock, and retrieving a field's published set.
+      Confirmed usable regardless: with `enable_seqscan=off` the planner picks
+      `Index Only Scan using "Question_fieldId_status_idx"`.
+      **`fieldId` is denormalised** from topic → course → field. Serving is the hottest path —
+      every practice fetch and 100 rows per sitting — and normalised it is a three-table join.
+      The cost is drift: a stale `fieldId` means **a student is served another programme's
+      question**. Written from the topic at insert time; T-029a makes the database enforce it.
+      Seeded rows removed afterwards; the table is back to 0.
+- [ ] **T-029a** Enforce that `Question.fieldId` matches its topic's real field.
+      Denormalisation (T-029) invites drift, and a drifted row serves a student the wrong
+      programme's question — silently, and looking entirely normal.
+      **Test:** a trigger rejects an insert or update whose `fieldId` differs from
+      `topic → course → fieldId`; moving a question to a topic in another field either updates
+      `fieldId` or is refused.
 - [ ] **T-030** Write a seed that creates the three launch fields: Computer Science,
       Public Health, Accounting & Finance.
       **Test:** After `npm run db:seed`, exactly 3 published fields exist.
