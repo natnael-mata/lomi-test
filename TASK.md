@@ -716,9 +716,21 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       re-seeded and re-verified **7/7 verbatim** against the CSV.
       **Lint caught a real hazard:** the BOM and the header-mismatch guard both held _literal_
       U+FEFF characters — invisible in review. Rewritten as the escape `\uFEFF`.
-- [ ] **T-052** Map `status` column values (`raw`, `needs_answer`, `needs_explanation`,
+- [x] **T-052** Map `status` column values (`raw`, `needs_answer`, `needs_explanation`,
       `needs_topic_review`, `ready`) including semicolon-combined values.
-      **Test:** `needs_answer;needs_explanation` parses to a 2-element array.
+      **Test:** `needs_answer;needs_explanation` parses to a 2-element array. ✅ 17 tests.
+      `parseStatuses` returns `{ statuses, unknown, contradictions }`, never a bare value.
+      **A blank cell yields `raw`, never `ready`** — silence is not approval, and guessing
+      otherwise is exactly how an unreviewed question reaches a student. Same for a cell whose
+      values are all unrecognised: the unknown strings are kept for the run report (T-056)
+      rather than dropped, and the row falls back to `raw`.
+      Flags come back deduped and in **canonical order**, so two rows listing the same flags in
+      a different sequence compare equal. Case and spacing are tolerated — spreadsheets
+      introduce both.
+      `ready` alongside a `needs_*` flag is surfaced as a **contradiction, not a rejection**:
+      the row still imports, and `ready` grants nothing anyway. The helper is called
+      `claimsReady`, not `isReady` — it reports what a spreadsheet asserts, and T-054 is what
+      stops that assertion becoming a publish.
 - [ ] **T-053** Import accepts rows with blank `correct_option` / `explanation` / `course`
       and stages them rather than rejecting.
       **Test:** Importing GEO-0001 (blank answer) succeeds; row lands with `needs_answer`.
