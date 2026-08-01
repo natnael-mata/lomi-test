@@ -731,9 +731,40 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       the row still imports, and `ready` grants nothing anyway. The helper is called
       `claimsReady`, not `isReady` — it reports what a spreadsheet asserts, and T-054 is what
       stops that assertion becoming a publish.
-- [ ] **T-053** Import accepts rows with blank `correct_option` / `explanation` / `course`
+- [x] **T-053** Import accepts rows with blank `correct_option` / `explanation` / `course`
       and stages them rather than rejecting.
       **Test:** Importing GEO-0001 (blank answer) succeeds; row lands with `needs_answer`.
+      ✅ 2026-08-01 — 37 tests (31 pure + 6 against the real database).
+      `ImportService` + a pure `mapRow`, split the same way as the publish gate: the decisions
+      are testable in milliseconds, the writes are proved separately against Postgres.
+      **Schema change:** the flags had nowhere to live. Added `ImportFlag` +
+      `Question.importFlags` (migration `20260801160000_question_import_flags`). It is a
+      **separate vocabulary from `QStatus` on purpose** — `QStatus` is what this system decided,
+      `ImportFlag` is what a spreadsheet claimed, and merging them is how `ready` in a CSV
+      becomes PUBLISHED here. The review queue's query is
+      `where importFlags has NEEDS_ANSWER`, which the e2e test runs.
+      **A file's claim loses to what is actually in the row:** a row saying `ready` while
+      arriving with no answer gets `NEEDS_ANSWER` anyway. Without that it sits in nobody's
+      queue and is never finished.
+      **Blank course/topic land under `Unsorted`**, flagged `NEEDS_TOPIC_REVIEW`. Topic is a
+      required relation so a blank one must still land somewhere; `Unsorted` is visible and
+      obviously provisional, whereas guessing a topic silently corrupts the weight figures.
+      **Rejection is reserved for rows nobody could finish** — no id, no stem, no field, fewer
+      than 2 options, or an answer naming an empty option. Every reason is reported at once,
+      and one bad row does not fail the run: the rest of the file still imports.
+      `qType` is inferred (no type column exists). Verified on the real template: **5
+      CALCULATION, 2 CONCEPT**. Safe to guess because the errors are asymmetric — a concept
+      misread as a calculation is _blocked_ by the gate's steps rule; the reverse is only
+      mispaced. Neither reaches a student unreviewed.
+      `prisma/seed-questions.ts` now runs this importer instead of its own copy of the mapping
+      (same lesson as T-051's parser); re-seeded, **7/7 still verbatim**, no duplicate fields,
+      all 7 DRAFT, Geography still unpublished.
+- [ ] **T-053a** `difficulty` is in the CSV contract but has no column in the schema, so it is
+      dropped on import. The mapper says so in its per-row notes rather than discarding it
+      silently. Decide whether to store it (it is a plausible input to practice-set difficulty
+      mixing) or remove it from the template.
+      **Test:** either `Question.difficulty` exists and round-trips, or the column is gone from
+      `question_import_template.csv` and CONTENT-PIPELINE.md.
 - [ ] **T-054** Import refuses to set `PUBLISHED` on any row, whatever the CSV says.
       **Test:** A row with `status=ready` imports as `DRAFT`; only the review flow publishes.
 - [ ] **T-055** Import is idempotent on `stableId` — re-importing updates, never duplicates.

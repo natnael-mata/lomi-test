@@ -127,6 +127,25 @@ enum QStatus {
   RETIRED
 }
 
+/// What the import file SAID about a row — CONTENT-PIPELINE.md §2's `status`
+/// column, which is a workflow flag and not a lifecycle state.
+///
+/// Deliberately a separate vocabulary from `QStatus`. `QStatus` is what this
+/// system has decided; `ImportFlag` is what a spreadsheet claimed. Merging them
+/// would let `ready` in a CSV mean PUBLISHED here, which is precisely the path a
+/// student ends up reading an unreviewed question through.
+///
+/// `READY` is stored because dropping it would lose provenance, but it grants
+/// nothing: the importer never publishes (T-054) and the publish gate decides
+/// (T-040…T-046).
+enum ImportFlag {
+  RAW
+  NEEDS_ANSWER
+  NEEDS_EXPLANATION
+  NEEDS_TOPIC_REVIEW
+  READY
+}
+
 /// The product. Everything else exists to get one of these in front of a
 /// student with an answer it can defend.
 model Question {
@@ -198,6 +217,14 @@ model Question {
   /// operations need to trace a bad question back to the paper it came from.
   sourceRef String?
   year      Int?
+
+  /// Outstanding work as declared by the import file. Empty for a question
+  /// authored in the app, which has no import file to declare anything.
+  ///
+  /// This is what the review queue reads to answer "what is missing from this
+  /// question" — the thing a human still has to supply. It is a record of a
+  /// claim, never a permission; see the `ImportFlag` comment.
+  importFlags ImportFlag[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
