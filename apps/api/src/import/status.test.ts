@@ -26,7 +26,7 @@ describe('parseStatuses (T-052)', () => {
   it('parses the real template row that carries three flags', () => {
     const rows = parseImportCsv(
       readFileSync(repoFile('docs/question_import_template.csv'), 'utf8'),
-    );
+    ).map((p) => p.row);
     const geo = rows.find((r) => r.question_id === 'GEO-0001')!;
     expect(parseStatuses(geo.status).statuses).toEqual([
       'needs_answer',
@@ -38,7 +38,7 @@ describe('parseStatuses (T-052)', () => {
   it('parses every status cell in the real template without an unknown value', () => {
     const rows = parseImportCsv(
       readFileSync(repoFile('docs/question_import_template.csv'), 'utf8'),
-    );
+    ).map((p) => p.row);
     for (const row of rows) {
       expect(parseStatuses(row.status).unknown).toEqual([]);
     }

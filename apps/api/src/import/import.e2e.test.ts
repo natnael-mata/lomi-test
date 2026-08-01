@@ -133,6 +133,25 @@ describe('ImportService (T-053)', () => {
     ).resolves.toBeNull();
   });
 
+  // T-057's own test, with the bad row buried so the line number has to be real.
+  it('rejects a 3-option row and names the line it is on', async () => {
+    const three = `IMP-3OPT-${SUFFIX},${FIELD},Taxation,VAT,A question with a lost option?,,One,Two,Three,,a,Because one.,,scan,,raw`;
+    const spans = `IMP-SPAN-${SUFFIX},${FIELD},Taxation,VAT,"A stem that\nspans two lines?",,One,Two,Three,Four,a,Because one.,,scan,,raw`;
+    const report = await service.importCsv(csv(full, spans, three));
+
+    expect(report).toMatchObject({ read: 3, rejected: 1 });
+    const bad = report.rows.find((r) => r.action === 'rejected');
+    expect(bad?.stableId).toBe(`IMP-3OPT-${SUFFIX}`);
+    expect(bad?.messages.join(' ')).toContain('option D is missing — a question needs all four');
+    // Line 5, not row 3: the row above it spans two lines of the file.
+    expect(bad?.line).toBe(5);
+
+    expect(formatReport(report)).toContain(`IMP-3OPT-${SUFFIX} (line 5)`);
+    await expect(
+      prisma.question.findUnique({ where: { stableId: `IMP-3OPT-${SUFFIX}` } }),
+    ).resolves.toBeNull();
+  });
+
   it('creates an unknown field unpublished — an import is not a decision to serve it', async () => {
     const field = await prisma.field.findFirstOrThrow({ where: { name: FIELD } });
     expect(field.isPublished).toBe(false);
@@ -343,13 +362,18 @@ describe('ImportService is idempotent (T-055)', () => {
     expect(report.rows[0]?.messages.join(' ')).toContain('why-wrong note was cleared');
   });
 
-  it('removes a distractor the file has dropped', async () => {
+  // T-057 makes this a rejection rather than an edit: a file that lost an option
+  // is a file to fix, not a question to quietly shrink under a reviewer.
+  it('rejects a re-import that has lost an option, leaving the stored one intact', async () => {
     await service.importCsv(csv(row()));
     expect(await options()).toHaveLength(4);
 
     const report = await service.importCsv(csv(row({ d: '' })));
-    expect((await options()).map((o) => o.label)).toEqual(['A', 'B', 'C']);
-    expect(report.rows[0]?.messages.join(' ')).toContain('no longer in the file');
+    expect(report).toMatchObject({ read: 1, rejected: 1, updated: 0 });
+    expect(report.rows[0]?.messages.join(' ')).toContain('option D is missing');
+    expect(report.rows[0]?.line).toBe(2);
+
+    expect(await options()).toHaveLength(4);
   });
 
   // T-056's own test, on the real file. Corrected from 6 to 7 rows.

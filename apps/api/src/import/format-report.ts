@@ -56,5 +56,7 @@ function repeatedMessages(rows: readonly RowOutcome[]): Map<string, number> {
 }
 
 function bullets(row: RowOutcome): string[] {
-  return [`  ${row.stableId}`, ...row.messages.map((m) => `    - ${m}`)];
+  // The line number is how somebody actually finds the row again — `AF-0003` is
+  // meaningless when the id is what was mangled.
+  return [`  ${row.stableId} (line ${row.line})`, ...row.messages.map((m) => `    - ${m}`)];
 }

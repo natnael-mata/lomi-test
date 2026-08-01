@@ -19,7 +19,7 @@ function repoFile(relative: string): string {
 
 const TEMPLATE = parseImportCsv(
   readFileSync(repoFile('docs/question_import_template.csv'), 'utf8'),
-);
+).map((p) => p.row);
 
 function row(overrides: Partial<ImportRow> = {}): ImportRow {
   return {
@@ -128,17 +128,37 @@ describe('mapRow — rejections are for rows nobody could finish', () => {
     expect(rejected({ field: '???' }).join(' ')).toContain('no letters or digits');
   });
 
-  it('rejects fewer than two options', () => {
+  // T-057: stricter than the rest of the mapper, deliberately. A missing
+  // distractor cannot be "fixed" in review without inventing one, and inventing
+  // a wrong answer changes how hard the question is.
+  it('rejects a row missing any one option, naming which', () => {
+    expect(rejected({ option_d: '', correct_option: 'a' }).join(' ')).toContain(
+      'option D is missing',
+    );
+    expect(rejected({ option_b: '', correct_option: 'a' }).join(' ')).toContain(
+      'option B is missing',
+    );
+  });
+
+  it('names every missing option at once', () => {
     const reasons = rejected({ option_b: '', option_c: '', option_d: '', correct_option: 'a' });
-    expect(reasons.join(' ')).toContain('only 1 option(s)');
+    expect(reasons.join(' ')).toContain('option B, C, D are missing');
+  });
+
+  it('rejects a whitespace-only option, which a spreadsheet makes look filled', () => {
+    expect(rejected({ option_c: '   ', correct_option: 'a' }).join(' ')).toContain(
+      'option C is missing',
+    );
   });
 
   it('rejects a correct_option outside a–d', () => {
     expect(rejected({ correct_option: 'e' }).join(' ')).toContain('not one of a, b, c, d');
   });
 
-  it('rejects an answer that points at an empty option', () => {
-    expect(rejected({ option_d: '', correct_option: 'd' }).join(' ')).toContain('has no text');
+  it('rejects an answer that points at an empty option — as a missing option', () => {
+    expect(rejected({ option_d: '', correct_option: 'd' }).join(' ')).toContain(
+      'option D is missing',
+    );
   });
 
   it('reports every reason at once, not just the first', () => {
@@ -166,9 +186,8 @@ describe('mapRow — field handling', () => {
     expect(m.options.filter((o) => o.isCorrect).map((o) => o.label)).toEqual(['C']);
   });
 
-  it('omits empty options rather than storing blank choices', () => {
-    const m = mapped({ option_d: '', correct_option: 'a' });
-    expect(m.options.map((o) => o.label)).toEqual(['A', 'B', 'C']);
+  it('always yields four options, since a row short of four never gets here', () => {
+    expect(mapped().options.map((o) => o.label)).toEqual(['A', 'B', 'C', 'D']);
   });
 
   it('keeps a usable year and drops an unusable one with a note', () => {

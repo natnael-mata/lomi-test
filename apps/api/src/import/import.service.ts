@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { OptionLabel, QStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
-import type { ImportRow } from './csv-schema';
 import { mapRow, type MappedRow } from './map-row';
-import { parseImportCsv } from './parse-csv';
+import { parseImportCsv, type ParsedRow } from './parse-csv';
 
 interface ExistingOption {
   label: OptionLabel;
@@ -25,6 +24,8 @@ interface ExistingQuestion {
 
 export interface RowOutcome {
   stableId: string;
+  /** The line of the source file this came from — how a person finds it again. */
+  line: number;
   action: 'created' | 'updated' | 'rejected';
   /** Why it was rejected, or what a human should know about how it was read. */
   messages: string[];
@@ -57,7 +58,7 @@ export class ImportService {
     return this.importRows(parseImportCsv(text));
   }
 
-  async importRows(rows: ImportRow[]): Promise<ImportReport> {
+  async importRows(rows: ParsedRow[]): Promise<ImportReport> {
     const report: ImportReport = {
       read: rows.length,
       created: 0,
@@ -66,18 +67,19 @@ export class ImportService {
       rows: [],
     };
 
-    for (const raw of rows) {
+    for (const { row: raw, line } of rows) {
       const mapped = mapRow(raw);
       if (!mapped.ok) {
         report.rejected++;
         report.rows.push({
           stableId: mapped.stableId,
+          line,
           action: 'rejected',
           messages: mapped.reasons,
         });
         continue;
       }
-      const outcome = await this.writeRow(mapped.row);
+      const outcome = await this.writeRow(mapped.row, line);
       report[outcome.action === 'created' ? 'created' : 'updated']++;
       report.rows.push(outcome);
     }
@@ -85,7 +87,7 @@ export class ImportService {
     return report;
   }
 
-  private async writeRow(row: MappedRow): Promise<RowOutcome> {
+  private async writeRow(row: MappedRow, line: number): Promise<RowOutcome> {
     // Match an existing field by NAME before deriving a slug: slugs are derived,
     // names are what the file wrote, and a derivation that disagrees with an
     // existing row creates a second field with the same name — which happened
@@ -151,6 +153,7 @@ export class ImportService {
 
     return {
       stableId: row.stableId,
+      line,
       action: before ? 'updated' : 'created',
       messages,
     };

@@ -17,10 +17,13 @@ function repoFile(relative: string): string {
 }
 
 const TEMPLATE = readFileSync(repoFile('docs/question_import_template.csv'), 'utf8');
+
+/** Most tests care about the cells; the line number has its own block below. */
+const parseRows = (text: string) => parseImportCsv(text).map((p) => p.row);
 const header = IMPORT_COLUMNS.join(',');
 
 describe('parseImportCsv — the real template (T-051)', () => {
-  const rows = parseImportCsv(TEMPLATE);
+  const rows = parseRows(TEMPLATE);
 
   // The task text said 6. The template has 7 — six in launch fields plus
   // GEO-0001, which is the deliberate `needs_answer` example.
@@ -67,31 +70,31 @@ describe('parseImportCsv — the real template (T-051)', () => {
 describe('parseImportCsv — quoting rules', () => {
   it('handles a newline inside a quoted field', () => {
     const csv = `${header}\nQ-1,F,C,T,"line one\nline two",,a,b,c,d,a,expl,easy,src,2018,ready`;
-    const [row] = parseImportCsv(csv);
+    const [row] = parseRows(csv);
     expect(row!.question_text).toBe('line one\nline two');
   });
 
   it('handles escaped double quotes', () => {
     const csv = `${header}\nQ-1,F,C,T,"He said ""no"" firmly",,a,b,c,d,a,expl,easy,src,2018,ready`;
-    const [row] = parseImportCsv(csv);
+    const [row] = parseRows(csv);
     expect(row!.question_text).toBe('He said "no" firmly');
   });
 
   it('handles CRLF line endings', () => {
     const csv = `${header}\r\nQ-1,F,C,T,stem,,a,b,c,d,a,expl,easy,src,2018,ready\r\n`;
-    expect(parseImportCsv(csv)).toHaveLength(1);
-    expect(parseImportCsv(csv)[0]!.question_text).toBe('stem');
+    expect(parseRows(csv)).toHaveLength(1);
+    expect(parseRows(csv)[0]!.question_text).toBe('stem');
   });
 
   it('strips a UTF-8 BOM so the first column still matches', () => {
     const csv = `\uFEFF${header}\nQ-1,F,C,T,stem,,a,b,c,d,a,expl,easy,src,2018,ready`;
     expect(() => parseImportCsv(csv)).not.toThrow();
-    expect(parseImportCsv(csv)[0]!.question_id).toBe('Q-1');
+    expect(parseRows(csv)[0]!.question_id).toBe('Q-1');
   });
 
   it('ignores a trailing newline rather than emitting a blank row', () => {
     const csv = `${header}\nQ-1,F,C,T,stem,,a,b,c,d,a,expl,easy,src,2018,ready\n\n`;
-    expect(parseImportCsv(csv)).toHaveLength(1);
+    expect(parseRows(csv)).toHaveLength(1);
   });
 });
 
@@ -125,6 +128,36 @@ describe('parseImportCsv — malformed input', () => {
 
   it('rejects an empty file', () => {
     expect(() => parseImportCsv('')).toThrow(/File is empty/);
+  });
+});
+
+describe('parseImportCsv — line numbers (T-057)', () => {
+  it('numbers rows from 2, the header being line 1', () => {
+    const csv = `${header}\nQ-1,F,C,T,one,,a,b,c,d,a,e,easy,s,2018,ready\nQ-2,F,C,T,two,,a,b,c,d,a,e,easy,s,2018,ready`;
+    expect(parseImportCsv(csv).map((p) => p.line)).toEqual([2, 3]);
+  });
+
+  // Row index is not line number, and reporting the wrong one sends somebody to
+  // edit an innocent row.
+  it('counts the newlines inside a quoted field', () => {
+    const csv = `${header}\nQ-1,F,C,T,"spans\nthree\nlines",,a,b,c,d,a,e,easy,s,2018,ready\nQ-2,F,C,T,after,,a,b,c,d,a,e,easy,s,2018,ready`;
+    const parsed = parseImportCsv(csv);
+    expect(parsed[0]!.line).toBe(2);
+    expect(parsed[1]!.line).toBe(5);
+  });
+
+  it('counts blank lines that were skipped', () => {
+    const csv = `${header}\n\n\nQ-1,F,C,T,one,,a,b,c,d,a,e,easy,s,2018,ready`;
+    expect(parseImportCsv(csv)[0]!.line).toBe(4);
+  });
+
+  it('gives the real template rows their true lines', () => {
+    const parsed = parseImportCsv(TEMPLATE);
+    expect(parsed[0]!.line).toBe(2);
+    // Ascending, and never past the number of lines in the file.
+    const lines = parsed.map((p) => p.line);
+    expect([...lines].sort((a, b) => a - b)).toEqual(lines);
+    expect(Math.max(...lines)).toBeLessThanOrEqual(TEMPLATE.split('\n').length);
   });
 });
 

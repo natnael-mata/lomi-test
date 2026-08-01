@@ -114,20 +114,22 @@ export function mapRow(row: ImportRow): MapResult {
   }
 
   const optionTexts = OPTION_LABELS.map((l) => row[`option_${l.toLowerCase()}` as keyof ImportRow]);
-  const filled = optionTexts.filter((t) => t.trim() !== '');
-  if (filled.length < 2) {
-    reasons.push(`only ${filled.length} option(s) supplied — a multiple choice needs at least 2`);
+  const missingOptions = OPTION_LABELS.filter((_, i) => optionTexts[i]!.trim() === '');
+  if (missingOptions.length > 0) {
+    // Stricter than the rest of this file, and deliberately so (T-057). A blank
+    // explanation is work a reviewer can do; a missing distractor is not — it
+    // would have to be invented, and inventing a wrong answer changes how hard
+    // the question is. A 3-option question served next to 4-option ones is also
+    // a visible defect in the answer view. So the row goes back to the source.
+    reasons.push(
+      `option ${missingOptions.join(', ')} ${missingOptions.length === 1 ? 'is' : 'are'} missing — a question needs all four`,
+    );
   }
 
   const answer = row.correct_option.trim().toUpperCase();
   const hasAnswer = answer !== '';
   if (hasAnswer && !OPTION_LABELS.includes(answer as OptionLabelLetter)) {
     reasons.push(`correct_option "${row.correct_option}" is not one of a, b, c, d`);
-  } else if (hasAnswer) {
-    const idx = OPTION_LABELS.indexOf(answer as OptionLabelLetter);
-    if (optionTexts[idx]!.trim() === '') {
-      reasons.push(`correct_option "${answer}" names an option that has no text`);
-    }
   }
 
   if (reasons.length > 0) return { ok: false, stableId: stableId || '(no id)', reasons };

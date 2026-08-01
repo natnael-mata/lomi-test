@@ -26,6 +26,7 @@ describe('formatReport (T-056)', () => {
         rows: [
           {
             stableId: 'AF-9999',
+            line: 4,
             action: 'rejected',
             messages: [
               'question_text is blank — there is no question',
@@ -49,6 +50,7 @@ describe('formatReport (T-056)', () => {
         rows: [
           {
             stableId: 'GEO-0001',
+            line: 3,
             action: 'created',
             messages: ['no course — staged under Unsorted'],
           },
@@ -66,8 +68,8 @@ describe('formatReport (T-056)', () => {
         read: 2,
         created: 2,
         rows: [
-          { stableId: 'A-1', action: 'created', messages: [] },
-          { stableId: 'A-2', action: 'created', messages: [] },
+          { stableId: 'A-1', line: 2, action: 'created', messages: [] },
+          { stableId: 'A-2', line: 3, action: 'created', messages: [] },
         ],
       }),
     );
@@ -79,6 +81,7 @@ describe('formatReport (T-056)', () => {
   it('states a note shared by many rows once, instead of on every row', () => {
     const rows = Array.from({ length: 12 }, (_, i) => ({
       stableId: `A-${i}`,
+      line: i + 2,
       action: 'created' as const,
       messages: ['difficulty "easy" is not stored yet'],
     }));
@@ -95,6 +98,7 @@ describe('formatReport (T-056)', () => {
   it('keeps a note per-row while only a few rows carry it', () => {
     const rows = Array.from({ length: 3 }, (_, i) => ({
       stableId: `A-${i}`,
+      line: i + 2,
       action: 'created' as const,
       messages: ['year "n/a" is not a usable year — dropped'],
     }));
@@ -113,10 +117,11 @@ describe('formatReport (T-056)', () => {
         rows: [
           {
             stableId: 'GOOD-1',
+            line: 2,
             action: 'created',
             messages: ['difficulty "easy" is not stored yet'],
           },
-          { stableId: 'BAD-1', action: 'rejected', messages: ['field is blank'] },
+          { stableId: 'BAD-1', line: 3, action: 'rejected', messages: ['field is blank'] },
         ],
       }),
     );

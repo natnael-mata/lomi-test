@@ -820,8 +820,20 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       should accept. Exits 1 on any rejected row and on a header mismatch — verified by running
       all three cases (clean file, rejected row, wrong header).
       ESLint's `no-console` now exempts `*.cli.ts` alongside the other operational scripts.
-- [ ] **T-057** Reject a row whose `option_a..d` are not all present, with the row number.
-      **Test:** A crafted 3-option row is rejected and names its line number.
+- [x] **T-057** Reject a row whose `option_a..d` are not all present, with the row number.
+      **Test:** A crafted 3-option row is rejected and names its line number. ✅ 2026-08-02 —
+      7 tests. The e2e case buries the bad row **after a row whose stem spans two lines**, so
+      the reported line (5) can only be right if it is really counted.
+      **This narrows T-053's rule, on purpose.** Everywhere else the importer stages what is
+      missing; here it refuses. A blank explanation is work a reviewer can do, but a missing
+      distractor would have to be **invented**, and inventing a wrong answer changes how hard
+      the question is. A re-import that has lost an option is now rejected with the stored
+      four left intact, rather than quietly shrinking a question under a reviewer.
+      **The line number had to be made real first.** `i + 2` is not a line number: a quoted
+      field can contain newlines and blank lines are skipped, so `scanRows` now counts lines
+      while scanning and `parseImportCsv` returns `{ row, line }`. Naming the wrong line is
+      worse than naming none — it sends somebody to edit an innocent row. Every report entry
+      now carries its line, not just this rule's.
 - [ ] **T-058** Add a cleaning pass: strip form feeds, repeated running headers, and
       `"Question N"` concatenated onto option text (CONTENT-PIPELINE §1).
       **Test:** Unit: `"Question 2Answer: foo"` → `"foo"`.
