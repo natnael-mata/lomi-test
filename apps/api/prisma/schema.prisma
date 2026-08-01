@@ -376,3 +376,67 @@ enum AuditAction {
   BOUNCED
   RETIRED
 }
+
+/// A student.
+///
+/// Two ways in, one row: phone + OTP on the web, Telegram `initData` inside the
+/// bot. Both are optional and at least one is always present — a user with
+/// neither could never sign in again, so the linking flow (T-081) exists to fold
+/// two identities into one row rather than leaving a person with two accounts and
+/// one subscription.
+model User {
+  id String @id @default(cuid())
+
+  /// E.164, unique when present. Null for a Telegram-only account.
+  phone           String?   @unique
+  phoneVerifiedAt DateTime?
+
+  /// Telegram's numeric id, held as a STRING: it is an identifier, not a
+  /// quantity, and ids past 2^53 must not round through a JS number.
+  telegramId       String?   @unique
+  telegramUsername String?
+
+  /// What other students see. Never the legal name — PRODUCT.md is explicit that
+  /// a verified real name appears on no public surface (T-086).
+  displayName String
+
+  /// The name as given, for support and receipts. Not shown to other students.
+  name String?
+
+  /// The programme this student is sitting. Null until chosen; T-085 refuses to
+  /// serve a question without it.
+  fieldId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+
+  @@index([fieldId])
+}
+
+/// One signed-in device.
+///
+/// Sessions are rows rather than only JWT claims because the product promises
+/// two things a stateless token cannot do: list a student's devices, and revoke
+/// one immediately (T-083, T-084). A token whose session row is gone or revoked
+/// is refused however valid its signature.
+model Session {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// A short label for the device list — "Chrome on Android". Never an IP.
+  deviceLabel String?
+
+  /// Set when the session is ended, by revocation or by eviction. Kept rather
+  /// than deleted so "signed out on 3 August" can still be answered.
+  revokedAt DateTime?
+  /// Why it ended: the student revoked it, or a third login evicted it (T-082).
+  revokedReason String?
+
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId, revokedAt])
+}

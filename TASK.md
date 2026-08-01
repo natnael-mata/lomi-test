@@ -1068,8 +1068,26 @@ these…"` at the start of a stem is prose.
       exists to hide.
       The Telegram id is kept as a **string**: it is an identifier, not a quantity, and ids past
       2^53 must not round.
-- [ ] **T-080** Telegram sign-in creates or finds a user by `telegramId`.
-      **Test:** Two sign-ins with the same id yield one user row.
+- [x] **T-080** Telegram sign-in creates or finds a user by `telegramId`.
+      **Test:** Two sign-ins with the same id yield one user row. ✅ 2026-08-02 — 11 tests.
+      Migration `20260802090000_user_and_session` adds **User** and **Session**.
+      **Sessions are rows, not only JWT claims.** The product promises a device list and
+      immediate revocation (T-083, T-084), and a stateless token can deliver neither. The token
+      carries `sub` + `sid`; the row is the authority.
+      Token issuance lives here rather than waiting for T-077, because the OTP route is being
+      handled separately — it plugs into this rather than the reverse. `jsonwebtoken@9`, HS256,
+      with `algorithms` **pinned on verify**: without that a token declaring `alg: none` is
+      accepted, which is the oldest JWT bug there is.
+      **The display name is generated, never derived** — not from the legal name and not from
+      Telegram's either, because a Telegram profile name usually _is_ the person's real name and
+      copying it into the public handle leaks precisely what PRODUCT.md's rule protects. Asserted
+      that it matches neither. A handle a student has chosen survives later sign-ins; the
+      Telegram _username_ is refreshed, since people change it.
+      **The unique-constraint race is handled:** two simultaneous first sign-ins both see no row
+      and both insert; the loser catches and reads the winner's row. The alternative is a 500 on
+      the one action that has to work — a student's very first.
+      A tampered `initData` 401s and **creates nothing** — an unverified `initData` is not a weak
+      credential, it is no credential.
 - [ ] **T-081** Link a Telegram identity to an existing phone account.
       **Test:** After linking, one user row carries both `phone` and `telegramId`.
 - [ ] **T-082** Device limit: a third concurrent session evicts the oldest.
