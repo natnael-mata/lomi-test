@@ -97,6 +97,17 @@ This is the largest effort. Recommended: **AI-drafted + expert-reviewed**.
 
 - AI drafts an explanation per question (correct rationale + why each distractor is wrong).
 - Reviewer edits/approves. Only then → `ready`.
+
+**Decided (2026-08-02): per-distractor why-wrongs and the one-line concept line are authored
+in the review queue, not imported.** They are deliberately _not_ columns in the import
+template. Two reasons: no MoE source file contains this text, so the columns would be empty
+on every real import; and the publish gate requires both, so a question carrying them from a
+spreadsheet would look publishable without any human having read it. The importer therefore
+stages every row as `DRAFT` with its gaps flagged, and re-importing a corrected file
+**preserves** why-wrongs a reviewer has already written (it only clears one when that option's
+own text changed). The consequence, accepted: **no question reaches a student without a human
+pass.** The gate already required that; this makes the import path honest about it.
+
 - **Fallback for a faster V1:** training mode can launch showing the correct answer _without_
   explanation, with explanations rolling out per field afterward. (Trades off the headline
   "why" feature for speed — your call.)

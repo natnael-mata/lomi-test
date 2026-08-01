@@ -535,16 +535,23 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       template's `needs_answer` example and T-067's review-queue fixture. It exists in the
       pipeline without being servable, which is exactly its real state.
       **All seven seed as DRAFT, and none can currently be published** — see T-031a.
-- [ ] **T-031a** The import template cannot produce a publishable question. **Needs a decision.**
+- [x] **T-031a** The import template cannot produce a publishable question. ~~**Needs a
+      decision.**~~ **Decided 2026-08-02 by the product owner: authored in review.**
       The publish gate requires a `whyWrong` on every distractor (T-041) and a single-sentence
       concept line (T-042). `question_import_template.csv` has **neither column** — 16 columns,
-      one `explanation`, no `why_wrong_*`, no `concept_line`. So every imported question is
-      permanently stuck short of publishable, including the five hand-authored Accounting rows
-      that were written as worked examples.
-      Options: add `why_wrong_a..d` and `concept_line` to the canonical schema (changes
-      CONTENT-PIPELINE.md's contract), or treat both as authored-in-review rather than imported.
-      **Test:** the template gains the columns the gate requires, or CONTENT-PIPELINE.md records
-      that they are authored in the review queue and the importer stages accordingly.
+      one `explanation`, no `why_wrong_*`, no `concept_line`.
+      **Resolution: they stay out of the template and are written in the review queue.** No MoE
+      source file contains this text, so the columns would be empty on every real import; and a
+      question carrying them from a spreadsheet would look publishable without a human having
+      read it. Recorded in CONTENT-PIPELINE.md §3 Gap B.
+      The importer already implements it: rows stage as `DRAFT` with their gaps flagged
+      (T-053), and a re-import **preserves** reviewer-authored why-wrongs, clearing one only
+      when that option's own text changed (T-055).
+      **Accepted consequence: no question reaches a student without a human pass.** The gate
+      required that already — this makes the import path honest about it.
+      The review queue needs a write path for that text; added as T-068a.
+      **Test:** ~~the template gains the columns~~ CONTENT-PIPELINE.md records that they are
+      authored in the review queue and the importer stages accordingly. ✅
 
 ---
 
@@ -862,7 +869,7 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       answer, and `"a) and c) are both correct"` is a real option in these papers. One wrong
       strip that changes an answer's meaning costs more than a hundred tidy ones gain.
       Applied to **options only** — a stem never carries an option label, and `"a) b) Which of
-    these…"` at the start of a stem is prose.
+  these…"` at the start of a stem is prose.
 - [x] **T-060** Log, do not silently drop, every row the cleaner modifies.
       **Test:** Report lists modified rows with before/after. ✅ 2026-08-02 — 4 tests.
       Every pass returns its changes rather than just its output, and `mapRow` turns each into
@@ -885,6 +892,12 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       **Test:** GEO-0001 (no answer) → 422 with 3 named blockers.
 - [ ] **T-068** `POST /admin/review/:id/bounce` requires a note ≥10 chars.
       **Test:** Empty note → 400; valid note → question returns to `DRAFT` with note attached.
+- [ ] **T-068a** `PATCH /admin/review/:id` lets a reviewer author the text that is deliberately
+      absent from the import: each distractor's `whyWrong`, the `conceptLine`, the
+      `explanation`, and the correct option where the file had none. This is the write path
+      T-031a's decision depends on — without it nothing imported can ever be published.
+      **Test:** Patching GEO-0001 with an answer, a concept line and three why-wrongs turns a
+      422 from T-067 into a successful publish.
 - [ ] **T-069** Publishing writes an `AuditLog` row with actor, action, question, timestamp.
       **Test:** After publish, exactly one audit row exists with the reviewer's id.
 - [ ] **T-070** `POST /admin/questions/:id/retire` sets `RETIRED` and records blast radius.
