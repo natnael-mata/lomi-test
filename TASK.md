@@ -1088,8 +1088,27 @@ these…"` at the start of a stem is prose.
       the one action that has to work — a student's very first.
       A tampered `initData` 401s and **creates nothing** — an unverified `initData` is not a weak
       credential, it is no credential.
-- [ ] **T-081** Link a Telegram identity to an existing phone account.
+- [x] **T-081** Link a Telegram identity to an existing phone account.
       **Test:** After linking, one user row carries both `phone` and `telegramId`.
+      ✅ 2026-08-02 — 9 tests.
+      **The direction is the security property.** The caller proves the phone account with a
+      session token and the Telegram account with a signed `initData`, so no request can claim a
+      phone number or a `telegramId` somebody else owns. Neither identity is taken on the
+      caller's word.
+      **Two populated accounts are never merged.** If the Telegram id already belongs to a
+      different user, that user may hold attempts, a subscription and a history; folding them
+      together has no correct default and folding them wrongly is unrecoverable. It refuses with
+      409 and points at support. Re-linking the _same_ identity is idempotent — "done" is the
+      honest answer to a request whose goal is already true.
+      Adds `SessionGuard`. **The token alone is never enough:** the signature only proves the
+      token was issued, the session row proves it is still valid. A guard that trusts the JWT and
+      skips the lookup makes revocation a lie — "signed out" would mean "signed out in ninety
+      days". Asserted directly: a valid token 401s the moment its row is revoked.
+      Every failure past the signature returns **one message**. Which of "no such session",
+      "revoked" or "belongs to someone else" applies is not the caller's business, and saying so
+      tells an attacker which session ids are real.
+      `lastSeenAt` is updated best-effort — the device list (T-083) is more useful with it, but a
+      failure to record it must never cost the request.
 - [ ] **T-082** Device limit: a third concurrent session evicts the oldest.
       **Test:** Integration: 3 logins → exactly 2 live sessions; the first is invalidated.
 - [ ] **T-083** `GET /me/devices` lists active sessions with last-seen and current flag.

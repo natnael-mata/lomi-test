@@ -1,9 +1,20 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
 import { signSessionToken } from './tokens';
+
+export interface LinkResult {
+  userId: string;
+  telegramId: string | null;
+  alreadyLinked: boolean;
+}
 
 export interface SignInResult {
   token: string;
@@ -51,6 +62,63 @@ export class AuthService {
       fieldId: user.fieldId,
       isNew,
     };
+  }
+
+  /**
+   * Attaches a Telegram identity to the account already signed in.
+   *
+   * The direction is the security property. The caller proves the phone account
+   * with a session token and proves the Telegram account with a signed
+   * `initData`; nothing here takes either identity on the caller's word, so
+   * there is no request that claims a phone number or a `telegramId` somebody
+   * else owns.
+   *
+   * **Two populated accounts are never merged.** If the Telegram id already
+   * belongs to a different user, that user may have attempts, a subscription and
+   * a history; folding them together is a data decision with no correct default,
+   * and folding them *wrongly* is unrecoverable. It refuses and says which
+   * accounts are involved.
+   */
+  async linkTelegram(userId: string, initData: string): Promise<LinkResult> {
+    const verified = verifyInitData(initData, this.botToken);
+    if (!verified.ok) throw new UnauthorizedException(verified.reason);
+
+    const me = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, telegramId: true, phone: true },
+    });
+    if (!me) throw new NotFoundException('No such account.');
+
+    if (me.telegramId === verified.user.id) {
+      // Already linked, by this user, to this identity. Saying "done" is the
+      // honest answer to a request whose goal is already true.
+      return { userId: me.id, telegramId: me.telegramId, alreadyLinked: true };
+    }
+    if (me.telegramId !== null) {
+      throw new ConflictException(
+        'This account is already linked to a different Telegram identity.',
+      );
+    }
+
+    const holder = await this.prisma.user.findUnique({
+      where: { telegramId: verified.user.id },
+      select: { id: true },
+    });
+    if (holder && holder.id !== me.id) {
+      throw new ConflictException(
+        'That Telegram account is already a separate Lomi-Test account. Merging two accounts has to be done by support.',
+      );
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: me.id },
+      data: {
+        telegramId: verified.user.id,
+        telegramUsername: verified.user.username,
+      },
+      select: { id: true, telegramId: true },
+    });
+    return { userId: updated.id, telegramId: updated.telegramId, alreadyLinked: false };
   }
 
   /**
