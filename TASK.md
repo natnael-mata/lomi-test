@@ -614,8 +614,19 @@ This is Phase 1 in the source doc for a reason: without it there is nothing to s
       question's explanation is the entire reward for getting it wrong.
       _Against real content, the gate now reports:_ 5 blockers on each Accounting question,
       4 on CS-0001, **7 on GEO-0001** — still 0 of 7 publishable.
-- [ ] **T-044** Confirm the gate rejects reviewer == author.
-      **Test:** Unit: same user id in both roles → error.
+- [x] **T-044** Confirm the gate rejects reviewer == author.
+      **Test:** Unit: same user id in both roles → error. ✅ 2026-08-01
+      _Verified, 5 tests: same id blocks with "You wrote this question — someone else has to
+      review it."; a different reviewer passes._
+      Review exists because the author already believes the question is right — they are the one
+      person who cannot catch their own wrong answer key.
+      **Only fires when a reviewer is actually set.** The same function runs live in the creator
+      form, where nobody has reviewed anything yet; "reviewer is missing" while someone is still
+      writing is noise, not guidance. Two absent ids are also not "the same person" — tested, since
+      `null === null` would otherwise flag every unassigned draft as self-review.
+      **Requiring a reviewer to be present is deliberately NOT here.** That is a workflow question
+      for the publish endpoint (T-067). This function answers "is the question sound", not "was the
+      process followed" — mixing the two would make the creator form unusable.
 - [ ] **T-045** Confirm `timeLimitSec` is bounded 15–600.
       **Test:** Unit: 10 → error; 700 → error; 120 → pass.
 - [ ] **T-046** Add a gate rule: a question cannot publish if its Topic has no blueprint weight.

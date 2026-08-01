@@ -312,3 +312,41 @@ describe('publish gate — solution complete for its type (T-043)', () => {
     expect(gateBlockers(question({ qType: 'CONCEPT', steps: [] }))).toEqual([]);
   });
 });
+
+describe('publish gate — reviewer is not the author (T-044)', () => {
+  it('blocks when the same person authored and reviewed it', () => {
+    expect(gateBlockers(question({ authorId: 'u_1', reviewerId: 'u_1' }))).toEqual([
+      'You wrote this question — someone else has to review it.',
+    ]);
+  });
+
+  it('passes when a different person reviewed it', () => {
+    expect(gateBlockers(question({ authorId: 'u_1', reviewerId: 'u_2' }))).toEqual([]);
+  });
+
+  // The same function runs live in the creator form, where nobody has reviewed
+  // anything yet. Complaining about a missing reviewer mid-draft would be noise.
+  it('says nothing while the question is still being written', () => {
+    expect(gateBlockers(question({ authorId: 'u_1' }))).toEqual([]);
+    expect(gateBlockers(question({ authorId: 'u_1', reviewerId: null }))).toEqual([]);
+  });
+
+  // Two absent ids are not "the same person".
+  it('does not treat two unknown authors as a self-review', () => {
+    expect(gateBlockers(question({ authorId: null, reviewerId: null }))).toEqual([]);
+    expect(gateBlockers(question())).toEqual([]);
+  });
+
+  it('blocks self-review independently of other problems', () => {
+    const q = question({
+      authorId: 'u_1',
+      reviewerId: 'u_1',
+      conceptLine: '',
+    });
+    expect(q).toBeDefined();
+    expect(gateBlockers(q)).toEqual([
+      'Concept line is missing.',
+      'You wrote this question — someone else has to review it.',
+    ]);
+  });
+});

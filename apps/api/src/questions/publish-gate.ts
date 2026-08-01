@@ -37,6 +37,10 @@ export interface DraftQuestion {
   steps?: readonly DraftStep[];
   timeLimitSec?: number;
   options: readonly DraftOption[];
+  /** Who wrote it. Compared against `reviewerId` — see T-044. */
+  authorId?: string | null;
+  /** Who is approving it. Absent while the question is still being written. */
+  reviewerId?: string | null;
 }
 
 /**
@@ -114,6 +118,21 @@ export function gateBlockers(q: DraftQuestion): string[] {
     // A CONCEPT question's explanation is the whole reward for getting it
     // wrong. Without one there is nothing to show after the verdict.
     blockers.push('Explanation is missing.');
+  }
+
+  // T-044 — nobody approves their own question.
+  //
+  // Review exists because the author already believes the question is right;
+  // they are the one person who cannot catch their own wrong answer key. Only
+  // checked when a reviewer is actually set: this same function runs live in the
+  // creator form, where no reviewer exists yet, and "reviewer is missing" while
+  // someone is still writing would be noise rather than guidance.
+  //
+  // Requiring a reviewer to be PRESENT belongs to the publish endpoint (T-067),
+  // not here — the gate answers "is this question sound", not "has the workflow
+  // been followed".
+  if (q.reviewerId != null && q.authorId != null && q.reviewerId === q.authorId) {
+    blockers.push('You wrote this question — someone else has to review it.');
   }
 
   return blockers;
