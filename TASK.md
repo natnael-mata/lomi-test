@@ -503,9 +503,22 @@ createdAt, updatedAt`, with a unique index on `slug` and an index on `isPublishe
       **Test:** a trigger rejects an insert or update whose `fieldId` differs from
       `topic → course → fieldId`; moving a question to a topic in another field either updates
       `fieldId` or is refused.
-- [ ] **T-030** Write a seed that creates the three launch fields: Computer Science,
+- [x] **T-030** Write a seed that creates the three launch fields: Computer Science,
       Public Health, Accounting & Finance.
-      **Test:** After `npm run db:seed`, exactly 3 published fields exist.
+      **Test:** After `npm run db:seed`, exactly 3 published fields exist. ✅ 2026-08-01
+      _Verified: `computer-science`, `public-health`, `accounting-finance`, all published._
+      **Idempotent, and tested as such** — run three times, the count stays 3; and a hand-edited
+      row (`name` set to "WRONG") is corrected back on the next run, so the update path works and
+      not just the create path. A seed that only works on an empty database is a seed nobody can
+      safely re-run.
+      **The other five fields are deliberately absent.** Geography, Economics, Exit-2015, Biology
+      and Management have no usable answer keys (CONTENT-PIPELINE.md); seeding them would put
+      programmes on screen that have no content behind them.
+      **`isPublished: true` here is a dev-only shortcut**, called out in the file: in production a
+      field publishes only after its topics are weighted to 100% (T-024) and it has questions that
+      pass the gate. A seed must never be how a field goes live.
+      `examDate` is left null — no real sitting date has been supplied, and inventing one would
+      put a fabricated countdown on screen.
 - [ ] **T-031** Seed the 6 sample questions from `question_import_template.csv` verbatim.
       **Test:** `AF-0003` exists with 4 options, correct = `b`, and a non-empty explanation.
 
