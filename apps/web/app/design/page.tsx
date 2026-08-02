@@ -1,4 +1,7 @@
 import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
+import { Card } from '../../components/Card';
+import { Chip } from '../../components/Chip';
+import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 
 /**
@@ -83,6 +86,49 @@ export default function DesignSystemPage() {
             ]}
           />
         </div>
+      </Row>
+      <Row title="Cards">
+        <Card id="card-plain">
+          <h3 className="text-label">Taxation · VAT</h3>
+          <p className="text-body text-ink-2 mt-1">12 questions answered · 9 correct.</p>
+        </Card>
+      </Row>
+
+      <Row title="Chips">
+        <div className="flex flex-wrap gap-2">
+          <Chip id="chip-neutral">share of past papers</Chip>
+          <Chip id="chip-correct" tone="correct">
+            Correct
+          </Chip>
+          <Chip id="chip-wrong" tone="wrong">
+            Not quite
+          </Chip>
+          <Chip id="chip-pending" tone="pending">
+            Over time
+          </Chip>
+          <Chip id="chip-brand" tone="brand">
+            Focus
+          </Chip>
+          <Chip id="chip-reward" tone="reward">
+            7-day streak
+          </Chip>
+        </div>
+      </Row>
+
+      <Row title="Inputs">
+        <Input label="Phone number" name="phone" placeholder="09…" />
+        <Input
+          label="Display name"
+          name="displayName"
+          defaultValue="SwiftSummit4821"
+          hint="Other students see this name, never your real one."
+        />
+        <Input
+          label="Transaction number"
+          name="txn"
+          defaultValue="FT2"
+          error="That is 3 characters. A CBE transaction number is 12."
+        />
       </Row>
     </main>
   );

@@ -279,10 +279,17 @@
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
                     bg-surface-2 text-caption text-ink-2;
   }
+  /* NOTE: no `focus:outline-none` here, deliberately.
+     It was here, and it silently cancelled the global focus ring for every
+     input in the product: `.field:focus` (0,1,1) outranks `:focus-visible`
+     (0,1,0), so `outline-style: none` won and DESIGN.md's "2px brand outline on
+     every interactive element" was true everywhere except the fields where it
+     matters most. The brand border and the ring are both wanted — DESIGN.md
+     says focus "takes the brand outline AND border". */
   .field {
     @apply w-full min-h-[52px] px-4 rounded-control bg-surface
                     border border-border text-body
-                    focus:border-brand focus:outline-none;
+                    focus:border-brand;
   }
   .field[aria-invalid='true'] {
     @apply border-wrong border-2;

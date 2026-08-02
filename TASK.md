@@ -1266,8 +1266,36 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
       client component ever mounted — no React fiber anywhere. It reads exactly like a broken
       component. Recovery: stop the server, `rm -rf apps/web/.next`, restart. Recorded in
       CLAUDE.md, with the one-line hydration probe that identifies it in seconds.
-- [ ] **T-095** Implement `<Card>`, `<Chip>`, `<Input>` per DESIGN.md, with focus rings.
+- [x] **T-095** Implement `<Card>`, `<Chip>`, `<Input>` per DESIGN.md, with focus rings.
       **Test:** Tab through a form — every control shows a 2px brand outline at 2px offset.
+      ✅ 2026-08-02 — 12 unit tests, and **verified in the browser**: card is surface / 16px
+      radius / 16px padding with the exact card shadow; all six chip tones carry the right
+      soft fill and text colour on a full pill; input is surface / 12px radius / **52px** with a
+      **visible label above it**, not a placeholder.
+      **Defect found, and it is the one this task exists to catch.** `.field` carried
+      `focus:outline-none`, and `.field:focus` (0,1,1) outranks the global `:focus-visible`
+      (0,1,0) — so DESIGN.md's "2px brand outline on every interactive element" was true
+      everywhere **except on inputs**, where a keyboard user needs it most. Removed; the brand
+      border and the ring are both wanted, which is what DESIGN.md says. A test now reads the
+      stylesheet so it cannot come back quietly.
+      That guard failed first on its own explanatory comment — a test that cannot tell a rule
+      from a note about the rule gets silenced rather than fixed, so it strips comments before
+      checking, and a second test guards the stripping.
+      **`<Card>` has no runtime nesting guard, deliberately.** The obvious enforcement is a
+      context flag that throws, but `createContext` makes Card a Client Component, and cards are
+      on every screen — that ships a JS boundary to every low-end phone to catch a mistake only
+      a developer can make and a reviewer sees instantly. It stays a zero-JavaScript Server
+      Component; the rule is enforced in review, and the file says so.
+      `<Input>` requires a visible label — the prop is not optional. A placeholder vanishes the
+      moment someone types, so a student who looks away has no way back to what the field was
+      for. Errors set `aria-invalid` **only when true** (`aria-invalid="false"` everywhere is
+      noise a screen reader reads out), point at the message with `aria-describedby`, and the
+      error supersedes the hint rather than stacking with it.
+      **Not observed: the ring itself.** The Browser pane is not displayed in this session, so
+      `document.hasFocus()` is `false` and `:focus` cannot match at all — programmatic focus
+      does not help. What is proved is that the rule is present and exact in the compiled CSS
+      and that nothing cancels it. Confirming the ring visually needs a displayed pane and a
+      real Tab press.
 - [ ] **T-096** Implement `<TotalBar>` and `<StatedFigure>` as distinct components.
       **Test:** Unit: `<TotalBar>` throws in dev if its rows do not sum to its total.
 - [ ] **T-097** Implement `<ReadinessStatement>`; it renders an "N other topics" row whenever
