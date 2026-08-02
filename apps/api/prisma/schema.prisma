@@ -40,6 +40,7 @@ model Field {
 
   courses   Course[]
   questions Question[]
+  attempts  Attempt[]
 
   @@index([isPublished])
 }
@@ -105,6 +106,7 @@ model Topic {
   updatedAt DateTime @updatedAt
 
   questions Question[]
+  attempts  Attempt[]
 
   @@unique([courseId, slug])
   @@index([courseId])
@@ -261,8 +263,9 @@ model Question {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  options Option[]
-  steps   Step[]
+  options  Option[]
+  steps    Step[]
+  attempts Attempt[]
 
   @@index([topicId])
   @@index([status])
@@ -411,6 +414,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   sessions Session[]
+  attempts Attempt[]
 
   @@index([fieldId])
 }
@@ -439,4 +443,54 @@ model Session {
   createdAt  DateTime @default(now())
 
   @@index([userId, revokedAt])
+}
+
+/// One answer, by one student, to one question.
+///
+/// The row is the record of what happened, not a scoreboard entry: it keeps the
+/// option chosen and the time taken, so a wrong answer can be explained back to
+/// the student and a slow correct one can be shown as pacing rather than failure.
+///
+/// Never deleted. `Question` is RETIRED rather than removed precisely so these
+/// keep pointing at something (T-070), and a student's history that points at
+/// nothing is worse than a withdrawn question.
+model Attempt {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// DENORMALISED from the question, for the same reason as `Question.fieldId`:
+  /// every progress query is "this student, in this field", and the alternative
+  /// is a join on the largest table in the product.
+  fieldId String
+  field   Field  @relation(fields: [fieldId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// DENORMALISED likewise — per-topic readiness (T-135) groups by this.
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// What the student picked. Null is not allowed: an attempt with no answer is
+  /// not an attempt, it is a question that was displayed.
+  chosenLabel OptionLabel
+
+  /// Resolved at write time rather than recomputed on read. If a question is
+  /// later corrected, the student's result must stay what it was when they sat
+  /// it — recomputing would silently rewrite their history.
+  isCorrect Boolean
+
+  /// Seconds the student spent. Compared against the question's `timeLimitSec`
+  /// for pacing (T-109); over the limit is never scored as failure.
+  timeTakenSec Int
+
+  createdAt DateTime @default(now())
+
+  /// The hot paths: "this student's attempts in this field", and "has this
+  /// student already answered this question".
+  @@index([userId, fieldId, createdAt])
+  @@index([userId, questionId])
+  @@index([userId, topicId])
 }

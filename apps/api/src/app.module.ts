@@ -3,6 +3,7 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health/health.controller';
 import { ImportModule } from './import/import.module';
+import { PracticeModule } from './practice/practice.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
 import { ReviewModule } from './review/review.module';
@@ -17,6 +18,7 @@ import { TaxonomyModule } from './taxonomy/taxonomy.module';
     QuestionsModule,
     ImportModule,
     ReviewModule,
+    PracticeModule,
   ],
   controllers: [HealthController],
 })
