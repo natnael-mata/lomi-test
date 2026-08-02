@@ -1179,12 +1179,38 @@ these…"` at the start of a stem is prose.
 
 Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
 
-- [ ] **T-090** Paste the `@theme` block into `apps/web/app/globals.css`; delete superseded
+- [x] **T-090** Paste the `@theme` block into `apps/web/app/globals.css`; delete superseded
       v2 tokens.
       **Test:** `npm run dev:web` renders; `getComputedStyle(document.body).backgroundColor`
-      is `rgb(246, 246, 251)` in light mode.
-- [ ] **T-091** Self-host Gabarito + Figtree + Noto Sans Ethiopic via `next/font`.
+      is `rgb(246, 246, 251)` in light mode. ✅ 2026-08-02 — **verified in the browser:
+      `rgb(246, 246, 251)` exactly.**
+      Mostly already true: T-006 wired `globals.css` to `@import` the design-system file rather
+      than pasting it, so the theme stays reviewable on its own and the app cannot drift from
+      it. There were no "superseded v2 tokens" to delete — the design system was authored fresh
+      at v3, so that half of the task described a migration this repo never had.
+- [x] **T-091** Self-host Gabarito + Figtree + Noto Sans Ethiopic via `next/font`.
       **Test:** Network tab shows zero requests to `fonts.googleapis.com`; CLS is 0.
+      ✅ 2026-08-02 — **verified in the browser: zero requests to Google, all three faces served
+      from `/_next/static/media/*.woff2`, CLS `0`.** Plus 3 unit tests on the wiring.
+      **`next/font/local` with the files committed, not `next/font/google`.** The reason is not
+      taste: `next/font/google` downloads at build time, so a build with no reachable Google
+      **silently falls back to system-ui and succeeds**. That failure looks exactly like
+      success. It happened here — the download timed out over IPv6 and the page rendered in the
+      fallback with the correct family names still sitting in the computed stack. Local files
+      also keep a third party off the critical path of an app whose users are on filtered, slow
+      connections.
+      **The theme now names the fonts through `var(--font-gabarito, 'Gabarito')`.** `next/font`
+      generates its own family name per face, so naming `'Gabarito'` directly renders in
+      system-ui while looking perfectly correct in the stack. The literal stays as the variable's
+      default, so the design-system file still works pasted anywhere.
+      **Subset choice is load-bearing, and I got it wrong first.** The initial download took the
+      **latin** cut of Noto Sans Ethiopic — 31 KB, loads fine, and contains **no Ge'ez glyph at
+      all**, so every Amharic string would have rendered in a fallback while appearing loaded.
+      The ethiopic subset is 198 KB. A test asserts a size floor per file for exactly that
+      failure.
+      `next/font` is a build-time macro and is not callable under Vitest, which broke a test that
+      only read `metadata`. Stubbed via a resolve alias, with the stub returning obviously fake
+      values so nothing can pass against it by accident.
 - [ ] **T-092** Implement `<Button>` with `primary | ghost | danger | disabled` variants.
       **Test:** Storybook/route renders all four; primary is 52px tall with the brand shadow.
 - [ ] **T-093** Disabled buttons render a supplied `blockingReason` instead of the label.

@@ -3,6 +3,8 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
+import { fontVariables } from './fonts';
+
 export const metadata: Metadata = {
   title: 'Lomi-Test',
   description:
@@ -16,7 +18,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={fontVariables}>
       <body>{children}</body>
     </html>
   );
