@@ -103,7 +103,52 @@
 }
 
 /* Dark — the same product at 11pm, not a dimmed sheet.
-   Semantic hues are re-derived for a dark ground, never merely darkened. */
+   Semantic hues are re-derived for a dark ground, never merely darkened.
+
+   Declared TWICE, on purpose, and a test asserts the two lists stay identical
+   (apps/web/components/theme.test.ts):
+
+     1. `@media (prefers-color-scheme: dark)` — a student whose phone is dark
+        gets a dark app with NO JavaScript at all. This matters because React
+        owns `<html>`'s attributes: a class applied by an inline script before
+        paint is STRIPPED during hydration, so a JS-only implementation showed
+        a light page to every system-dark user. Verified before this change.
+     2. `.dark` / `.light` — an explicit choice, which must beat the OS. The
+        media query is scoped `:not(.light)` so choosing light while the phone
+        is dark actually holds.
+
+   CSS custom properties cannot be shared between a media block and a class
+   selector, so the duplication is unavoidable; the test is what makes it safe. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --color-brand: #8b7cff;
+    --color-brand-hover: #9e92ff;
+    --color-brand-soft: #241f4d;
+    --color-on-brand: #101018;
+
+    --color-correct: #4ade9b;
+    --color-correct-soft: #10291f;
+    --color-wrong: #ff8a82;
+    --color-wrong-soft: #331615;
+    --color-pending: #f0b95b;
+    --color-pending-soft: #2b1f0c;
+    --color-reward: #ffd24d;
+    --color-reward-fill: #f5b301;
+
+    --color-bg: #101018;
+    --color-surface: #191926;
+    --color-surface-2: #232333;
+    --color-border: #2e2e42;
+    --color-ink: #ececf5;
+    --color-ink-2: #a0a0bc;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.44);
+    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.44), 0 12px 28px rgb(0 0 0 / 0.5);
+    --shadow-panel: 0 4px 8px rgb(0 0 0 / 0.48), 0 24px 48px rgb(0 0 0 / 0.6);
+    --shadow-brand: 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 24px rgb(139 124 255 / 0.24);
+  }
+}
+
 .dark {
   --color-brand: #8b7cff;
   --color-brand-hover: #9e92ff;

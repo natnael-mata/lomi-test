@@ -1341,8 +1341,35 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
       guard: a lint that cannot tell a rule from the note documenting it gets weakened rather
       than obeyed. Two further tests guard the stripping and the file walk, since a lint over
       zero files passes forever.
-- [ ] **T-098** Dark theme toggles via a `.dark` class on `<html>`, persisted.
+- [x] **T-098** Dark theme toggles via a `.dark` class on `<html>`, persisted.
       **Test:** Toggle, reload — theme survives; `prefers-color-scheme` respected on first load.
+      ✅ 2026-08-02 — 11 unit tests, and **verified in the browser**: toggling stores `dark` and
+      repaints (`#f6f6fb` → `#101018`, card `#fff` → `#191926`, ink → `#ececf5`), and the choice
+      survives a reload. With the OS set to dark and nothing stored, the page renders dark
+      **with no class on `<html>` and no JavaScript involved at all**.
+      **The defect this task exists to catch, found and fixed: `prefers-color-scheme` was
+      ignored on first load.** The obvious implementation — an inline script that reads
+      `matchMedia` and adds `.dark` before paint — does not work in the App Router, twice over:
+      · a `<script>` rendered into `<head>` is **discarded by React's head management**; it
+      appears in the served HTML and never executes;
+      · moved to the first child of `<body>` it does execute, and then **React strips the class
+      during hydration**, because React owns `<html>`'s attributes.
+      `suppressHydrationWarning` silences the warning, not the reconciliation. Both were observed
+      directly: `<html>` ended up with `class="__variable_… __variable_…"` and no `dark`, and
+      `data-theme-preference` gone with it.
+      **So the OS preference moved into CSS.** `@media (prefers-color-scheme: dark)` scoped to
+      `:root:not(.light)` means a dark phone gets a dark app with zero JavaScript, no flash and
+      nothing for hydration to undo — and an explicit _light_ choice still beats a dark OS. The
+      boot script now handles **only** an explicit override, which is the one case that needs
+      re-applying after hydration.
+      Cost: the dark tokens are declared **twice**, since CSS custom properties cannot be shared
+      between a media block and a class selector. A test parses both blocks out of the
+      stylesheet and asserts they declare identical tokens with identical values, so they cannot
+      drift.
+      **Three states, not two.** `system` is the absence of a choice and stays distinguishable
+      from "chose light": one follows the phone at night, the other must not. The toggle always
+      moves away from what is currently showing — "system → light" while the OS is already light
+      changes nothing and reads as a broken control.
 - [ ] **T-099** Add an automated contrast test over every token pair used together.
       **Test:** `npm test -- contrast` asserts every pair ≥4.5:1 in both themes.
 - [ ] **T-100** Add `prefers-reduced-motion` handling globally.

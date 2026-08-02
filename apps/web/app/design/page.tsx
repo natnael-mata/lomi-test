@@ -4,6 +4,7 @@ import { Chip } from '../../components/Chip';
 import { Input } from '../../components/Input';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { StatedFigure } from '../../components/StatedFigure';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { TotalBar } from '../../components/TotalBar';
 import { buildReadiness } from '../../components/readiness';
 import { Button } from '../../components/Button';
@@ -36,6 +37,10 @@ export default function DesignSystemPage() {
     <main className="mx-auto max-w-md p-6">
       <h1 className="text-title">Design system</h1>
       <p className="text-body text-ink-2 mt-1">Deresegn v3 — every component, every state.</p>
+
+      <Row title="Theme">
+        <ThemeToggle />
+      </Row>
 
       <Row title="Buttons">
         <Button id="btn-primary" variant="primary">
