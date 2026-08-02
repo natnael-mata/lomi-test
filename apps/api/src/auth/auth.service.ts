@@ -15,6 +15,22 @@ export const MAX_CONCURRENT_SESSIONS = 2;
 
 export const EVICTED_REASON = 'Signed out because another device signed in.';
 
+export const REVOKED_BY_USER_REASON = 'Signed out from the device list.';
+
+export interface DeviceEntry {
+  id: string;
+  deviceLabel: string | null;
+  lastSeenAt: Date;
+  signedInAt: Date;
+  isCurrent: boolean;
+}
+
+export interface RevokeResult {
+  id: string;
+  revoked: boolean;
+  alreadyRevoked: boolean;
+}
+
 export interface LinkResult {
   userId: string;
   telegramId: string | null;
@@ -160,6 +176,59 @@ export class AuthService {
       select: { id: true, telegramId: true },
     });
     return { userId: updated.id, telegramId: updated.telegramId, alreadyLinked: false };
+  }
+
+  /**
+   * The student's live devices.
+   *
+   * Revoked rows are left out. This screen answers "who is signed in as me right
+   * now", and a history of ended sessions buries that under noise — the reason a
+   * session ended is kept on the row for support, not for this list.
+   */
+  async listDevices(userId: string, currentSessionId: string): Promise<DeviceEntry[]> {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId, revokedAt: null },
+      orderBy: { lastSeenAt: 'desc' },
+      select: { id: true, deviceLabel: true, lastSeenAt: true, createdAt: true },
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      deviceLabel: session.deviceLabel,
+      lastSeenAt: session.lastSeenAt,
+      signedInAt: session.createdAt,
+      // Marked, not filtered out: a student needs to see which row is the phone
+      // in their hand before they revoke the other one.
+      isCurrent: session.id === currentSessionId,
+    }));
+  }
+
+  /**
+   * Ends one session immediately.
+   *
+   * Scoped to the caller's own sessions by the WHERE clause rather than by a
+   * check afterwards: an id belonging to somebody else simply matches nothing,
+   * so the same 404 answers "no such session" and "not yours" — and there is no
+   * ordering in which a mistake here revokes a stranger's device.
+   *
+   * Revoking the session you are using is allowed. It is what "sign out" is.
+   */
+  async revokeDevice(userId: string, sessionId: string): Promise<RevokeResult> {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, userId },
+      select: { id: true, revokedAt: true },
+    });
+    if (!session) throw new NotFoundException('No such device.');
+
+    if (session.revokedAt !== null) {
+      return { id: session.id, revoked: true, alreadyRevoked: true };
+    }
+
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date(), revokedReason: REVOKED_BY_USER_REASON },
+    });
+    return { id: session.id, revoked: true, alreadyRevoked: false };
   }
 
   /**

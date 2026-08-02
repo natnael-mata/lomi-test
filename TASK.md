@@ -1122,10 +1122,25 @@ these…"` at the start of a stem is prose.
       3 August, because a third device signed in" is still answerable.
       The evicted device is proved to actually stop working — its token 401s on the next
       request — and another user's sessions are proved untouched.
-- [ ] **T-083** `GET /me/devices` lists active sessions with last-seen and current flag.
-      **Test:** Response marks exactly one device as current.
-- [ ] **T-084** `POST /me/devices/:id/revoke` invalidates that session immediately.
-      **Test:** The revoked token returns 401 on the next request.
+- [x] **T-083** `GET /me/devices` lists active sessions with last-seen and current flag.
+      **Test:** Response marks exactly one device as current. ✅ 2026-08-02 — 3 tests, plus the
+      revoke cases below. Asserted from **both** devices, so "current" is genuinely the caller's
+      session and not the newest row.
+      Revoked sessions are left out: this screen answers "who is signed in as me right now", and
+      a history of ended sessions buries that. The reason a session ended stays on the row, for
+      support rather than for this list.
+      The current device is **marked, not filtered out** — a student needs to see which row is
+      the phone in their hand before revoking the other one.
+- [x] **T-084** `POST /me/devices/:id/revoke` invalidates that session immediately.
+      **Test:** The revoked token returns 401 on the next request. ✅ 2026-08-02 — 7 tests.
+      Immediacy is real because `SessionGuard` reads the row on every request (T-081); the token
+      is untouched and still perfectly valid, and is refused anyway.
+      **Scoped by the WHERE clause, not by a check afterwards.** Another user's session id simply
+      matches nothing, so the same 404 answers "no such session" and "not yours", and there is no
+      ordering in which a mistake here revokes a stranger's device. Asserted: their row is
+      untouched.
+      Revoking the session you are holding is allowed — that is what "sign out" is — and
+      idempotent for one already revoked.
 - [ ] **T-085** First sign-in requires choosing a Field before any question is served.
       **Test:** A user with no field requesting `/questions/next` → 409 with `FIELD_REQUIRED`.
 - [ ] **T-086** `displayName` defaults to a generated handle, never the legal name.
