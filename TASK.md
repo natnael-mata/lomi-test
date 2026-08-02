@@ -1109,8 +1109,19 @@ these…"` at the start of a stem is prose.
       tells an attacker which session ids are real.
       `lastSeenAt` is updated best-effort — the device list (T-083) is more useful with it, but a
       failure to record it must never cost the request.
-- [ ] **T-082** Device limit: a third concurrent session evicts the oldest.
+- [x] **T-082** Device limit: a third concurrent session evicts the oldest.
       **Test:** Integration: 3 logins → exactly 2 live sessions; the first is invalidated.
+      ✅ 2026-08-02 — 7 tests.
+      **Eviction on login, never refusal.** Refusing the third login would strand a student who
+      has lost the phone they signed in on. Sharing is discouraged by being inconvenient, not by
+      locking the real owner out — asserted by logging in five more times and still succeeding.
+      The eviction runs **inside a transaction**, and makes room _before_ the new row exists:
+      `live.length - (MAX - 1)`, not `> MAX`. Otherwise three live sessions exist briefly and a
+      concurrent read sees a limit that does not hold.
+      Evicted rows are **revoked, not deleted**, with the reason recorded, so "signed out on
+      3 August, because a third device signed in" is still answerable.
+      The evicted device is proved to actually stop working — its token 401s on the next
+      request — and another user's sessions are proved untouched.
 - [ ] **T-083** `GET /me/devices` lists active sessions with last-seen and current flag.
       **Test:** Response marks exactly one device as current.
 - [ ] **T-084** `POST /me/devices/:id/revoke` invalidates that session immediately.

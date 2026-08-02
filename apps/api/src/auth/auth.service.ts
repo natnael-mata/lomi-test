@@ -10,6 +10,11 @@ import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
 import { signSessionToken } from './tokens';
 
+/** PRODUCT.md: two concurrent sessions; a third login evicts the oldest. */
+export const MAX_CONCURRENT_SESSIONS = 2;
+
+export const EVICTED_REASON = 'Signed out because another device signed in.';
+
 export interface LinkResult {
   userId: string;
   telegramId: string | null;
@@ -50,9 +55,7 @@ export class AuthService {
     if (!verified.ok) throw new UnauthorizedException(verified.reason);
 
     const { user, isNew } = await this.findOrCreateTelegramUser(verified.user);
-    const session = await this.prisma.session.create({
-      data: { userId: user.id, deviceLabel: deviceLabel ?? null },
-    });
+    const session = await this.startSession(user.id, deviceLabel);
 
     return {
       token: signSessionToken({ sub: user.id, sid: session.id }, this.jwtSecret),
@@ -62,6 +65,44 @@ export class AuthService {
       fieldId: user.fieldId,
       isNew,
     };
+  }
+
+  /**
+   * Opens a session, evicting the oldest if the device limit is already met.
+   *
+   * PRODUCT.md: two concurrent sessions, a third login evicts the oldest. The
+   * eviction happens **on login, not on use** — the alternative is refusing the
+   * third login, which strands a student who has lost the phone they signed in
+   * on. Sharing is discouraged by making it inconvenient, never by locking the
+   * real owner out.
+   *
+   * Evicted rows are revoked rather than deleted, so "signed out on 3 August,
+   * because a third device signed in" is still answerable.
+   */
+  async startSession(userId: string, deviceLabel?: string): Promise<{ id: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      const live = await tx.session.findMany({
+        where: { userId, revokedAt: null },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
+      });
+
+      // `>=`, not `>`: the new session is about to exist, so room has to be made
+      // for it before it does — otherwise three live sessions exist briefly, and
+      // a concurrent read sees a limit that does not hold.
+      const excess = live.length - (MAX_CONCURRENT_SESSIONS - 1);
+      if (excess > 0) {
+        await tx.session.updateMany({
+          where: { id: { in: live.slice(0, excess).map((s) => s.id) } },
+          data: { revokedAt: new Date(), revokedReason: EVICTED_REASON },
+        });
+      }
+
+      return tx.session.create({
+        data: { userId, deviceLabel: deviceLabel ?? null },
+        select: { id: true },
+      });
+    });
   }
 
   /**
