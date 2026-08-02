@@ -179,6 +179,43 @@ export class AuthService {
   }
 
   /**
+   * Chooses the programme this student is sitting.
+   *
+   * Only a **published** field can be chosen. An unpublished one is either not
+   * ready or deliberately withheld (Geography is seeded unpublished for exactly
+   * this reason), and letting a student select it would strand them on a field
+   * with nothing servable in it.
+   *
+   * Changing it later is allowed — students do switch programmes, and refusing
+   * would mean a support ticket for a mistake made in the first thirty seconds
+   * of using the app. What that does to progress and readiness is T-140's
+   * problem, not this endpoint's.
+   */
+  async chooseField(userId: string, fieldId: string): Promise<{ fieldId: string; name: string }> {
+    const field = await this.prisma.field.findUnique({
+      where: { id: fieldId },
+      select: { id: true, name: true, isPublished: true },
+    });
+    if (!field || !field.isPublished) {
+      // One message for both: which unpublished fields exist is not a signed-in
+      // student's business.
+      throw new NotFoundException('No such programme.');
+    }
+
+    await this.prisma.user.update({ where: { id: userId }, data: { fieldId: field.id } });
+    return { fieldId: field.id, name: field.name };
+  }
+
+  /** The programmes a student may choose between. */
+  async publishedFields(): Promise<{ id: string; name: string; slug: string }[]> {
+    return this.prisma.field.findMany({
+      where: { isPublished: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true },
+    });
+  }
+
+  /**
    * The student's live devices.
    *
    * Revoked rows are left out. This screen answers "who is signed in as me right

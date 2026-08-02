@@ -1141,10 +1141,37 @@ these…"` at the start of a stem is prose.
       untouched.
       Revoking the session you are holding is allowed — that is what "sign out" is — and
       idempotent for one already revoked.
-- [ ] **T-085** First sign-in requires choosing a Field before any question is served.
+- [x] **T-085** First sign-in requires choosing a Field before any question is served.
       **Test:** A user with no field requesting `/questions/next` → 409 with `FIELD_REQUIRED`.
-- [ ] **T-086** `displayName` defaults to a generated handle, never the legal name.
+      ✅ 2026-08-02 — 9 tests. `FieldRequiredGuard`, plus `GET /me/fields` and `PUT /me/field`.
+      **The rule is proved against a stub controller declared in the test file**, because
+      `/questions/next` does not exist until T-105. The stub is a harness for the rule, not a
+      stand-in for the feature: what it proves is that the guard answers 409 `FIELD_REQUIRED`
+      with no field and lets a chosen one through. **Wiring the guard onto the real endpoint is
+      T-105's job** — that line is the one thing here still unproven.
+      **409, not 400 or 403.** The request is well-formed and the caller authenticated; the
+      account is simply in a state where this cannot be answered yet. A 403 reads as "you are
+      not allowed", which is a different problem with a different fix. The body carries a
+      **code** the client branches on, not prose it has to match.
+      Only **published** fields can be chosen — an unpublished one has nothing servable in it
+      (Geography is seeded unpublished as the `needs_answer` example) and choosing one strands
+      the student. An unpublished field and a nonexistent id give the **same 404**: which fields
+      are unpublished is not a student's business.
+      Switching later is allowed. Refusing would mean a support ticket for a mistake made in the
+      first thirty seconds of using the app; what a switch does to progress is T-140's problem.
+- [x] **T-086** `displayName` defaults to a generated handle, never the legal name.
       **Test:** New user's `displayName` does not equal `name` or `verifiedName`.
+      ✅ 2026-08-02 — 6 unit tests over 500 generated handles, plus the sign-in assertions in
+      T-080.
+      **Not derived from the Telegram name either**, which is the part that would have slipped
+      through: a Telegram profile name usually _is_ the person's real name, so seeding the
+      handle from it leaks exactly what PRODUCT.md's rule protects. The generator draws on a
+      fixed word list and `randomInt`, so nothing the student supplied can reach it.
+      A four-digit suffix means the word pair never has to be unique — `displayName` is
+      deliberately **not** unique in the schema, because forcing that would reject a name a
+      student chose because a stranger got there first.
+      `verifiedName` does not exist yet; it arrives with Fayda at purchase (Phase 6). The rule it
+      needs — never on a public surface — is the same one enforced here.
 
 ---
 
