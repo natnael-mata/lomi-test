@@ -1296,14 +1296,51 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
       does not help. What is proved is that the rule is present and exact in the compiled CSS
       and that nothing cancels it. Confirming the ring visually needs a displayed pane and a
       real Tab press.
-- [ ] **T-096** Implement `<TotalBar>` and `<StatedFigure>` as distinct components.
+- [x] **T-096** Implement `<TotalBar>` and `<StatedFigure>` as distinct components.
       **Test:** Unit: `<TotalBar>` throws in dev if its rows do not sum to its total.
-- [ ] **T-097** Implement `<ReadinessStatement>`; it renders an "N other topics" row whenever
+      ✅ 2026-08-02 — 13 tests, and **verified in the browser**: the total bar's footer is ink
+      `rgb(22,22,43)` on white; the stated figure sits on surface-2 with its derivation chip.
+      **Two components, not one with a variant.** A total bar is a _claim that these rows add
+      up_; a readiness percentage is a weighted mean. Dressing a mean as a total tells a student
+      they could redo the addition, and they cannot.
+      Sums are compared in **integer hundredths**, like `taxonomy/weights.ts` on the server:
+      `0.1 + 0.2 !== 0.3`, and a bar that rejected real data over binary floating point would
+      simply be switched off.
+      **Throws in development, renders in production.** A wrong total is bad; a blank results
+      page in front of a student is worse, and the throw has had development and CI to be seen
+      in. The message names the gap, its direction, and `StatedFigure` as the alternative.
+      Tested by **calling the component as a function** rather than rendering: the guard runs
+      before the JSX returns, so no DOM, no jsdom, no renderer. Vitest needed
+      `esbuild: { jsx: 'automatic' }` — the classic runtime compiles JSX to `React.createElement`
+      and fails with "React is not defined", which reads like a missing import in the component.
+      `StatedFigure` **requires** its derivation. A number with no account of where it came from
+      is the decoration DESIGN.md forbids.
+- [x] **T-097** Implement `<ReadinessStatement>`; it renders an "N other topics" row whenever
       the listed weights sum to <100.
       **Test:** Given weights `[12,12,18]` and a total of 100, an elided row for 58% appears.
-- [ ] **T-097a** Weight captions read **"share of past papers"**, never "% of exam" (D5 —
+      ✅ 2026-08-02 — 13 tests, and **verified in the browser**: the elided row reads
+      **"all other topics · 58% share of past papers"**, and the 44% topic is Pending with a
+      Focus chip.
+      **The elided row is the honest part.** Six topics adding to 42% under a headline of "68%
+      ready" invites a student to check the sum, fail, and stop trusting the number — or not
+      check, and believe the six on screen are the whole exam.
+      **The elided score is required, not defaulted.** Assuming 0 understates readiness and
+      assuming the listed average flatters it; both put a number in the student's mouth. `null`
+      means unknown, and that weight is then **excluded from the mean** rather than guessed at.
+      The headline is a weighted mean and therefore uses `<StatedFigure>`, never `<TotalBar>` —
+      the two components from T-096 earning their separation.
+- [x] **T-097a** Weight captions read **"share of past papers"**, never "% of exam" (D5 —
       no official blueprint exists, so the stronger claim is unsupportable).
-      **Test:** Copy lint: the string `% of exam` appears nowhere in `apps/web`.
+      **Test:** Copy lint: the string `% of exam` appears nowhere in `apps/web`. ✅ 2026-08-02 —
+      4 tests. Confirmed in the browser too: the phrase appears nowhere in the rendered page.
+      Linted over the source rather than left to review, because **"% of exam" is the more
+      natural English** and will be reached for again. A student planning revision around a
+      ministry weighting that was never published is being misled by a claim the product made up.
+      The lint **strips comments first** — its first run flagged `ReadinessStatement.tsx` for the
+      comment explaining why it must never say "% of exam". Same trap as T-095's focus-ring
+      guard: a lint that cannot tell a rule from the note documenting it gets weakened rather
+      than obeyed. Two further tests guard the stripping and the file walk, since a lint over
+      zero files passes forever.
 - [ ] **T-098** Dark theme toggles via a `.dark` class on `<html>`, persisted.
       **Test:** Toggle, reload — theme survives; `prefers-color-scheme` respected on first load.
 - [ ] **T-099** Add an automated contrast test over every token pair used together.

@@ -2,6 +2,10 @@ import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { Input } from '../../components/Input';
+import { ReadinessStatement } from '../../components/ReadinessStatement';
+import { StatedFigure } from '../../components/StatedFigure';
+import { TotalBar } from '../../components/TotalBar';
+import { buildReadiness } from '../../components/readiness';
 import { Button } from '../../components/Button';
 
 /**
@@ -129,6 +133,39 @@ export default function DesignSystemPage() {
           defaultValue="FT2"
           error="That is 3 characters. A CBE transaction number is 12."
         />
+      </Row>
+      <Row title="Total rule">
+        <div id="total-bar">
+          <TotalBar
+            unit="%"
+            totalLabel="All topics"
+            rows={[
+              { label: 'VAT', value: 40 },
+              { label: 'Income tax', value: 35 },
+              { label: 'Excise', value: 25 },
+            ]}
+            total={100}
+          />
+        </div>
+        <div id="stated-figure">
+          <StatedFigure
+            label="Readiness"
+            value="68%"
+            derivation="weighted mean of 6 topic groups"
+          />
+        </div>
+      </Row>
+
+      <Row title="Readiness statement">
+        <div id="readiness">
+          <ReadinessStatement
+            statement={buildReadiness([
+              { topic: 'VAT', scorePct: 82, weightPct: 12 },
+              { topic: 'Payroll tax', scorePct: 71, weightPct: 12 },
+              { topic: 'Audit evidence', scorePct: 44, weightPct: 18 },
+            ])}
+          />
+        </div>
       </Row>
     </main>
   );
