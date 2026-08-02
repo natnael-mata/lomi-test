@@ -1211,10 +1211,36 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
       `next/font` is a build-time macro and is not callable under Vitest, which broke a test that
       only read `metadata`. Stubbed via a resolve alias, with the stub returning obviously fake
       values so nothing can pass against it by accident.
-- [ ] **T-092** Implement `<Button>` with `primary | ghost | danger | disabled` variants.
+- [x] **T-092** Implement `<Button>` with `primary | ghost | danger | disabled` variants.
       **Test:** Storybook/route renders all four; primary is 52px tall with the brand shadow.
-- [ ] **T-093** Disabled buttons render a supplied `blockingReason` instead of the label.
+      ✅ 2026-08-02 — **verified in the browser at `/design`**: primary is **52px** tall,
+      `rgb(91, 75, 224)` on white, 12px radius, carrying the brand-tinted shadow
+      `rgba(91, 75, 224, 0.18) 0 2px 4px` + `rgba(91, 75, 224, 0.22) 0 10px 24px`. Ghost and
+      danger are 52px with **no shadow**; disabled is surface-2 on ink-2 with the shadow cleared
+      and `cursor: not-allowed`. Plus 6 unit tests on the class mapping.
+      **Three variants, not four — `disabled` is a state.** Modelling it as a variant permits
+      `variant="disabled"` on a button that is still clickable: dead-looking, fully operative to
+      a mouse and to a screen reader. The appearance comes from the real `disabled` attribute, so
+      the two cannot disagree. A `@ts-expect-error` test pins that `'disabled'` is not a variant.
+      Added `.btn-danger` and `.btn-ghost:disabled` to the theme — both specified in DESIGN.md
+      but never written. Danger has **no shadow**: a raised danger button reads as the
+      recommended action, which is the opposite of what it is.
+      `type="button"` is the default, because a `<button>` inside a form defaults to `submit`.
+      New route `/design` renders every component in every state. A normal route, not dev-only —
+      a gallery that exists only in development is one nobody checks against production CSS.
+      DESIGN.md's focus rule is present and exact in the compiled CSS
+      (`:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px }`).
+      **Not observed firing:** `:focus-visible` does not match programmatic `.focus()` — correct
+      browser behaviour, but it means real keyboard input is still needed to confirm it.
+- [x] **T-093** Disabled buttons render a supplied `blockingReason` instead of the label.
       **Test:** `<Button disabled blockingReason="2 why-wrongs missing">` shows that text.
+      ✅ 2026-08-02 — 6 unit tests, and confirmed in the browser: the disabled button reads
+      **"Can't publish · 3 blockers"** where its label said "Publish".
+      **A reason on an enabled button is ignored, not shown.** It would otherwise read as an
+      explanation of why an action is unavailable when it is available. An empty reason counts
+      as no reason.
+      The reason becomes the button's accessible name, so a screen reader gets the same answer
+      as the eye; `title` covers a long one being visually truncated.
 - [ ] **T-094** Implement `<AnswerOption>` driven by `data-state`, with `aria-checked` mirrored.
       **Test:** All four states render; keyboard arrow keys move selection within the group.
 - [ ] **T-095** Implement `<Card>`, `<Chip>`, `<Input>` per DESIGN.md, with focus rings.

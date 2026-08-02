@@ -227,10 +227,24 @@
     @apply bg-surface-2 text-ink-2 shadow-none cursor-not-allowed active:scale-100;
   }
 
+  /* Emergency retire only. No shadow: a raised danger button reads as the
+     recommended action, which is the opposite of what this one is. */
+  .btn-danger {
+    @apply w-full min-h-[52px] px-6 rounded-control bg-wrong text-on-brand text-label
+           inline-flex items-center justify-center gap-2
+           transition-[background-color,transform] duration-150 active:scale-[.98];
+  }
+  .btn-danger:disabled {
+    @apply bg-surface-2 text-ink-2 cursor-not-allowed active:scale-100;
+  }
+
   .btn-ghost {
     @apply w-full min-h-[52px] px-6 rounded-control bg-surface text-ink text-label
            border border-border inline-flex items-center justify-center gap-2
            transition-colors duration-150 hover:bg-surface-2;
+  }
+  .btn-ghost:disabled {
+    @apply bg-surface-2 text-ink-2 cursor-not-allowed;
   }
 
   /* The answer option. Whole row is the target; 56px tall, always. */
