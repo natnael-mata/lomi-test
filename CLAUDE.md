@@ -159,6 +159,20 @@ Plain, direct, second person, active. Errors state cause _and_ fix. Numbers are 
 missed day — the explanation is the reward for getting it wrong, and a missed day _adjusts the
 plan_, it does not break a streak.
 
+## Verifying the web app in a browser
+
+- Start the dev server with the preview tooling (`lomi-web`, port 3100). **Never run
+  `next build` while `next dev` is running against the same `apps/web/.next`.** The production
+  build overwrites the dev server's chunk manifest, after which every `main-app.js` request
+  404s, the app renders server-side and **never hydrates** — no React fiber on any node, no
+  event handler anywhere. It looks like a component bug and is not one. Recovery is stop the
+  server, `rm -rf apps/web/.next`, restart.
+- Interactivity assertions (arrow keys, focus, click) are worthless until hydration is
+  confirmed. The cheapest check is a `useEffect` probe rendering `data-hydrated`, or simply
+  `[...document.querySelectorAll('*')].some(e => Object.getOwnPropertyNames(e).some(k => k.startsWith('__react')))`.
+- `:focus-visible` does not match programmatic `.focus()`. Asserting the rule exists in the
+  compiled CSS is honest; claiming the ring was observed is not.
+
 ## Do not fabricate
 
 There are no students, testimonials, pass-rate data, revenue or press. `docs/PLAN.md` describes

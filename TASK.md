@@ -1241,8 +1241,31 @@ Implements `DESIGN.md` and `design-system/tailwind-theme.css`.
       as no reason.
       The reason becomes the button's accessible name, so a screen reader gets the same answer
       as the eye; `title` covers a long one being visually truncated.
-- [ ] **T-094** Implement `<AnswerOption>` driven by `data-state`, with `aria-checked` mirrored.
+- [x] **T-094** Implement `<AnswerOption>` driven by `data-state`, with `aria-checked` mirrored.
       **Test:** All four states render; keyboard arrow keys move selection within the group.
+      ✅ 2026-08-02 — 16 unit tests, and **verified in the browser at `/design`**: all four
+      states at 60px (≥56 floor), 2px border, 12px radius, `default` on surface,
+      `selected` brand `rgb(237,235,255)`, `correct` `rgb(227,248,239)`, `wrong`
+      `rgb(254,236,235)`. Arrow keys traced **B→C→D→A (wrap)→D (wrap back)**, Left/Right too.
+      **`aria-checked` is derived from the state, not set alongside it.** Set independently they
+      drift, and a row painted as selected that announces itself unselected is the kind of bug
+      nobody sees until a screen-reader user hits it.
+      The subtle case: **`correct` is not announced as checked unless the student chose it.**
+      The right answer is highlighted whether or not they picked it, and announcing it as
+      "checked" tells them they chose it when they did not.
+      `role="radio"` in a `radiogroup`, not checkboxes — exactly one answer is possible, and the
+      role is what tells a screen reader that choosing one clears the others.
+      **Bug the browser caught: the roving tabindex was not roving.** Computed per-option
+      ("checked, or else A"), both A _and_ the selected row claimed `tabIndex=0`, so every
+      answered question had **two** tab stops. Fixed by moving the decision to the group, where
+      it belongs — an option cannot know whether a sibling is checked. `tabStopIndex` is
+      exported and unit-tested across every single-selection arrangement.
+      **Bug I caused and then chased: the app was not hydrating at all.** Running `next build`
+      in `apps/web` while the dev server was running overwrote its `.next` chunk manifest, so
+      `main-app.js` and `app-pages-internals.js` 404'd, the page rendered server-side and no
+      client component ever mounted — no React fiber anywhere. It reads exactly like a broken
+      component. Recovery: stop the server, `rm -rf apps/web/.next`, restart. Recorded in
+      CLAUDE.md, with the one-line hydration probe that identifies it in seconds.
 - [ ] **T-095** Implement `<Card>`, `<Chip>`, `<Input>` per DESIGN.md, with focus rings.
       **Test:** Tab through a form — every control shows a 2px brand outline at 2px offset.
 - [ ] **T-096** Implement `<TotalBar>` and `<StatedFigure>` as distinct components.

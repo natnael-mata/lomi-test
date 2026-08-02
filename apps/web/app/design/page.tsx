@@ -1,3 +1,4 @@
+import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
 import { Button } from '../../components/Button';
 
 /**
@@ -53,6 +54,35 @@ export default function DesignSystemPage() {
         <Button id="btn-ghost-disabled" variant="ghost" disabled blockingReason="No plan yet">
           Continue
         </Button>
+      </Row>
+
+      <Row title="Answer options — unanswered">
+        <div id="group-unanswered">
+          <AnswerOptionGroup
+            ariaLabel="Which sampling method gives every household an equal chance?"
+            choices={[
+              { label: 'A', text: 'Purposive sampling' },
+              { label: 'B', text: 'Snowball sampling', state: 'selected' },
+              { label: 'C', text: 'Simple random sampling' },
+              { label: 'D', text: 'Convenience sampling' },
+            ]}
+          />
+        </div>
+      </Row>
+
+      <Row title="Answer options — answered wrongly">
+        <div id="group-answered">
+          <AnswerOptionGroup
+            ariaLabel="Which sampling method gives every household an equal chance?"
+            disabled
+            choices={[
+              { label: 'A', text: 'Purposive sampling' },
+              { label: 'B', text: 'Snowball sampling', state: 'wrong', wasChosen: true },
+              { label: 'C', text: 'Simple random sampling', state: 'correct' },
+              { label: 'D', text: 'Convenience sampling' },
+            ]}
+          />
+        </div>
       </Row>
     </main>
   );
