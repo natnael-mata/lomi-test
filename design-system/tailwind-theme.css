@@ -207,7 +207,13 @@
   }
 }
 
-/* Motion is a reward, never a requirement. */
+/* Motion is a reward, never a requirement (T-100).
+   Global and unconditional: motion here is decoration — a pressed button, a
+   revealed answer — and someone whose OS asks for less of it has usually asked
+   because more of it makes them ill.
+   Near-zero rather than zero so `transitionend` and `animationend` still fire;
+   anything waiting on them would otherwise hang forever. `scroll-behavior` is
+   included because a smooth-scrolled jump is motion too. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -215,6 +221,7 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -244,6 +251,17 @@
     outline: 2px solid var(--color-brand);
     outline-offset: 2px;
   }
+}
+
+/* Amharic casing (T-101).
+   Ge'ez is unicameral — it has no upper and lower case — so `text-transform:
+   uppercase` does nothing to a Ge'ez glyph but still applies the letter-spacing
+   that goes with it, and mixed Latin inside an Amharic string gets SHOUTED.
+   Captions and field labels are the uppercase surfaces in this design, and they
+   are exactly the strings that get translated. */
+[lang='am'],
+[lang='am'] * {
+  text-transform: none;
 }
 
 /* A first-class utility, not a bare class: `num` must be usable in markup AND
