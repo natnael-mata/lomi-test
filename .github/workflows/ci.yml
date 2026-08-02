@@ -69,6 +69,11 @@ jobs:
       - name: Test
         run: npm test
 
+      # A hand-kept progress index is wrong within a day, and a wrong index is
+      # worse than none — it is what people read instead of counting.
+      - name: TASK.md progress index is current
+        run: node scripts/task-progress.mjs --check
+
       # Prettier is checked, never applied — CI must not rewrite the tree.
       - name: Format check
         run: npm run format:check
