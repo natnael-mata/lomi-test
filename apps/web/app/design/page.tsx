@@ -1,4 +1,5 @@
 import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
+import { AnswerView } from '../../components/AnswerView';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { Input } from '../../components/Input';
@@ -169,6 +170,95 @@ export default function DesignSystemPage() {
               { topic: 'Payroll tax', scorePct: 71, weightPct: 12 },
               { topic: 'Audit evidence', scorePct: 44, weightPct: 18 },
             ])}
+          />
+        </div>
+      </Row>
+      <Row title="Answer view — calculation, answered wrongly">
+        <div id="answer-calculation">
+          <AnswerView
+            isCorrect={false}
+            pacing="within"
+            timeTakenSec={96}
+            answer={{
+              qType: 'CALCULATION',
+              stem: 'A retailer sells goods for Br 1,150,000 VAT inclusive (15%). How much VAT?',
+              codeBlock: null,
+              timeLimitSec: 180,
+              chosenLabel: 'D',
+              correctLabel: 'B',
+              conceptLine: 'VAT inside a gross amount is extracted with ×15/115.',
+              explanation: null,
+              steps: [
+                { stepNo: 1, text: 'The amount is VAT-inclusive.', formula: null },
+                { stepNo: 2, text: 'Extract the tax fraction.', formula: 'gross × 15/115' },
+                { stepNo: 3, text: '1,150,000 × 15/115', formula: null },
+                { stepNo: 4, text: '= 150,000 → answer B', formula: null },
+              ],
+              options: [
+                {
+                  label: 'A',
+                  text: '172,500',
+                  isCorrect: false,
+                  whyWrong: 'That is 15% of the net amount, not the tax inside the gross.',
+                },
+                { label: 'B', text: '150,000', isCorrect: true, whyWrong: null },
+                {
+                  label: 'C',
+                  text: '15,000',
+                  isCorrect: false,
+                  whyWrong: 'Off by a factor of ten.',
+                },
+                {
+                  label: 'D',
+                  text: '1,000,000',
+                  isCorrect: false,
+                  whyWrong: 'That is the net amount, not the VAT.',
+                },
+              ],
+            }}
+          />
+        </div>
+      </Row>
+
+      <Row title="Answer view — concept, correct but over time">
+        <div id="answer-concept">
+          <AnswerView
+            isCorrect={true}
+            pacing="over"
+            timeTakenSec={214}
+            answer={{
+              qType: 'CONCEPT',
+              stem: 'Which sampling method gives every household an equal chance?',
+              codeBlock: null,
+              timeLimitSec: 60,
+              chosenLabel: 'C',
+              correctLabel: 'C',
+              conceptLine: 'Equal probability for every unit is simple random sampling.',
+              explanation:
+                'Only simple random sampling gives every household the same chance of selection.',
+              steps: [],
+              options: [
+                {
+                  label: 'A',
+                  text: 'Purposive',
+                  isCorrect: false,
+                  whyWrong: 'Picks units deliberately, not by chance.',
+                },
+                {
+                  label: 'B',
+                  text: 'Snowball',
+                  isCorrect: false,
+                  whyWrong: 'Recruits through referral, so chances are unequal.',
+                },
+                { label: 'C', text: 'Simple random', isCorrect: true, whyWrong: null },
+                {
+                  label: 'D',
+                  text: 'Convenience',
+                  isCorrect: false,
+                  whyWrong: 'Takes whoever is reachable.',
+                },
+              ],
+            }}
           />
         </div>
       </Row>
