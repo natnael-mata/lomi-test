@@ -2,18 +2,46 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Current state: Phase 0 complete, no product behaviour yet
+## Current state: Phases 0, 1, 4 and 5 complete
 
-The monorepo is scaffolded and the baseline is green. What exists is skeleton only: a `/health`
-route, a placeholder page, a `/start` handler, and one throwaway Prisma model
-(`ToolchainCheck`, dropped by the first Phase 1 migration). **No product feature is
-implemented.**
+A student can sign in through Telegram, choose a programme, practise one question at a time and
+read a full explanation. Content can be imported from the ministry CSVs, reviewed, and published
+through a gate that refuses anything unexplained.
 
-**Start at `TASK.md`.** It is an ordered backlog of 177 micro-tasks, each with its own test;
-T-001…T-017 are done. Phase 1 (T-020 onward) builds the real Field → Course → Topic → Question
-taxonomy.
+**Start at `TASK.md`.** Its progress index is generated and carries the live count — run
+`node scripts/task-progress.mjs` after ticking anything, and CI fails if it is stale. Do not
+repeat the total here; a hand-copied number is wrong within a day.
 
-Two conventions established in Phase 0 that are easy to break later:
+What is done: the monorepo and toolchain (Phase 0), the Field → Course → Topic → Question
+taxonomy (Phase 1), the import pipeline and review queue (Phase 2, bar two blocked tasks), auth
+and sessions (Phase 3, bar the SMS OTP flow the owner is handling), the design system in code
+(Phase 4), and practice with attempts, pacing, the free tier and the session summary (Phase 5).
+
+What is not: exam mode, analytics, payments, admin, the Telegram Mini App, engagement, and
+hardening.
+
+**A second session owns Phase 8** (payments and identity) on branch `phase-8-payments`, in a
+separate worktree with its own database. Do not create `Plan`, `Subscription` or `Payment`
+here, and only append to `schema.prisma`.
+
+Working protocol, from `TASK.md`:
+
+1. Take the next unchecked task, in order. **Batch 3–5 related tasks per commit** — every task
+   still keeps its own test; batching changes only how often you commit.
+2. Implement only what the task describes — the next task probably covers what you were about
+   to add.
+3. Run the task's `**Test:**` command exactly as written.
+4. Only if it passes, change `- [ ]` to `- [x]` and append ` ✅ <date>` plus what was actually
+   verified.
+5. Run the full baseline, regenerate the progress index, and commit naming every task in the
+   batch.
+
+Never tick a box you have not run the test for. A task marked `BLOCKED` needs a human decision —
+stop and ask rather than guessing. **When a task's stated test is wrong, correct it in `TASK.md`
+and say so**; several have been (the import template has 7 rows, not 6; GEO-0001 raises 8
+blockers, not 3).
+
+Two conventions from Phase 0 that are easy to break later:
 
 - **`tsconfig.json` includes tests; `tsconfig.build.json` excludes them.** Build with the
   latter — otherwise test files land in `dist` and import vitest, which is absent from a
@@ -21,18 +49,6 @@ Two conventions established in Phase 0 that are easy to break later:
   the compiler is the only thing that checks test code.
 - **A green `npm test` is not automatically meaningful.** `--if-present` exits 0 when nothing
   runs, so `scripts/runner-report.mjs` prints which workspaces actually ran.
-
-Working protocol, from `TASK.md`:
-
-1. Take the next unchecked task. Do not skip ahead or batch.
-2. Implement only what that task describes — the next task probably covers what you were about
-   to add.
-3. Run the task's `**Test:**` command exactly as written.
-4. Only if it passes, change `- [ ]` to `- [x]` and append ` ✅ <date>`.
-5. Commit with the task ID: `git commit -m "T-042: add publish gate why-wrong check"`.
-
-Never tick a box you have not actually run the test for. A task marked `BLOCKED` needs a human
-decision — stop and ask rather than guessing.
 
 ## Commands (after Phase 0)
 
@@ -185,6 +201,53 @@ plan_, it does not break a streak.
   `[...document.querySelectorAll('*')].some(e => Object.getOwnPropertyNames(e).some(k => k.startsWith('__react')))`.
 - `:focus-visible` does not match programmatic `.focus()`. Asserting the rule exists in the
   compiled CSS is honest; claiming the ring was observed is not.
+
+## Traps already paid for
+
+Each of these cost real time. None is obvious from reading the code.
+
+**Tooling**
+
+- **`tsx` cannot run the API.** esbuild does not emit `emitDecoratorMetadata`, so every Nest
+  injection resolves to `undefined` and the app dies at boot. Vitest needs `unplugin-swc` for the
+  same reason (T-047). One-off scripts under `apps/api/scripts/` are fine — they use
+  `PrismaClient` directly and never touch Nest DI.
+- **`dist` is what runs.** A new endpoint needs `npm run build -w api` before any browser check
+  means anything; otherwise you are testing the previous build and will conclude the route is
+  broken.
+- **Run Prettier _after_ any generator.** `scripts/task-progress.mjs` rewrites `TASK.md` and its
+  output is not Prettier-formatted, so the order is generate → format → check.
+
+**TypeScript and React**
+
+- **Tailwind cannot see interpolated class names.** `bg-${tone}-soft` generates no CSS at all and
+  the element renders unstyled — it looks like a styling mistake and is a build one. Write full
+  literal strings and pick between them.
+- **`exactOptionalPropertyTypes` is on.** `foo?: string` means "may be absent", not "may be
+  `undefined`", so forwarding a possibly-undefined value from a parent is a type error. Spell out
+  `foo?: string | undefined` on any prop that gets forwarded.
+- **`next/font` is a build-time macro.** It is not callable under Vitest; `apps/web/test/
+next-font-stub.ts` stands in for it via a resolve alias.
+- **Vitest needs `esbuild: { jsx: 'automatic' }`** to call a component as a function; the classic
+  runtime compiles JSX to `React.createElement` and fails with "React is not defined", which
+  reads like a missing import in the component.
+
+**Data**
+
+- **Dev scripts must never mutate seed data.** An early `dev:publish` edited the seeded template
+  questions and broke ten API tests two ways at once: attempts then referenced rows the tests
+  delete, and re-importing the template saw the fixture text as a content change and demoted the
+  questions to `IN_REVIEW` — T-054 working exactly as designed, against data that should not have
+  been touched. Dev fixtures live in their own `local-dev` field.
+
+**The Browser pane**
+
+- **`document.hasFocus()` is `false` and `clientWidth` can be `0`** when the pane is not
+  displayed. Any layout assertion needs `preview_resize` first, or every element "overflows"; and
+  `:focus` / `:focus-visible` never match, so a focus ring can be proved present in the compiled
+  CSS but not observed.
+- **Emulated `colorScheme` resets on navigation.** Test a media query live rather than through a
+  reload.
 
 ## Do not fabricate
 

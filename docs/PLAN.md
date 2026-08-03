@@ -216,11 +216,96 @@ streak nudges, leaderboard pings).
 
 ## 8. Open Decisions (confirm before / during build)
 
-1. Project identity — is this the same as the earlier "Lomi-Test" spec (reuse brand,
-   pricing, build plan) or a fresh brand?
-2. Keep Fayda ID at registration, make it optional, or drop it for easy signup?
-3. Fields at launch — start with Computer Science only, or multiple departments?
-4. Exam config per field — question count + time limit (from MoE).
-5. Subscription pricing for 6-month and 1-year plans.
-6. verify.et access — API credentials and the exact verification response we key off.
-7. Bulk question import format — lock the CSV/Excel column schema early.
+Most of these were answered before the build began (D1–D8, recorded at the top of `TASK.md`).
+What is left:
+
+1. ~~Project identity~~ — **Lomi-Test (ሎሚ)**.
+2. ~~Fayda at registration~~ — **binds at purchase only**, stored as a salted FIN hash.
+3. ~~Fields at launch~~ — **three**: Computer Science, Public Health, Accounting & Finance.
+4. ~~Exam config~~ — **100 questions, 3 hours**; 60s per concept question, 180s per calculation.
+5. ~~Subscription pricing~~ — **Br 500 for 6 months, Br 800 for 12**.
+6. **verify.et access — still open.** API credentials and the exact verification response to key
+   off. Blocks the Fayda work in Phase 8.
+7. ~~Bulk question import format~~ — locked as the 16-column `question_import_template.csv`.
+
+---
+
+## 9. Decisions made during the build
+
+Recorded as they were taken, with the reasoning, because each closed off an alternative that
+looked reasonable at the time. Task IDs point at the tests that hold them.
+
+### Content and the question bank
+
+- **Why-wrongs and the concept line are authored in review, not imported** (T-031a, owner's
+  decision). They are deliberately not columns in the template: no MoE source file contains that
+  text, so the columns would be empty on every real import, and a question carrying them from a
+  spreadsheet would look publishable without a human having read it. Consequence, accepted: **no
+  question reaches a student without a human pass.**
+- **The importer stages; it never judges.** A half-finished question is the normal case, so a
+  missing answer or explanation is flagged rather than rejected (T-053). The exceptions are rows
+  nobody could finish — no id, no stem, no field, or a missing option (T-057), because inventing
+  a distractor changes how hard the question is.
+- **What a row actually contains beats what the file claimed.** A row saying `ready` with no
+  answer still gets `NEEDS_ANSWER`, or it sits in nobody's queue (T-053).
+- **An import never decides a lifecycle.** It cannot publish, and it cannot un-publish: a
+  re-imported file that changes a published question sends it to `IN_REVIEW` rather than
+  silently withdrawing it or silently updating what students are reading (T-054).
+- **Re-import preserves reviewer work.** Why-wrongs exist in no CSV column, so options are
+  matched by label rather than deleted and recreated (T-055).
+- **`difficulty` is stored rather than dropped** (T-053a). Nothing consumes it yet, but the
+  ministry files already carry it and discarding data on import is the irreversible choice.
+
+### Serving and the free tier
+
+- **Answer content is released only on attempt**, and the payload is built by listing what goes
+  in — never by deleting from a row (T-106). The Prisma query selects only the allowed columns,
+  so answer content does not leave the database at all.
+- **One question endpoint, serving one question.** No collection route, no `:id` route (T-107).
+- **Selection is random among eligible questions.** A deterministic order means every student in
+  a field sees the same sequence, which turns the bank into a shareable answer list (T-105).
+- **Pacing is a separate axis from correctness.** Over the limit is `pacing: 'over'`, never a
+  boolean a UI could render as failure (T-109).
+- **The free tier is 10 distinct questions per field**, refused with **402** and no answer
+  content (T-111). It sits behind a `SubscriptionAccess` seam whose default answers _false_ —
+  a permissive default would mean the limit is never enforced, and Phase 8's arrival would
+  silently change everyone's access.
+- **"Session" means today's practice** (T-118), reusing the day boundary T-110 already defines
+  rather than adding a second notion that disagrees at midnight.
+
+### Identity and access
+
+- **Sessions are rows, not just JWT claims** (T-080). A device list and immediate revocation are
+  promised, and a stateless token can deliver neither.
+- **The two-device limit evicts on login, never refuses it** (T-082). Refusing strands a student
+  who has lost the phone they signed in on; sharing is made inconvenient, not punishing.
+- **Two populated accounts are never merged** (T-081). Folding attempts and a subscription
+  together has no correct default and is unrecoverable if done wrongly.
+- **The display name is generated, never derived** (T-086) — not from the legal name and not
+  from the Telegram name, which usually _is_ the person's real name.
+
+### Interface
+
+- **The OS dark preference is handled in CSS, not JavaScript** (T-098). React owns `<html>`'s
+  attributes and strips a class an inline script adds, so the JavaScript approach showed a light
+  page to every system-dark user. Cost, accepted: the dark tokens are declared twice, with a
+  test asserting the two copies stay identical.
+- **The answer view has one fixed order and nothing behind a tap** (T-113). A collapsed
+  explanation is one most students never open, and the explanation is what they are paying for.
+- **Weights read "share of past papers", never "% of exam"** (T-097a, decision D5), enforced by
+  a copy lint because the wrong phrase is the more natural English and will be reached for again.
+- **Fonts are self-hosted from committed files** (T-091). `next/font/google` downloads at build
+  time and _silently falls back to system-ui_ when it cannot — a failure that looks exactly like
+  success.
+- **The web app reaches the API same-origin through `/api/*`** (T-112), not cross-origin with
+  CORS: no preflight on every submission, no allow-list per environment, and moving the session
+  token to an httpOnly cookie later stays a one-file change.
+
+### Process
+
+- **Two sessions, two worktrees, two databases.** Phase 8 runs in parallel on
+  `phase-8-payments`; the rules keeping them apart are in that worktree's `HANDOFF.md`.
+- **Batch 3–5 related tasks per commit** (owner's decision). One commit per task spent more time
+  on tooling than on work; every task still keeps its own test.
+- **Dev conveniences are scripts, never endpoints.** A `/auth/dev-login` route is an
+  authentication bypass shipped in the bundle, one misconfigured variable from being live.
