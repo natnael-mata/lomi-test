@@ -26,7 +26,10 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
 };
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
-  variant?: ButtonVariant;
+  // `| undefined` spelled out because `exactOptionalPropertyTypes` is on: with
+  // it, `variant?: ButtonVariant` means "may be absent", not "may be undefined",
+  // so forwarding a possibly-undefined value from a caller is a type error.
+  variant?: ButtonVariant | undefined;
   children: ReactNode;
   /**
    * Why this action cannot be taken — "2 why-wrongs missing", "Can't publish ·
@@ -37,7 +40,7 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
    * that something is wrong, and leaves them hunting for what; the button is
    * the thing they are looking at, so it is where the answer belongs.
    */
-  blockingReason?: string;
+  blockingReason?: string | undefined;
 }
 
 /**

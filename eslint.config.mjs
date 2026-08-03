@@ -18,6 +18,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/.next/**',
+      // Production build output — see next.config.ts on why it is separate.
+      '**/.next-build/**',
       '**/.pgdata/**',
       '**/generated/**',
       'apps/web/next-env.d.ts',

@@ -1,6 +1,7 @@
 node_modules
 dist
 .next
+.next-build
 .pgdata
 package-lock.json
 apps/web/next-env.d.ts

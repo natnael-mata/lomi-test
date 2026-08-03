@@ -159,13 +159,26 @@ Plain, direct, second person, active. Errors state cause _and_ fix. Numbers are 
 missed day — the explanation is the reward for getting it wrong, and a missed day _adjusts the
 plan_, it does not break a streak.
 
+## Running the API locally
+
+- **`tsx` cannot run this API.** It transpiles with esbuild, which does not emit
+  `emitDecoratorMetadata`, so every Nest constructor injection resolves to `undefined` and the
+  app dies at boot with "The dependency at index [0] appears to be undefined at runtime". It is
+  the same trap as T-047, where Vitest needed `unplugin-swc` for the same reason.
+- `npm run dev -w api` therefore runs `tsc --watch` into `dist/` and `node --watch dist/main.js`
+  beside it. Slower to start than `tsx`, and the only thing that actually works.
+- One-off scripts under `apps/api/scripts/` are fine with `tsx` — they construct `PrismaClient`
+  directly and never go through Nest DI.
+
 ## Verifying the web app in a browser
 
-- Start the dev server with the preview tooling (`lomi-web`, port 3100). **Never run
-  `next build` while `next dev` is running against the same `apps/web/.next`.** The production
-  build overwrites the dev server's chunk manifest, after which every `main-app.js` request
-  404s, the app renders server-side and **never hydrates** — no React fiber on any node, no
-  event handler anywhere. It looks like a component bug and is not one. Recovery is stop the
+- Start the dev server with the preview tooling (`lomi-web`, port 3100).
+- **This used to break every time the repo baseline ran.** `next build` and `next dev` both
+  default to `.next`, so `npm run build` at the root overwrote the running dev server's chunk
+  manifest: every client chunk 404s, the app renders server-side and **never hydrates** — no
+  React fiber on any node, no event handler anywhere. It reads exactly like a component bug.
+  `next.config.ts` now sets `distDir` to `.next-build` under `NODE_ENV=production`, so builds
+  and the dev server can no longer collide. If you ever see it again, the recovery is stop the
   server, `rm -rf apps/web/.next`, restart.
 - Interactivity assertions (arrow keys, focus, click) are worthless until hydration is
   confirmed. The cheapest check is a `useEffect` probe rendering `data-hydrated`, or simply
