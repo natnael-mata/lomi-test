@@ -2,6 +2,7 @@ import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
 import { AnswerView } from '../../components/AnswerView';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
+import { CodeBlock } from '../../components/CodeBlock';
 import { Input } from '../../components/Input';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { StatedFigure } from '../../components/StatedFigure';
@@ -259,6 +260,18 @@ export default function DesignSystemPage() {
                 },
               ],
             }}
+          />
+        </div>
+      </Row>
+      <Row title="Code block — CS-0001">
+        <div id="code-well">
+          <CodeBlock code="nav ul { list-style-type: none; margin: 0; padding: 0; }" />
+        </div>
+        <div id="code-well-long">
+          <CodeBlock
+            code={
+              'SELECT student_id, AVG(score) AS mean_score FROM attempts WHERE field_id = $1 GROUP BY student_id HAVING COUNT(*) > 10 ORDER BY mean_score DESC;'
+            }
           />
         </div>
       </Row>

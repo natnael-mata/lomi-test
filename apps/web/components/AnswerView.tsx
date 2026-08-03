@@ -8,6 +8,7 @@
  */
 import { Card } from './Card';
 import { Chip } from './Chip';
+import { CodeBlock } from './CodeBlock';
 import {
   isOwnAnswer,
   orderWhyWrongs,
@@ -64,11 +65,14 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
 
   return (
     <div className="flex flex-col gap-3" data-answer-view="">
-      {/* 1 — verdict */}
+      {/* 1 — verdict.
+          The ONLY element that animates on entrance (T-117). The spring is the
+          answer moment; anything else moving at the same time competes with it,
+          and a page where four things animate reads as slow rather than alive. */}
       <section
         data-section="verdict"
         data-verdict={verdict}
-        className={`${VERDICT_CLASS[verdict]} rounded-card flex items-center justify-between gap-3 p-4`}
+        className={`${VERDICT_CLASS[verdict]} rounded-card animate-pop flex items-center justify-between gap-3 p-4`}
       >
         <span className="text-label">{verdictWord(verdict)}</span>
         <span className="text-label num">
@@ -86,6 +90,11 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
       {/* 3 — solution: prose for CONCEPT, numbered working for CALCULATION */}
       <section data-section="solution">
         <Card>
+          {answer.codeBlock && (
+            <div className="mb-3">
+              <CodeBlock code={answer.codeBlock} />
+            </div>
+          )}
           {isCalculation && answer.steps.length > 0 ? (
             <ol className="flex flex-col gap-2" data-steps="">
               {answer.steps.map((step, index) => {
