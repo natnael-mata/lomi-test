@@ -18,6 +18,7 @@ import {
 } from './attempt-rules';
 import { toServedQuestion, type ServedQuestion } from './question-view';
 import { SUBSCRIPTION_ACCESS, type SubscriptionAccess } from './subscription-access';
+import { summarise, type PracticeSummary } from './summary';
 
 /**
  * What a student gets back for answering.
@@ -221,6 +222,38 @@ export class PracticeService {
       timeNote,
       answerView: toAnswerView(question, chosenLabel),
     };
+  }
+
+  /**
+   * How today's practice went (T-118).
+   *
+   * Scoped to today and to this student's field, using the same day boundary as
+   * T-110 — one notion of "a practice day" rather than two that disagree at
+   * midnight.
+   */
+  async summary(userId: string): Promise<PracticeSummary> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fieldId: true },
+    });
+    if (!user?.fieldId) throw new NotFoundException('No programme chosen.');
+
+    const attempts = await this.prisma.attempt.findMany({
+      where: { userId, fieldId: user.fieldId, createdAt: { gte: startOfToday() } },
+      select: {
+        isCorrect: true,
+        topic: { select: { name: true, weightPct: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return summarise(
+      attempts.map((a) => ({
+        topic: a.topic.name,
+        weightPct: a.topic.weightPct?.toNumber() ?? null,
+        isCorrect: a.isCorrect,
+      })),
+    );
   }
 }
 

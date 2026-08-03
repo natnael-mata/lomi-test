@@ -100,6 +100,20 @@ export interface AttemptResult {
   };
 }
 
+export interface PracticeSummary {
+  answered: number;
+  correct: number;
+  scorePct: number;
+  topics: {
+    topic: string;
+    answered: number;
+    correct: number;
+    scorePct: number;
+    weightPct: number | null;
+  }[];
+  weakestTopic: string | null;
+}
+
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
 
@@ -109,4 +123,6 @@ export const api = {
     timeTakenSec: number;
   }): Promise<AttemptResult> =>
     call<AttemptResult>('/attempts', { method: 'POST', body: JSON.stringify(input) }),
+
+  practiceSummary: (): Promise<PracticeSummary> => call<PracticeSummary>('/practice/summary'),
 };

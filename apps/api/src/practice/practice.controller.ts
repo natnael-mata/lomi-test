@@ -4,6 +4,7 @@ import { FieldRequiredGuard } from '../auth/field-required.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
 import type { AttemptSubmission } from './attempt-rules';
 import { PracticeService, type AttemptResult } from './practice.service';
+import type { PracticeSummary } from './summary';
 import type { ServedQuestion } from './question-view';
 
 /**
@@ -40,5 +41,23 @@ export class AttemptsController {
   @Post()
   attempt(@Req() req: AuthedRequest, @Body() body: AttemptSubmission): Promise<AttemptResult> {
     return this.practice.attempt(req.auth!.userId, body ?? {});
+  }
+}
+
+/**
+ * How today's practice went.
+ *
+ * Its own route rather than a field on the attempt response: a student asks for
+ * this when they stop, not after every question, and putting it on every answer
+ * would make the hot path do work nobody reads.
+ */
+@Controller('practice')
+@UseGuards(SessionGuard, FieldRequiredGuard)
+export class PracticeSummaryController {
+  constructor(private readonly practice: PracticeService) {}
+
+  @Get('summary')
+  summary(@Req() req: AuthedRequest): Promise<PracticeSummary> {
+    return this.practice.summary(req.auth!.userId);
   }
 }

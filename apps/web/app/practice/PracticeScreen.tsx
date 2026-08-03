@@ -15,14 +15,21 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
+import { SessionSummary } from '../../components/SessionSummary';
 import type { OptionLabel } from '../../components/AnswerOption';
-import { ApiError, api, type AttemptResult, type ServedQuestion } from '../../lib/api';
+import {
+  ApiError,
+  api,
+  type AttemptResult,
+  type PracticeSummary,
+  type ServedQuestion,
+} from '../../lib/api';
 
 type Phase =
   | { kind: 'loading' }
   | { kind: 'asking'; question: ServedQuestion }
   | { kind: 'answered'; question: ServedQuestion; result: AttemptResult }
-  | { kind: 'exhausted'; reason: string }
+  | { kind: 'exhausted'; reason: string; summary: PracticeSummary | null }
   | { kind: 'paywalled' }
   | { kind: 'error'; message: string };
 
@@ -50,9 +57,14 @@ export function PracticeScreen() {
       setPhase({ kind: 'asking', question });
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
+        // Running out is the natural end of a session, so it is where the
+        // summary belongs — a student who has finished wants to know how it
+        // went, not just that there is nothing left.
+        const summary = await api.practiceSummary().catch(() => null);
         setPhase({
           kind: 'exhausted',
           reason: 'Nothing left to practise in this programme today.',
+          summary,
         });
         return;
       }
@@ -118,10 +130,13 @@ export function PracticeScreen() {
 
   if (phase.kind === 'exhausted') {
     return (
-      <Card data-state="exhausted">
-        <h1 className="text-title">Done for today</h1>
-        <p className="text-body text-ink-2 mt-2">{phase.reason}</p>
-      </Card>
+      <div className="flex flex-col gap-4" data-state="exhausted">
+        <Card>
+          <h1 className="text-title">Done for today</h1>
+          <p className="text-body text-ink-2 mt-2">{phase.reason}</p>
+        </Card>
+        {phase.summary && <SessionSummary summary={phase.summary} />}
+      </div>
     );
   }
 

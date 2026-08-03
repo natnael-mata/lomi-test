@@ -291,6 +291,63 @@ describe('POST /attempts', () => {
     });
   });
 
+  // T-118's own test, against the real database.
+  describe('the practice summary', () => {
+    it('names the topic with the lowest weighted score after ten answers', async () => {
+      const fresh = await signIn(561000009);
+
+      // Two topics in this field: the fixtures all sit on one, so a second is
+      // created here to make "weakest topic" a real choice rather than the only
+      // one available.
+      const course = await prisma.course.findFirstOrThrow({ where: { fieldId } });
+      const weak = await prisma.topic.create({
+        data: { courseId: course.id, name: `Weak ${SFX}`, slug: `weak-${SFX}`, weightPct: 40 },
+      });
+      const weakIds: string[] = [];
+      for (let i = 0; i < 4; i++) weakIds.push(await makeQuestion(`W${i}`, weak.id, fieldId));
+
+      // 6 on the strong topic, all correct.
+      for (let i = 0; i < 6; i++) {
+        await answer(questionIds[i]!, 'B', 201, 30, fresh.token);
+      }
+      // 4 on the weak topic, all wrong.
+      for (const id of weakIds) {
+        await answer(id, 'C', 201, 30, fresh.token);
+      }
+
+      const body = (
+        await request(app.getHttpServer())
+          .get('/practice/summary')
+          .set('Authorization', `Bearer ${fresh.token}`)
+          .expect(200)
+      ).body;
+
+      expect(body.answered).toBe(10);
+      expect(body.correct).toBe(6);
+      expect(body.scorePct).toBe(60);
+      expect(body.weakestTopic).toBe(`Weak ${SFX}`);
+      // Weakest first — the list is a study order.
+      expect(body.topics[0].topic).toBe(`Weak ${SFX}`);
+      expect(body.topics[0].scorePct).toBe(0);
+      expect(body.topics[0].weightPct).toBe(40);
+    });
+
+    it('is empty and safe for a student who has answered nothing', async () => {
+      const fresh = await signIn(561000010);
+      const body = (
+        await request(app.getHttpServer())
+          .get('/practice/summary')
+          .set('Authorization', `Bearer ${fresh.token}`)
+          .expect(200)
+      ).body;
+      expect(body).toMatchObject({ answered: 0, correct: 0, topics: [], weakestTopic: null });
+    });
+
+    it('401s without a token', async () => {
+      await request(app.getHttpServer()).get('/practice/summary').expect(401);
+    });
+  });
+
   // T-111's own test.
   describe('the free tier', () => {
     it('allows exactly ten questions, then 402s with FREE_LIMIT_REACHED', async () => {
