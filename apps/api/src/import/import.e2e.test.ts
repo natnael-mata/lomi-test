@@ -494,3 +494,63 @@ describe('difficulty round-trips (T-053a)', () => {
     ]);
   });
 });
+
+describe('a reviewer’s time limit survives re-import (T-119)', () => {
+  let service: ImportService;
+  let prisma: PrismaService;
+  let moduleRef: Awaited<ReturnType<ReturnType<typeof Test.createTestingModule>['compile']>>;
+
+  const SFX = 'e2e-timelimit';
+  const FLD = `E2E TimeLimit ${SFX}`;
+  const ID = `TL-1-${SFX}`;
+  const row = `${ID},${FLD},Taxation,VAT,Which statement about VAT is correct?,,One,Two,Three,Four,a,Because one.,,authored,,ready`;
+
+  const cleanup = async (): Promise<void> => {
+    await prisma.option.deleteMany({ where: { question: { stableId: { contains: SFX } } } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX } } });
+    await prisma.topic.deleteMany({ where: { course: { field: { name: FLD } } } });
+    await prisma.course.deleteMany({ where: { field: { name: FLD } } });
+    await prisma.field.deleteMany({ where: { name: FLD } });
+  };
+
+  beforeAll(async () => {
+    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    service = moduleRef.get(ImportService);
+    prisma = moduleRef.get(PrismaService);
+    await cleanup();
+  });
+
+  afterAll(async () => {
+    await cleanup();
+    await moduleRef.close();
+  });
+
+  it('infers the budget from the question type on first import', async () => {
+    await service.importCsv(csv(row));
+    const q = await prisma.question.findUniqueOrThrow({ where: { stableId: ID } });
+    // Prose question, prose options — CONCEPT, so one minute.
+    expect(q.timeLimitSec).toBe(60);
+  });
+
+  /**
+   * The bug this catches: `timeLimitSec` used to sit in the shared `data` object
+   * that both `create` and `update` spread, so every re-import silently reverted
+   * a reviewer's judgement. It is the same destruction `syncOptions` goes out of
+   * its way to avoid for `whyWrong` — and once frozen papers exist it would move
+   * an exam's budget with nobody touching the exam.
+   */
+  it('does not revert a reviewer’s override on re-import', async () => {
+    await prisma.question.update({ where: { stableId: ID }, data: { timeLimitSec: 240 } });
+    await service.importCsv(csv(row));
+    const after = await prisma.question.findUniqueOrThrow({ where: { stableId: ID } });
+    expect(after.timeLimitSec).toBe(240);
+  });
+
+  it('still updates everything else on re-import', async () => {
+    const changed = `${ID},${FLD},Taxation,VAT,A corrected stem?,,One,Two,Three,Four,a,Because one.,,authored,,ready`;
+    await service.importCsv(csv(changed));
+    const after = await prisma.question.findUniqueOrThrow({ where: { stableId: ID } });
+    expect(after.stem).toBe('A corrected stem?');
+    expect(after.timeLimitSec).toBe(240);
+  });
+});

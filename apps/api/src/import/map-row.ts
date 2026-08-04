@@ -13,15 +13,20 @@
  */
 import type { Difficulty, ImportFlag, QType } from '@prisma/client';
 
+import { TIME_LIMIT_SEC } from '../exams/exam-blueprint';
+
 import { cleanOptionText, cleanText, type CleanChange } from './clean-text';
 import type { ImportRow, ImportStatus } from './csv-schema';
 import { parseStatuses } from './status';
 
-/** D4 pacing budgets: 1 minute for a concept question, 3 for a calculation. */
-export const TIME_LIMIT_SEC: Record<QType, number> = {
-  CONCEPT: 60,
-  CALCULATION: 180,
-};
+/**
+ * D4 pacing budgets, re-exported from `exams/exam-blueprint.ts`.
+ *
+ * Defined there, not here: the same numbers have to reconcile with
+ * `Exam.durationSec` (60×60 + 40×180 = 10,800), and two copies of a constant
+ * that must agree is how a paper stops summing without anyone editing it.
+ */
+export { TIME_LIMIT_SEC } from '../exams/exam-blueprint';
 
 export const OPTION_LABELS = ['A', 'B', 'C', 'D'] as const;
 export type OptionLabelLetter = (typeof OPTION_LABELS)[number];

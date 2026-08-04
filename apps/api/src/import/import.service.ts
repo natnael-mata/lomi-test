@@ -122,12 +122,21 @@ export class ImportService {
       stem: row.stem,
       codeBlock: row.codeBlock,
       explanation: row.explanation,
-      timeLimitSec: row.timeLimitSec,
       difficulty: row.difficulty,
       sourceRef: row.sourceRef,
       year: row.year,
       importFlags: row.flags,
     };
+
+    // `timeLimitSec` is set on CREATE only, deliberately.
+    //
+    // It is inferred from the question type here, but a reviewer may deliberately
+    // change it (15..600) — and it used to be in `data`, so every re-import
+    // silently reverted their judgement. That is the same class of destruction
+    // `syncOptions` goes out of its way to avoid with `whyWrong`, and it matters
+    // more once papers exist: a frozen exam's budget would change between import
+    // runs with nobody touching the exam.
+    const timeLimitOnCreate = { timeLimitSec: row.timeLimitSec };
 
     const before = await this.prisma.question.findUnique({
       where: { stableId: row.stableId },
@@ -147,7 +156,7 @@ export class ImportService {
       // On update, `status` is absent — see `nextStatus`.
       update: { ...data, ...this.nextStatus(before, row, messages) },
       // T-054: a new row is always a DRAFT, whatever the file claimed.
-      create: { stableId: row.stableId, ...data, status: 'DRAFT' },
+      create: { stableId: row.stableId, ...data, ...timeLimitOnCreate, status: 'DRAFT' },
     });
 
     await this.syncOptions(question.id, row, before?.options ?? [], messages);

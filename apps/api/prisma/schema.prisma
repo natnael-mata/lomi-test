@@ -535,3 +535,223 @@ model StaffMember {
 
   @@index([role])
 }
+
+/// Why a sitting stopped.
+///
+/// Recorded separately from `closedAt` (when the row settled) and `endsAt` (when
+/// it expired): a sitting that ran out at 13:00 and was settled three days later
+/// must not read as "submitted three days later". Same discipline as
+/// `Session.revokedAt` / `revokedReason`.
+enum SittingCloseReason {
+  SUBMITTED
+  EXPIRED
+}
+
+/// A frozen mock paper for one field.
+///
+/// The questions belong HERE, not to a sitting: two sittings of the same exam
+/// must get identical questions (T-120), and T-138 labels sittings "Mock 1/2/3"
+/// against it. With a launch bank of ~95–102 publishable rows, a 100-question
+/// draw is very nearly the whole bank anyway, so per-sitting sampling would buy
+/// almost no variation for a great deal of machinery.
+///
+/// `fieldId` is a plain scalar with no Prisma relation — the same convention as
+/// `AuditLog` and `Question.authorId`. The foreign key is added in hand-written
+/// migration SQL so this model can be **appended** without editing `Field`, whose
+/// block a parallel Phase 8 session is also changing.
+///
+/// The mix is COLUMNS, not constants, for the same reason T-121 moves duration
+/// out of a constant: an exam's shape is data about that exam.
+model Exam {
+  id      String @id @default(cuid())
+  fieldId String
+
+  /// Unique within its field — "mock-1". Mirrors `Course.@@unique([fieldId, slug])`.
+  slug String
+  /// Student-facing label: "Mock 1".
+  name String
+
+  /// SECONDS, like every other duration here (`Question.timeLimitSec`,
+  /// `Attempt.timeTakenSec`). 10800 = 180 minutes. Minutes would put a ×60
+  /// between the two numbers T-121a exists to reconcile.
+  durationSec Int
+
+  conceptCount     Int
+  calculationCount Int
+
+  /// False stops NEW sittings without disturbing ones in progress — which is how
+  /// a retirement is handled (T-071). Sampling filters on PUBLISHED; a frozen
+  /// paper does not shrink under a student mid-sitting.
+  isActive Boolean @default(true)
+
+  /// Building a paper is an operator action, not a side effect of a student
+  /// pressing Start.
+  builtBy String
+  builtAt DateTime
+
+  /// Achieved-versus-target topic distribution. Recorded because the per-topic
+  /// quota is deliberately soft — D5's weights are derived and explicitly not
+  /// official — and a number nobody can check is the decoration DESIGN.md forbids.
+  topicPlan Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions ExamQuestion[]
+  sittings  Sitting[]
+
+  @@unique([fieldId, slug])
+  @@index([fieldId, isActive])
+}
+
+/// One slot on a frozen paper.
+///
+/// `qType`, `timeLimitSec` and `topicId` are SNAPSHOTS taken at freeze time. A
+/// reviewer may patch `Question.timeLimitSec` to anything in 15..600 at any
+/// moment, and a re-import used to revert it. Without the copy, a paper that has
+/// already been sat stops summing to its sitting length and T-121a becomes untrue
+/// for history.
+///
+/// Unlike `Question.fieldId` (T-029a), this drift is INTENDED. Do not add a
+/// trigger to "fix" it.
+model ExamQuestion {
+  id     String @id @default(cuid())
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// Plain scalars; foreign keys in SQL. Question is ON DELETE RESTRICT — the
+  /// bank is the asset.
+  questionId String
+  topicId    String
+
+  /// 1-based, like `Step.stepNo`. Named for its position because ORDER is a
+  /// reserved SQL keyword.
+  position     Int
+  qType        QType
+  timeLimitSec Int
+
+  createdAt DateTime @default(now())
+
+  /// No two questions in one slot, and no question twice on one paper — a
+  /// duplicate silently turns a 100-question form into a 99-question one.
+  @@unique([examId, position])
+  @@unique([examId, questionId])
+  @@index([questionId])
+}
+
+/// One student's run at one paper.
+///
+/// `startedAt` is written by the APPLICATION, never `@default(now())`: that
+/// compiles to database-side `CURRENT_TIMESTAMP`, and every DateTime here is
+/// `TIMESTAMP(3)` without a time zone. A Postgres session on `Africa/Addis_Ababa`
+/// would stamp the start three hours away from an `endsAt` computed in Node, and
+/// the sitting would expire the instant it began. Both come from one `now`, read
+/// once, in one place.
+model Sitting {
+  id     String @id @default(cuid())
+  userId String
+  examId String
+  exam   Exam   @relation(fields: [examId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// DENORMALISED from the exam, for the same reason as `Attempt.fieldId`: every
+  /// "my sittings in this programme" query would otherwise join through Exam.
+  fieldId String
+
+  startedAt DateTime
+
+  /// MATERIALISED at start as `startedAt + durationSec`, never recomputed from
+  /// the Exam on read. Editing `Exam.durationSec` must not move the deadline of a
+  /// sitting already under way — an admin fixing a typo would otherwise cut
+  /// students off mid-question.
+  endsAt DateTime
+
+  /// When the row settled, which is not when it expired. Null means open.
+  ///
+  /// Every liveness check is `closedAt IS NULL AND now <= endsAt`, never a status
+  /// column: an abandoned sitting must not read as live forever, or it inflates
+  /// T-070's blast radius and blocks the student's next start.
+  closedAt    DateTime?
+  closeReason SittingCloseReason?
+
+  /// Null until close. Zero would claim the student scored nothing.
+  scoreCorrect  Int?
+  answeredCount Int?
+
+  /// Support only. The sitting is keyed to the USER, not the session: two
+  /// concurrent devices are allowed by design, and a session-bound sitting would
+  /// lose ninety minutes when a phone dies.
+  startedBySessionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answers SittingAnswer[]
+  results SittingResult[]
+
+  @@index([userId, fieldId, startedAt])
+  @@index([closedAt, endsAt])
+  @@index([examId])
+}
+
+/// A student's in-progress answer. Mutable until close — T-125 lets them change
+/// their mind — and carrying NO correctness of any kind.
+///
+/// This is the strongest thing the schema can do for T-124: with no correctness
+/// column on the row every in-sitting endpoint reads, no `select` and no
+/// `include` can leak the key. That is one better than building payloads by
+/// listing what goes in — it removes the thing to forget.
+///
+/// `chosenLabel` is NULLABLE, in deliberate contrast to `Attempt.chosenLabel`:
+/// "visited and blank" and "flagged and blank" are real states here (T-125, T-126).
+model SittingAnswer {
+  id        String  @id @default(cuid())
+  sittingId String
+  sitting   Sitting @relation(fields: [sittingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  questionId String
+
+  chosenLabel OptionLabel?
+  isFlagged   Boolean      @default(false)
+  answeredAt  DateTime?
+
+  /// Which device wrote it. Support only; never authority.
+  answeredBySessionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Last-write-wins target. Without it two devices answering one question
+  /// produce two rows, the score exceeds 100 and the topic breakdown
+  /// double-counts. Also the reconnect-sync upsert key for T-131.
+  @@unique([sittingId, questionId])
+  @@index([sittingId])
+}
+
+/// A graded question. Created ONLY inside the close transaction — one row per
+/// question on the paper, including the ones never answered.
+///
+/// Correctness is frozen here for the same reason as `Attempt.isCorrect`: a later
+/// correction must not rewrite a student's mock score.
+///
+/// Keeping grading in a table that has no rows before close makes T-124
+/// assertable as a COUNT — while the sitting is open, `sittingResult.count()` is
+/// zero — which is also exactly T-129's "none before".
+model SittingResult {
+  id        String  @id @default(cuid())
+  sittingId String
+  sitting   Sitting @relation(fields: [sittingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  questionId String
+  topicId    String
+
+  /// Null means never answered. Recorded honestly rather than inventing a
+  /// letter; `isCorrect` is false either way.
+  chosenLabel OptionLabel?
+  isCorrect   Boolean
+
+  createdAt DateTime @default(now())
+
+  @@unique([sittingId, questionId])
+  @@index([sittingId])
+  @@index([topicId])
+}
