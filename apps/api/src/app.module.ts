@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { ExamsModule } from './exams/exams.module';
 import { HealthController } from './health/health.controller';
 import { ImportModule } from './import/import.module';
 import { PracticeModule } from './practice/practice.module';
@@ -19,6 +20,7 @@ import { TaxonomyModule } from './taxonomy/taxonomy.module';
     ImportModule,
     ReviewModule,
     PracticeModule,
+    ExamsModule,
   ],
   controllers: [HealthController],
 })
