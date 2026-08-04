@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from '../auth/auth.module';
+import { ExamsModule } from '../exams/exams.module';
 import {
   AttemptsController,
   PracticeController,
@@ -10,7 +11,7 @@ import { PracticeService } from './practice.service';
 import { NoSubscriptionsYet, SUBSCRIPTION_ACCESS } from './subscription-access';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ExamsModule],
   controllers: [PracticeController, AttemptsController, PracticeSummaryController],
   providers: [
     PracticeService,

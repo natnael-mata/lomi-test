@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 
 import { FieldRequiredGuard } from '../auth/field-required.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
+import { SittingLockGuard } from '../exams/sitting-lock.guard';
 import type { AttemptSubmission } from './attempt-rules';
 import { PracticeService, type AttemptResult } from './practice.service';
 import type { PracticeSummary } from './summary';
@@ -16,7 +17,11 @@ import type { ServedQuestion } from './question-view';
  * copy it.
  */
 @Controller('questions')
-@UseGuards(SessionGuard, FieldRequiredGuard)
+// SittingLockGuard is what actually holds T-124. Without it POST /attempts is an
+// answer oracle for the student's own exam paper: read a questionId off the
+// paper, post any label, and back comes isCorrect, correctLabel, every
+// why-wrong, the concept line and the worked steps.
+@UseGuards(SessionGuard, FieldRequiredGuard, SittingLockGuard)
 export class PracticeController {
   constructor(private readonly practice: PracticeService) {}
 
@@ -34,7 +39,7 @@ export class PracticeController {
  * chosen would serve them another field's explanation.
  */
 @Controller('attempts')
-@UseGuards(SessionGuard, FieldRequiredGuard)
+@UseGuards(SessionGuard, FieldRequiredGuard, SittingLockGuard)
 export class AttemptsController {
   constructor(private readonly practice: PracticeService) {}
 
@@ -52,7 +57,7 @@ export class AttemptsController {
  * would make the hot path do work nobody reads.
  */
 @Controller('practice')
-@UseGuards(SessionGuard, FieldRequiredGuard)
+@UseGuards(SessionGuard, FieldRequiredGuard, SittingLockGuard)
 export class PracticeSummaryController {
   constructor(private readonly practice: PracticeService) {}
 
