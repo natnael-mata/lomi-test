@@ -163,7 +163,7 @@ enum Difficulty {
 /// The product. Everything else exists to get one of these in front of a
 /// student with an answer it can defend.
 model Question {
-  id      String @id @default(cuid())
+  id String @id @default(cuid())
 
   /// Human-quotable identifier from the import file — `AF-0003`, `CS-0001`,
   /// `GEO-0001`. Maps to `question_id` in question_import_template.csv.
@@ -198,7 +198,7 @@ model Question {
   qType QType
 
   /// The question itself — the most-read text in the product.
-  stem  String
+  stem String
 
   /// Code shown with the question, kept OUT of the stem so the answer view can
   /// render it in its own monospaced well (DESIGN.md: "code sits in its own
@@ -396,7 +396,7 @@ model User {
 
   /// Telegram's numeric id, held as a STRING: it is an identifier, not a
   /// quantity, and ids past 2^53 must not round through a JS number.
-  telegramId       String?   @unique
+  telegramId       String? @unique
   telegramUsername String?
 
   /// What other students see. Never the legal name — PRODUCT.md is explicit that
@@ -435,7 +435,7 @@ model Session {
 
   /// Set when the session is ended, by revocation or by eviction. Kept rather
   /// than deleted so "signed out on 3 August" can still be answered.
-  revokedAt DateTime?
+  revokedAt     DateTime?
   /// Why it ended: the student revoked it, or a third login evicted it (T-082).
   revokedReason String?
 
@@ -753,5 +753,41 @@ model SittingResult {
 
   @@unique([sittingId, questionId])
   @@index([sittingId])
+  @@index([topicId])
+}
+
+/// A reviewer's override of a topic's derived weight (T-134a).
+///
+/// A separate table rather than columns on `Topic`, for the same reason
+/// `StaffMember` is separate from `User`: a derived value and a human's
+/// correction of it are two different facts, and storing the correction *over*
+/// the derivation destroys the thing it was correcting. Keeping them apart means
+/// `Topic.weightPct` is always the effective weight, this row always says why it
+/// is not the derived one, and re-deriving the bank never silently erases a
+/// judgement somebody made on purpose.
+///
+/// The reason is required. An override with no reason is indistinguishable from
+/// a typo six months later, and the next reviewer has no way to tell whether to
+/// keep it.
+model TopicWeightOverride {
+  id      String @id @default(cuid())
+  topicId String @unique
+
+  /// The weight a reviewer asserted, 0–100, whole percent.
+  weightPct Int
+
+  /// What the bank said before the override, kept so the size of the correction
+  /// stays visible after the bank has moved on.
+  derivedPct Int
+
+  /// Required — see the note above.
+  reason String
+
+  /// Who, by staff id. No FK: an override outlives the person who left.
+  setBy String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([topicId])
 }

@@ -236,6 +236,18 @@ Each of these cost real time. None is obvious from reading the code.
   broken.
 - **Run Prettier _after_ any generator.** `scripts/task-progress.mjs` rewrites `TASK.md` and its
   output is not Prettier-formatted, so the order is generate → format → check.
+- **Prettier eats `>` notes indented under a list item.** A blockquote at six spaces, straight
+  after an indented `**Test:**` line, is read as lazy paragraph continuation and flattened into
+  one long line. The form that survives is a blank line, then `>` at **two** spaces — which is
+  what the `> blocked:` notes already use. Check the rendered result, not just that the command
+  exited 0.
+- **`prisma migrate diff` will offer to drop the hand-written foreign keys.** `Exam`,
+  `ExamQuestion`, `Sitting`, `SittingAnswer` and `SittingResult` use plain scalar ids so the
+  parallel payments branch can edit the same tables without collision; their FKs live in
+  `20260804140000_exam_and_sitting/migration.sql` and are invisible to the datamodel, so every
+  future diff reads them as drift. **Always read the generated SQL and delete the `DropForeignKey`
+  block** before saving a migration. Applying one unchanged would remove the referential
+  integrity of the whole exam subsystem in a file that looks routine.
 
 **TypeScript and React**
 
