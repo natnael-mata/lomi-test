@@ -38,6 +38,7 @@
     "db:seed": "tsx prisma/seed.ts && tsx prisma/seed-questions.ts",
     "dev:session": "tsx scripts/dev-session.ts",
     "dev:publish": "tsx scripts/dev-publish.ts",
+    "dev:staff": "tsx scripts/dev-staff.ts",
     "import:csv": "tsx src/import/import.cli.ts"
   }
 }

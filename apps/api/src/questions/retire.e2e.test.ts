@@ -10,12 +10,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { cleanupStaff, signInAsStaff, type StaffSession } from '../auth/staff-testkit.test-helper';
 
 const SFX = 'e2e-retire';
 
 describe('POST /admin/questions/:id/retire', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let admin: StaffSession;
+  const TG_ADMIN = 563000003;
+
   let questionId = '';
 
   const cleanup = async (): Promise<void> => {
@@ -31,6 +35,8 @@ describe('POST /admin/questions/:id/retire', () => {
     app = moduleRef.createNestApplication();
     await app.init();
     prisma = app.get(PrismaService);
+    await cleanupStaff(prisma, [TG_ADMIN], SFX);
+    admin = await signInAsStaff(app, prisma, TG_ADMIN, 'ADMIN', SFX);
     await cleanup();
 
     const field = await prisma.field.create({
@@ -57,6 +63,7 @@ describe('POST /admin/questions/:id/retire', () => {
   });
 
   afterAll(async () => {
+    await cleanupStaff(prisma, [TG_ADMIN], SFX);
     await cleanup();
     await app.close();
   });
@@ -65,19 +72,20 @@ describe('POST /admin/questions/:id/retire', () => {
     (
       await request(app.getHttpServer())
         .post(`/admin/questions/${questionId}/retire`)
+        .set(admin.auth)
         .send(body)
         .expect(expectStatus)
     ).body;
 
   it('sets RETIRED and logs it with the reason', async () => {
-    const body = await retire({ actorId: 'ops-1', reason: 'Option B is also correct.' });
+    const body = await retire({ reason: 'Option B is also correct.' });
     expect(body.status).toBe('RETIRED');
     expect(body.alreadyRetired).toBe(false);
 
     const rows = await prisma.auditLog.findMany({ where: { questionId } });
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      actorId: 'ops-1',
+      actorId: admin.userId,
       action: 'RETIRED',
       detail: 'Option B is also correct.',
     });
@@ -92,7 +100,7 @@ describe('POST /admin/questions/:id/retire', () => {
   });
 
   it('is idempotent, and does not log a second withdrawal', async () => {
-    const body = await retire({ actorId: 'ops-2' });
+    const body = await retire({});
     expect(body.status).toBe('RETIRED');
     expect(body.alreadyRetired).toBe(true);
     expect(await prisma.auditLog.count({ where: { questionId } })).toBe(1);
@@ -101,14 +109,15 @@ describe('POST /admin/questions/:id/retire', () => {
   // The half T-070 is still open for: reporting 0 here would tell a reviewer
   // that retiring disturbs nobody, which this code cannot know until Phase 4.
   it('reports the blast radius as not yet measurable, never as zero', async () => {
-    const body = await retire({ actorId: 'ops-3' });
+    const body = await retire({});
     expect(body.blastRadius).toEqual({ attempts: null, liveSittings: null, measurable: false });
   });
 
   it('404s for a question that does not exist', async () => {
     await request(app.getHttpServer())
       .post('/admin/questions/does-not-exist/retire')
-      .send({ actorId: 'ops-1' })
+      .set(admin.auth)
+      .send({})
       .expect(404);
   });
 });

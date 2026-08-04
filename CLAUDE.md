@@ -202,6 +202,25 @@ plan_, it does not break a streak.
 - `:focus-visible` does not match programmatic `.focus()`. Asserting the rule exists in the
   compiled CSS is honest; claiming the ring was observed is not.
 
+## Guards
+
+Every route is unguarded until someone puts a guard on it, and Nest gives no warning. This bit
+once, badly: the whole `/admin/*` surface shipped open because those controllers were written in
+Phase 2, before any guard existed, and nobody went back (T-086a).
+
+- `SessionGuard` — authenticates, and reads the **session row**, so revocation is real.
+- `FieldRequiredGuard` — 409 `FIELD_REQUIRED` until a programme is chosen. After `SessionGuard`.
+- `StaffGuard` / `AdminGuard` — `/admin/*`. Staff is an explicit `StaffMember` table; the empty
+  state is nobody. Grant with `npm run dev:staff -w api`.
+
+**Never take an actor from the request body.** `body.reviewerId` made T-044's self-review rule
+decorative and let every audit row record whatever string the caller sent. It is
+`req.auth.userId`.
+
+Two tests enforce this and both walk the router Nest actually built rather than grepping
+decorators: `auth/staff.e2e.test.ts` calls every `/admin` route unauthenticated, and
+`practice/routes.e2e.test.ts` asserts one student-facing question route.
+
 ## Traps already paid for
 
 Each of these cost real time. None is obvious from reading the code.

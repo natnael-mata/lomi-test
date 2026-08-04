@@ -494,3 +494,44 @@ model Attempt {
   @@index([userId, questionId])
   @@index([userId, topicId])
 }
+
+/// What a staff member may do.
+///
+/// REVIEWER reads the queue and authors the answer content the import cannot
+/// carry; ADMIN additionally publishes and retires. Kept apart because
+/// publishing is what puts text in front of a student and retiring withdraws it,
+/// while reviewing is only ever a proposal.
+enum StaffRole {
+  REVIEWER
+  ADMIN
+}
+
+/// Who is allowed near `/admin/*`.
+///
+/// A separate table rather than a `role` column on `User`, for two reasons. The
+/// first is mechanical: a second session is editing `User` on another branch, and
+/// this file may only be appended to. The second matters more — **staff is an
+/// explicit list, not a default**. A column means every one of the tens of
+/// thousands of student rows carries an authorisation field that a bad migration
+/// or a careless `updateMany` could flip; a table means being staff requires a
+/// row to exist, and the empty state is "nobody".
+///
+/// Not a foreign key to `User`, following `AuditLog` and the pre-Phase-3
+/// `authorId` convention: this file cannot add a relation to an existing model
+/// without editing it.
+model StaffMember {
+  id String @id @default(cuid())
+
+  /// The `User.id` this grants. Unique — one row per person, so revoking is a
+  /// single delete with nothing left behind.
+  userId String @unique
+
+  role StaffRole
+
+  /// Who granted it and when. Access that nobody can account for is how a
+  /// forgotten contractor keeps reading the question bank.
+  grantedBy String
+  createdAt DateTime @default(now())
+
+  @@index([role])
+}

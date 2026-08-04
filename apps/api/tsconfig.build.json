@@ -7,5 +7,12 @@
   // type-check them (Vitest transpiles without checking types, so the compiler
   // is the only thing that does).
   "extends": "./tsconfig.json",
-  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    // Fixtures that mint sessions and grant staff rows. Never in `dist`.
+    "**/*.test-helper.ts"
+  ]
 }

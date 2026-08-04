@@ -10,9 +10,38 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { signInAsStaff, type StaffSession } from '../auth/staff-testkit.test-helper';
 import { ANSWER_VIEW_FIELDS } from '../questions/answer-view';
 
 const SFX = 'e2e-review';
+
+/**
+ * Real staff sessions, keyed by the names these tests already used.
+ *
+ * The reviewer used to be a `reviewerId` query parameter, which meant T-044's
+ * self-review rule could be satisfied by naming somebody else — and the whole
+ * queue was readable unauthenticated. Now the identity comes from the session,
+ * so a test that wants "a different reviewer" needs a different account, which
+ * is the point.
+ */
+const STAFF_BASE_TG = 564000000;
+const staffCache = new Map<string, StaffSession>();
+
+async function staff(
+  app: INestApplication,
+  prisma: PrismaService,
+  name: string,
+  suffix: string,
+  role: 'REVIEWER' | 'ADMIN' = 'ADMIN',
+): Promise<StaffSession> {
+  const cached = staffCache.get(name);
+  if (cached) return cached;
+  // Deterministic id per name, so a rerun reuses the same account.
+  const tg = STAFF_BASE_TG + (staffCache.size + 1);
+  const session = await signInAsStaff(app, prisma, tg, role, suffix);
+  staffCache.set(name, session);
+  return session;
+}
 
 describe('GET /admin/review/next (T-065)', () => {
   let app: INestApplication;
@@ -33,7 +62,10 @@ describe('GET /admin/review/next (T-065)', () => {
         stem: `Stem for ${stableId}`,
         timeLimitSec: 60,
         status: over.status ?? 'IN_REVIEW',
-        authorId: over.authorId === undefined ? 'author-a' : over.authorId,
+        authorId:
+          over.authorId === undefined
+            ? (await staff(app, prisma, 'author-a', SFX)).userId
+            : over.authorId,
         options: {
           create: [
             { label: 'A', text: 'a', isCorrect: true },
@@ -85,9 +117,11 @@ describe('GET /admin/review/next (T-065)', () => {
     await app.close();
   });
 
-  const next = async (reviewerId: string) =>
-    (await request(app.getHttpServer()).get('/admin/review/next').query({ reviewerId }).expect(200))
+  const next = async (name: string) => {
+    const who = await staff(app, prisma, name, SFX);
+    return (await request(app.getHttpServer()).get('/admin/review/next').set(who.auth).expect(200))
       .body;
+  };
 
   it('returns null when the queue is empty', async () => {
     expect(await next('reviewer-b')).toEqual({});
@@ -95,14 +129,16 @@ describe('GET /admin/review/next (T-065)', () => {
 
   // The task's own test.
   it('does not hand author A their own question', async () => {
-    await make('OWN', { authorId: 'author-a' });
+    // The author's REAL id: the queue now identifies people by session, so a
+    // literal string matches nobody and the exclusion silently stops working.
+    await make('OWN', { authorId: (await staff(app, prisma, 'author-a', SFX)).userId });
     expect(await next('author-a')).toEqual({});
     // And it is genuinely in the queue — just not for its author.
     expect((await next('reviewer-b')).answerView.stableId).toBe(`OWN-${SFX}`);
   });
 
   it('returns the oldest waiting question first', async () => {
-    await make('NEWER', { authorId: 'author-c' });
+    await make('NEWER', { authorId: (await staff(app, prisma, 'author-c', SFX)).userId });
     await age('OWN', 10);
     await age('NEWER', 1);
     expect((await next('reviewer-b')).answerView.stableId).toBe(`OWN-${SFX}`);
@@ -199,7 +235,7 @@ describe('the review payload is the student answer view (T-066)', () => {
     (
       await request(app.getHttpServer())
         .get('/admin/review/next')
-        .query({ reviewerId: 'reviewer-z' })
+        .set((await staff(app, prisma, 'reviewer-z', SFX2)).auth)
         .expect(200)
     ).body;
 
@@ -280,13 +316,16 @@ describe('POST /admin/review/:id/publish (T-067)', () => {
     await app.close();
   });
 
-  const publish = async (id: string, reviewerId: string, expectStatus: number) =>
-    (
+  const publish = async (id: string, name: string, expectStatus: number) => {
+    const who = await staff(app, prisma, name, 'e2e-review-publish');
+    return (
       await request(app.getHttpServer())
         .post(`/admin/review/${id}/publish`)
-        .send({ reviewerId })
+        .set(who.auth)
+        .send({})
         .expect(expectStatus)
     ).body;
+  };
 
   // The task's own test. It said 3 blockers; GEO-0001 actually raises 8, and
   // every one of them is real — see the correction in TASK.md.
@@ -315,7 +354,8 @@ describe('POST /admin/review/:id/publish (T-067)', () => {
   it('404s for a question that does not exist', async () => {
     await request(app.getHttpServer())
       .post('/admin/review/does-not-exist/publish')
-      .send({ reviewerId: 'reviewer-z' })
+      .set((await staff(app, prisma, 'reviewer-z', 'e2e-review-publish')).auth)
+      .send({})
       .expect(404);
   });
 
@@ -324,7 +364,8 @@ describe('POST /admin/review/:id/publish (T-067)', () => {
     const viaQuestions = (
       await request(app.getHttpServer())
         .post(`/admin/questions/${geoId}/publish`)
-        .send({ reviewerId: 'reviewer-z' })
+        .set((await staff(app, prisma, 'reviewer-z', 'e2e-review-publish')).auth)
+        .send({})
         .expect(422)
     ).body;
     const viaReview = await publish(geoId, 'reviewer-z', 422);
@@ -387,6 +428,7 @@ describe('POST /admin/review/:id/bounce (T-068)', () => {
     (
       await request(app.getHttpServer())
         .post(`/admin/review/${questionId}/bounce`)
+        .set((await staff(app, prisma, 'reviewer-bounce', 'e2e-bounce')).auth)
         .send({ note })
         .expect(expectStatus)
     ).body;
@@ -429,7 +471,7 @@ describe('POST /admin/review/:id/bounce (T-068)', () => {
     const body = (
       await request(app.getHttpServer())
         .get('/admin/review/next')
-        .query({ reviewerId: 'reviewer-new' })
+        .set((await staff(app, prisma, 'reviewer-new', 'e2e-bounce')).auth)
         .expect(200)
     ).body;
     expect(body?.answerView?.stableId).not.toBe(`BOUNCE-${SFX3}`);
@@ -438,6 +480,7 @@ describe('POST /admin/review/:id/bounce (T-068)', () => {
   it('404s for a question that does not exist', async () => {
     await request(app.getHttpServer())
       .post('/admin/review/does-not-exist/bounce')
+      .set((await staff(app, prisma, 'reviewer-bounce', 'e2e-bounce')).auth)
       .send({ note: 'A perfectly valid note about nothing.' })
       .expect(404);
   });
@@ -516,6 +559,7 @@ describe('PATCH /admin/review/:id — the review write path (T-068a)', () => {
     (
       await request(app.getHttpServer())
         .patch(`/admin/review/${questionId}`)
+        .set((await staff(app, prisma, 'reviewer-patch', 'e2e-patch')).auth)
         .send(body)
         .expect(expectStatus)
     ).body;
@@ -524,7 +568,8 @@ describe('PATCH /admin/review/:id — the review write path (T-068a)', () => {
     (
       await request(app.getHttpServer())
         .post(`/admin/review/${questionId}/publish`)
-        .send({ reviewerId: 'reviewer-z' })
+        .set((await staff(app, prisma, 'reviewer-z', 'e2e-patch')).auth)
+        .send({})
         .expect(expectStatus)
     ).body;
 
@@ -614,6 +659,7 @@ describe('PATCH /admin/review/:id — the review write path (T-068a)', () => {
     const body = (
       await request(app.getHttpServer())
         .patch(`/admin/review/${solo.id}`)
+        .set((await staff(app, prisma, 'reviewer-patch', 'e2e-patch')).auth)
         .send({ whyWrong: { D: 'no such option' } })
         .expect(422)
     ).body;
@@ -623,6 +669,7 @@ describe('PATCH /admin/review/:id — the review write path (T-068a)', () => {
   it('404s for a question that does not exist', async () => {
     await request(app.getHttpServer())
       .patch('/admin/review/does-not-exist')
+      .set((await staff(app, prisma, 'reviewer-patch', 'e2e-patch')).auth)
       .send({ conceptLine: 'anything' })
       .expect(404);
   });
@@ -690,6 +737,11 @@ describe('POST /admin/review/:id/submit (T-068a)', () => {
 
   afterAll(async () => {
     await cleanup();
+    // The staff accounts these suites share are created lazily and cached for
+    // the whole file, so this is the only place that can remove them. A test run
+    // that leaves ADMIN rows behind is the "forgotten contractor" the
+    // StaffMember comment warns about, in miniature.
+    await prisma.staffMember.deleteMany({ where: { grantedBy: { startsWith: 'test-' } } });
     await app.close();
   });
 
@@ -699,6 +751,7 @@ describe('POST /admin/review/:id/submit (T-068a)', () => {
     const body = (
       await request(app.getHttpServer())
         .post(`/admin/review/${questionId}/submit`)
+        .set((await staff(app, prisma, 'reviewer-submit', 'e2e-submit')).auth)
         .send({})
         .expect(201)
     ).body;
@@ -712,6 +765,7 @@ describe('POST /admin/review/:id/submit (T-068a)', () => {
     await prisma.question.update({ where: { id: questionId }, data: { status: 'PUBLISHED' } });
     await request(app.getHttpServer())
       .post(`/admin/review/${questionId}/submit`)
+      .set((await staff(app, prisma, 'reviewer-submit', 'e2e-submit')).auth)
       .send({})
       .expect(400);
   });
@@ -720,6 +774,7 @@ describe('POST /admin/review/:id/submit (T-068a)', () => {
     await prisma.question.update({ where: { id: questionId }, data: { status: 'RETIRED' } });
     await request(app.getHttpServer())
       .post(`/admin/review/${questionId}/submit`)
+      .set((await staff(app, prisma, 'reviewer-submit', 'e2e-submit')).auth)
       .send({})
       .expect(400);
   });

@@ -10,12 +10,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { cleanupStaff, signInAsStaff, type StaffSession } from '../auth/staff-testkit.test-helper';
 
 const SFX = 'e2e-audit';
 
 describe('the audit log (T-069)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let admin: StaffSession;
+  const TG_ADMIN = 563000002;
+
   let publishableId = '';
   let blockedId = '';
 
@@ -33,6 +37,8 @@ describe('the audit log (T-069)', () => {
     app = moduleRef.createNestApplication();
     await app.init();
     prisma = app.get(PrismaService);
+    await cleanupStaff(prisma, [TG_ADMIN], SFX);
+    admin = await signInAsStaff(app, prisma, TG_ADMIN, 'ADMIN', SFX);
     await cleanup();
 
     const field = await prisma.field.create({
@@ -91,6 +97,7 @@ describe('the audit log (T-069)', () => {
   });
 
   afterAll(async () => {
+    await cleanupStaff(prisma, [TG_ADMIN], SFX);
     await cleanup();
     await app.close();
   });
@@ -102,13 +109,14 @@ describe('the audit log (T-069)', () => {
   it('writes exactly one row on publish, with the reviewer as actor', async () => {
     await request(app.getHttpServer())
       .post(`/admin/questions/${publishableId}/publish`)
-      .send({ reviewerId: 'reviewer-b' })
+      .set(admin.auth)
+      .send({})
       .expect(201);
 
     const rows = await rowsFor(publishableId);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      actorId: 'reviewer-b',
+      actorId: admin.userId,
       action: 'PUBLISHED',
       questionId: publishableId,
       stableId: `AUD-OK-${SFX}`,
@@ -121,7 +129,8 @@ describe('the audit log (T-069)', () => {
   it('writes nothing when the gate refuses', async () => {
     await request(app.getHttpServer())
       .post(`/admin/questions/${blockedId}/publish`)
-      .send({ reviewerId: 'reviewer-b' })
+      .set(admin.auth)
+      .send({})
       .expect(422);
 
     expect(await rowsFor(blockedId)).toHaveLength(0);
@@ -131,13 +140,14 @@ describe('the audit log (T-069)', () => {
     const note = 'Option B needs a why-wrong before this can go live.';
     await request(app.getHttpServer())
       .post(`/admin/review/${blockedId}/bounce`)
-      .send({ note, reviewerId: 'reviewer-c' })
+      .set(admin.auth)
+      .send({ note })
       .expect(201);
 
     const rows = await rowsFor(blockedId);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      actorId: 'reviewer-c',
+      actorId: admin.userId,
       action: 'BOUNCED',
       detail: note,
     });
@@ -146,7 +156,8 @@ describe('the audit log (T-069)', () => {
     const second = 'Still missing the why-wrong.';
     await request(app.getHttpServer())
       .post(`/admin/review/${blockedId}/bounce`)
-      .send({ note: second, reviewerId: 'reviewer-c' })
+      .set(admin.auth)
+      .send({ note: second })
       .expect(201);
 
     const after = await rowsFor(blockedId);
@@ -159,7 +170,8 @@ describe('the audit log (T-069)', () => {
     const before = await rowsFor(blockedId);
     await request(app.getHttpServer())
       .post(`/admin/review/${blockedId}/bounce`)
-      .send({ note: 'no', reviewerId: 'reviewer-c' })
+      .set(admin.auth)
+      .send({ note: 'no' })
       .expect(400);
     expect(await rowsFor(blockedId)).toHaveLength(before.length);
   });
@@ -187,7 +199,8 @@ describe('the audit log (T-069)', () => {
     });
     await request(app.getHttpServer())
       .post(`/admin/review/${doomed.id}/bounce`)
-      .send({ note: 'This one is going away entirely.', reviewerId: 'reviewer-d' })
+      .set(admin.auth)
+      .send({ note: 'This one is going away entirely.' })
       .expect(201);
 
     await prisma.question.delete({ where: { id: doomed.id } });

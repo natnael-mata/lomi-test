@@ -14,12 +14,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { cleanupStaff, signInAsStaff, type StaffSession } from '../auth/staff-testkit.test-helper';
 
 const SUFFIX = 'e2e-publish';
 
 describe('POST /admin/questions/:id/publish', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let admin: StaffSession;
+  const TG_ADMIN = 563000001;
+
   let blockedId = '';
   let publishableId = '';
 
@@ -28,6 +32,8 @@ describe('POST /admin/questions/:id/publish', () => {
     app = moduleRef.createNestApplication();
     await app.init();
     prisma = app.get(PrismaService);
+    await cleanupStaff(prisma, [TG_ADMIN], SUFFIX);
+    admin = await signInAsStaff(app, prisma, TG_ADMIN, 'ADMIN', SUFFIX);
 
     const field = await prisma.field.create({
       data: { name: `E2E ${SUFFIX}`, slug: `field-${SUFFIX}` },
@@ -92,6 +98,7 @@ describe('POST /admin/questions/:id/publish', () => {
   });
 
   afterAll(async () => {
+    await cleanupStaff(prisma, [TG_ADMIN], SUFFIX);
     await prisma.option.deleteMany({ where: { question: { stableId: { contains: SUFFIX } } } });
     await prisma.question.deleteMany({ where: { stableId: { contains: SUFFIX } } });
     await prisma.topic.deleteMany({ where: { slug: { contains: SUFFIX } } });
@@ -103,7 +110,8 @@ describe('POST /admin/questions/:id/publish', () => {
   it('refuses an unpublishable question with 422 and the blocker list', async () => {
     const res = await request(app.getHttpServer())
       .post(`/admin/questions/${blockedId}/publish`)
-      .send({ reviewerId: 'reviewer-2' })
+      .set(admin.auth)
+      .send({})
       .expect(422);
 
     expect(res.body.error).toBe('GATE_BLOCKED');
@@ -121,17 +129,25 @@ describe('POST /admin/questions/:id/publish', () => {
   it('publishes a question that passes every rule', async () => {
     const res = await request(app.getHttpServer())
       .post(`/admin/questions/${publishableId}/publish`)
-      .send({ reviewerId: 'reviewer-2' })
+      .set(admin.auth)
+      .send({})
       .expect(201);
     expect(res.body.status).toBe('PUBLISHED');
   });
 
-  // Self-review is caught at the moment it is attempted, using the caller's id
-  // rather than whatever happens to be stored on the row.
+  // Self-review is caught at the moment it is attempted, using the CALLER's id.
+  // It used to be checked against a `reviewerId` in the body, which made the
+  // rule decorative — any caller could satisfy it by naming somebody else.
   it('refuses when the reviewer is the author', async () => {
+    // The admin authored this one, so publishing it is self-review.
+    await prisma.question.update({
+      where: { id: publishableId },
+      data: { status: 'DRAFT', reviewerId: null, authorId: admin.userId },
+    });
     const res = await request(app.getHttpServer())
       .post(`/admin/questions/${publishableId}/publish`)
-      .send({ reviewerId: 'author-1' })
+      .set(admin.auth)
+      .send({})
       .expect(422);
     expect(res.body.blockers).toContain('You wrote this question — someone else has to review it.');
   });
@@ -139,7 +155,8 @@ describe('POST /admin/questions/:id/publish', () => {
   it('404s for a question that does not exist', async () => {
     await request(app.getHttpServer())
       .post('/admin/questions/does-not-exist/publish')
-      .send({ reviewerId: 'reviewer-2' })
+      .set(admin.auth)
+      .send({})
       .expect(404);
   });
 });

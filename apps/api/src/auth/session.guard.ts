@@ -7,6 +7,8 @@ import { verifySessionToken } from './tokens';
 /** What a guarded handler can rely on having. */
 export interface AuthedRequest extends Request {
   auth?: { userId: string; sessionId: string };
+  /** Set by `StaffGuard` when the caller is staff. */
+  staffRole?: 'REVIEWER' | 'ADMIN';
 }
 
 /**
