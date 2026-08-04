@@ -100,6 +100,28 @@ export interface AttemptResult {
   };
 }
 
+/** What a closed sitting looks like: the score, the breakdown, and every answer. */
+export interface SittingResult {
+  sittingId: string;
+  examName: string;
+  closedAt: string;
+  closeReason: string;
+  scoreCorrect: number;
+  answeredCount: number;
+  totalQuestions: number;
+  scorePct: number;
+  topics: {
+    topic: string;
+    asked: number;
+    correct: number;
+    scorePct: number;
+    weightPct: number | null;
+    weightedGapPct: number | null;
+  }[];
+  weakestTopic: string | null;
+  items: { position: number; answerView: AttemptResult['answerView'] }[];
+}
+
 export interface PracticeSummary {
   answered: number;
   correct: number;
@@ -195,6 +217,16 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  submitExam: (sittingId: string): Promise<unknown> =>
-    call(`/exams/sittings/${sittingId}/submit`, { method: 'POST', body: '{}' }),
+  submitExam: (sittingId: string): Promise<SittingResult> =>
+    call<SittingResult>(`/exams/sittings/${sittingId}/submit`, {
+      method: 'POST',
+      body: '{}',
+    }),
+
+  /**
+   * The full review. 409s while the sitting is open — the answers unlock at
+   * close and not a moment sooner, which is the whole of T-129.
+   */
+  examResult: (sittingId: string): Promise<SittingResult> =>
+    call<SittingResult>(`/exams/sittings/${sittingId}/result`),
 };

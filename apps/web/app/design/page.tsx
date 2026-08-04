@@ -4,6 +4,7 @@ import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
 import { ExamTimer } from '../../components/ExamTimer';
+import { ExamSummary } from '../../components/ExamSummary';
 import { JumpGridDemo } from './JumpGridDemo';
 import { Input } from '../../components/Input';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
@@ -292,6 +293,45 @@ export default function DesignSystemPage() {
       <Row title="Jump grid">
         <div id="jump-grid-demo">
           <JumpGridDemo />
+        </div>
+      </Row>
+      <Row title="Post-exam summary">
+        <div id="exam-summary-demo">
+          <ExamSummary
+            summary={{
+              scoreCorrect: 4,
+              answeredCount: 7,
+              totalQuestions: 8,
+              scorePct: 50,
+              weakestTopic: 'Algorithms',
+              topics: [
+                {
+                  topic: 'Algorithms',
+                  asked: 4,
+                  correct: 3,
+                  scorePct: 75,
+                  weightPct: 40,
+                  weightedGapPct: 10,
+                },
+                {
+                  topic: 'Databases',
+                  asked: 4,
+                  correct: 1,
+                  scorePct: 25,
+                  weightPct: 10,
+                  weightedGapPct: 7.5,
+                },
+                {
+                  topic: 'Networks',
+                  asked: 0,
+                  correct: 0,
+                  scorePct: 0,
+                  weightPct: null,
+                  weightedGapPct: null,
+                },
+              ],
+            }}
+          />
         </div>
       </Row>
     </main>

@@ -395,6 +395,32 @@ describe('sitting a mock exam', () => {
       expect(res.body.items[0].answerView.correctLabel).toBe('A');
     });
 
+    /**
+     * T-130's wiring. The ranking rule itself is proved in `exam-summary.test.ts`
+     * against hand-built papers, because a seed with one topic cannot tell weight
+     * × miss rate apart from raw misses. What this checks is that the breakdown
+     * reaches the response at all, built from the frozen grading rows.
+     */
+    it('comes back with a per-topic breakdown and a topic to revise', async () => {
+      const body = (
+        await request(app.getHttpServer())
+          .get(`/exams/sittings/${sittingId}/result`)
+          .set(student.auth)
+          .expect(200)
+      ).body;
+
+      expect(body.topics).toHaveLength(1);
+      expect(body.topics[0]).toMatchObject({
+        topic: 'Topic',
+        asked: 5,
+        correct: 1,
+        weightPct: 100,
+      });
+      // 100% of the paper, 80% of it missed.
+      expect(body.topics[0].weightedGapPct).toBe(80);
+      expect(body.weakestTopic).toBe('Topic');
+    });
+
     it('refuses further answers once closed', async () => {
       const res = await request(app.getHttpServer())
         .put(`/exams/sittings/${sittingId}/answers/2`)

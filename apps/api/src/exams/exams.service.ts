@@ -14,6 +14,7 @@ import { SUBSCRIPTION_ACCESS, type SubscriptionAccess } from '../practice/subscr
 import { toServedQuestion } from '../practice/question-view';
 import { toAnswerView, type AnswerView } from '../questions/answer-view';
 import { PrismaService } from '../prisma/prisma.service';
+import { summariseExam, type TopicBreakdown } from './exam-summary';
 import type { SittingItem, SittingManifest } from './exam-view';
 import {
   acceptsAnswer,
@@ -42,6 +43,10 @@ export interface SittingResultView {
   answeredCount: number;
   totalQuestions: number;
   scorePct: number;
+  /** Per-topic breakdown, costliest first (T-130). */
+  topics: TopicBreakdown[];
+  /** The topic to revise first, by weight × miss rate. Null if nothing was asked. */
+  weakestTopic: string | null;
   items: { position: number; answerView: AnswerView }[];
 }
 
@@ -376,6 +381,7 @@ export class ExamsService {
       include: {
         options: { orderBy: { label: 'asc' } },
         steps: { orderBy: { stepNo: 'asc' } },
+        topic: { select: { name: true, weightPct: true } },
       },
     });
     const byId = new Map(questions.map((q) => [q.id, q]));
@@ -389,6 +395,22 @@ export class ExamsService {
     const total = slots.length;
     const correct = sitting.scoreCorrect ?? 0;
 
+    // The breakdown is built from the frozen grading rows, not from re-marking
+    // the answers here. `isCorrect` was decided once, at close, against the key
+    // as it stood then — recomputing it now would let a later edit to a question
+    // change a sitting a student has already seen.
+    const summary = summariseExam(
+      slots.map((slot) => {
+        const question = byId.get(slot.questionId)!;
+        const graded = results.find((r) => r.questionId === slot.questionId);
+        return {
+          topic: question.topic?.name ?? 'Unsorted',
+          weightPct: question.topic?.weightPct?.toNumber() ?? null,
+          isCorrect: graded?.isCorrect ?? false,
+        };
+      }),
+    );
+
     return {
       sittingId: sitting.id,
       examName: exam.name,
@@ -398,6 +420,8 @@ export class ExamsService {
       answeredCount: sitting.answeredCount ?? 0,
       totalQuestions: total,
       scorePct: total === 0 ? 0 : Math.round((correct / total) * 1000) / 10,
+      topics: summary.topics,
+      weakestTopic: summary.weakestTopic,
       items,
     };
   }

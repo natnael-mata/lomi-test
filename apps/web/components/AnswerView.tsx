@@ -33,8 +33,14 @@ export interface AnswerViewData {
 export interface AnswerViewProps {
   answer: AnswerViewData;
   isCorrect: boolean;
-  pacing: string;
-  timeTakenSec: number;
+  /**
+   * Practice only. A mock exam is one three-hour block, not a hundred per-question
+   * budgets, so there is no per-question time to report and both of these are
+   * omitted — showing `0:00 / 1:00` beside a question somebody spent four minutes
+   * on would be a made-up number on the screen a student trusts most.
+   */
+  pacing?: string;
+  timeTakenSec?: number;
 }
 
 /**
@@ -59,7 +65,8 @@ function clock(seconds: number): string {
 }
 
 export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerViewProps) {
-  const verdict = verdictFor(isCorrect, pacing);
+  const timed = pacing !== undefined && timeTakenSec !== undefined;
+  const verdict = verdictFor(isCorrect, pacing ?? 'within');
   const whyWrongs = orderWhyWrongs(answer.options, answer.chosenLabel);
   const isCalculation = answer.qType === 'CALCULATION';
 
@@ -75,9 +82,11 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
         className={`${VERDICT_CLASS[verdict]} rounded-card animate-pop flex items-center justify-between gap-3 p-4`}
       >
         <span className="text-label">{verdictWord(verdict)}</span>
-        <span className="text-label num">
-          {clock(timeTakenSec)} / {clock(answer.timeLimitSec)}
-        </span>
+        {timed && (
+          <span className="text-label num">
+            {clock(timeTakenSec)} / {clock(answer.timeLimitSec)}
+          </span>
+        )}
       </section>
 
       {/* 2 — concept line: the one thing to remember */}

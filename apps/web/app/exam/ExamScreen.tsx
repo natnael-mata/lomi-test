@@ -18,13 +18,20 @@ import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
 import { ExamTimer } from '../../components/ExamTimer';
 import { JumpGrid } from '../../components/JumpGrid';
-import { ApiError, api, type SittingItem, type SittingManifest } from '../../lib/api';
+import { ExamReview } from './ExamReview';
+import {
+  ApiError,
+  api,
+  type SittingItem,
+  type SittingManifest,
+  type SittingResult,
+} from '../../lib/api';
 
 type Phase =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'sitting' }
-  | { kind: 'closed' }
+  | { kind: 'closed'; result: SittingResult | null }
   | { kind: 'error'; message: string; code: string | null };
 
 export function ExamScreen() {
@@ -71,7 +78,16 @@ export function ExamScreen() {
         setItem(next);
         setManifest(shape);
         applyClock(next.clock);
-        setPhase(shape.clock.state === 'closed' ? { kind: 'closed' } : { kind: 'sitting' });
+        if (shape.clock.state === 'closed') {
+          setSittingId(id);
+          setPhase({ kind: 'closed', result: null });
+          void api.examResult(id).then(
+            (result) => setPhase({ kind: 'closed', result }),
+            () => undefined,
+          );
+          return;
+        }
+        setPhase({ kind: 'sitting' });
       } catch (e) {
         fail(e);
       }
@@ -109,7 +125,7 @@ export function ExamScreen() {
       // Running out mid-answer is not an error state — the sitting closed and
       // the earlier answers are safe. Say so rather than showing a stack.
       if (e instanceof ApiError && (e.code === 'SITTING_EXPIRED' || e.code === 'SITTING_CLOSED')) {
-        setPhase({ kind: 'closed' });
+        await showResult();
         return;
       }
       fail(e);
@@ -118,11 +134,31 @@ export function ExamScreen() {
     }
   };
 
+  /**
+   * Reads the closed sitting back rather than trusting the submit response.
+   *
+   * The sitting also closes without a submit — the deadline passes, or a stale
+   * one is swept — and both paths land here, so the review is fetched the same
+   * way every time. If the fetch fails the screen still says the sitting ended
+   * rather than showing an error over answers that were saved perfectly well.
+   */
+  const showResult = async (): Promise<void> => {
+    if (!sittingId) {
+      setPhase({ kind: 'closed', result: null });
+      return;
+    }
+    try {
+      setPhase({ kind: 'closed', result: await api.examResult(sittingId) });
+    } catch {
+      setPhase({ kind: 'closed', result: null });
+    }
+  };
+
   const submit = async (): Promise<void> => {
     if (!sittingId) return;
     try {
       await api.submitExam(sittingId);
-      setPhase({ kind: 'closed' });
+      await showResult();
     } catch (e) {
       fail(e);
     }
@@ -160,14 +196,17 @@ export function ExamScreen() {
   }
 
   if (phase.kind === 'closed') {
-    return (
-      <Card data-state="closed">
-        <h1 className="text-title">Sitting finished</h1>
-        <p className="text-body text-ink-2 mt-2">
-          Your answers are recorded. The full review, with every explanation, opens next.
-        </p>
-      </Card>
-    );
+    if (!phase.result) {
+      return (
+        <Card data-state="closed">
+          <h1 className="text-title">Sitting finished</h1>
+          <p className="text-body text-ink-2 mt-2">
+            Your answers are recorded. The review is on its way.
+          </p>
+        </Card>
+      );
+    }
+    return <ExamReview result={phase.result} />;
   }
 
   if (!item || !manifest || !sittingId) return null;
