@@ -3,6 +3,8 @@ import { AnswerView } from '../../components/AnswerView';
 import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
+import { ExamTimer } from '../../components/ExamTimer';
+import { JumpGridDemo } from './JumpGridDemo';
 import { Input } from '../../components/Input';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { StatedFigure } from '../../components/StatedFigure';
@@ -273,6 +275,23 @@ export default function DesignSystemPage() {
               'SELECT student_id, AVG(score) AS mean_score FROM attempts WHERE field_id = $1 GROUP BY student_id HAVING COUNT(*) > 10 ORDER BY mean_score DESC;'
             }
           />
+        </div>
+      </Row>
+      <Row title="Exam timer — the three states">
+        <div id="timer-normal">
+          <ExamTimer remainingSec={10800} durationSec={10800} />
+        </div>
+        <div id="timer-warning">
+          <ExamTimer remainingSec={1800} durationSec={10800} />
+        </div>
+        <div id="timer-critical">
+          <ExamTimer remainingSec={240} durationSec={10800} />
+        </div>
+      </Row>
+
+      <Row title="Jump grid">
+        <div id="jump-grid-demo">
+          <JumpGridDemo />
         </div>
       </Row>
     </main>

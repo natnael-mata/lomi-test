@@ -590,3 +590,139 @@ describe('a mock is behind the paywall', () => {
     expect(await prisma.sitting.count({ where: { userId: student.userId } })).toBe(0);
   });
 });
+
+describe('navigating the paper (T-125, T-126)', () => {
+  const SFX = 'e2e-navigate';
+  const TG = 566000003;
+
+  let app: INestApplication;
+  let prisma: PrismaService;
+  let student: StaffSession;
+  let fieldId = '';
+  let sittingId = '';
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(SUBSCRIPTION_ACCESS)
+      .useClass(AlwaysSubscribed)
+      .compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    prisma = app.get(PrismaService);
+    await wipe(prisma, SFX, TG);
+
+    fieldId = await seedBank(prisma, SFX, 3, 2);
+    student = await signInAsStaff(app, prisma, TG, 'ADMIN', SFX);
+    await request(app.getHttpServer())
+      .post('/admin/exams')
+      .set(student.auth)
+      .send({ fieldId, blueprint: { conceptCount: 3, calculationCount: 2, durationSec: 600 } })
+      .expect(201);
+    await prisma.user.update({ where: { id: student.userId }, data: { fieldId } });
+
+    sittingId = (
+      await request(app.getHttpServer())
+        .post(`/exams/${fieldId}/start`)
+        .set(student.auth)
+        .send({})
+        .expect(201)
+    ).body.sittingId;
+  });
+
+  afterAll(async () => {
+    await wipe(prisma, SFX, TG);
+    await app.close();
+  });
+
+  /**
+   * T-125: the selection survives navigation.
+   *
+   * The screen keeps one question on screen at a time, so "go to question 4 and
+   * come back" is the ordinary way to use it, not an edge case. Nothing is held
+   * in the client — each answer is written as it is made — and this is the test
+   * that the server is really where it lives.
+   */
+  it('preserves each question’s selection across navigating away and back', async () => {
+    const put = (position: number, body: Record<string, unknown>) =>
+      request(app.getHttpServer())
+        .put(`/exams/sittings/${sittingId}/answers/${position}`)
+        .set(student.auth)
+        .send(body)
+        .expect(200);
+    const get = async (position: number) =>
+      (
+        await request(app.getHttpServer())
+          .get(`/exams/sittings/${sittingId}/paper/${position}`)
+          .set(student.auth)
+          .expect(200)
+      ).body;
+
+    await put(2, { chosenLabel: 'b' });
+    await put(4, { chosenLabel: 'd' });
+
+    // Walk the paper the way a student would, past both answered questions.
+    for (const position of [3, 4, 5, 1, 2]) await get(position);
+
+    expect((await get(2)).chosenLabel).toBe('B');
+    expect((await get(4)).chosenLabel).toBe('D');
+    // Untouched questions stay untouched — a selection belongs to its question.
+    expect((await get(3)).chosenLabel).toBeNull();
+  });
+
+  /**
+   * T-126: a flag survives navigation and a reload.
+   *
+   * "Reload" here is a fresh start request, which is what the app does when the
+   * tab is reopened: it rejoins the sitting already in flight. A flag lost to a
+   * dropped connection is a question the student meant to come back to and now
+   * never will.
+   */
+  it('keeps flags across navigation and a reload, without disturbing answers', async () => {
+    await request(app.getHttpServer())
+      .put(`/exams/sittings/${sittingId}/answers/3`)
+      .set(student.auth)
+      .send({ chosenLabel: 'c' })
+      .expect(200);
+
+    // Flagging sends no `chosenLabel`. If the handler wrote the whole row rather
+    // than the fields it was given, this is where the answer would disappear.
+    await request(app.getHttpServer())
+      .put(`/exams/sittings/${sittingId}/answers/3`)
+      .set(student.auth)
+      .send({ isFlagged: true })
+      .expect(200);
+
+    const rejoined = (
+      await request(app.getHttpServer())
+        .post(`/exams/${fieldId}/start`)
+        .set(student.auth)
+        .send({})
+        .expect(201)
+    ).body;
+    expect(rejoined.sittingId).toBe(sittingId);
+
+    const item = (
+      await request(app.getHttpServer())
+        .get(`/exams/sittings/${rejoined.sittingId}/paper/3`)
+        .set(student.auth)
+        .expect(200)
+    ).body;
+    expect(item.flagged).toBe(true);
+    expect(item.chosenLabel).toBe('C');
+
+    // And it un-flags without taking the answer with it.
+    await request(app.getHttpServer())
+      .put(`/exams/sittings/${sittingId}/answers/3`)
+      .set(student.auth)
+      .send({ isFlagged: false })
+      .expect(200);
+    const after = (
+      await request(app.getHttpServer())
+        .get(`/exams/sittings/${sittingId}/paper/3`)
+        .set(student.auth)
+        .expect(200)
+    ).body;
+    expect(after.flagged).toBe(false);
+    expect(after.chosenLabel).toBe('C');
+  });
+});
