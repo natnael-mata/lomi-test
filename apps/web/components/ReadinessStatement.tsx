@@ -12,6 +12,7 @@
  * could redo the addition themselves.
  */
 import { Chip } from './Chip';
+import { PracticeCta } from './PracticeCta';
 import { StatedFigure } from './StatedFigure';
 import { elidedLabel, PASS_SAFE_PCT, type ReadinessStatement as Statement } from './readiness';
 
@@ -19,6 +20,12 @@ export interface ReadinessStatementProps {
   statement: Statement;
   /** How the headline was derived, for the stated figure's chip. */
   derivation?: string | undefined;
+  /**
+   * The topic to practise next (T-139). DESIGN.md: "Every statement ends in a
+   * practice action" — a screen that diagnoses a student and stops has done
+   * half the job.
+   */
+  practiceNext?: { topicId: string; topicName: string } | null;
 }
 
 function Bar({ pct, pending }: { pct: number; pending: boolean }) {
@@ -32,7 +39,11 @@ function Bar({ pct, pending }: { pct: number; pending: boolean }) {
   );
 }
 
-export function ReadinessStatement({ statement, derivation }: ReadinessStatementProps) {
+export function ReadinessStatement({
+  statement,
+  derivation,
+  practiceNext,
+}: ReadinessStatementProps) {
   const { rows, elided, headlinePct } = statement;
   const listedCount = rows.length + (elided ? 1 : 0);
 
@@ -82,6 +93,11 @@ export function ReadinessStatement({ statement, derivation }: ReadinessStatement
           </li>
         )}
       </ul>
+
+      <PracticeCta
+        topicId={practiceNext?.topicId ?? null}
+        topicName={practiceNext?.topicName ?? null}
+      />
     </div>
   );
 }

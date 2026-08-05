@@ -5,6 +5,7 @@ import { pickWeakestTopic, summariseExam, type ResultRow } from './exam-summary'
 /** `n` questions in `topic` at `weight`, of which `correct` were right. */
 const rows = (topic: string, weight: number | null, asked: number, correct: number): ResultRow[] =>
   Array.from({ length: asked }, (_, i) => ({
+    topicId: `id-${topic}`,
     topic,
     weightPct: weight,
     isCorrect: i < correct,
@@ -42,6 +43,18 @@ describe('the post-exam summary (T-130)', () => {
     };
     expect(misses('Databases')).toBeGreaterThan(misses('Algorithms'));
     expect(s.weakestTopic).toBe('Algorithms');
+  });
+
+  // T-139's CTA targets a topic by id, so the summary has to carry one.
+  it('carries each topic’s id, and names the weakest one by id too', () => {
+    const s = summariseExam([...rows('Algorithms', 40, 4, 3), ...rows('Databases', 10, 4, 1)]);
+    expect(s.topics.every((t) => t.topicId.length > 0)).toBe(true);
+    expect(s.weakestTopic).toBe('Algorithms');
+    expect(s.weakestTopicId).toBe('id-Algorithms');
+  });
+
+  it('names no weakest id when nothing was asked', () => {
+    expect(summariseExam([]).weakestTopicId).toBeNull();
   });
 
   it('reports what each topic cost, in marks off the whole paper', () => {
@@ -116,8 +129,24 @@ describe('the post-exam summary (T-130)', () => {
     it('directly ranks a hand-built breakdown by cost', () => {
       expect(
         pickWeakestTopic([
-          { topic: 'Low', asked: 9, correct: 0, scorePct: 0, weightPct: 1, weightedGapPct: 1 },
-          { topic: 'High', asked: 2, correct: 1, scorePct: 50, weightPct: 80, weightedGapPct: 40 },
+          {
+            topicId: 'id-Low',
+            topic: 'Low',
+            asked: 9,
+            correct: 0,
+            scorePct: 0,
+            weightPct: 1,
+            weightedGapPct: 1,
+          },
+          {
+            topicId: 'id-High',
+            topic: 'High',
+            asked: 2,
+            correct: 1,
+            scorePct: 50,
+            weightPct: 80,
+            weightedGapPct: 40,
+          },
         ]),
       ).toBe('High');
     });

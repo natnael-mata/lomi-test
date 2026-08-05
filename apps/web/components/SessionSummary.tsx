@@ -7,6 +7,7 @@
  */
 import { Card } from './Card';
 import { Chip } from './Chip';
+import { PracticeCta } from './PracticeCta';
 import { StatedFigure } from './StatedFigure';
 import { PASS_SAFE_PCT } from './readiness';
 
@@ -15,6 +16,7 @@ export interface SessionSummaryData {
   correct: number;
   scorePct: number;
   topics: {
+    topicId: string;
     topic: string;
     answered: number;
     correct: number;
@@ -22,6 +24,8 @@ export interface SessionSummaryData {
     weightPct: number | null;
   }[];
   weakestTopic: string | null;
+  /** Its id, so the CTA can target it (T-139). */
+  weakestTopicId: string | null;
 }
 
 export function SessionSummary({ summary }: { summary: SessionSummaryData }) {
@@ -76,6 +80,9 @@ export function SessionSummary({ summary }: { summary: SessionSummaryData }) {
           );
         })}
       </ul>
+
+      {/* T-139: the summary ends in the action it implies. */}
+      <PracticeCta topicId={summary.weakestTopicId} topicName={summary.weakestTopic} />
     </div>
   );
 }

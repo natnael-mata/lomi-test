@@ -17,6 +17,7 @@
  */
 
 export interface ResultRow {
+  topicId: string;
   topic: string;
   /** The topic's share of past papers, 0–100, or null if it is unweighted. */
   weightPct: number | null;
@@ -24,6 +25,8 @@ export interface ResultRow {
 }
 
 export interface TopicBreakdown {
+  /** Carried so the practice CTA can target this topic by id (T-139). */
+  topicId: string;
   topic: string;
   asked: number;
   correct: number;
@@ -44,6 +47,8 @@ export interface ExamSummary {
   correct: number;
   scorePct: number;
   topics: TopicBreakdown[];
+  /** The id of `weakestTopic`, for the CTA's href (T-139). */
+  weakestTopicId: string | null;
   /**
    * The topic to revise first, or `null` when nothing was asked.
    *
@@ -95,10 +100,18 @@ export function pickWeakestTopic(topics: readonly TopicBreakdown[]): string | nu
 }
 
 export function summariseExam(rows: readonly ResultRow[]): ExamSummary {
-  const byTopic = new Map<string, { asked: number; correct: number; weightPct: number | null }>();
+  const byTopic = new Map<
+    string,
+    { topicId: string; asked: number; correct: number; weightPct: number | null }
+  >();
 
   for (const row of rows) {
-    const acc = byTopic.get(row.topic) ?? { asked: 0, correct: 0, weightPct: row.weightPct };
+    const acc = byTopic.get(row.topic) ?? {
+      topicId: row.topicId,
+      asked: 0,
+      correct: 0,
+      weightPct: row.weightPct,
+    };
     acc.asked += 1;
     if (row.isCorrect) acc.correct += 1;
     // A weight arriving on any question for the topic is the topic's weight.
@@ -110,6 +123,7 @@ export function summariseExam(rows: readonly ResultRow[]): ExamSummary {
     .map(([topic, acc]) => {
       const missRate = acc.asked === 0 ? 0 : (acc.asked - acc.correct) / acc.asked;
       return {
+        topicId: acc.topicId,
         topic,
         asked: acc.asked,
         correct: acc.correct,
@@ -126,12 +140,14 @@ export function summariseExam(rows: readonly ResultRow[]): ExamSummary {
     );
 
   const correct = rows.filter((r) => r.isCorrect).length;
+  const weakest = pickWeakestTopic(topics);
 
   return {
     asked: rows.length,
     correct,
     scorePct: pct(correct, rows.length),
     topics,
-    weakestTopic: pickWeakestTopic(topics),
+    weakestTopic: weakest,
+    weakestTopicId: topics.find((t) => t.topic === weakest)?.topicId ?? null,
   };
 }

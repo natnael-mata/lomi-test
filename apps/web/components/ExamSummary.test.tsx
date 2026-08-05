@@ -40,8 +40,10 @@ const summary: ExamSummaryData = {
   totalQuestions: 8,
   scorePct: 50,
   weakestTopic: 'Algorithms',
+  weakestTopicId: 'id-Algorithms',
   topics: [
     {
+      topicId: 'id-Algorithms',
       topic: 'Algorithms',
       asked: 4,
       correct: 3,
@@ -50,6 +52,7 @@ const summary: ExamSummaryData = {
       weightedGapPct: 10,
     },
     {
+      topicId: 'id-Databases',
       topic: 'Databases',
       asked: 4,
       correct: 1,
@@ -74,6 +77,7 @@ describe('ExamSummary (T-130)', () => {
           totalQuestions: 0,
           scorePct: 0,
           weakestTopic: null,
+          weakestTopicId: null,
           topics: [],
         },
       }),

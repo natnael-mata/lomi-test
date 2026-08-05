@@ -14,10 +14,11 @@ const summary = (over: Partial<SessionSummaryData> = {}): SessionSummaryData => 
   correct: 6,
   scorePct: 60,
   topics: [
-    { topic: 'VAT', answered: 4, correct: 1, scorePct: 25, weightPct: 20 },
-    { topic: 'Audit', answered: 6, correct: 5, scorePct: 83.3, weightPct: 50 },
+    { topicId: 'id-VAT', topic: 'VAT', answered: 4, correct: 1, scorePct: 25, weightPct: 20 },
+    { topicId: 'id-Audit', topic: 'Audit', answered: 6, correct: 5, scorePct: 83.3, weightPct: 50 },
   ],
   weakestTopic: 'VAT',
+  weakestTopicId: 'id-VAT',
   ...over,
 });
 
@@ -60,8 +61,18 @@ describe('SessionSummary (T-118)', () => {
     expect(() =>
       SessionSummary({
         summary: summary({
-          topics: [{ topic: 'New', answered: 1, correct: 0, scorePct: 0, weightPct: null }],
+          topics: [
+            {
+              topicId: 'id-New',
+              topic: 'New',
+              answered: 1,
+              correct: 0,
+              scorePct: 0,
+              weightPct: null,
+            },
+          ],
           weakestTopic: 'New',
+          weakestTopicId: 'id-New',
         }),
       }),
     ).not.toThrow();

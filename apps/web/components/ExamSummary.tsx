@@ -14,9 +14,11 @@
  */
 import { Card } from './Card';
 import { Chip } from './Chip';
+import { PracticeCta } from './PracticeCta';
 import { StatedFigure } from './StatedFigure';
 
 export interface ExamTopicRow {
+  topicId: string;
   topic: string;
   asked: number;
   correct: number;
@@ -32,6 +34,8 @@ export interface ExamSummaryData {
   answeredCount: number;
   topics: ExamTopicRow[];
   weakestTopic: string | null;
+  /** Its id, so the CTA can target it (T-139). */
+  weakestTopicId: string | null;
 }
 
 export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
@@ -98,6 +102,9 @@ export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
           of it you missed, not the number of misses.
         </p>
       )}
+
+      {/* T-139: the summary ends in the action it implies. */}
+      <PracticeCta topicId={summary.weakestTopicId} topicName={summary.weakestTopic} />
     </div>
   );
 }

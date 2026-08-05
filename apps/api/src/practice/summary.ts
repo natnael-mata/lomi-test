@@ -10,6 +10,7 @@
  */
 
 export interface AttemptRow {
+  topicId: string;
   topic: string;
   /** The topic's share of past papers, 0–100, or null if it is unweighted. */
   weightPct: number | null;
@@ -17,6 +18,8 @@ export interface AttemptRow {
 }
 
 export interface TopicSummary {
+  /** Carried so the practice CTA can target this topic by id (T-139). */
+  topicId: string;
   topic: string;
   answered: number;
   correct: number;
@@ -37,6 +40,8 @@ export interface PracticeSummary {
    * next thing to work on is a study plan.
    */
   weakestTopic: string | null;
+  /** Its id, for the CTA's href (T-139). */
+  weakestTopicId: string | null;
 }
 
 const pct = (correct: number, answered: number): number =>
@@ -70,11 +75,12 @@ export function pickWeakestTopic(topics: readonly TopicSummary[]): string | null
 export function summarise(attempts: readonly AttemptRow[]): PracticeSummary {
   const byTopic = new Map<
     string,
-    { answered: number; correct: number; weightPct: number | null }
+    { topicId: string; answered: number; correct: number; weightPct: number | null }
   >();
 
   for (const attempt of attempts) {
     const row = byTopic.get(attempt.topic) ?? {
+      topicId: attempt.topicId,
       answered: 0,
       correct: 0,
       weightPct: attempt.weightPct,
@@ -88,6 +94,7 @@ export function summarise(attempts: readonly AttemptRow[]): PracticeSummary {
 
   const topics: TopicSummary[] = [...byTopic.entries()]
     .map(([topic, row]) => ({
+      topicId: row.topicId,
       topic,
       answered: row.answered,
       correct: row.correct,
@@ -99,12 +106,14 @@ export function summarise(attempts: readonly AttemptRow[]): PracticeSummary {
     .sort((a, b) => a.scorePct - b.scorePct || a.topic.localeCompare(b.topic));
 
   const correct = attempts.filter((a) => a.isCorrect).length;
+  const weakest = pickWeakestTopic(topics);
 
   return {
     answered: attempts.length,
     correct,
     scorePct: pct(correct, attempts.length),
     topics,
-    weakestTopic: pickWeakestTopic(topics),
+    weakestTopic: weakest,
+    weakestTopicId: topics.find((t) => t.topic === weakest)?.topicId ?? null,
   };
 }

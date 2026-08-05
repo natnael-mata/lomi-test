@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { pickWeakestTopic, summarise, type AttemptRow, type TopicSummary } from './summary';
 
 const a = (topic: string, isCorrect: boolean, weightPct: number | null = 10): AttemptRow => ({
+  topicId: `id-${topic}`,
   topic,
   weightPct,
   isCorrect,
@@ -23,8 +24,15 @@ describe('summarise (T-118)', () => {
       a('Payroll', true),
     ]);
     expect(s.topics).toEqual([
-      { topic: 'VAT', answered: 2, correct: 1, scorePct: 50, weightPct: 10 },
-      { topic: 'Payroll', answered: 3, correct: 3, scorePct: 100, weightPct: 10 },
+      { topicId: 'id-VAT', topic: 'VAT', answered: 2, correct: 1, scorePct: 50, weightPct: 10 },
+      {
+        topicId: 'id-Payroll',
+        topic: 'Payroll',
+        answered: 3,
+        correct: 3,
+        scorePct: 100,
+        weightPct: 10,
+      },
     ]);
   });
 
@@ -47,7 +55,14 @@ describe('summarise (T-118)', () => {
 
   it('is empty and safe before anything is answered', () => {
     const s = summarise([]);
-    expect(s).toEqual({ answered: 0, correct: 0, scorePct: 0, topics: [], weakestTopic: null });
+    expect(s).toEqual({
+      answered: 0,
+      correct: 0,
+      scorePct: 0,
+      topics: [],
+      weakestTopic: null,
+      weakestTopicId: null,
+    });
   });
 
   it('picks up a topic weight from any attempt that carries it', () => {
@@ -83,6 +98,7 @@ describe('the task’s own test — ten answers', () => {
 
 describe('pickWeakestTopic', () => {
   const t = (topic: string, scorePct: number, weightPct: number | null): TopicSummary => ({
+    topicId: `id-${topic}`,
     topic,
     scorePct,
     weightPct,
@@ -120,5 +136,18 @@ describe('pickWeakestTopic', () => {
     const topics = [t('B', 20, 10), t('A', 80, 10)];
     pickWeakestTopic(topics);
     expect(topics.map((x) => x.topic)).toEqual(['B', 'A']);
+  });
+});
+
+// T-139's CTA targets a topic by id, so the summary has to carry one.
+describe('the topic to practise next, by id (T-139)', () => {
+  it('names the weakest topic by id as well as by name', () => {
+    const s = summarise([a('Tax', false), a('Tax', false), a('Audit', true)]);
+    expect(s.weakestTopic).toBe('Tax');
+    expect(s.weakestTopicId).toBe('id-Tax');
+  });
+
+  it('has no id to give when nothing has been answered', () => {
+    expect(summarise([]).weakestTopicId).toBeNull();
   });
 });

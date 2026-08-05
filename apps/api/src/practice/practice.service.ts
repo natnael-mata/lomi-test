@@ -242,6 +242,7 @@ export class PracticeService {
       where: { userId, fieldId: user.fieldId, createdAt: { gte: startOfToday() } },
       select: {
         isCorrect: true,
+        topicId: true,
         topic: { select: { name: true, weightPct: true } },
       },
       orderBy: { createdAt: 'asc' },
@@ -249,6 +250,7 @@ export class PracticeService {
 
     return summarise(
       attempts.map((a) => ({
+        topicId: a.topicId,
         topic: a.topic.name,
         weightPct: a.topic.weightPct?.toNumber() ?? null,
         isCorrect: a.isCorrect,

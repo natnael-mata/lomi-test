@@ -111,6 +111,7 @@ export interface SittingResult {
   totalQuestions: number;
   scorePct: number;
   topics: {
+    topicId: string;
     topic: string;
     asked: number;
     correct: number;
@@ -119,6 +120,7 @@ export interface SittingResult {
     weightedGapPct: number | null;
   }[];
   weakestTopic: string | null;
+  weakestTopicId: string | null;
   items: { position: number; answerView: AttemptResult['answerView'] }[];
 }
 
@@ -127,6 +129,7 @@ export interface PracticeSummary {
   correct: number;
   scorePct: number;
   topics: {
+    topicId: string;
     topic: string;
     answered: number;
     correct: number;
@@ -134,6 +137,45 @@ export interface PracticeSummary {
     weightPct: number | null;
   }[];
   weakestTopic: string | null;
+  weakestTopicId: string | null;
+}
+
+/** A student's readiness in a field (T-135–T-137). */
+export interface Readiness {
+  fieldId: string;
+  fieldName: string;
+  headlinePct: number | null;
+  assessedWeightPct: number;
+  unassessedWeightPct: number;
+  totalAnswered: number;
+  unansweredInMocks: number;
+  topics: {
+    topicId: string;
+    topicName: string;
+    weightPct: number;
+    weightSource: 'derived' | 'override';
+    answered: number;
+    correct: number;
+    scorePct: number | null;
+    focus: boolean;
+  }[];
+  focus: { topicId: string; topicName: string; weightPct: number; scorePct: number | null }[];
+  /** The topic the CTA targets (T-139). */
+  practiceNext: { topicId: string; topicName: string } | null;
+}
+
+/** One mock sitting on the trend (T-138). Labelled "Mock 1", never by date. */
+export interface TrendPoint {
+  sittingId: string;
+  startedAt: string;
+  ordinal: number;
+  label: string;
+  scorePct: number;
+  scoreCorrect: number;
+  totalQuestions: number;
+  answeredCount: number;
+  unanswered: number;
+  ranOutOfTime: boolean;
 }
 
 export interface SittingClock {
@@ -229,4 +271,8 @@ export const api = {
    */
   examResult: (sittingId: string): Promise<SittingResult> =>
     call<SittingResult>(`/exams/sittings/${sittingId}/result`),
+
+  readiness: (fieldId: string): Promise<Readiness> => call<Readiness>(`/me/readiness/${fieldId}`),
+
+  trend: (fieldId: string): Promise<TrendPoint[]> => call<TrendPoint[]>(`/me/trend/${fieldId}`),
 };

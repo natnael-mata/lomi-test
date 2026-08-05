@@ -5,6 +5,7 @@ import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
 import { ExamTimer } from '../../components/ExamTimer';
 import { ExamSummary } from '../../components/ExamSummary';
+import { ScoreTrend } from '../../components/ScoreTrend';
 import { JumpGridDemo } from './JumpGridDemo';
 import { Input } from '../../components/Input';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
@@ -304,8 +305,10 @@ export default function DesignSystemPage() {
               totalQuestions: 8,
               scorePct: 50,
               weakestTopic: 'Algorithms',
+              weakestTopicId: 'id-Algorithms',
               topics: [
                 {
+                  topicId: 'id-Algorithms',
                   topic: 'Algorithms',
                   asked: 4,
                   correct: 3,
@@ -314,6 +317,7 @@ export default function DesignSystemPage() {
                   weightedGapPct: 10,
                 },
                 {
+                  topicId: 'id-Databases',
                   topic: 'Databases',
                   asked: 4,
                   correct: 1,
@@ -322,6 +326,7 @@ export default function DesignSystemPage() {
                   weightedGapPct: 7.5,
                 },
                 {
+                  topicId: 'id-Networks',
                   topic: 'Networks',
                   asked: 0,
                   correct: 0,
@@ -331,6 +336,41 @@ export default function DesignSystemPage() {
                 },
               ],
             }}
+          />
+        </div>
+      </Row>
+      <Row title="Mock score trend">
+        <div id="score-trend-demo">
+          <ScoreTrend
+            points={[
+              {
+                sittingId: 's1',
+                label: 'Mock 1',
+                scorePct: 41,
+                scoreCorrect: 41,
+                totalQuestions: 100,
+                unanswered: 0,
+                ranOutOfTime: false,
+              },
+              {
+                sittingId: 's2',
+                label: 'Mock 2',
+                scorePct: 38,
+                scoreCorrect: 38,
+                totalQuestions: 100,
+                unanswered: 22,
+                ranOutOfTime: true,
+              },
+              {
+                sittingId: 's3',
+                label: 'Mock 3',
+                scorePct: 63,
+                scoreCorrect: 63,
+                totalQuestions: 100,
+                unanswered: 0,
+                ranOutOfTime: false,
+              },
+            ]}
           />
         </div>
       </Row>

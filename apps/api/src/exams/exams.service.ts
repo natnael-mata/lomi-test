@@ -47,6 +47,8 @@ export interface SittingResultView {
   topics: TopicBreakdown[];
   /** The topic to revise first, by weight × miss rate. Null if nothing was asked. */
   weakestTopic: string | null;
+  /** Its id, so the practice CTA can target it (T-139). */
+  weakestTopicId: string | null;
   items: { position: number; answerView: AnswerView }[];
 }
 
@@ -404,6 +406,7 @@ export class ExamsService {
         const question = byId.get(slot.questionId)!;
         const graded = results.find((r) => r.questionId === slot.questionId);
         return {
+          topicId: question.topicId,
           topic: question.topic?.name ?? 'Unsorted',
           weightPct: question.topic?.weightPct?.toNumber() ?? null,
           isCorrect: graded?.isCorrect ?? false,
@@ -422,6 +425,7 @@ export class ExamsService {
       scorePct: total === 0 ? 0 : Math.round((correct / total) * 1000) / 10,
       topics: summary.topics,
       weakestTopic: summary.weakestTopic,
+      weakestTopicId: summary.weakestTopicId,
       items,
     };
   }
