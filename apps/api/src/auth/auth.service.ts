@@ -69,8 +69,40 @@ export class AuthService {
   async signInWithTelegram(initData: string, deviceLabel?: string): Promise<SignInResult> {
     const verified = verifyInitData(initData, this.botToken);
     if (!verified.ok) throw new UnauthorizedException(verified.reason);
+    return this.signInWithTelegramId(verified.user, deviceLabel);
+  }
 
-    const { user, isNew } = await this.findOrCreateTelegramUser(verified.user);
+  /**
+   * Signs in from a Telegram identity that has **already been proved**.
+   *
+   * Split out for the deep-link login (T-077), where the proof arrives at the
+   * bot rather than at this process: Telegram delivered the update to the bot,
+   * so there is no `initData` to check here and nothing would be gained by
+   * inventing one.
+   *
+   * **This method trusts its argument completely**, which is why it is not
+   * reachable from any student-facing route. Everything that calls it must have
+   * established the identity first — `signInWithTelegram` by checking the HMAC,
+   * `LoginLinkService.claim` by reading it off a row only the bot can write.
+   * Handing it a caller-supplied id would be an account-takeover endpoint.
+   */
+  async signInWithTelegramId(
+    profile: {
+      id: string;
+      username?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+    },
+    deviceLabel?: string,
+  ): Promise<SignInResult> {
+    const { user, isNew } = await this.findOrCreateTelegramUser({
+      id: profile.id,
+      username: profile.username ?? null,
+      firstName: profile.firstName ?? null,
+      lastName: profile.lastName ?? null,
+      languageCode: null,
+      isPremium: false,
+    });
     const session = await this.startSession(user.id, deviceLabel);
 
     return {

@@ -23,6 +23,11 @@ export default tseslint.config(
       '**/.pgdata/**',
       '**/generated/**',
       'apps/web/next-env.d.ts',
+      // Worktrees created for spawned side-tasks. They are whole checkouts of
+      // this repo, so without this every one of them doubles the lint surface —
+      // and a generated file in someone else's branch fails the parent's
+      // baseline, which reads as "my change broke lint".
+      '**/.claude/worktrees/**',
     ],
   },
 

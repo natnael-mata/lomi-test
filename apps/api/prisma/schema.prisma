@@ -791,3 +791,52 @@ model TopicWeightOverride {
 
   @@index([topicId])
 }
+
+/// One attempt to sign in on the web via the Telegram bot (T-075–T-078).
+///
+/// The row exists so a sign-in is a *fact the server owns*, not a claim either
+/// side makes. The browser holds `pollSecret` and never puts it in the deep
+/// link; the bot supplies the Telegram identity and never sees the secret. A
+/// session comes out only when both halves arrive on the same row.
+///
+/// **`pollSecretHash`, not the secret.** This table is the one an attacker with
+/// read access would go for: a plaintext column would hand them every in-flight
+/// login. Hashed, a database leak is worth nothing after two minutes.
+model LoginRequest {
+  id String @id @default(cuid())
+
+  /// Public. Travels in `t.me/<bot>?start=login_<nonce>` and is safe to be seen —
+  /// on its own it cannot produce a session.
+  nonce String @unique
+
+  /// SHA-256 of the browser's secret. See the note above.
+  pollSecretHash String
+
+  /// Shown on the web page and repeated by the bot, so a student confirming has
+  /// something to check the request against.
+  pairingCode String
+
+  /// Set by the bot once the student confirms it was them.
+  approvedAt       DateTime?
+  telegramId       String?
+  telegramUsername String?
+
+  /// Set when the student taps Cancel. Distinct from expiry: "somebody tried to
+  /// sign in as me" is worth being able to find later.
+  declinedAt DateTime?
+
+  /// Set when the browser exchanges its secret. Single-use is enforced on this.
+  claimedAt DateTime?
+  sessionId String?
+
+  /// Whoever asked, for the bot to show and for rate limiting. Best-effort.
+  requestedFromIp String?
+  deviceLabel     String?
+
+  /// Two minutes out. A login link is a session sitting in a chat log.
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@index([createdAt])
+}
