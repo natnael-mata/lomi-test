@@ -106,11 +106,19 @@ describe('POST /admin/questions/:id/retire', () => {
     expect(await prisma.auditLog.count({ where: { questionId } })).toBe(1);
   });
 
-  // The half T-070 is still open for: reporting 0 here would tell a reviewer
-  // that retiring disturbs nobody, which this code cannot know until Phase 4.
-  it('reports the blast radius as not yet measurable, never as zero', async () => {
+  /**
+   * This used to assert `null` — "not yet measurable, never zero" — because
+   * `Attempt` and `Sitting` did not exist and reporting 0 would have told a
+   * reviewer that retiring disturbs nobody, which the code could not know.
+   *
+   * They exist now, so the number is real and **zero means zero**: nothing has
+   * been attempted here and no sitting is in flight. The counting itself is
+   * exercised against real attempts and a live sitting in
+   * `retire-radius.e2e.test.ts`.
+   */
+  it('reports a measured blast radius, with zero meaning zero', async () => {
     const body = await retire({});
-    expect(body.blastRadius).toEqual({ attempts: null, liveSittings: null, measurable: false });
+    expect(body.blastRadius).toEqual({ attempts: 0, liveSittings: 0, measurable: true });
   });
 
   it('404s for a question that does not exist', async () => {

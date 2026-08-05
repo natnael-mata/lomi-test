@@ -101,11 +101,14 @@ export class QuestionsService {
     if (!q) throw new NotFoundException(`No question ${id}`);
 
     if (q.status === 'RETIRED') {
+      // Still measured. Somebody re-running a retirement is usually somebody
+      // checking what it cost, and answering "unknown" to that is unhelpful in
+      // the one moment the number is being looked for.
       return {
         id: q.id,
         status: q.status,
         alreadyRetired: true,
-        blastRadius: BLAST_RADIUS_UNKNOWN,
+        blastRadius: await this.blastRadius(q.id),
       };
     }
 
@@ -128,8 +131,39 @@ export class QuestionsService {
       id: updated.id,
       status: updated.status,
       alreadyRetired: false,
-      blastRadius: BLAST_RADIUS_UNKNOWN,
+      // Measured AFTER the status change, deliberately. Retiring stops the
+      // question being sampled into new papers, so counting first would include
+      // sittings that can no longer start — the number a reviewer needs is what
+      // is disturbed now, not what was disturbed a moment ago.
+      blastRadius: await this.blastRadius(updated.id),
     };
+  }
+
+  /**
+   * How much withdrawing this question disturbs (T-070).
+   *
+   * DESIGN.md requires this **itemised, never summarised**: "this affects many
+   * students" is a sentence an operator skims past, and a number they can check
+   * is what makes them stop and read. So the two counts are separate and neither
+   * is folded into a total — they are different kinds of harm. An attempt is
+   * history that stays correct whatever happens next; a live sitting is a
+   * student in a timed exam right now, with this question on their paper.
+   */
+  async blastRadius(questionId: string): Promise<BlastRadius> {
+    const [attempts, liveSittings] = await Promise.all([
+      this.prisma.attempt.count({ where: { questionId } }),
+      // Live means started and not yet closed. A closed sitting has already
+      // been graded against the key as it stood, and nothing about retiring the
+      // question now reaches back into it.
+      this.prisma.sitting.count({
+        where: {
+          closedAt: null,
+          exam: { questions: { some: { questionId } } },
+        },
+      }),
+    ]);
+
+    return { attempts, liveSittings, measurable: true };
   }
 }
 
