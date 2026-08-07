@@ -16,12 +16,28 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { contrast as ratio } from '../lib/contrast';
+
 const THEME = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), '../../../design-system/tailwind-theme.css'),
   'utf8',
 );
 
 const AA_BODY = 4.5;
+
+/**
+ * The shared implementation, narrowed for this file.
+ *
+ * `lib/contrast.ts` returns `null` for anything it cannot parse, because it also
+ * grades colours from a Telegram host we do not control (T-178). Here every
+ * input is one of our own tokens, so an unparseable one is a broken stylesheet
+ * and should fail loudly rather than being reported as a low ratio.
+ */
+function contrast(a: string, b: string): number {
+  const value = ratio(a, b);
+  if (value === null) throw new Error(`not a colour: ${a} / ${b}`);
+  return value;
+}
 
 /** Pulls `--color-*` declarations out of one block of the stylesheet. */
 function tokens(openerPattern: RegExp): Record<string, string> {
@@ -50,27 +66,6 @@ const light = tokens(/@theme\s*\{/);
 // override and `theme.test.ts` asserts the media-query copy is identical, so
 // checking one covers both.
 const dark = { ...light, ...tokens(/\n\.dark\s*\{/) };
-
-function channel(value: number): number {
-  const c = value / 255;
-  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-}
-
-function luminance(hex: string): number {
-  const h = hex.replace('#', '');
-  const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-}
-
-export function contrast(a: string, b: string): number {
-  const l1 = luminance(a);
-  const l2 = luminance(b);
-  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
-  return (hi + 0.05) / (lo + 0.05);
-}
 
 /**
  * Every foreground/background pair the design actually puts together.

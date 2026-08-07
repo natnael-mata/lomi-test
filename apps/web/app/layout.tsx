@@ -3,6 +3,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
+import { TelegramHost } from '../components/TelegramHost';
 import { THEME_BOOT_SCRIPT } from '../components/theme';
 import { fontVariables } from './fonts';
 
@@ -37,6 +38,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           React sees it.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {/* No-op outside Telegram; see the component. */}
+        <TelegramHost />
         {children}
       </body>
     </html>
