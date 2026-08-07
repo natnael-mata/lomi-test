@@ -4,11 +4,14 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { ApiError, TOKEN_STORAGE_KEY } from './api';
+import { ApiError } from './api';
+import { stripComments } from './strip-comments';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const source = readFileSync(resolve(HERE, 'api.ts'), 'utf8');
 const screen = readFileSync(resolve(HERE, '../app/practice/PracticeScreen.tsx'), 'utf8');
+
+const code = stripComments(source);
 
 describe('ApiError (T-112)', () => {
   // The UI branches on the CODE, never on a prose message. A message is copy and
@@ -38,15 +41,53 @@ describe('the API client', () => {
     expect(source).not.toMatch(/https?:\/\/localhost:4000/);
   });
 
-  it('sends the session token as a bearer when there is one', () => {
-    expect(source).toContain('Authorization: `Bearer ${token}`');
-    expect(TOKEN_STORAGE_KEY).toBe('lomi-session');
+  /**
+   * T-112a's stated test: the token appears in no JavaScript-readable storage.
+   *
+   * Asserted against the source rather than by poking at a live page, because
+   * the claim is about what this client is *capable* of, not about what one
+   * render happened to do. A `localStorage` call added next month fails here
+   * even if no test exercises the path it sits on.
+   */
+  // Guards the stripping: if it ate everything, every ban below passes forever.
+  it('still sees the client after comments are stripped', () => {
+    // Deliberately three points: the top, the middle, and the far end. A guard
+    // that only checks the beginning passes happily while the stripper eats
+    // everything after the first awkward comment — which is exactly what it did.
+    expect(code).toContain('export class ApiError');
+    expect(code).toContain('fetch(');
+    expect(code).toContain('examResult');
+    expect(code.length).toBeGreaterThan(source.length / 2);
   });
 
-  // The storage choice is a known tradeoff and is written down as one.
-  it('records why the token is in localStorage rather than a cookie', () => {
-    expect(source).toMatch(/httpOnly cookie/);
+  it('stores the session nowhere a script can read it', () => {
+    for (const banned of ['localStorage', 'sessionStorage', 'document.cookie']) {
+      expect(code, `${banned} would put the session back within reach of an XSS`).not.toContain(
+        banned,
+      );
+    }
+  });
+
+  // Nothing to send: the browser attaches the httpOnly cookie by itself.
+  it('sends no Authorization header of its own', () => {
+    expect(code).not.toContain('Authorization');
+    expect(code).not.toContain('Bearer');
+  });
+
+  /**
+   * Stated rather than left to the default. The default changing would present
+   * as an unrelated failure to authenticate, which is a bad afternoon.
+   */
+  it('sends credentials, so the cookie rides along', () => {
+    expect(code).toContain("credentials: 'same-origin'");
+  });
+
+  // The reasoning is written down, because the next person will otherwise read
+  // "httpOnly fixes XSS" into it, which is not what it does.
+  it('records what the cookie does and does not buy', () => {
+    expect(source).toMatch(/httpOnly/);
     expect(source).toMatch(/XSS/);
+    expect(source).toMatch(/SameSite=Lax/);
   });
 });
 

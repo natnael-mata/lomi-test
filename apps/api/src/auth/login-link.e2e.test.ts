@@ -316,6 +316,99 @@ describe('signing in through the Telegram bot (T-075–T-078)', () => {
     });
   });
 
+  /**
+   * T-112a. The session used to live in `localStorage`, where any script on the
+   * page could read it — so an XSS was a token an attacker could carry away and
+   * reuse from their own machine for ninety days.
+   */
+  describe('the session cookie (T-112a)', () => {
+    const cookieFrom = (res: request.Response): string => {
+      const header = res.headers['set-cookie'];
+      const all = Array.isArray(header) ? header : [header];
+      const found = all.find((c) => typeof c === 'string' && c.startsWith('lomi_session='));
+      expect(found, 'no session cookie was set').toBeDefined();
+      return found as string;
+    };
+
+    it('sets an HttpOnly, SameSite=Lax cookie on claim', async () => {
+      const { nonce, pollSecret } = await create();
+      await approve(nonce).expect(201);
+      const cookie = cookieFrom(await claim(nonce, pollSecret).expect(201));
+
+      // HttpOnly is the point; SameSite=Lax is what keeps it from being a
+      // downgrade, since a cookie is sent automatically where the old
+      // Authorization header never was.
+      expect(cookie).toContain('HttpOnly');
+      expect(cookie).toContain('SameSite=Lax');
+      expect(cookie).toContain('Path=/');
+    });
+
+    /** T-112a's stated test: a request still authenticates, with no header. */
+    it('authenticates on the cookie alone', async () => {
+      const { nonce, pollSecret } = await create();
+      await approve(nonce).expect(201);
+      const cookie = cookieFrom(await claim(nonce, pollSecret).expect(201));
+
+      await request(app.getHttpServer())
+        .get('/me/devices')
+        .set('Cookie', cookie.split(';')[0]!)
+        .expect(200);
+    });
+
+    it('refuses a request carrying neither cookie nor header', async () => {
+      await request(app.getHttpServer()).get('/me/devices').expect(401);
+    });
+
+    /**
+     * Sign-out revokes the row **and** clears the cookie.
+     *
+     * Clearing alone would leave a live session a stolen token could still use;
+     * revoking alone would leave the browser sending a dead cookie forever —
+     * signed out everywhere except where the student is looking.
+     */
+    it('signs out by revoking the session and clearing the cookie', async () => {
+      const { nonce, pollSecret } = await create();
+      await approve(nonce).expect(201);
+      const cookie = cookieFrom(await claim(nonce, pollSecret).expect(201)).split(';')[0]!;
+
+      const out = await request(app.getHttpServer())
+        .post('/auth/sign-out')
+        .set('Cookie', cookie)
+        .expect(201);
+
+      const cleared = (
+        Array.isArray(out.headers['set-cookie'])
+          ? out.headers['set-cookie']
+          : [out.headers['set-cookie']]
+      ).find((c) => typeof c === 'string' && c.startsWith('lomi_session='));
+      expect(cleared).toContain('Max-Age=0');
+      // Same attributes, or the browser keeps the old cookie and "signed out"
+      // is a lie in the only place it matters.
+      expect(cleared).toContain('HttpOnly');
+      expect(cleared).toContain('SameSite=Lax');
+
+      // And the row really is revoked, so a token copied earlier is dead too.
+      await request(app.getHttpServer()).get('/me/devices').set('Cookie', cookie).expect(401);
+    });
+
+    /**
+     * The header still works, for callers with nowhere to put a cookie — a
+     * webview with cookies blocked, a script. It costs nothing in safety: an XSS
+     * cannot read an httpOnly cookie, so it cannot mint a bearer it did not
+     * already have.
+     */
+    it('still accepts a bearer token from a client that has no cookie jar', async () => {
+      const { nonce, pollSecret } = await create();
+      await approve(nonce).expect(201);
+      const body = (await claim(nonce, pollSecret).expect(201)).body;
+
+      await request(app.getHttpServer())
+        .get('/me/devices')
+        .set({ Authorization: `Bearer ${body.token}` })
+        .expect(200);
+    });
+  });
+
   describe('rate limiting (T-075)', () => {
     /** T-075's stated test: a 6th request inside the window is refused. */
     it('stops a caller asking for links faster than a person could use them', async () => {

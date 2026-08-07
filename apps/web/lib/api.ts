@@ -5,27 +5,23 @@
  * rewrites to the Nest server. The browser never learns the API's real address.
  */
 
-export const TOKEN_STORAGE_KEY = 'lomi-session';
-
 /**
- * Where the session token lives.
+ * The session lives in an httpOnly cookie the API sets (T-112a).
  *
- * `localStorage` today, and that is a **known tradeoff, not an oversight**: any
- * script that runs on this page can read it, so an XSS becomes a stolen session.
- * The alternative — an httpOnly cookie set by the auth route — cannot be read by
- * the client at all, and is where this should end up. It is deferred rather than
- * done because the auth flow that would set that cookie is T-077, which the
- * project owner is handling separately. The rewrite above is what keeps that
- * move a one-file change.
+ * **This client stores nothing and reads nothing.** There is deliberately no
+ * `sessionToken()` here any more: the browser attaches the cookie to same-origin
+ * requests by itself, and a token this code could read would be a token an XSS
+ * could read — which was the whole problem.
+ *
+ * What that buys, precisely: a script injected into this page can still call the
+ * API, because the browser attaches the cookie for it too. What it can no longer
+ * do is take the token somewhere else and use it for ninety days. The damage
+ * stays in the page instead of walking out of the building.
+ *
+ * The cookie is `SameSite=Lax`, which is what keeps the move from being a
+ * downgrade — a cookie is sent automatically where an `Authorization` header
+ * never was, so without it this would have traded XSS exposure for CSRF.
  */
-export function sessionToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return window.localStorage.getItem(TOKEN_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
 
 export class ApiError extends Error {
   constructor(
@@ -45,12 +41,14 @@ export class ApiError extends Error {
 }
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = sessionToken();
   const response = await fetch(`/api${path}`, {
     ...init,
+    // Same-origin via the `/api/*` rewrite, so the cookie rides along on its
+    // own. Stated rather than left to the default, because the default changing
+    // would look like an unrelated failure to authenticate.
+    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
   });

@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import type { Request } from 'express';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { readSessionCookie } from './session-cookie';
 import { verifySessionToken } from './tokens';
 
 /** What a guarded handler can rely on having. */
@@ -27,10 +28,17 @@ export class SessionGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<AuthedRequest>();
 
-    const header = req.headers.authorization ?? '';
-    const [scheme, token] = header.split(' ');
-    if (scheme?.toLowerCase() !== 'bearer' || !token) {
-      throw new UnauthorizedException('Send a bearer token.');
+    // The cookie first, the header second.
+    //
+    // The web client sends only the cookie (T-112a) and stores nothing a script
+    // can read. The header is kept for callers that genuinely have nowhere to
+    // put a cookie — a Telegram webview with cookies blocked, a script, a future
+    // native client — and keeping it costs nothing in safety: an XSS cannot read
+    // an httpOnly cookie, so it cannot mint a bearer token it did not already
+    // have. What httpOnly buys is that the token cannot be carried *away*.
+    const token = readSessionCookie(req.headers.cookie) ?? bearerFrom(req.headers.authorization);
+    if (!token) {
+      throw new UnauthorizedException('Sign in first.');
     }
 
     const result = verifySessionToken(token, process.env.JWT_SECRET ?? '');
@@ -57,4 +65,11 @@ export class SessionGuard implements CanActivate {
     req.auth = { userId: session.userId, sessionId: session.id };
     return true;
   }
+}
+
+/** The token out of an `Authorization: Bearer …` header, if it is one. */
+function bearerFrom(header: string | undefined): string | null {
+  const [scheme, token] = (header ?? '').split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null;
+  return token;
 }

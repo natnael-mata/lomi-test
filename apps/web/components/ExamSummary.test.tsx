@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { stripComments } from '../lib/strip-comments';
 import { ExamSummary, type ExamSummaryData } from './ExamSummary';
 
 const source = readFileSync(
@@ -19,20 +20,7 @@ const source = readFileSync(
   'utf8',
 );
 
-/**
- * Comments stripped, for the same reason `copy.test.ts` strips them: a lint that
- * cannot tell a rule from the note explaining the rule flags the explanation,
- * and gets weakened rather than obeyed. String literals stay — that is where the
- * copy actually lives.
- */
-const copy = source
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .split('\n')
-  .filter((line) => {
-    const t = line.trim();
-    return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('{/*');
-  })
-  .join('\n');
+const copy = stripComments(source);
 
 const summary: ExamSummaryData = {
   scoreCorrect: 4,

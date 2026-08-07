@@ -15,6 +15,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { stripComments } from '../lib/strip-comments';
+
 const WEB_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SKIP = new Set(['node_modules', '.next', 'dist', 'fonts']);
 
@@ -40,16 +42,6 @@ const FILES = sourceFiles(WEB_ROOT);
  * would actually die. Block comments go, and so do whole lines that are
  * comments; string literals are left alone, which is where real copy lives.
  */
-function withoutComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split('\n')
-    .filter((line) => {
-      const t = line.trim();
-      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('{/*');
-    })
-    .join('\n');
-}
 
 describe('weight captions never overclaim', () => {
   it('finds source files to check', () => {
@@ -61,14 +53,14 @@ describe('weight captions never overclaim', () => {
     const offenders = FILES.filter((f) => {
       // This file names the forbidden phrase in order to forbid it.
       if (f.endsWith('copy.test.ts')) return false;
-      return /%\s*of\s*(the\s*)?exam/i.test(withoutComments(readFileSync(f, 'utf8')));
+      return /%\s*of\s*(the\s*)?exam/i.test(stripComments(readFileSync(f, 'utf8')));
     });
     expect(offenders, `these overclaim: ${offenders.join(', ')}`).toEqual([]);
   });
 
   it('still sees the code after comments are stripped', () => {
     // Guards the stripping: if it ate everything, the lint above passes forever.
-    const stripped = withoutComments(
+    const stripped = stripComments(
       readFileSync(join(WEB_ROOT, 'components/ReadinessStatement.tsx'), 'utf8'),
     );
     expect(stripped).toContain('ReadinessStatement');

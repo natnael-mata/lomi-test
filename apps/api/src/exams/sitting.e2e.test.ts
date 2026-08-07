@@ -64,6 +64,44 @@ async function wipe(prisma: PrismaService, sfx: string, telegramId: number): Pro
   await prisma.user.deleteMany({ where: { telegramId: String(telegramId) } });
 }
 
+/**
+ * A second student, for the "not yours" test.
+ *
+ * Module-scoped so every suite in this file can wipe it. Cleaned up in
+ * `beforeAll` **and** `afterAll` rather than only inline at the end of that
+ * test: an inline cleanup does not run when the test fails, so one failure left
+ * this row behind and every later run then failed on the unique telegramId — a
+ * second, unrelated-looking failure masking the first. That happened.
+ */
+const TG_OTHER = 566999999;
+
+/**
+ * Removes the second student used by the "not yours" test.
+ *
+ * Separate from `wipe` because that one is scoped to a field suffix and this
+ * user belongs to no field of its own. Run at both ends of the suite so a failed
+ * run cannot poison the next one.
+ */
+async function wipeOther(prisma: PrismaService, telegramId: number): Promise<void> {
+  const users = await prisma.user.findMany({
+    where: { telegramId: String(telegramId) },
+    select: { id: true },
+  });
+  const ids = users.map((u) => u.id);
+  if (ids.length === 0) return;
+  const sittings = await prisma.sitting.findMany({
+    where: { userId: { in: ids } },
+    select: { id: true },
+  });
+  const sittingIds = sittings.map((s) => s.id);
+  await prisma.sittingResult.deleteMany({ where: { sittingId: { in: sittingIds } } });
+  await prisma.sittingAnswer.deleteMany({ where: { sittingId: { in: sittingIds } } });
+  await prisma.sitting.deleteMany({ where: { id: { in: sittingIds } } });
+  await prisma.attempt.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.session.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.user.deleteMany({ where: { id: { in: ids } } });
+}
+
 /** A field with a bank, and the sentinels T-124 greps for. */
 async function seedBank(
   prisma: PrismaService,
@@ -136,6 +174,7 @@ describe('sitting a mock exam', () => {
     await app.init();
     prisma = app.get(PrismaService);
     await wipe(prisma, SFX, TG);
+    await wipeOther(prisma, TG_OTHER);
 
     fieldId = await seedBank(prisma, SFX, 3, 2);
     student = await signInAsStaff(app, prisma, TG, 'ADMIN', SFX);
@@ -153,6 +192,7 @@ describe('sitting a mock exam', () => {
 
   afterAll(async () => {
     await wipe(prisma, SFX, TG);
+    await wipeOther(prisma, TG_OTHER);
     await app.close();
   });
 
@@ -262,11 +302,19 @@ describe('sitting a mock exam', () => {
           path: l.route!.path,
         })),
       )
-      // Everything except the one route whose job is to END the sitting. Calling
-      // it here closes the paper and every later request in the sweep — and the
-      // routes after it — then legitimately returns the answer key, which reads
-      // as a leak. Submitting has its own test below.
-      .filter((r) => !r.path.endsWith('/submit'));
+      /*
+       * Everything except the routes whose job is to END something.
+       *
+       * `/submit` closes the paper, so every later request in the sweep
+       * legitimately returns the answer key, which reads as a leak. `sign-out`
+       * (T-112a) revokes the session, so everything after it — here and in the
+       * rest of this suite — 401s. Both have their own tests.
+       *
+       * This list is the sweep's one real weakness: a destructive route added
+       * later breaks the suite from the point it appears, and the failure looks
+       * nothing like its cause. It has now happened twice.
+       */
+      .filter((r) => !r.path.endsWith('/submit') && !r.path.endsWith('/sign-out'));
     expect(routes.length).toBeGreaterThan(5);
 
     let combined = '';
@@ -341,7 +389,7 @@ describe('sitting a mock exam', () => {
   // it hands a hundred answer views to a student still sitting.
   it('404s another student’s sitting, exactly like one that does not exist', async () => {
     const other = await prisma.user.create({
-      data: { telegramId: '566999999', displayName: 'OtherStudent1234', fieldId },
+      data: { telegramId: String(TG_OTHER), displayName: 'OtherStudent1234', fieldId },
     });
     const theirs = await prisma.sitting.create({
       data: {
@@ -636,6 +684,7 @@ describe('navigating the paper (T-125, T-126)', () => {
     await app.init();
     prisma = app.get(PrismaService);
     await wipe(prisma, SFX, TG);
+    await wipeOther(prisma, TG_OTHER);
 
     fieldId = await seedBank(prisma, SFX, 3, 2);
     student = await signInAsStaff(app, prisma, TG, 'ADMIN', SFX);

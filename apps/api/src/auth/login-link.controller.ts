@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Ip, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Ip, Param, Post, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { BotGuard } from './bot.guard';
+import { cookieOptionsFor, sessionCookie } from './session-cookie';
 import type { SignInResult } from './auth.service';
 import {
   LoginLinkService,
@@ -39,6 +41,7 @@ export class LoginLinkController {
    */
   @Post('claim')
   async claim(
+    @Res({ passthrough: true }) res: Response,
     @Body() body: { nonce?: string; pollSecret?: string; deviceLabel?: string },
   ): Promise<SignInResult | { pending: true }> {
     const result = await this.login.claim(
@@ -46,7 +49,11 @@ export class LoginLinkController {
       body?.pollSecret ?? '',
       body?.deviceLabel,
     );
-    return result ?? { pending: true };
+    if (!result) return { pending: true };
+    // The session cookie is set here, on the one route that turns a confirmed
+    // login into a session (T-112a).
+    res.setHeader('Set-Cookie', sessionCookie(result.token, cookieOptionsFor(process.env)));
+    return result;
   }
 
   /** What the page shows while waiting. Carries no identity and no secret. */
