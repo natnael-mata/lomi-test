@@ -5,7 +5,9 @@ import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
 import { ExamTimer } from '../../components/ExamTimer';
 import { ExamSummary } from '../../components/ExamSummary';
+import { RetireConfirmationDemo } from './RetireConfirmationDemo';
 import { ScoreTrend } from '../../components/ScoreTrend';
+import { WeightSumIndicator } from '../../components/WeightSumIndicator';
 import { JumpGridDemo } from './JumpGridDemo';
 import { Input } from '../../components/Input';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
@@ -372,6 +374,32 @@ export default function DesignSystemPage() {
               },
             ]}
           />
+        </div>
+      </Row>
+      <Row title="Weight sum — balanced and not">
+        <div id="weight-sum-balanced">
+          <WeightSumIndicator
+            rows={[
+              { topicId: 'a', topicName: 'A', weightPct: 34 },
+              { topicId: 'b', topicName: 'B', weightPct: 33 },
+              { topicId: 'c', topicName: 'C', weightPct: 33 },
+            ]}
+          />
+        </div>
+        <div id="weight-sum-short">
+          <WeightSumIndicator
+            rows={[
+              { topicId: 'a', topicName: 'A', weightPct: 34 },
+              { topicId: 'b', topicName: 'B', weightPct: 33 },
+              { topicId: 'c', topicName: 'C', weightPct: 30 },
+            ]}
+          />
+        </div>
+      </Row>
+
+      <Row title="Retire confirmation — the only modal">
+        <div id="retire-confirmation-demo">
+          <RetireConfirmationDemo />
         </div>
       </Row>
     </main>

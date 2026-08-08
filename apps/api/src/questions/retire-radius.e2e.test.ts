@@ -194,7 +194,12 @@ describe('retiring a question (T-070, T-071)', () => {
       ).body;
 
       expect(body.status).toBe('RETIRED');
-      expect(body.blastRadius).toEqual({ attempts: 3, liveSittings: 1, measurable: true });
+      expect(body.blastRadius).toEqual({
+        attempts: 3,
+        liveSittings: 1,
+        studentsAffected: 1,
+        measurable: true,
+      });
     });
 
     /**
@@ -214,6 +219,7 @@ describe('retiring a question (T-070, T-071)', () => {
         'attempts',
         'liveSittings',
         'measurable',
+        'studentsAffected',
       ]);
       expect(body.blastRadius).not.toHaveProperty('total');
     });
@@ -264,7 +270,12 @@ describe('retiring a question (T-070, T-071)', () => {
           .send({})
           .expect(201)
       ).body;
-      expect(body.blastRadius).toEqual({ attempts: 0, liveSittings: 0, measurable: true });
+      expect(body.blastRadius).toEqual({
+        attempts: 0,
+        liveSittings: 0,
+        studentsAffected: 0,
+        measurable: true,
+      });
     });
   });
 
@@ -319,5 +330,91 @@ describe('retiring a question (T-070, T-071)', () => {
       expect(row.status).toBe('RETIRED');
       expect(await prisma.attempt.count({ where: { questionId: questionIds[0]! } })).toBe(3);
     });
+  });
+
+  /*
+   * These run LAST, deliberately.
+   *
+   * They retire questions, and the T-071 checks above count what is left in the
+   * published pool. Running them earlier empties it and those tests fail for a
+   * reason that looks nothing like their subject — the same order-dependence
+   * that has already cost this suite once.
+   */
+  /**
+   * T-165's stated test: the three counts match what the database says.
+   *
+   * Asserted against direct queries rather than against a remembered number,
+   * because the point of an itemised blast radius is that an operator can check
+   * it — a figure only this code can produce is the decoration DESIGN.md
+   * forbids.
+   */
+  it('states counts that match the database (T-165)', async () => {
+    const victim = questionIds[2]!;
+    for (let i = 0; i < 2; i++) {
+      await prisma.attempt.create({
+        data: {
+          userId: staff.userId,
+          questionId: victim,
+          fieldId,
+          topicId,
+          chosenLabel: 'B',
+          isCorrect: false,
+          timeTakenSec: 15,
+        },
+      });
+    }
+
+    const body = (
+      await request(app.getHttpServer())
+        .post(`/admin/questions/${victim}/retire`)
+        .set(staff.auth)
+        .send({})
+        .expect(201)
+    ).body;
+
+    expect(body.blastRadius.attempts).toBe(
+      await prisma.attempt.count({ where: { questionId: victim } }),
+    );
+    expect(body.blastRadius.liveSittings).toBe(
+      await prisma.sitting.count({
+        where: { closedAt: null, exam: { questions: { some: { questionId: victim } } } },
+      }),
+    );
+    const distinct = await prisma.attempt.groupBy({
+      by: ['userId'],
+      where: { questionId: victim },
+    });
+    expect(body.blastRadius.studentsAffected).toBe(distinct.length);
+  });
+
+  /**
+   * One person answering three times is one readiness figure, not three.
+   * Readiness rests on the most recent answer per question (T-135), so the
+   * count an operator is deciding on is students, not attempts.
+   */
+  it('counts students once however often they answered', async () => {
+    const victim = questionIds[3]!;
+    for (let i = 0; i < 4; i++) {
+      await prisma.attempt.create({
+        data: {
+          userId: staff.userId,
+          questionId: victim,
+          fieldId,
+          topicId,
+          chosenLabel: 'A',
+          isCorrect: true,
+          timeTakenSec: 15,
+        },
+      });
+    }
+    const body = (
+      await request(app.getHttpServer())
+        .post(`/admin/questions/${victim}/retire`)
+        .set(staff.auth)
+        .send({})
+        .expect(201)
+    ).body;
+    expect(body.blastRadius.attempts).toBe(4);
+    expect(body.blastRadius.studentsAffected).toBe(1);
   });
 });

@@ -150,7 +150,7 @@ export class QuestionsService {
    * student in a timed exam right now, with this question on their paper.
    */
   async blastRadius(questionId: string): Promise<BlastRadius> {
-    const [attempts, liveSittings] = await Promise.all([
+    const [attempts, liveSittings, attemptStudents, sittingStudents] = await Promise.all([
       this.prisma.attempt.count({ where: { questionId } }),
       // Live means started and not yet closed. A closed sitting has already
       // been graded against the key as it stood, and nothing about retiring the
@@ -161,9 +161,37 @@ export class QuestionsService {
           exam: { questions: { some: { questionId } } },
         },
       }),
+      // Distinct students, from both places an answer can live. Grouped rather
+      // than counted, because the same person answering three times is one
+      // readiness figure, not three.
+      this.prisma.attempt.groupBy({ by: ['userId'], where: { questionId } }),
+      this.prisma.sittingResult.groupBy({
+        by: ['sittingId'],
+        where: { questionId, chosenLabel: { not: null } },
+      }),
     ]);
 
-    return { attempts, liveSittings, measurable: true };
+    // Readiness rests on one row per question at its most recent answer
+    // (T-135), so anybody who has answered this question has a readiness figure
+    // partly built on it. That is what an operator is actually deciding about:
+    // a wrong answer key does not just withdraw a question, it means every one
+    // of these students was graded against something that turned out to be
+    // false.
+    const sittingUsers = await this.prisma.sitting.groupBy({
+      by: ['userId'],
+      where: { id: { in: sittingStudents.map((s) => s.sittingId) } },
+    });
+    const affected = new Set([
+      ...attemptStudents.map((a) => a.userId),
+      ...sittingUsers.map((s) => s.userId),
+    ]);
+
+    return {
+      attempts,
+      liveSittings,
+      studentsAffected: affected.size,
+      measurable: true,
+    };
   }
 }
 
@@ -186,11 +214,18 @@ export interface RetireResult {
 export interface BlastRadius {
   attempts: number | null;
   liveSittings: number | null;
+  /**
+   * Distinct students whose readiness figure rests partly on this question
+   * (T-165). Counted from both attempts and answered mock questions, deduped —
+   * one person answering three times is one readiness figure, not three.
+   */
+  studentsAffected: number | null;
   measurable: boolean;
 }
 
 export const BLAST_RADIUS_UNKNOWN: BlastRadius = {
   attempts: null,
   liveSittings: null,
+  studentsAffected: null,
   measurable: false,
 };

@@ -118,7 +118,12 @@ describe('POST /admin/questions/:id/retire', () => {
    */
   it('reports a measured blast radius, with zero meaning zero', async () => {
     const body = await retire({});
-    expect(body.blastRadius).toEqual({ attempts: 0, liveSittings: 0, measurable: true });
+    expect(body.blastRadius).toEqual({
+      attempts: 0,
+      liveSittings: 0,
+      studentsAffected: 0,
+      measurable: true,
+    });
   });
 
   it('404s for a question that does not exist', async () => {

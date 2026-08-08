@@ -138,6 +138,25 @@ export interface PracticeSummary {
   weakestTopicId: string | null;
 }
 
+/** A topic's effective weight, and where the number came from (T-134a, T-162a). */
+export interface EffectiveWeight {
+  topicId: string;
+  topicName: string;
+  weightPct: number;
+  derivedPct: number;
+  weightSource: 'derived' | 'override';
+  overrideReason: string | null;
+  publishedCount: number;
+}
+
+/** What withdrawing a question disturbs (T-070, T-165). */
+export interface BlastRadius {
+  attempts: number | null;
+  liveSittings: number | null;
+  studentsAffected: number | null;
+  measurable: boolean;
+}
+
 /** A student's readiness in a field (T-135–T-137). */
 export interface Readiness {
   fieldId: string;
@@ -273,4 +292,39 @@ export const api = {
   readiness: (fieldId: string): Promise<Readiness> => call<Readiness>(`/me/readiness/${fieldId}`),
 
   trend: (fieldId: string): Promise<TrendPoint[]> => call<TrendPoint[]>(`/me/trend/${fieldId}`),
+
+  /** Admin. Every one of these is ADMIN-guarded and audited on the server. */
+  adminWeights: (fieldId: string): Promise<EffectiveWeight[]> =>
+    call<EffectiveWeight[]>(`/admin/fields/${fieldId}/weights`),
+
+  adminDeriveWeights: (fieldId: string): Promise<EffectiveWeight[]> =>
+    call<EffectiveWeight[]>(`/admin/fields/${fieldId}/weights/derive`, {
+      method: 'POST',
+      body: '{}',
+    }),
+
+  adminOverrideWeight: (
+    fieldId: string,
+    topicId: string,
+    weightPct: number,
+    reason: string,
+  ): Promise<EffectiveWeight[]> =>
+    call<EffectiveWeight[]>(`/admin/fields/${fieldId}/weights/topics/${topicId}`, {
+      method: 'POST',
+      body: JSON.stringify({ weightPct, reason }),
+    }),
+
+  adminClearWeightOverride: (fieldId: string, topicId: string): Promise<EffectiveWeight[]> =>
+    call<EffectiveWeight[]>(`/admin/fields/${fieldId}/weights/topics/${topicId}`, {
+      method: 'DELETE',
+    }),
+
+  adminRetire: (
+    questionId: string,
+    reason: string,
+  ): Promise<{ id: string; status: string; alreadyRetired: boolean; blastRadius: BlastRadius }> =>
+    call(`/admin/questions/${questionId}/retire`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
 };
