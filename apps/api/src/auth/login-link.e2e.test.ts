@@ -14,6 +14,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
+import { RateLimitService } from '../common/rate-limit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const TG = 566000007;
@@ -23,6 +24,7 @@ const BOT_USERNAME = 'LomiTestE2EBot';
 describe('signing in through the Telegram bot (T-075–T-078)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let rateLimit: RateLimitService;
   const previous: Record<string, string | undefined> = {};
 
   const bot = { 'x-bot-secret': BOT_SECRET };
@@ -62,11 +64,20 @@ describe('signing in through the Telegram bot (T-075–T-078)', () => {
     app = moduleRef.createNestApplication();
     await app.init();
     prisma = app.get(PrismaService);
+    rateLimit = app.get(RateLimitService);
     await wipe();
   });
 
   afterEach(async () => {
     await prisma.loginRequest.deleteMany({});
+    /*
+     * The rate limiter is in-process state (T-206), so unlike the rows above it
+     * is not cleared by deleting anything. Every test here mints links from the
+     * same address, and five in ten minutes is the real limit — without this the
+     * suite exhausts it and later tests fail with a 429 that has nothing to do
+     * with what they are testing. The limit has its own test below.
+     */
+    rateLimit.reset();
   });
 
   afterAll(async () => {
@@ -415,8 +426,13 @@ describe('signing in through the Telegram bot (T-075–T-078)', () => {
       for (let i = 0; i < 5; i++) {
         await request(app.getHttpServer()).post('/auth/login-link').send({}).expect(201);
       }
-      const res = await request(app.getHttpServer()).post('/auth/login-link').send({}).expect(422);
+      const res = await request(app.getHttpServer()).post('/auth/login-link').send({}).expect(429);
       expect(res.body.error).toBe('TOO_MANY_REQUESTS');
+      // 429, not the 422 this used to throw. A client cannot act on 422 — it
+      // means "your input was wrong", so waiting is pointless — and the retry
+      // hint is what lets one try again without guessing.
+      expect(res.body.retryAfterSec).toBeGreaterThan(0);
+      expect(res.body.message).toContain('Try again in');
     });
   });
 });

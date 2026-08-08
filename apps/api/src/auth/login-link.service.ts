@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
+import { RateLimitService } from '../common/rate-limit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService, type SignInResult } from './auth.service';
 import {
@@ -42,10 +43,6 @@ export interface PendingPrompt {
   expiresAt: string;
 }
 
-/** How many links one address may ask for before it is told to stop. */
-const RATE_LIMIT = 5;
-const RATE_WINDOW_SEC = 10 * 60;
-
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex');
 
 /**
@@ -67,6 +64,7 @@ export class LoginLinkService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
+    private readonly rateLimit: RateLimitService,
   ) {}
 
   private get botUsername(): string {
@@ -93,7 +91,11 @@ export class LoginLinkService {
       });
     }
 
-    await this.enforceRateLimit(ip, now);
+    // T-206: a 429 with a retry hint, not the 422 this used to throw. A client
+    // cannot act correctly on 422 — it means "your input was wrong", so waiting
+    // is pointless and a caller that treats it as final gives up on somebody who
+    // only had to wait twelve seconds.
+    this.rateLimit.consume('signIn', null, ip, now.getTime());
 
     const nonce = randomBytes(16).toString('hex');
     const pollSecret = randomBytes(32).toString('hex');
@@ -262,28 +264,6 @@ export class LoginLinkService {
     const row = await this.prisma.loginRequest.findUnique({ where: { nonce } });
     if (!row) throw new NotFoundException('That sign-in link is not valid.');
     return { state: requestState(row, now), pairingCode: row.pairingCode };
-  }
-
-  /**
-   * Refuses a caller asking for links faster than a person could use them.
-   *
-   * Per address, and best-effort: behind a shared NAT this is coarse, which is
-   * why the limit is generous enough that a classroom on one connection is not
-   * locked out. It exists to stop a script filling somebody's chat with approval
-   * prompts, not to be an access control.
-   */
-  private async enforceRateLimit(ip: string | null, now: Date): Promise<void> {
-    if (!ip) return;
-    const since = new Date(now.getTime() - RATE_WINDOW_SEC * 1000);
-    const recent = await this.prisma.loginRequest.count({
-      where: { requestedFromIp: ip, createdAt: { gte: since } },
-    });
-    if (recent >= RATE_LIMIT) {
-      throw new UnprocessableEntityException({
-        error: 'TOO_MANY_REQUESTS',
-        message: 'Too many sign-in attempts. Wait a few minutes and try again.',
-      });
-    }
   }
 }
 
