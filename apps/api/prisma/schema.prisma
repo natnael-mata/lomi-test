@@ -357,10 +357,23 @@ model AuditLog {
 
   action AuditAction
 
-  /// The question this concerns, by `id`, plus its `stableId` copied in so the
-  /// log stays readable after the row it points at is gone.
-  questionId String
-  stableId   String
+  /// What was acted on: `question`, `topic`, `exam`, `user`.
+  ///
+  /// Widened from question-only in T-167. Every admin mutation is auditable, and
+  /// half of them are not about a question — a weight override, a paper being
+  /// built, a device reset. A second audit table would have been the easier
+  /// change and the wrong one: "where is the record" must have one answer.
+  entity   String
+  entityId String
+
+  /// A human-readable reference, copied in so the log stays legible after the
+  /// row it points at is gone — a question's `stableId`, a topic's name.
+  reference String?
+
+  /// Kept for the question actions that predate the widening, so existing rows
+  /// and existing queries still resolve. `entityId` is the general form.
+  questionId String?
+  stableId   String?
 
   /// Free text for the action that needs it — the note a bounce carried, the
   /// blast radius a retirement reported.
@@ -368,6 +381,7 @@ model AuditLog {
 
   createdAt DateTime @default(now())
 
+  @@index([entity, entityId, createdAt])
   @@index([questionId, createdAt])
   @@index([actorId, createdAt])
 }
@@ -378,6 +392,14 @@ enum AuditAction {
   PUBLISHED
   BOUNCED
   RETIRED
+  /// T-167: the admin mutations that are not about a question.
+  WEIGHTS_DERIVED
+  WEIGHT_OVERRIDDEN
+  WEIGHT_OVERRIDE_CLEARED
+  EXAM_BUILT
+  DEVICES_RESET
+  ACCOUNT_DEACTIVATED
+  ACCOUNT_REACTIVATED
 }
 
 /// A student.
@@ -409,6 +431,22 @@ model User {
   /// The programme this student is sitting. Null until chosen; T-085 refuses to
   /// serve a question without it.
   fieldId String?
+
+  /// Set when an operator deactivates the account (T-164). Reversible, and a
+  /// timestamp rather than a boolean so "when" is answerable without the audit
+  /// log — the first question support asks is when it happened.
+  ///
+  /// A deactivated account cannot sign in and every live session is revoked.
+  deactivatedAt DateTime?
+
+  /// Whether this is a repeat sitting, asked once at onboarding (D8, T-166).
+  ///
+  /// **Nullable on purpose, and it drives nothing.** Null means nobody asked,
+  /// which is not the same as "no" — treating an unasked student as a first-time
+  /// sitter is the kind of quiet assumption that later shows up as a wrong
+  /// number in a report. It is reserved for segmentation and there is a test
+  /// asserting nothing in the product branches on it.
+  isRetaker Boolean?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

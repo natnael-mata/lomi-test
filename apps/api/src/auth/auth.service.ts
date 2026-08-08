@@ -95,6 +95,16 @@ export class AuthService {
     },
     deviceLabel?: string,
   ): Promise<SignInResult> {
+    // A deactivated account cannot sign back in (T-164). Checked before the
+    // session is opened, or deactivating would only last until the next login.
+    const known = await this.prisma.user.findUnique({
+      where: { telegramId: profile.id },
+      select: { deactivatedAt: true },
+    });
+    if (known?.deactivatedAt) {
+      throw new UnauthorizedException('This account is not active. Contact support.');
+    }
+
     const { user, isNew } = await this.findOrCreateTelegramUser({
       id: profile.id,
       username: profile.username ?? null,
@@ -223,7 +233,19 @@ export class AuthService {
    * of using the app. What that does to progress and readiness is T-140's
    * problem, not this endpoint's.
    */
-  async chooseField(userId: string, fieldId: string): Promise<{ fieldId: string; name: string }> {
+  /**
+   * Records the programme, and optionally whether this is a retake (T-166, D8).
+   *
+   * `isRetaker` rides along here because this is the only onboarding question
+   * the product asks — sign-in is a deep link with no form behind it. It is
+   * **left alone when not supplied**, so a student updating their programme does
+   * not silently overwrite an answer they gave months ago with "unknown".
+   */
+  async chooseField(
+    userId: string,
+    fieldId: string,
+    isRetaker?: boolean,
+  ): Promise<{ fieldId: string; name: string }> {
     const field = await this.prisma.field.findUnique({
       where: { id: fieldId },
       select: { id: true, name: true, isPublished: true },
@@ -234,7 +256,13 @@ export class AuthService {
       throw new NotFoundException('No such programme.');
     }
 
-    await this.prisma.user.update({ where: { id: userId }, data: { fieldId: field.id } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fieldId: field.id,
+        ...(typeof isRetaker === 'boolean' ? { isRetaker } : {}),
+      },
+    });
     return { fieldId: field.id, name: field.name };
   }
 

@@ -46,13 +46,26 @@ export class SessionGuard implements CanActivate {
 
     const session = await this.prisma.session.findUnique({
       where: { id: result.claims.sid },
-      select: { id: true, userId: true, revokedAt: true },
+      select: {
+        id: true,
+        userId: true,
+        revokedAt: true,
+        // Joined here rather than fetched separately: a deactivated account with
+        // a live session is deactivated in name only, and sessions last ninety
+        // days (T-164).
+        user: { select: { deactivatedAt: true } },
+      },
     });
     // Deliberately one message for every failure past the signature. Which of
     // "no such session", "revoked" or "belongs to someone else" applies is not
     // the caller's business, and saying so tells an attacker which token ids are
     // real.
-    if (!session || session.revokedAt !== null || session.userId !== result.claims.sub) {
+    if (
+      !session ||
+      session.revokedAt !== null ||
+      session.userId !== result.claims.sub ||
+      session.user.deactivatedAt !== null
+    ) {
       throw new UnauthorizedException('This session is no longer valid.');
     }
 

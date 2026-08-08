@@ -18,9 +18,13 @@ export class MeController {
   @Put('field')
   chooseField(
     @Req() req: AuthedRequest,
-    @Body() body: { fieldId?: string },
+    @Body() body: { fieldId?: string; isRetaker?: boolean },
   ): Promise<{ fieldId: string; name: string }> {
-    return this.auth.chooseField(req.auth!.userId, body?.fieldId ?? '');
+    return this.auth.chooseField(
+      req.auth!.userId,
+      body?.fieldId ?? '',
+      typeof body?.isRetaker === 'boolean' ? body.isRetaker : undefined,
+    );
   }
 
   @Get('devices')

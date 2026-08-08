@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TaxonomyService } from '../taxonomy/taxonomy.service';
 import {
@@ -56,6 +57,7 @@ export class ExamBuildService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly taxonomy: TaxonomyService,
+    private readonly audit: AuditService,
   ) {}
 
   /** What the bank can and cannot currently support. A dry run, changing nothing. */
@@ -186,6 +188,20 @@ export class ExamBuildService {
           timeLimitSec: question.timeLimitSec,
         })),
       });
+
+      // Inside the transaction: a paper that exists with no record of who built
+      // it, or a record of a build that rolled back, are both lies.
+      await this.audit.recordAction(
+        {
+          actorId: builtBy,
+          action: 'EXAM_BUILT',
+          entity: 'exam',
+          entityId: created.id,
+          reference: created.name,
+          detail: `${sampled.chosen.length} questions, ${blueprint.durationSec}s`,
+        },
+        tx,
+      );
 
       return created;
     });

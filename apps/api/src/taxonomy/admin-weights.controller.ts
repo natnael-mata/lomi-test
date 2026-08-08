@@ -29,8 +29,8 @@ export class AdminWeightsController {
    * after every import, since the weights are a view of a bank that moves.
    */
   @Post('derive')
-  derive(@Param('fieldId') fieldId: string): Promise<EffectiveWeight[]> {
-    return this.weights.derive(fieldId);
+  derive(@Req() req: AuthedRequest, @Param('fieldId') fieldId: string): Promise<EffectiveWeight[]> {
+    return this.weights.derive(fieldId, req.auth?.userId ?? '');
   }
 
   /**
@@ -56,7 +56,7 @@ export class AdminWeightsController {
 
   /** Drops an override; the topic goes back to what the bank says. */
   @Delete('topics/:topicId')
-  clear(@Param('topicId') topicId: string): Promise<EffectiveWeight[]> {
-    return this.weights.clearOverride(topicId);
+  clear(@Req() req: AuthedRequest, @Param('topicId') topicId: string): Promise<EffectiveWeight[]> {
+    return this.weights.clearOverride(topicId, req.auth?.userId ?? '');
   }
 }

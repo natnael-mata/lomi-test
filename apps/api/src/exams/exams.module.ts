@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { TaxonomyModule } from '../taxonomy/taxonomy.module';
 import { NoSubscriptionsYet, SUBSCRIPTION_ACCESS } from '../practice/subscription-access';
@@ -10,7 +11,7 @@ import { ExamsService } from './exams.service';
 import { SittingLockGuard } from './sitting-lock.guard';
 
 @Module({
-  imports: [AuthModule, TaxonomyModule],
+  imports: [AuditModule, AuthModule, TaxonomyModule],
   controllers: [AdminExamsController, ExamsController],
   providers: [
     ExamBuildService,

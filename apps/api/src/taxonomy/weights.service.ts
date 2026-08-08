@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WeightsError, applyOverrides, deriveWeights, type DerivedWeight } from './weights';
 
@@ -29,7 +30,10 @@ export interface EffectiveWeight {
  */
 @Injectable()
 export class WeightsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /**
    * Recomputes every topic weight in a field and writes the result.
@@ -38,7 +42,7 @@ export class WeightsService {
    * Safe to run after any import or publish, which is the point — the weights
    * are a view of the bank and go stale the moment the bank moves.
    */
-  async derive(fieldId: string): Promise<EffectiveWeight[]> {
+  async derive(fieldId: string, actorId?: string): Promise<EffectiveWeight[]> {
     const topics = await this.loadTopics(fieldId);
     if (topics.length === 0) {
       throw new NotFoundException('No topics in this field yet.');
@@ -88,6 +92,19 @@ export class WeightsService {
         }),
       ),
     ]);
+
+    // Audited only when a person asked for it (T-167). `derive` is also called
+    // internally by `override` and `clearOverride`, which write their own row —
+    // logging both would make one action look like two in the record.
+    if (actorId) {
+      await this.audit.recordAction({
+        actorId,
+        action: 'WEIGHTS_DERIVED',
+        entity: 'field',
+        entityId: fieldId,
+        detail: effective.map((r) => `${r.name} ${r.weightPct}%`).join(', '),
+      });
+    }
 
     const counts = new Map(topics.map((t) => [t.id, t.publishedCount]));
     return effective.map((row) => {
@@ -156,7 +173,7 @@ export class WeightsService {
 
     const topic = await this.prisma.topic.findUnique({
       where: { id: topicId },
-      select: { id: true, weightPct: true, course: { select: { fieldId: true } } },
+      select: { id: true, name: true, weightPct: true, course: { select: { fieldId: true } } },
     });
     if (!topic) throw new NotFoundException('No such topic.');
 
@@ -172,18 +189,34 @@ export class WeightsService {
       },
     });
 
+    await this.audit.recordAction({
+      actorId,
+      action: 'WEIGHT_OVERRIDDEN',
+      entity: 'topic',
+      entityId: topicId,
+      reference: topic.name,
+      detail: `${weightPct}% — ${trimmed}`,
+    });
+
     return this.derive(topic.course.fieldId);
   }
 
   /** Removes an override; the topic goes back to whatever the bank says. */
-  async clearOverride(topicId: string): Promise<EffectiveWeight[]> {
+  async clearOverride(topicId: string, actorId = ''): Promise<EffectiveWeight[]> {
     const topic = await this.prisma.topic.findUnique({
       where: { id: topicId },
-      select: { course: { select: { fieldId: true } } },
+      select: { name: true, course: { select: { fieldId: true } } },
     });
     if (!topic) throw new NotFoundException('No such topic.');
 
     await this.prisma.topicWeightOverride.deleteMany({ where: { topicId } });
+    await this.audit.recordAction({
+      actorId,
+      action: 'WEIGHT_OVERRIDE_CLEARED',
+      entity: 'topic',
+      entityId: topicId,
+      reference: topic.name,
+    });
     return this.derive(topic.course.fieldId);
   }
 
