@@ -29,7 +29,7 @@ import { Button } from '../../components/Button';
  * exists in development is a gallery nobody checks against production CSS.
  * Nothing here reads data or takes an action.
  */
-export const metadata = { title: 'Design system · Lomi-Test' };
+export const metadata = { title: 'Design system' };
 
 function Row({ title, children }: { title: string; children: React.ReactNode }) {
   return (

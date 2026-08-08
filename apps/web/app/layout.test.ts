@@ -4,7 +4,12 @@ import { metadata, viewport } from './layout';
 
 describe('root layout', () => {
   it('carries the product name and a mobile viewport', () => {
-    expect(metadata.title).toBe('Lomi-Test');
+    // A title object since T-201: the default carries the Amharic name, and the
+    // template appends the short one so a tab strip stays readable.
+    expect(metadata.title).toEqual({
+      default: 'Lomi-Test (ሎሚ)',
+      template: '%s · Lomi-Test',
+    });
     // The real device is a low-end phone; a missing viewport makes every page
     // render at desktop width and shrink to unreadable.
     expect(viewport.width).toBe('device-width');

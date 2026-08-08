@@ -61,7 +61,12 @@ describe('reduced motion (T-100)', () => {
   });
 
   it('wins over component transitions, which are not marked important', () => {
-    const components = THEME.slice(THEME.indexOf('@layer components'));
+    // The components LAYER, not "everything after it". The original slice ran to
+    // the end of the file and started failing the moment a later rule needed an
+    // `!important` of its own — T-205's print block, where `display: none` has to
+    // beat the component display rules it is hiding. The rule here is about
+    // component *transitions* not outranking reduced motion; nothing else.
+    const components = blockAfter('@layer components');
     expect(components).not.toContain('!important');
   });
 });

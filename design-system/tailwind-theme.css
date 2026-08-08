@@ -358,3 +358,38 @@
     @apply border-wrong border-2;
   }
 }
+
+/* No content view is printable (T-205).
+   ------------------------------------------------------------------------
+   The bank is the asset. A question with its worked solution and its
+   why-wrongs is the thing students pay for, and a printout is a copy that
+   leaves and keeps working — one screenshot is one person, one PDF is a class.
+
+   This is a **speed bump, not a control**, and saying so matters: anybody
+   determined can screenshot, retype, or read the network response. What it
+   stops is the casual, high-volume path — Ctrl+P on the review screen, where a
+   hundred explanations come out in one action. The real defences are that
+   answer content never reaches a student before they have attempted the
+   question (T-124) and that there is no export endpoint at all.
+
+   Content is hidden rather than the page being blanked, so a student printing
+   a receipt or a support reference still gets a usable page. */
+@media print {
+  [data-stem],
+  [data-answer-view],
+  [data-review-items],
+  [data-exam-review],
+  .answer-option,
+  [data-answer-option],
+  pre,
+  code {
+    display: none !important;
+  }
+
+  /* Says why, rather than printing a mysteriously empty sheet. */
+  [data-exam-review]::before,
+  [data-answer-view]::before {
+    content: 'Question content is not printable. Open Lomi-Test to read it.';
+    display: block;
+  }
+}

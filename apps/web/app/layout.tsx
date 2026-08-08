@@ -8,7 +8,20 @@ import { THEME_BOOT_SCRIPT } from '../components/theme';
 import { fontVariables } from './fonts';
 
 export const metadata: Metadata = {
-  title: 'Lomi-Test',
+  /*
+   * The Amharic name rides on the default title only (T-201, D1).
+   *
+   * `ሎሚ` is how students say it out loud, so it belongs where somebody meets the
+   * product — a shared link, a browser tab on the home screen. Page titles use
+   * the template instead, because "Practice · Lomi-Test (ሎሚ)" truncates to
+   * nothing useful in a tab strip, and a name that only ever appears cut in half
+   * is not a name.
+   */
+  title: {
+    default: 'Lomi-Test (ሎሚ)',
+    template: '%s · Lomi-Test',
+  },
+  applicationName: 'Lomi-Test',
   description:
     'Exit-exam preparation for Ethiopian university students — every answer fully explained.',
 };
