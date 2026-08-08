@@ -840,3 +840,48 @@ model LoginRequest {
   @@index([expiresAt])
   @@index([createdAt])
 }
+
+/// A student's relationship with the Telegram bot (T-180, T-181, T-182).
+///
+/// A separate table rather than three columns on `User`, for the same reason
+/// `StaffMember` and `TopicWeightOverride` are separate: `User` is the one model
+/// the parallel payments branch also has to extend, and two sessions editing the
+/// same lines is the one merge conflict this project has gone out of its way to
+/// avoid. It also keeps a student who has never opened the bot out of the table
+/// entirely, which is the honest representation — there is no relationship yet.
+///
+/// `referredVia` sits here because a referral code arrives through the bot's
+/// `/start` deep link and nowhere else today. If a web referral path appears, it
+/// belongs on `User` and should move.
+model BotProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  /// The `/start` payload that brought them in — "amb_123" (T-180).
+  ///
+  /// Set ONCE, on the first arrival, and never overwritten. Whoever introduced a
+  /// student did so once; letting a later link rewrite it would let anybody
+  /// claim someone else's referral by sending them a fresh link.
+  referredVia String?
+
+  /// True stops every nudge (T-182). Default false: a student who opened the bot
+  /// asked for it. Opting out is one tap and takes effect on the next run.
+  botOptOut Boolean @default(false)
+
+  /// The last date a daily question went out, as a plain YYYY-MM-DD **string**.
+  ///
+  /// A string, not a DateTime, and deliberately: "did this student already get
+  /// today's question" is a question about a calendar day in Addis, not about an
+  /// instant. A timestamp invites a comparison against `now - 24h`, which drifts
+  /// the send time earlier every day until it lands at 3am.
+  lastDailySentOn String?
+
+  /// The chat to send to. Telegram's numeric id, held as a string for the same
+  /// reason `User.telegramId` is: it is an identifier, not a quantity.
+  chatId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([botOptOut, lastDailySentOn])
+}

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { BotModule } from './bot/bot.module';
 import { ExamsModule } from './exams/exams.module';
 import { HealthController } from './health/health.controller';
 import { ImportModule } from './import/import.module';
@@ -16,6 +17,7 @@ import { TaxonomyModule } from './taxonomy/taxonomy.module';
     PrismaModule,
     AuditModule,
     AuthModule,
+    BotModule,
     TaxonomyModule,
     QuestionsModule,
     ImportModule,

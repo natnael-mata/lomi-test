@@ -1,4 +1,5 @@
 import type { LoginApi } from './login.js';
+import type { BotApi } from './daily.js';
 
 /**
  * The bot's client for the API's login routes (T-076).
@@ -41,5 +42,31 @@ export function createLoginApi(baseUrl: string, sharedSecret: string): LoginApi 
     decline: async (nonce) => {
       await call(`/auth/login-link/${encodeURIComponent(nonce)}/decline`, 'POST', {});
     },
+  };
+}
+
+/** The routes behind `/bot`, for arrivals, opt-out and the daily job. */
+export function createBotApi(baseUrl: string, sharedSecret: string): BotApi {
+  const post = async (path: string, body: unknown): Promise<unknown> => {
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-bot-secret': sharedSecret },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`POST ${path} -> ${res.status}`);
+    return res.json();
+  };
+
+  return {
+    arrival: (telegram, chatId, payload) =>
+      post('/bot/arrival', {
+        telegramId: telegram.id,
+        telegramUsername: telegram.username,
+        chatId,
+        payload,
+      }) as Promise<{ userId: string; referredVia: string | null; wasFirst: boolean }>,
+    optOut: (userId, optOut) =>
+      post('/bot/opt-out', { userId, optOut }) as Promise<{ botOptOut: boolean }>,
+    claimDaily: () => post('/bot/daily/claim', {}) as Promise<import('./daily.js').DailyClaim>,
   };
 }

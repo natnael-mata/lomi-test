@@ -1,5 +1,6 @@
 import { createBot } from './bot.js';
-import { createLoginApi } from './login-api.js';
+import { createBotApi, createLoginApi } from './login-api.js';
+import { sendDaily } from './daily.js';
 
 const TOKEN_VAR = 'TELEGRAM_BOT_TOKEN';
 
@@ -29,7 +30,26 @@ async function main(): Promise<void> {
     );
   }
 
-  const bot = createBot(readToken(), undefined, login);
+  const api = apiBase && botSecret ? createBotApi(apiBase, botSecret) : undefined;
+  const bot = createBot(readToken(), undefined, login, api);
+
+  // The daily job, run by whatever schedules it — cron, a systemd timer — rather
+  // than by a timer inside this process. A `setInterval` here would fire only
+  // while the bot happens to be up, and would fire twice if it were ever run on
+  // two machines; the API's claim is what actually makes it once-a-day, so the
+  // scheduler only has to be roughly right.
+  if (process.argv.includes('--daily')) {
+    if (!api) {
+      console.error('Cannot run the daily job: set API_BASE_URL and BOT_SHARED_SECRET.');
+      process.exit(1);
+    }
+    const claim = await api.claimDaily();
+    const result = await sendDaily(claim, (chatId, text) => bot.api.sendMessage(chatId, text));
+    console.log(
+      `daily ${claim.today}: sent ${result.sent}, failed ${result.failed}, skipped ${claim.skipped.length}`,
+    );
+    return;
+  }
 
   // Wiring check: prove config and handlers are valid without opening a
   // long-polling connection to Telegram. Used by the T-007 test so the check

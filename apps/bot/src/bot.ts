@@ -1,6 +1,7 @@
 import { Bot, InlineKeyboard, type BotConfig } from 'grammy';
 import type { Context } from 'grammy';
 
+import { OPTED_IN_TEXT, OPTED_OUT_TEXT, type BotApi } from './daily.js';
 import {
   APPROVED_TEXT,
   CONFIRM_PREFIX,
@@ -27,13 +28,44 @@ const LOGIN_PAYLOAD_PREFIX = 'login_';
  * the same — the bot relays an identity Telegram gave it and renders a prompt;
  * every decision about whether that identity may have a session is the API's.
  */
-export function createBot(token: string, config?: BotConfig<Context>, login?: LoginApi): Bot {
+export function createBot(
+  token: string,
+  config?: BotConfig<Context>,
+  login?: LoginApi,
+  api?: BotApi,
+): Bot {
   // `config` exists so tests can supply `botInfo` and dispatch updates without
   // grammY calling getMe over the network. Production passes nothing.
   const bot = new Bot(token, config);
 
   bot.command('start', async (ctx) => {
     const payload = ctx.match?.toString() ?? '';
+
+    /*
+     * Attribution happens at FIRST CONTACT, before anything else (T-180).
+     *
+     * Somebody arriving on a referral link has never signed in, so there is no
+     * later moment to record it: if this is skipped because the payload turned
+     * out to be a login nonce, or because the reply failed, the referral is lost
+     * and an ambassador is not paid for work they did.
+     *
+     * Failures are swallowed for the same reason the welcome still sends: a
+     * student's first impression of the product must not be an error because a
+     * bookkeeping call timed out.
+     */
+    const from = ctx.from;
+    if (api && from) {
+      try {
+        await api.arrival(
+          { id: String(from.id), username: from.username },
+          String(ctx.chat?.id ?? from.id),
+          payload,
+        );
+      } catch {
+        // Logged by the caller; never shown to the student.
+      }
+    }
+
     const nonce = payload.startsWith(LOGIN_PAYLOAD_PREFIX)
       ? payload.slice(LOGIN_PAYLOAD_PREFIX.length)
       : '';
@@ -84,6 +116,45 @@ export function createBot(token: string, config?: BotConfig<Context>, login?: Lo
     }
     await ctx.answerCallbackQuery();
     await ctx.editMessageText(DECLINED_TEXT);
+  });
+
+  /*
+   * Turning the daily question off and on (T-182).
+   *
+   * Two plain commands rather than a settings screen: the student is already in
+   * a chat, and the shortest path to "stop messaging me" is the one that keeps
+   * somebody from blocking the bot outright.
+   */
+  bot.command('stop', async (ctx) => {
+    const from = ctx.from;
+    if (!api || !from) return;
+    try {
+      const { userId } = await api.arrival(
+        { id: String(from.id), username: from.username },
+        String(ctx.chat?.id ?? from.id),
+        '',
+      );
+      await api.optOut(userId, true);
+      await ctx.reply(OPTED_OUT_TEXT);
+    } catch {
+      await ctx.reply(UNUSABLE_TEXT);
+    }
+  });
+
+  bot.command('daily', async (ctx) => {
+    const from = ctx.from;
+    if (!api || !from) return;
+    try {
+      const { userId } = await api.arrival(
+        { id: String(from.id), username: from.username },
+        String(ctx.chat?.id ?? from.id),
+        '',
+      );
+      await api.optOut(userId, false);
+      await ctx.reply(OPTED_IN_TEXT);
+    } catch {
+      await ctx.reply(UNUSABLE_TEXT);
+    }
   });
 
   return bot;
