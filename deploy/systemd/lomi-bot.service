@@ -1,0 +1,28 @@
+# The Nest API. Reads /srv/lomi-test/.env, which is written by hand on the box
+# and never deployed from the repository.
+[Unit]
+Description=Lomi-Test bot
+After=network.target lomi-api.service
+Wants=lomi-api.service
+
+[Service]
+Type=simple
+User=lomi
+Group=lomi
+WorkingDirectory=/srv/lomi-test/current/apps/bot
+EnvironmentFile=/srv/lomi-test/.env
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=5
+
+# This service has no business anywhere but its own directory. On a box running
+# other people's live products that is the difference between a bad deploy and
+# an incident.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/lomi-test
+
+[Install]
+WantedBy=multi-user.target
