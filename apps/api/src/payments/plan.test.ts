@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { expiresAtFrom, isLive, offersFrom, perMonthEtb, type PlanShape } from './plan';
+import {
+  expiresAtFrom,
+  isLive,
+  offersFrom,
+  perMonthEtb,
+  renewalStartsAt,
+  type PlanShape,
+} from './plan';
 
 const SIX: PlanShape = { code: 'SIX_MONTH', months: 6, priceEtb: 500 };
 const TWELVE: PlanShape = { code: 'TWELVE_MONTH', months: 12, priceEtb: 800 };
@@ -169,5 +176,52 @@ describe('what the picker shows (T-141a)', () => {
   it('recomputes from the price rather than remembering', () => {
     const cheaper = offersFrom([{ ...TWELVE, priceEtb: 600 }])[0];
     expect(cheaper?.perMonthEtb).toBe(50);
+  });
+});
+
+describe('renewing (T-146a)', () => {
+  /**
+   * T-146a's stated test. A student who renews a week early would otherwise
+   * lose that week — and the lesson that teaches is to wait until access has
+   * actually lapsed before paying, which is worse for them and worse for the
+   * product.
+   */
+  it('counts from the existing expiry, not from today', () => {
+    const expiry = at('2026-07-15T00:00:00.000Z');
+    const renewsOn = at('2026-06-15T00:00:00.000Z'); // 30 days early
+    const start = renewalStartsAt(expiry, renewsOn);
+
+    expect(start.toISOString()).toBe(expiry.toISOString());
+    // The full six months land on top of the existing date, not on today.
+    expect(expiresAtFrom(start, 6).toISOString()).toBe('2027-01-15T00:00:00.000Z');
+  });
+
+  it('adds the whole plan length however early the renewal is', () => {
+    const expiry = at('2026-07-15T00:00:00.000Z');
+    for (const early of ['2026-07-14', '2026-06-01', '2026-02-20']) {
+      const start = renewalStartsAt(expiry, at(`${early}T00:00:00.000Z`));
+      expect(expiresAtFrom(start, 12).toISOString()).toBe('2027-07-15T00:00:00.000Z');
+    }
+  });
+
+  /**
+   * Once access HAS lapsed the clock starts now. Backdating a June renewal to a
+   * March expiry would sell somebody three months they cannot use.
+   */
+  it('starts from today once access has already lapsed', () => {
+    const expired = at('2026-03-01T00:00:00.000Z');
+    const renewsOn = at('2026-06-01T00:00:00.000Z');
+    expect(renewalStartsAt(expired, renewsOn).toISOString()).toBe(renewsOn.toISOString());
+  });
+
+  it('starts from today for a first purchase', () => {
+    const now = at('2026-06-01T00:00:00.000Z');
+    expect(renewalStartsAt(null, now).toISOString()).toBe(now.toISOString());
+  });
+
+  // The boundary has to fall somewhere: an expiry exactly now is spent.
+  it('treats an expiry falling exactly now as spent', () => {
+    const now = at('2026-06-01T00:00:00.000Z');
+    expect(renewalStartsAt(now, now).toISOString()).toBe(now.toISOString());
   });
 });

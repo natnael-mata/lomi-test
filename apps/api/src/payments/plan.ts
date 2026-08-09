@@ -118,3 +118,20 @@ export function offersFrom(plans: readonly PlanShape[]): PlanOffer[] {
       .sort((a, b) => a.perMonthEtb - b.perMonthEtb || a.months - b.months)
   );
 }
+
+/**
+ * When a renewal should start counting from (T-146a).
+ *
+ * **From the existing expiry, not from today.** A student who renews a week
+ * early would otherwise lose that week — and the behaviour it teaches is to wait
+ * until access has actually lapsed before paying, which is worse for them and
+ * worse for the product. Renewing early should never cost anything.
+ *
+ * From `now` once access has lapsed: a subscription that ended in March does not
+ * silently backdate a renewal bought in June to March, which would sell somebody
+ * three months they cannot use.
+ */
+export function renewalStartsAt(currentExpiry: Date | null, now: Date): Date {
+  if (currentExpiry === null) return now;
+  return currentExpiry.getTime() > now.getTime() ? currentExpiry : now;
+}

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
+import { AuthModule } from '../auth/auth.module';
 import { SUBSCRIPTION_ACCESS } from '../practice/subscription-access';
+import { AdminPaymentsController, PaymentsController } from './payments.controller';
 import { SubscriptionsService } from './subscriptions.service';
 
 /**
@@ -11,6 +13,8 @@ import { SubscriptionsService } from './subscriptions.service';
  * that token, so nothing in either changes now that there is a real answer.
  */
 @Module({
+  imports: [AuthModule],
+  controllers: [PaymentsController, AdminPaymentsController],
   providers: [
     SubscriptionsService,
     { provide: SUBSCRIPTION_ACCESS, useExisting: SubscriptionsService },

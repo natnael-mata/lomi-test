@@ -1011,3 +1011,57 @@ enum SubscriptionStatus {
   /// Withdrawn by an operator, with the reason in the audit log.
   CANCELLED
 }
+
+/// Money a student says they have sent (T-145).
+///
+/// **A payment is a claim until something confirms it.** A bank transfer arrives
+/// as a reference typed off a receipt; nothing about receiving that reference
+/// proves the money moved. So a payment starts `PENDING`, grants nothing, and
+/// only an operator or a provider webhook can settle it.
+model Payment {
+  id String @id @default(cuid())
+
+  userId         String
+  subscriptionId String
+
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  /// Whole birr, as claimed. Compared against the subscription's `paidEtb` when
+  /// somebody settles it — an underpayment is a conversation, not a rejection.
+  amountEtb Int
+
+  /// The bank's transaction reference, as the student typed it.
+  ///
+  /// **Unique, and that uniqueness is the point** (T-145): one transfer settles
+  /// one subscription. Without it the same receipt could be submitted twice and
+  /// an operator confirming both would grant twelve months for one payment.
+  txRef String @unique
+
+  /// Free text from whoever settled or refused it.
+  note String?
+
+  /// Who settled it, by staff id. Null while pending.
+  settledBy String?
+  settledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+}
+
+enum PaymentMethod {
+  /// A transfer the student made themselves, evidenced by a reference.
+  BANK
+  CHAPA
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  /// Refused, with the reason in `note`. Distinct from a payment that never
+  /// arrived: "we looked and it was not there" is a different conversation.
+  REJECTED
+}
