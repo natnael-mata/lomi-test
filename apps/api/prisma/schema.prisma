@@ -400,6 +400,14 @@ enum AuditAction {
   DEVICES_RESET
   ACCOUNT_DEACTIVATED
   ACCOUNT_REACTIVATED
+
+  /// T-152: an operator settling a claimed payment by hand.
+  ///
+  /// Both outcomes are recorded, not just the grant. A refusal is the one a
+  /// student is more likely to dispute, and "we looked and the money was not
+  /// there" is worthless as a defence if nobody wrote down who looked.
+  PAYMENT_CONFIRMED
+  PAYMENT_REJECTED
 }
 
 /// A student.

@@ -183,12 +183,16 @@ function apiBaseUrl(): string {
 }
 
 /**
- * Settling a transfer (T-152's student-visible half).
+ * Settling a claimed transfer (T-152).
  *
  * ADMIN only and under `/admin`, so the route inventory test (T-107) keeps
  * holding. The actor comes from the session: a client that names its own actor
  * can name anybody, which makes the record worthless exactly when somebody needs
  * to know who granted access.
+ *
+ * **Both outcomes are here.** An operator who checks the statement and finds
+ * nothing needs somewhere to say so — a confirm-only surface leaves the claim
+ * pending forever, and the student without an answer.
  */
 @Controller('admin/payments')
 @UseGuards(SessionGuard, AdminGuard)
@@ -202,5 +206,44 @@ export class AdminPaymentsController {
     @Body() body: { note?: string },
   ): Promise<{ activated: boolean; expiresAt: Date | null }> {
     return this.subscriptions.confirmManualPayment(paymentId, req.auth!.userId, body?.note);
+  }
+
+  /** The reason is required, not optional: this is the one a student disputes. */
+  @Post(':paymentId/reject')
+  reject(
+    @Req() req: AuthedRequest,
+    @Param('paymentId') paymentId: string,
+    @Body() body: { reason?: string },
+  ): Promise<{ paymentId: string; status: 'REJECTED' }> {
+    return this.subscriptions.rejectManualPayment(paymentId, req.auth!.userId, body?.reason ?? '');
+  }
+}
+
+/**
+ * Expiring subscriptions (T-153).
+ *
+ * Its own controller rather than another verb under `/admin/payments`, where
+ * `subscriptions/sweep` would sit beside `:paymentId/confirm` and read like a
+ * payment whose id is the word "subscriptions".
+ */
+@Controller('admin/subscriptions')
+@UseGuards(SessionGuard, AdminGuard)
+export class AdminSubscriptionsController {
+  constructor(private readonly subscriptions: SubscriptionsService) {}
+
+  /**
+   * Marks everything past its expiry as `EXPIRED`.
+   *
+   * A whole-table pass, for an operator or a cron entry. It is **tidying, not
+   * enforcement** — the paywall reads `expiresAt` and not `status`, so access
+   * ends at the timestamp whether or not this has ever run. What it fixes is
+   * the column an operator reads, which would otherwise say `ACTIVE` about a
+   * subscription that ended in March.
+   *
+   * Safe to run repeatedly, and safe to forget.
+   */
+  @Post('sweep')
+  async sweep(): Promise<{ expired: number }> {
+    return { expired: await this.subscriptions.sweepExpired() };
   }
 }

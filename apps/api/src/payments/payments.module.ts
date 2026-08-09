@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 
+import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { SUBSCRIPTION_ACCESS } from '../practice/subscription-access';
 import { CHAPA_GATEWAY, HttpChapaGateway } from './chapa.client';
 import { ChapaService } from './chapa.service';
 import {
   AdminPaymentsController,
+  AdminSubscriptionsController,
   ChapaWebhookController,
   PaymentsController,
 } from './payments.controller';
@@ -24,8 +26,13 @@ import { SubscriptionsService } from './subscriptions.service';
  * `fetch` globally and quietly stops testing the request it builds.
  */
 @Module({
-  imports: [AuthModule],
-  controllers: [PaymentsController, ChapaWebhookController, AdminPaymentsController],
+  imports: [AuthModule, AuditModule],
+  controllers: [
+    PaymentsController,
+    ChapaWebhookController,
+    AdminPaymentsController,
+    AdminSubscriptionsController,
+  ],
   providers: [
     SubscriptionsService,
     ChapaService,

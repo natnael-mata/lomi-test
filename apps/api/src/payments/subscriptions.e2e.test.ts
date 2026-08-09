@@ -38,11 +38,30 @@ describe('plans and paid access (Phase 8)', () => {
     });
     // Payments first: the FK is ON DELETE RESTRICT, deliberately, so the record
     // of a payment outlives any attempt to tidy away the subscription it settled.
+    await clearPaymentAudit(users.map((u) => u.id));
     await prisma.payment.deleteMany({ where: { userId: { in: users.map((u) => u.id) } } });
     await prisma.subscription.deleteMany({ where: { userId: { in: users.map((u) => u.id) } } });
     await prisma.session.deleteMany({ where: { userId: { in: users.map((u) => u.id) } } });
     await prisma.user.deleteMany({ where: { telegramId: String(TG) } });
     await prisma.field.deleteMany({ where: { slug: { contains: SFX } } });
+  };
+
+  /**
+   * Removes the audit rows this suite's settlements wrote (T-152).
+   *
+   * Scoped by the payment ids it is about to delete, not by actor id: `staff-1`
+   * is a name other suites use too, and a cleanup that matches on it would tidy
+   * away another test's evidence. `public.audit_log` is never DELETEd wholesale.
+   */
+  const clearPaymentAudit = async (userIds: string[]): Promise<void> => {
+    const payments = await prisma.payment.findMany({
+      where: { userId: { in: userIds } },
+      select: { id: true },
+    });
+    if (payments.length === 0) return;
+    await prisma.auditLog.deleteMany({
+      where: { entity: 'payment', entityId: { in: payments.map((p) => p.id) } },
+    });
   };
 
   beforeAll(async () => {
@@ -74,6 +93,7 @@ describe('plans and paid access (Phase 8)', () => {
       where: { telegramId: String(TG) },
       select: { id: true },
     });
+    await clearPaymentAudit(existing.map((u) => u.id));
     await prisma.payment.deleteMany({ where: { userId: { in: existing.map((u) => u.id) } } });
     await prisma.subscription.deleteMany({
       where: { userId: { in: existing.map((u) => u.id) } },
@@ -351,6 +371,193 @@ describe('plans and paid access (Phase 8)', () => {
       await expect(subscriptions.confirmManualPayment(paymentId, 'staff-1')).rejects.toMatchObject({
         status: 409,
       });
+    });
+  });
+
+  describe('settling by hand, and answering for it (T-152)', () => {
+    const settle = async (
+      reference: string,
+    ): Promise<{ paymentId: string; subscriptionId: string }> => {
+      const { paymentId, subscriptionId } = await subscriptions.submitManualPayment(
+        userId,
+        'SIX_MONTH',
+        reference,
+      );
+      return { paymentId, subscriptionId };
+    };
+
+    /** T-152's stated test: the activation writes a row naming the operator. */
+    it('writes an audit row naming who granted the access', async () => {
+      const { paymentId } = await settle('FT-AUDIT-CONFIRM');
+      await subscriptions.confirmManualPayment(paymentId, 'staff-7', 'Seen on the statement');
+
+      const entry = await prisma.auditLog.findFirstOrThrow({
+        where: { entity: 'payment', entityId: paymentId },
+      });
+      expect(entry.action).toBe('PAYMENT_CONFIRMED');
+      expect(entry.actorId).toBe('staff-7');
+      // The transaction reference, because that is what a dispute is about —
+      // and it stays legible after the payment row is gone.
+      expect(entry.reference).toBe('FT-AUDIT-CONFIRM');
+      expect(entry.detail).toContain('Seen on the statement');
+    });
+
+    /**
+     * The refusal is the outcome a student is more likely to dispute. "We looked
+     * and the money was not there" is worthless as a defence if nobody wrote
+     * down who looked.
+     */
+    it('writes an audit row for a refusal too', async () => {
+      const { paymentId } = await settle('FT-AUDIT-REJECT');
+      await subscriptions.rejectManualPayment(paymentId, 'staff-8', 'Nothing on the statement');
+
+      const entry = await prisma.auditLog.findFirstOrThrow({
+        where: { entity: 'payment', entityId: paymentId },
+      });
+      expect(entry.action).toBe('PAYMENT_REJECTED');
+      expect(entry.actorId).toBe('staff-8');
+
+      const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+      expect(payment.status).toBe('REJECTED');
+      expect(payment.note).toBe('Nothing on the statement');
+    });
+
+    it('grants nothing on a refusal', async () => {
+      const { paymentId } = await settle('FT-REJECT-NOACCESS');
+      await subscriptions.rejectManualPayment(paymentId, 'staff-8', 'Not found');
+      expect(await access.hasActiveSubscription(userId, fieldA)).toBe(false);
+    });
+
+    // A reason is required where the confirming note is optional: "rejected" with
+    // nothing after it is not something a support conversation can start from.
+    it('will not refuse a payment without saying why', async () => {
+      const { paymentId } = await settle('FT-REJECT-NOREASON');
+      await expect(
+        subscriptions.rejectManualPayment(paymentId, 'staff-8', '   '),
+      ).rejects.toMatchObject({ status: 422 });
+
+      const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+      expect(payment.status).toBe('PENDING');
+      expect(await prisma.auditLog.count({ where: { entityId: paymentId } })).toBe(0);
+    });
+
+    it('refuses to refuse a payment that is already settled', async () => {
+      const { paymentId } = await settle('FT-REJECT-TWICE');
+      await subscriptions.confirmManualPayment(paymentId, 'staff-1');
+      await expect(
+        subscriptions.rejectManualPayment(paymentId, 'staff-2', 'Changed my mind'),
+      ).rejects.toMatchObject({ status: 409 });
+    });
+
+    /**
+     * The settlement and its record are one transaction. A record that survives
+     * a rolled-back confirmation is a lie about what happened, and one that
+     * vanishes while the confirmation stands is worse.
+     */
+    it('writes exactly one audit row per settlement', async () => {
+      const { paymentId } = await settle('FT-AUDIT-ONCE');
+      await subscriptions.confirmManualPayment(paymentId, 'staff-1');
+      await subscriptions.confirmManualPayment(paymentId, 'staff-1').catch(() => undefined);
+
+      expect(await prisma.auditLog.count({ where: { entityId: paymentId } })).toBe(1);
+    });
+  });
+
+  describe('access running out (T-153)', () => {
+    const JAN = new Date('2026-01-15T00:00:00.000Z');
+    const AUGUST = new Date('2026-08-15T00:00:00.000Z');
+
+    const expired = async (): Promise<string> => {
+      const { id } = await subscriptions.begin(userId, 'SIX_MONTH');
+      // Six months from January runs out on 15 July.
+      await subscriptions.activate(id, JAN);
+      return id;
+    };
+
+    /**
+     * T-153's stated test, and the one that matters most: access ends at the
+     * timestamp **whether or not anything has swept**.
+     *
+     * The paywall reads `expiresAt`, never `status`. A product whose paywall
+     * depends on a sweeper having run hands out free access every time a
+     * scheduler dies, and schedulers die quietly.
+     */
+    it('ends access at the expiry even if nothing has swept', async () => {
+      await expired();
+      const stale = await prisma.subscription.findFirstOrThrow({ where: { userId } });
+      expect(stale.status).toBe('ACTIVE'); // Nothing has tidied it yet.
+
+      // Fresh service, no sweep run, clock past the expiry.
+      expect(await access.hasActiveSubscription(userId, fieldA)).toBe(false);
+    });
+
+    it('downgrades the status when the sweep runs', async () => {
+      await expired();
+      const count = await subscriptions.sweepExpired(AUGUST);
+      expect(count).toBe(1);
+
+      const swept = await prisma.subscription.findFirstOrThrow({ where: { userId } });
+      expect(swept.status).toBe('EXPIRED');
+    });
+
+    /** Lazily, at the moment somebody would have read the stale value. */
+    it('tidies this student’s own row when their status is read', async () => {
+      await expired();
+      const status = await subscriptions.statusFor(userId, AUGUST);
+      expect(status.active).toBe(false);
+
+      const row = await prisma.subscription.findFirstOrThrow({ where: { userId } });
+      expect(row.status).toBe('EXPIRED');
+    });
+
+    it('leaves a live subscription alone', async () => {
+      const { id } = await subscriptions.begin(userId, 'TWELVE_MONTH');
+      await subscriptions.activate(id, AUGUST);
+
+      expect(await subscriptions.sweepExpired(AUGUST)).toBe(0);
+      const row = await prisma.subscription.findFirstOrThrow({ where: { id } });
+      expect(row.status).toBe('ACTIVE');
+    });
+
+    it('is safe to run twice', async () => {
+      await expired();
+      expect(await subscriptions.sweepExpired(AUGUST)).toBe(1);
+      expect(await subscriptions.sweepExpired(AUGUST)).toBe(0);
+    });
+
+    /**
+     * T-153's other half: data retained. A student who renews in September
+     * should find their March history intact, and a dispute about a payment is
+     * not helped by the record of it having been tidied away.
+     */
+    it('keeps the payment, the dates and the plan', async () => {
+      const { paymentId, subscriptionId } = await subscriptions.submitManualPayment(
+        userId,
+        'SIX_MONTH',
+        'FT-EXPIRY-KEEP',
+      );
+      await subscriptions.confirmManualPayment(paymentId, 'staff-1', undefined, JAN);
+      await subscriptions.sweepExpired(AUGUST);
+
+      const subscription = await prisma.subscription.findUniqueOrThrow({
+        where: { id: subscriptionId },
+      });
+      expect(subscription.status).toBe('EXPIRED');
+      expect(subscription.activatedAt).not.toBeNull();
+      expect(subscription.expiresAt).not.toBeNull();
+      expect(subscription.paidEtb).toBeGreaterThan(0);
+
+      const payment = await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
+      expect(payment.status).toBe('CONFIRMED');
+      expect(payment.txRef).toBe('FT-EXPIRY-KEEP');
+    });
+
+    /** Expired is not "never paid". The difference is what a renewal screen says. */
+    it('still knows the student has paid before', async () => {
+      await expired();
+      const status = await subscriptions.statusFor(userId, AUGUST);
+      expect(status.hasEverPaid).toBe(true);
+      expect(status.active).toBe(false);
     });
   });
 

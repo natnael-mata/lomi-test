@@ -31,7 +31,7 @@ export class AuditService {
     entry: {
       actorId: string;
       action: AuditAction;
-      entity: 'question' | 'topic' | 'field' | 'exam' | 'user';
+      entity: 'question' | 'topic' | 'field' | 'exam' | 'user' | 'payment';
       entityId: string;
       reference?: string | null;
       detail?: string | null;

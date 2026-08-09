@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, UnprocessableEntityException } from '@nestjs/common';
 
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { SubscriptionAccess } from '../practice/subscription-access';
 import { expiresAtFrom, isLive, offersFrom, renewalStartsAt, type PlanOffer } from './plan';
@@ -20,7 +21,10 @@ import { expiresAtFrom, isLive, offersFrom, renewalStartsAt, type PlanOffer } fr
  */
 @Injectable()
 export class SubscriptionsService implements SubscriptionAccess {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   /** The plans on sale, cheapest per month first, with the maths done (T-141a). */
   async offers(): Promise<PlanOffer[]> {
@@ -124,7 +128,27 @@ export class SubscriptionsService implements SubscriptionAccess {
     return { activated: true, expiresAt };
   }
 
-  /** Marks anything past its expiry as EXPIRED. Safe to run repeatedly. */
+  /**
+   * Marks everything past its expiry as `EXPIRED` (T-153).
+   *
+   * **Tidying, not enforcement, and the distinction matters.** The paywall reads
+   * `expiresAt` and not `status` (see `hasActiveSubscription`), so access ends at
+   * the timestamp whether or not this has ever run. What it fixes is the column
+   * an operator reads, which would otherwise say `ACTIVE` about a subscription
+   * that ended in March.
+   *
+   * That ordering is deliberate. A product whose paywall depends on a sweeper
+   * having run is a product that hands out free access every time a scheduler
+   * dies, and schedulers die quietly. Here the worst a missed sweep can do is
+   * make a report untidy.
+   *
+   * **Nothing is deleted.** An expired subscription keeps its payments, its
+   * dates and its plan: a student who renews in September should find their
+   * March history intact, and a dispute about a payment is not helped by the
+   * record of it having been tidied away.
+   *
+   * Safe to run repeatedly, and safe to forget.
+   */
   async sweepExpired(now: Date = new Date()): Promise<number> {
     const swept = await this.prisma.subscription.updateMany({
       where: { status: 'ACTIVE', expiresAt: { lte: now } },
@@ -133,8 +157,26 @@ export class SubscriptionsService implements SubscriptionAccess {
     return swept.count;
   }
 
-  /** What a student's access looks like, for a screen or an operator. */
+  /**
+   * What a student's access looks like, for a screen or an operator.
+   *
+   * Sweeps this **one** student's stale rows first (T-153). There is no
+   * scheduler in this project — the exam module makes the same call, and for the
+   * same reason: a `setTimeout` at boot is silently dropped by every deploy while
+   * staying green in a test process that never restarts. So expiry is tidied
+   * lazily, at the moment the stale value would be read, which is the only moment
+   * it is visible.
+   *
+   * Scoped to one user rather than the whole table because this runs on a screen
+   * a student opened. `sweepExpired` is the whole-table pass, and it is behind an
+   * admin route.
+   */
   async statusFor(userId: string, now: Date = new Date()) {
+    await this.prisma.subscription.updateMany({
+      where: { userId, status: 'ACTIVE', expiresAt: { lte: now } },
+      data: { status: 'EXPIRED' },
+    });
+
     const latest = await this.prisma.subscription.findFirst({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -144,6 +186,9 @@ export class SubscriptionsService implements SubscriptionAccess {
 
     return {
       hasEverPaid: latest.activatedAt !== null,
+      // Still `&& isLive`, even after the sweep above. The sweep only touches
+      // rows that were already stale; the authority is the timestamp, and a
+      // status read is never allowed to become the thing that decides.
       active: latest.status === 'ACTIVE' && isLive(latest.expiresAt, now),
       expiresAt: latest.expiresAt?.toISOString() ?? null,
       planCode: latest.plan.code,
@@ -224,6 +269,58 @@ export class SubscriptionsService implements SubscriptionAccess {
     note?: string,
     now: Date = new Date(),
   ): Promise<{ activated: boolean; expiresAt: Date | null }> {
+    const payment = await this.settleManually(paymentId, actorId, 'CONFIRMED', note, now);
+    return this.activate(payment.subscriptionId, now);
+  }
+
+  /**
+   * An operator refuses a transfer that never arrived (T-152).
+   *
+   * The pair of `confirmManualPayment`, and not an afterthought: `REJECTED`
+   * existed as a status with no way for anybody to set it, which left an
+   * operator who had checked the statement and found nothing with no move
+   * except to leave the claim pending forever. A student is owed the answer.
+   *
+   * The reason is **required** here where the confirming note is optional. A
+   * refusal is what somebody will dispute, and "rejected" with no reason is not
+   * something a support conversation can start from.
+   */
+  async rejectManualPayment(
+    paymentId: string,
+    actorId: string,
+    reason: string,
+    now: Date = new Date(),
+  ): Promise<{ paymentId: string; status: 'REJECTED' }> {
+    if (reason.trim().length === 0) {
+      throw new UnprocessableEntityException({
+        error: 'REASON_REQUIRED',
+        message: 'Say why this payment is being refused. The student will be told.',
+      });
+    }
+    await this.settleManually(paymentId, actorId, 'REJECTED', reason, now);
+    return { paymentId, status: 'REJECTED' };
+  }
+
+  /**
+   * Settles a claimed payment either way, and writes the audit row (T-152).
+   *
+   * **The audit write is inside the same transaction as the settlement.** A
+   * record that survives a rolled-back confirmation is a lie about what
+   * happened, and one that vanishes while the confirmation stands is worse —
+   * this is the action somebody will be asked to answer for.
+   *
+   * The conditional `updateMany` on `status: 'PENDING'` is the guard, not the
+   * read above it: two operators working the same queue land here at once more
+   * often than the ordering suggests, and the read-then-write version grants
+   * twice.
+   */
+  private async settleManually(
+    paymentId: string,
+    actorId: string,
+    outcome: 'CONFIRMED' | 'REJECTED',
+    note: string | undefined,
+    now: Date,
+  ): Promise<{ subscriptionId: string }> {
     const payment = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
     if (payment.status !== 'PENDING') {
       throw new ConflictException({
@@ -232,18 +329,36 @@ export class SubscriptionsService implements SubscriptionAccess {
       });
     }
 
-    const claimed = await this.prisma.payment.updateMany({
-      where: { id: paymentId, status: 'PENDING' },
-      data: { status: 'CONFIRMED', settledBy: actorId, settledAt: now, note: note?.trim() || null },
-    });
-    if (claimed.count === 0) {
-      throw new ConflictException({
-        error: 'PAYMENT_ALREADY_SETTLED',
-        message: 'That payment has already been settled.',
+    return this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.payment.updateMany({
+        where: { id: paymentId, status: 'PENDING' },
+        data: { status: outcome, settledBy: actorId, settledAt: now, note: note?.trim() || null },
       });
-    }
+      if (claimed.count === 0) {
+        throw new ConflictException({
+          error: 'PAYMENT_ALREADY_SETTLED',
+          message: 'That payment has already been settled.',
+        });
+      }
 
-    return this.activate(payment.subscriptionId, now);
+      await this.audit.recordAction(
+        {
+          actorId,
+          action: outcome === 'CONFIRMED' ? 'PAYMENT_CONFIRMED' : 'PAYMENT_REJECTED',
+          entity: 'payment',
+          entityId: paymentId,
+          // The transaction reference, which is what a dispute is actually
+          // about — and readable after the row it points at is gone.
+          reference: payment.txRef,
+          detail:
+            `${payment.method} · Br ${payment.amountEtb}` +
+            (note?.trim() ? ` — ${note.trim()}` : ''),
+        },
+        tx,
+      );
+
+      return { subscriptionId: payment.subscriptionId };
+    });
   }
 }
 
