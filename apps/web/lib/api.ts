@@ -230,8 +230,67 @@ export interface SittingItem {
   clock: SittingClock;
 }
 
+export type PlanCode = 'SIX_MONTH' | 'TWELVE_MONTH';
+
+export interface PlanOffer {
+  code: PlanCode;
+  months: number;
+  priceEtb: number;
+  perMonthEtb: number;
+  savingPct: number;
+  bestValue: boolean;
+}
+
+/** A charge that has been started and not yet settled. */
+export interface StartedPayment {
+  paymentId: string;
+  subscriptionId: string;
+  txRef: string;
+}
+
+export interface PaymentStatus {
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED';
+  expiresAt: string | null;
+}
+
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
+
+  plans: (): Promise<PlanOffer[]> => call<PlanOffer[]>('/payments/plans'),
+
+  /**
+   * Options 1 and 2: a USSD push to the student's own handset.
+   *
+   * Returns before they have typed their PIN, so the screen that calls this
+   * shows "check your phone" and polls — there is nothing to wait for here.
+   */
+  payDirect: (
+    channel: 'telebirr' | 'cbebirr',
+    planCode: PlanCode,
+    mobile: string,
+  ): Promise<StartedPayment & { pushSentTo: string }> =>
+    call(`/payments/${channel}`, { method: 'POST', body: JSON.stringify({ planCode, mobile }) }),
+
+  /** Option 3: Chapa's hosted page. The URL is theirs; we only redirect to it. */
+  payHosted: (planCode: PlanCode): Promise<StartedPayment & { checkoutUrl: string }> =>
+    call('/payments/chapa', { method: 'POST', body: JSON.stringify({ planCode }) }),
+
+  /** Option 4: any bank, then the reference off the receipt. Settled by a person. */
+  payManual: (
+    planCode: PlanCode,
+    txRef: string,
+  ): Promise<{ paymentId: string; subscriptionId: string; status: 'PENDING' }> =>
+    call('/payments/manual', { method: 'POST', body: JSON.stringify({ planCode, txRef }) }),
+
+  paymentStatus: (txRef: string): Promise<PaymentStatus> =>
+    call<PaymentStatus>(`/payments/status?txRef=${encodeURIComponent(txRef)}`),
+
+  mySubscription: (): Promise<{
+    hasEverPaid: boolean;
+    active: boolean;
+    expiresAt: string | null;
+    planCode: PlanCode | null;
+  }> => call('/payments/me'),
 
   submitAttempt: (input: {
     questionId: string;

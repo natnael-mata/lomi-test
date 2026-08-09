@@ -103,6 +103,53 @@ export const en = {
       `${count === 1 ? 'is' : 'are'} not counted above.`,
   },
 
+  checkout: {
+    title: 'Get full access',
+    working: 'Loading the plans…',
+    perMonth: (etb: number) => `Br ${etb} a month`,
+    forMonths: (etb: number, months: number) => `Br ${etb} for ${months} months`,
+    bestValue: 'Best value',
+    savingVs: (pct: number) => `${pct}% less per month`,
+    howToPay: 'How would you like to pay?',
+
+    telebirr: 'telebirr',
+    telebirrHow: 'A request comes to your phone. Approve it with your PIN.',
+    cbebirr: 'CBE Birr',
+    cbebirrHow: 'A request comes to your phone. Approve it with your PIN.',
+    chapa: 'Card or another wallet',
+    chapaHow: 'Opens Chapa, where you can pay the way you prefer.',
+    bank: 'Bank transfer',
+    bankHow: 'Transfer from any bank, then paste the transaction number here.',
+
+    mobileLabel: 'The phone number you pay with',
+    mobileHint: 'For example 0911223344.',
+    mobileInvalid: 'That does not look like an Ethiopian mobile number. Check it and try again.',
+    txRefLabel: 'Transaction number',
+    txRefHint: 'The reference on your transfer receipt or SMS.',
+    txRefRequired: 'Enter the transaction number from your transfer receipt.',
+    txRefTaken:
+      'That transaction number has already been sent to us. Support can look it up for you.',
+
+    pay: 'Pay',
+    sending: 'Sending…',
+    checkYourPhone: (mobile: string) =>
+      `A payment request has been sent to ${mobile}. Approve it on your phone, and this page ` +
+      'updates on its own.',
+    stillWaiting:
+      'Still waiting for the payment. If you have approved it, give it another moment — nothing ' +
+      'is lost if you close this page.',
+    openingChapa: 'Opening Chapa…',
+    confirmed: 'You have full access.',
+    accessUntil: (date: string) => `Your access runs until ${date}.`,
+    yourReference: (ref: string) => `Your reference is ${ref}. Keep it — support can look it up.`,
+    manualPending:
+      'Thank you. Someone checks the transfer against the bank statement, usually the same day, ' +
+      'and your access starts as soon as it is found.',
+    couldNotStart: 'The payment could not be started. Nothing has been charged — try again.',
+    unavailable:
+      'That way of paying is not available right now. The bank transfer below still works.',
+  },
+
   admin: {
     topicWeights: 'Topic weights',
     recompute: 'Recompute from the bank',
@@ -233,6 +280,48 @@ export const am: Copy = {
     readiness: 'ዝግጁነት',
     focus: 'ትኩረት',
     unansweredInMocks: (count: number) => `${count} የሙከራ ጥያቄ ጊዜው አልቆበታል እና ከላይ አልተቆጠረም።`,
+  },
+
+  checkout: {
+    title: 'ሙሉ መዳረሻ ያግኙ',
+    working: 'እቅዶቹ እየተጫኑ ነው…',
+    perMonth: (etb: number) => `በወር ብር ${etb}`,
+    forMonths: (etb: number, months: number) => `ብር ${etb} ለ${months} ወራት`,
+    bestValue: 'የተሻለ ዋጋ',
+    savingVs: (pct: number) => `በወር ${pct}% ያንሳል`,
+    howToPay: 'እንዴት መክፈል ይፈልጋሉ?',
+
+    telebirr: 'ቴሌብር',
+    telebirrHow: 'ወደ ስልክዎ ጥያቄ ይመጣል። በፒን ኮድዎ ያጽድቁት።',
+    cbebirr: 'ሲቢኢ ብር',
+    cbebirrHow: 'ወደ ስልክዎ ጥያቄ ይመጣል። በፒን ኮድዎ ያጽድቁት።',
+    chapa: 'ካርድ ወይም ሌላ ዋሌት',
+    chapaHow: 'ቻፓን ይከፍታል፣ በሚመርጡት መንገድ መክፈል ይችላሉ።',
+    bank: 'የባንክ ዝውውር',
+    bankHow: 'ከማንኛውም ባንክ ያዛውሩ፣ ከዚያ የግብይት ቁጥሩን እዚህ ይለጥፉ።',
+
+    mobileLabel: 'የሚከፍሉበት ስልክ ቁጥር',
+    mobileHint: 'ለምሳሌ 0911223344።',
+    mobileInvalid: 'ይህ የኢትዮጵያ የሞባይል ቁጥር አይመስልም። አረጋግጠው እንደገና ይሞክሩ።',
+    txRefLabel: 'የግብይት ቁጥር',
+    txRefHint: 'በዝውውር ደረሰኝዎ ወይም በኤስኤምኤስ ላይ ያለው ቁጥር።',
+    txRefRequired: 'ከዝውውር ደረሰኝዎ ላይ ያለውን የግብይት ቁጥር ያስገቡ።',
+    txRefTaken: 'ይህ የግብይት ቁጥር ቀድሞ ደርሶናል። ድጋፍ ሰጪው ሊፈትሽልዎ ይችላል።',
+
+    pay: 'ክፈል',
+    sending: 'በመላክ ላይ…',
+    checkYourPhone: (mobile: string) =>
+      `የክፍያ ጥያቄ ወደ ${mobile} ተልኳል። በስልክዎ ላይ ያጽድቁት፣ ይህ ገጽ በራሱ ይዘምናል።`,
+    stillWaiting: 'አሁንም ክፍያውን በመጠባበቅ ላይ ነን። ካጸደቁት ጥቂት ጊዜ ይስጡት — ይህን ገጽ ቢዘጉትም ምንም አይጠፋም።',
+    openingChapa: 'ቻፓ እየተከፈተ ነው…',
+    confirmed: 'ሙሉ መዳረሻ አለዎት።',
+    accessUntil: (date: string) => `መዳረሻዎ እስከ ${date} ይቆያል።`,
+    yourReference: (ref: string) => `የእርስዎ ማመሳከሪያ ${ref} ነው። ይያዙት — ድጋፍ ሰጪው ሊፈትሸው ይችላል።`,
+    manualPending:
+      'እናመሰግናለን። ዝውውሩን ከባንክ ሪፖርት ጋር የሚያመሳክር ሰው አለ፣ አብዛኛውን ጊዜ በዚያው ቀን፣ ' +
+      'እንደተገኘም መዳረሻዎ ወዲያውኑ ይጀምራል።',
+    couldNotStart: 'ክፍያው ሊጀመር አልቻለም። ምንም አልተከፈለም — እንደገና ይሞክሩ።',
+    unavailable: 'ይህ የመክፈያ መንገድ አሁን አይሰራም። ከታች ያለው የባንክ ዝውውር አሁንም ይሰራል።',
   },
 
   admin: {

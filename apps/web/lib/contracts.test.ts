@@ -103,6 +103,9 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'SittingStart', api: 'StartResult', file: 'exams/exams.service.ts' },
   { web: 'SittingManifest', api: 'SittingManifest', file: 'exams/exam-view.ts' },
   { web: 'SittingItem', api: 'SittingItem', file: 'exams/exam-view.ts' },
+  { web: 'PlanOffer', api: 'PlanOffer', file: 'payments/plan.ts' },
+  { web: 'StartedPayment', api: 'StartedPayment', file: 'payments/chapa.service.ts' },
+  { web: 'PaymentStatus', api: 'PaymentStatusView', file: 'payments/chapa.service.ts' },
 ];
 
 describe('cross-workspace contracts (T-199c)', () => {

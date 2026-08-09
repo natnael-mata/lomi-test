@@ -39,6 +39,32 @@ import { SubscriptionsService } from './subscriptions.service';
 
 type PlanCode = 'SIX_MONTH' | 'TWELVE_MONTH';
 
+/**
+ * What starting a charge gives back, whichever way it was started.
+ *
+ * Named types rather than inline returns because the web mirrors these by hand,
+ * and the cross-workspace guard (T-199c) can only compare what has a name.
+ */
+export interface StartedPayment {
+  paymentId: string;
+  subscriptionId: string;
+  txRef: string;
+}
+
+export interface DirectChargeStarted extends StartedPayment {
+  /** The normalised number the push actually went to, to show back. */
+  pushSentTo: string;
+}
+
+export interface HostedCheckoutStarted extends StartedPayment {
+  checkoutUrl: string;
+}
+
+export interface PaymentStatusView {
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED';
+  expiresAt: string | null;
+}
+
 /** What a settlement attempt concluded, for logs and for the polling endpoint. */
 export type SettlementOutcome =
   | { settled: true; expiresAt: Date | null; alreadyDone: boolean }
@@ -65,7 +91,7 @@ export class ChapaService {
     code: PlanCode,
     channel: DirectChannel,
     mobile: string,
-  ): Promise<{ paymentId: string; subscriptionId: string; txRef: string; pushSentTo: string }> {
+  ): Promise<DirectChargeStarted> {
     const normalised = normaliseEthiopianMobile(mobile);
     if (normalised === null) {
       throw new UnprocessableEntityException({
@@ -118,7 +144,7 @@ export class ChapaService {
     userId: string,
     code: PlanCode,
     urls: { returnUrl: string; callbackUrl: string },
-  ): Promise<{ paymentId: string; subscriptionId: string; txRef: string; checkoutUrl: string }> {
+  ): Promise<HostedCheckoutStarted> {
     const plan = await this.prisma.plan.findUniqueOrThrow({ where: { code } });
     const { subscriptionId, paymentId, txRef } = await this.openPayment(
       userId,
@@ -256,10 +282,7 @@ export class ChapaService {
    * never arrived — a dropped delivery, a callback URL that was wrong all along
    * — is not left staring at a spinner over money that has left their account.
    */
-  async statusOf(
-    userId: string,
-    txRef: string,
-  ): Promise<{ status: 'PENDING' | 'CONFIRMED' | 'REJECTED'; expiresAt: string | null }> {
+  async statusOf(userId: string, txRef: string): Promise<PaymentStatusView> {
     const payment = await this.prisma.payment.findUnique({ where: { txRef } });
     // Not found and not yours are the same answer, so this endpoint cannot be
     // used to discover which references exist.
