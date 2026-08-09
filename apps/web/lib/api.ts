@@ -253,6 +253,38 @@ export interface PaymentStatus {
   expiresAt: string | null;
 }
 
+/** The admin overview's figures (T-160). The four segments sum to `signups`. */
+export interface DashboardOverview {
+  signups: number;
+  paying: number;
+  lapsed: number;
+  trialling: number;
+  dormant: number;
+  awaitingSettlement: number;
+}
+
+export interface RevenueRow {
+  method: 'TELEBIRR' | 'CBEBIRR' | 'CHAPA' | 'BANK';
+  etb: number;
+  count: number;
+}
+
+export interface RevenueSplit {
+  rows: RevenueRow[];
+  totalEtb: number;
+  totalCount: number;
+}
+
+export interface UserSearchHit {
+  userId: string;
+  displayName: string;
+  phone: string | null;
+  telegramId: string | null;
+  deactivated: boolean;
+  matchedOn: 'phone' | 'displayName' | 'txRef';
+  txRef?: string;
+}
+
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
 
@@ -351,6 +383,15 @@ export const api = {
   readiness: (fieldId: string): Promise<Readiness> => call<Readiness>(`/me/readiness/${fieldId}`),
 
   trend: (fieldId: string): Promise<TrendPoint[]> => call<TrendPoint[]>(`/me/trend/${fieldId}`),
+
+  adminOverview: (): Promise<DashboardOverview> =>
+    call<DashboardOverview>('/admin/analytics/overview'),
+
+  adminRevenue: (): Promise<RevenueSplit> => call<RevenueSplit>('/admin/analytics/revenue'),
+
+  /** Phone, display name or an exact transaction reference (T-163). */
+  adminSearchUsers: (query: string): Promise<UserSearchHit[]> =>
+    call<UserSearchHit[]>(`/admin/analytics/users/search?q=${encodeURIComponent(query)}`),
 
   /** Admin. Every one of these is ADMIN-guarded and audited on the server. */
   adminWeights: (fieldId: string): Promise<EffectiveWeight[]> =>

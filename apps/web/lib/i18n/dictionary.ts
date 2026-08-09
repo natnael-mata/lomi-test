@@ -150,6 +150,42 @@ export const en = {
       'That way of paying is not available right now. The bank transfer below still works.',
   },
 
+  dashboard: {
+    title: 'Overview',
+    working: 'Counting…',
+    couldNotLoad: 'The figures could not be loaded. Nothing is wrong with the data — try again.',
+
+    signups: 'Signups',
+    paying: 'Paying',
+    lapsed: 'Lapsed',
+    trialling: 'Trialling',
+    dormant: 'Not started',
+    awaitingSettlement: 'Awaiting settlement',
+    awaitingHow: (count: number) =>
+      count === 1
+        ? '1 claimed transfer is waiting for somebody to check the statement.'
+        : `${count} claimed transfers are waiting for somebody to check the statement.`,
+    nothingWaiting: 'Nothing is waiting to be settled.',
+
+    revenue: 'Taken',
+    revenueTotal: 'Total',
+    paymentsCounted: (count: number) => `${count} confirmed payment${count === 1 ? '' : 's'}`,
+    methodTelebirr: 'telebirr',
+    methodCbebirr: 'CBE Birr',
+    methodChapa: 'Chapa page',
+    methodBank: 'Bank transfer',
+
+    findStudent: 'Find a student',
+    searchLabel: 'Phone, name or transaction number',
+    searchHint: 'A transaction number has to be exact. Three characters or more.',
+    searching: 'Looking…',
+    noHits: 'Nobody matched that.',
+    matchedOnTxRef: 'matched the transaction number',
+    matchedOnPhone: 'matched the phone number',
+    matchedOnName: 'matched the name',
+    deactivated: 'Deactivated',
+  },
+
   admin: {
     topicWeights: 'Topic weights',
     recompute: 'Recompute from the bank',
@@ -322,6 +358,42 @@ export const am: Copy = {
       'እንደተገኘም መዳረሻዎ ወዲያውኑ ይጀምራል።',
     couldNotStart: 'ክፍያው ሊጀመር አልቻለም። ምንም አልተከፈለም — እንደገና ይሞክሩ።',
     unavailable: 'ይህ የመክፈያ መንገድ አሁን አይሰራም። ከታች ያለው የባንክ ዝውውር አሁንም ይሰራል።',
+  },
+
+  dashboard: {
+    title: 'አጠቃላይ እይታ',
+    working: 'በመቁጠር ላይ…',
+    couldNotLoad: 'አኃዞቹ ሊጫኑ አልቻሉም። በመረጃው ላይ ችግር የለም — እንደገና ይሞክሩ።',
+
+    signups: 'ተመዝጋቢዎች',
+    paying: 'እየከፈሉ ያሉ',
+    lapsed: 'ጊዜያቸው ያለፈ',
+    trialling: 'እየሞከሩ ያሉ',
+    dormant: 'ያልጀመሩ',
+    awaitingSettlement: 'ማረጋገጫ በመጠባበቅ ላይ',
+    awaitingHow: (count: number) =>
+      count === 1
+        ? '1 የተጠየቀ ዝውውር የባንክ ሪፖርቱን የሚያረጋግጥ ሰው በመጠባበቅ ላይ ነው።'
+        : `${count} የተጠየቁ ዝውውሮች የባንክ ሪፖርቱን የሚያረጋግጥ ሰው በመጠባበቅ ላይ ናቸው።`,
+    nothingWaiting: 'ማረጋገጫ የሚጠብቅ ምንም የለም።',
+
+    revenue: 'የተሰበሰበ',
+    revenueTotal: 'ጠቅላላ',
+    paymentsCounted: (count: number) => `${count} የተረጋገጠ ክፍያ`,
+    methodTelebirr: 'ቴሌብር',
+    methodCbebirr: 'ሲቢኢ ብር',
+    methodChapa: 'የቻፓ ገጽ',
+    methodBank: 'የባንክ ዝውውር',
+
+    findStudent: 'ተማሪ ፈልግ',
+    searchLabel: 'ስልክ፣ ስም ወይም የግብይት ቁጥር',
+    searchHint: 'የግብይት ቁጥር ትክክለኛ መሆን አለበት። ሦስት ፊደል ወይም ከዚያ በላይ።',
+    searching: 'በመፈለግ ላይ…',
+    noHits: 'ማንም አልተገኘም።',
+    matchedOnTxRef: 'በግብይት ቁጥር ተገኘ',
+    matchedOnPhone: 'በስልክ ቁጥር ተገኘ',
+    matchedOnName: 'በስም ተገኘ',
+    deactivated: 'የተዘጋ',
   },
 
   admin: {

@@ -106,6 +106,10 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'PlanOffer', api: 'PlanOffer', file: 'payments/plan.ts' },
   { web: 'StartedPayment', api: 'StartedPayment', file: 'payments/chapa.service.ts' },
   { web: 'PaymentStatus', api: 'PaymentStatusView', file: 'payments/chapa.service.ts' },
+  { web: 'DashboardOverview', api: 'DashboardOverview', file: 'admin/admin-dashboard.service.ts' },
+  { web: 'RevenueRow', api: 'RevenueRow', file: 'admin/admin-dashboard.service.ts' },
+  { web: 'RevenueSplit', api: 'RevenueSplit', file: 'admin/admin-dashboard.service.ts' },
+  { web: 'UserSearchHit', api: 'UserSearchHit', file: 'admin/admin-dashboard.service.ts' },
 ];
 
 describe('cross-workspace contracts (T-199c)', () => {
