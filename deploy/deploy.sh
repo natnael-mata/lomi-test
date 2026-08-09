@@ -28,6 +28,26 @@ source "$HERE/deploy.env"
 : "${WEB_PORT:?set WEB_PORT}"
 
 SSH=(ssh -p "$SSH_PORT" "$SSH_TARGET")
+
+# The neighbours on this box, by name.
+#
+# 196.190.212.158 also runs Chaw Taxi, EIMS, Elpis and Semayawi, and the
+# standing constraint is that deploying one must never disturb another. Every
+# remote command goes through `remote()`, which refuses if the script it is
+# about to run so much as mentions one of them. It is a blunt instrument and
+# that is the point: the mistakes worth catching here are typos and copied
+# lines, not clever attacks.
+NEIGHBOURS='chaw|eims|elpis|semayawi|postgresql@|nginx\.conf|pg_hba'
+
+remote() {
+  local script; script="$(cat)"
+  if grep -qiE "$NEIGHBOURS" <<<"$script"; then
+    echo "REFUSED: a remote command mentioned a neighbouring product or a shared config file." >&2
+    grep -inE "$NEIGHBOURS" <<<"$script" >&2
+    exit 1
+  fi
+  "${SSH[@]}" bash -seuo pipefail <<<"$script"
+}
 RELEASE="$(git -C "$REPO" rev-parse --short HEAD)"
 REMOTE_RELEASE="$REMOTE_ROOT/releases/$RELEASE"
 
@@ -51,7 +71,7 @@ say "Build"
 npm --prefix "$REPO" run -s build
 
 say "Checking the box"
-"${SSH[@]}" bash -seuo pipefail <<REMOTE
+remote <<REMOTE
   test -f "$REMOTE_ROOT/.env" || {
     echo "$REMOTE_ROOT/.env is missing. Write it by hand from .env.production.example." >&2
     exit 1
@@ -82,7 +102,7 @@ rsync -az --delete -e "ssh -p $SSH_PORT" \
   "$REPO/" "$SSH_TARGET:$REMOTE_RELEASE/"
 
 say "Installing, migrating, switching"
-"${SSH[@]}" bash -seuo pipefail <<REMOTE
+remote <<REMOTE
   cd "$REMOTE_RELEASE"
   npm ci --omit=dev
   npx prisma generate --schema apps/api/prisma/schema.prisma
@@ -99,10 +119,15 @@ say "Installing, migrating, switching"
 REMOTE
 
 say "Restarting"
-"${SSH[@]}" "sudo systemctl restart lomi-api lomi-web lomi-bot && sleep 3 && systemctl is-active lomi-api lomi-web lomi-bot"
+# Named explicitly, one by one. Never `systemctl restart all` or anything that
+# resolves to a set — on this box that set contains other people's products.
+"${SSH[@]}" "systemctl restart lomi-api lomi-web lomi-bot && sleep 3 && systemctl is-active lomi-api lomi-web lomi-bot"
 
-say "Health"
+say "Health — ours, then the neighbours"
 "${SSH[@]}" "curl -fsS http://127.0.0.1:$API_PORT/health && echo"
+# nginx is shared. If this deploy touched it, the neighbours are how you find
+# out — checking only our own site is how a shared box goes down quietly.
+"${SSH[@]}" "for host in chaw admin eims; do printf '%s: ' \$host; curl -s -o /dev/null -w '%{http_code}\\n' -k https://\$host.196-190-212-158.nip.io/ || echo unreachable; done"
 
 cat <<DONE
 

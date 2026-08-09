@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,6 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
+import { devDisplayName, devTelegramId, isDevLoginEnabled, secretMatches } from './dev-login';
 import { signSessionToken } from './tokens';
 
 /** PRODUCT.md: two concurrent sessions; a third login evicts the oldest. */
@@ -123,6 +125,39 @@ export class AuthService {
       fieldId: user.fieldId,
       isNew,
     };
+  }
+
+  /**
+   * Signs in a **smoke-test** account (deploy testing only).
+   *
+   * Guarded by `DEV_LOGIN_SECRET`, which has no default: an unset variable is a
+   * closed door. See `dev-login.ts` for why the whole thing is built around
+   * minting its own account rather than accepting a user id — a bypass that
+   * takes an id is a complete compromise of every account in the product, and
+   * one that mints a throwaway is a nuisance.
+   *
+   * The label is a persona name, not an identity: "student" is the same
+   * throwaway account every time, so a tester who signs back in finds
+   * yesterday's practice rather than a fresh account.
+   */
+  async signInAsTester(presentedSecret: string, label: string): Promise<SignInResult> {
+    const configured = process.env.DEV_LOGIN_SECRET;
+    if (!isDevLoginEnabled(configured) || !secretMatches(presentedSecret, configured)) {
+      // Identical for "not enabled" and "wrong secret". Telling them apart
+      // tells somebody probing whether the door exists at all.
+      throw new UnauthorizedException('No.');
+    }
+
+    const telegramId = String(devTelegramId(label));
+    // Loud on purpose, and through Nest's logger rather than `console` so it
+    // passes the redacting sink like everything else. This route should never
+    // run unnoticed, and the log is where it will be looked for afterwards.
+    new Logger('dev-login').warn(`smoke-test sign-in as ${devDisplayName(label)} (${telegramId})`);
+
+    return this.signInWithTelegramId(
+      { id: telegramId, firstName: devDisplayName(label) },
+      'smoke-test',
+    );
   }
 
   /**
