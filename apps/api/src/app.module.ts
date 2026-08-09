@@ -8,6 +8,7 @@ import { ExamsModule } from './exams/exams.module';
 import { HealthController } from './health/health.controller';
 import { ImportModule } from './import/import.module';
 import { PracticeModule } from './practice/practice.module';
+import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProgressModule } from './progress/progress.module';
 import { QuestionsModule } from './questions/questions.module';
@@ -28,6 +29,7 @@ import { TaxonomyModule } from './taxonomy/taxonomy.module';
     ReviewModule,
     PracticeModule,
     ExamsModule,
+    PaymentsModule,
     ProgressModule,
   ],
   controllers: [HealthController],

@@ -89,6 +89,12 @@ PUBLISHED → RETIRED`.
   Br 800**, measured from activation, status `PENDING → ACTIVE → REJECTED | EXPIRED`. This
   **supersedes** the schema's per-field `priceEtb` and its exam-date + grace-week expiry, which
   are now legacy and must be migrated.
+- **A plan grants the whole product, not one field (confirmed, T-141b).** The price is a
+  duration and nothing else — there is no per-field price to charge and never was, since T-020
+  omitted the column once D2/D3 landed. Selling per field would mean a student who changes
+  programme, or who sits two, pays twice for the same six months; and it would put a paywall
+  between somebody and a decision they are still making. `User.fieldId` stays a **study
+  choice**, not an entitlement boundary.
 - **Exam configuration (confirmed):** a mock sitting is **100 questions in 180 minutes**.
   Per-question pacing budgets are **60 seconds for CONCEPT** and **180 seconds for
   CALCULATION**. Those budgets only reconcile with a 180-minute sitting at a mix of

@@ -923,3 +923,91 @@ model BotProfile {
 
   @@index([botOptOut, lastDailySentOn])
 }
+
+/// What access costs, and for how long (T-140, decisions D2/D3).
+///
+/// **Price lives here and nowhere else.** `Field` deliberately has no price
+/// column — T-020 omitted it once pricing became duration-based — so there is
+/// exactly one place a number can be wrong. T-141 forbids a constant in the
+/// checkout for the same reason.
+///
+/// Rows rather than an enum with hardcoded amounts: a price change is an
+/// operator action with a date, not a deploy, and the subscriptions already sold
+/// must keep pointing at what was actually charged.
+model Plan {
+  id   String   @id @default(cuid())
+  code PlanCode @unique
+
+  /// How long the plan grants, in whole months. See `expiresAtFrom` for what a
+  /// "month" means when the day does not exist in the target month.
+  months Int
+
+  /// Whole birr. **Integer, never a float**: money in this product is never
+  /// fractional — Chapa takes birr, prices are round hundreds — and a float
+  /// column is how a total ends up at 499.99999999999994.
+  priceEtb Int
+
+  /// False hides it from the picker without touching what was already sold.
+  /// A withdrawn plan must keep resolving, or every subscription bought under it
+  /// becomes unreadable.
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+enum PlanCode {
+  SIX_MONTH
+  TWELVE_MONTH
+}
+
+/// A student's paid access (T-140a).
+///
+/// **Duration from the plan, counted from activation** — not from the exam date,
+/// which is what an earlier draft did. Tying expiry to a national exam date
+/// meant somebody buying two weeks before it paid the same as somebody buying in
+/// September, and the grace week that patched it was a rule nobody could explain
+/// at the point of sale.
+model Subscription {
+  id     String @id @default(cuid())
+  userId String
+
+  /// The plan as sold. Kept even if the plan is withdrawn or repriced: what a
+  /// student bought is a fact, and re-reading it from a changed row would
+  /// rewrite history.
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// What was actually charged, in whole birr, copied at activation.
+  ///
+  /// Denormalised on purpose. `Plan.priceEtb` is the price *today*; this is the
+  /// price *paid*, and a refund or a dispute is about the second one.
+  paidEtb Int
+
+  status SubscriptionStatus @default(PENDING)
+
+  /// Null until a payment settles. `expiresAt` is computed from it, so an
+  /// unactivated subscription has no expiry rather than an expiry in the past.
+  activatedAt DateTime?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+enum SubscriptionStatus {
+  /// Created, awaiting a payment that has not settled.
+  PENDING
+  ACTIVE
+  /// Past `expiresAt`. A separate state from PENDING so "never paid" and "paid
+  /// and ran out" are answerable apart — they need different messages and
+  /// different offers.
+  EXPIRED
+  /// Withdrawn by an operator, with the reason in the audit log.
+  CANCELLED
+}
