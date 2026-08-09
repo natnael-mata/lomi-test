@@ -13,6 +13,11 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     // Fixtures that mint sessions and grant staff rows. Never in `dist`.
-    "**/*.test-helper.ts"
+    "**/*.test-helper.ts",
+    // The dev scripts (T-199b). Already outside `include`, which is `src/**/*`,
+    // so this is belt and braces — but the exclusion is the security property,
+    // and a property that holds only as a side effect of an unrelated setting is
+    // one somebody removes while widening `include` for a good reason.
+    "scripts/**"
   ]
 }

@@ -54,6 +54,28 @@ Do not batch tasks, and never tick a box you have not actually tested.
 - verify.et credentials and the response field that authorises activation.
 - Fayda relying-party approval from the National ID Program.
 
+## Deploying
+
+Build and run the API from `dist`. Nothing else is a supported entry point.
+
+```bash
+npm run build -w api && node apps/api/dist/main.js
+```
+
+**The `dev:*` scripts must never run against production.** `dev:session` mints a
+session token and `dev:staff` grants a staff role — both read `JWT_SECRET` and write
+to whatever database `DATABASE_URL` points at, so pointing either at production is
+handing out an account. They are scripts rather than endpoints precisely so they
+cannot ship: `dist` is built from `src` only, they are excluded explicitly in
+`tsconfig.build.json`, and a test asserts neither reaches the build.
+
+That makes them safe to have in the repository and unsafe to run carelessly — the
+distinction is who has a shell and the database password, which is somebody who
+could write the row by hand anyway.
+
+`dev:publish` runs the real publish gate, so it cannot publish anything the gate
+would refuse. It still writes to the database it is pointed at.
+
 ## Related
 
 The earlier implementation lives at `../exitexam` — a working NestJS + Prisma API, Next.js web
