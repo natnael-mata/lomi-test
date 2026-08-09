@@ -61,6 +61,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      # First-load JS is paid in full before a student can answer anything, on a
+      # phone that cannot afford it (T-203). Failing here names the commit that
+      # did it, rather than leaving somebody to notice the app got slow.
+      - name: First-load JS budget
+        run: npm run analyze
+
       # Schema must exist before the integration tests run. `deploy`, never
       # `migrate dev` — deploy applies only and cannot reset.
       - name: Apply migrations

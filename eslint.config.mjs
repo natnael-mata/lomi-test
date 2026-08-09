@@ -57,7 +57,8 @@ export default tseslint.config(
   {
     files: [
       'apps/*/src/main.ts',
-      'apps/api/scripts/**/*.{ts,mjs,js}',
+      // Every workspace's scripts, not just the API's: a CLI's output IS console.
+      'apps/*/scripts/**/*.{ts,mjs,js}',
       'apps/api/prisma/seed*.ts',
       'apps/*/src/**/*.cli.ts',
       'scripts/**/*.{ts,mjs,js}',
