@@ -151,17 +151,25 @@ export class PaymentsController {
 export class ChapaWebhookController {
   constructor(private readonly chapa: ChapaService) {}
 
+  /**
+   * `x-chapa-signature` is the only header read.
+   *
+   * Chapa also sends `chapa-signature`, which is an HMAC of the secret key with
+   * itself — constant on every delivery forever, so it says nothing about the
+   * body and can be replayed by anybody who has ever seen one webhook. It is
+   * deliberately not accepted, not even as a fallback: a weaker alternative that
+   * is always accepted is the option an attacker picks.
+   */
   @Post('webhook')
   async webhook(
     @Req() req: RawBodyRequest<AuthedRequest>,
     @Headers('x-chapa-signature') payloadSignature?: string,
-    @Headers('chapa-signature') keySignature?: string,
   ): Promise<{ received: true }> {
     // The RAW body, not the parsed one. Re-serialising JSON reorders keys and
     // changes whitespace, and the hash of a re-serialised body is the hash of a
     // different document — which presents as "every webhook is forged".
     const raw = req.rawBody?.toString('utf8') ?? '';
-    await this.chapa.handleWebhook(raw, { payloadSignature, keySignature });
+    await this.chapa.handleWebhook(raw, { payloadSignature });
     return { received: true };
   }
 }

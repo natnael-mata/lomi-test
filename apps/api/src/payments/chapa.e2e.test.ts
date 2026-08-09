@@ -349,6 +349,35 @@ describe('paying through Chapa (T-142, T-143, T-144)', () => {
     });
 
     /**
+     * Chapa's other header is not a way in.
+     *
+     * `chapa-signature` is an HMAC of the secret key with itself — the same
+     * value on every delivery forever, so it proves nothing about the body.
+     * Anybody who has ever seen one of our webhooks holds it. The route does not
+     * read it, and this is the test that says so.
+     */
+    it('turns away a real event carrying only the constant header', async () => {
+      const started = await chapa.startDirectCharge(userId, 'SIX_MONTH', 'TELEBIRR', '0911223344');
+      gateway.paid(started.txRef, priceEtb);
+      const body = JSON.stringify({
+        event: 'charge.success',
+        tx_ref: started.txRef,
+        status: 'success',
+      });
+      const constant = createHmac('sha256', SECRET).update(SECRET).digest('hex');
+
+      await request(app.getHttpServer())
+        .post('/payments/chapa/webhook')
+        .set('chapa-signature', constant)
+        .set('content-type', 'application/json')
+        .send(body)
+        .expect(400);
+
+      const subscription = await prisma.subscription.findFirstOrThrow({ where: { userId } });
+      expect(subscription.status).toBe('PENDING');
+    });
+
+    /**
      * The attack this route exists to survive: a well-formed success event for a
      * real reference, signed with the wrong key.
      */

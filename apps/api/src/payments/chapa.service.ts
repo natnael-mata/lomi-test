@@ -176,7 +176,7 @@ export class ChapaService {
    */
   async handleWebhook(
     rawBody: string,
-    headers: { payloadSignature?: string | undefined; keySignature?: string | undefined },
+    headers: { payloadSignature?: string | undefined },
   ): Promise<SettlementOutcome> {
     const secret = process.env.CHAPA_WEBHOOK_SECRET ?? process.env.CHAPA_SECRET_KEY ?? '';
     const check = verifyWebhookSignature(rawBody, headers, secret);

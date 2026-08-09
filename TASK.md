@@ -2258,12 +2258,18 @@ size` — literally raw misses over a constant — so this genuinely depends on
   > credential to be missing, so there is nothing to challenge; the body either verifies or it does
   > not.
   >
-  > Chapa sends two signature headers and they are **not** equally useful. `x-chapa-signature` is an
+  > Chapa sends two signature headers and they are **not** equally good. `x-chapa-signature` is an
   > HMAC of the payload. `chapa-signature` is an HMAC of the secret key _with itself_ — the same
   > value on every request forever, so anyone who ever saw one webhook can replay that header on a
   > body they wrote. Chapa's docs say either is sufficient; that is true of authenticity and false
-  > of integrity. The payload signature is checked first and the constant one is accepted only in
-  > its absence.
+  > of integrity.
+  >
+  > **The constant header is not accepted at all**, decided 2026-08-09. It was briefly taken as a
+  > fallback when the payload signature was absent, which was the wrong shape: a weaker alternative
+  > that is always accepted is not a fallback, it is the option an attacker picks, and it makes the
+  > strong header decorative. Chapa sends both on every delivery, so refusing one costs nothing —
+  > and a delivery that somehow lacked the payload signature would be refused and then picked up by
+  > the polling path, which re-queries verify anyway.
   >
   > Needs `rawBody: true` on the app: the HMAC covers the bytes that were sent, and a re-serialised
   > body is a different document with a different hash.

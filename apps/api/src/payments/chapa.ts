@@ -83,21 +83,24 @@ export interface ChapaWebhookEvent {
 /**
  * Whether a webhook really came from Chapa.
  *
- * **Prefer `x-chapa-signature`, and understand why.** Chapa sends two headers,
- * and they are not equally useful:
+ * **`x-chapa-signature` only.** Chapa sends two signature headers and they are
+ * not equally good:
  *
  * - `x-chapa-signature` is an HMAC of **the event payload**, so it proves both
  *   that the sender holds the key *and* that this particular body was not
  *   altered.
  * - `chapa-signature` is an HMAC of **the secret key with itself**. It is the
  *   same value on every request forever, which means it proves the sender knew
- *   the key at some point and nothing about the payload. Anyone who ever saw one
- *   webhook can replay that header on a body they wrote themselves.
+ *   the key at some point and nothing whatever about the payload. Anyone who
+ *   ever saw one webhook — a proxy log, a screenshot, a misconfigured tunnel —
+ *   can replay that header on a body they wrote themselves.
  *
  * Chapa's docs say either is sufficient. That is true of authenticity and false
- * of integrity, so the payload signature is checked first and the constant one
- * is accepted only when the other is absent — matching the documented contract
- * without pretending the weaker header is as good.
+ * of integrity, and a weaker alternative that is always accepted is not a
+ * fallback — it is the option an attacker picks. So the constant header is not
+ * read at all. Chapa sends both on every delivery, so nothing is lost by
+ * ignoring one; and if a delivery ever arrived without the payload signature it
+ * would be refused, which the polling path (`statusOf` → verify) already covers.
  *
  * Compared in constant time, over the **raw body**: re-serialising parsed JSON
  * reorders keys and changes whitespace, and the hash of a re-serialised body is
@@ -105,22 +108,14 @@ export interface ChapaWebhookEvent {
  */
 export function verifyWebhookSignature(
   rawBody: string,
-  headers: { payloadSignature?: string | undefined; keySignature?: string | undefined },
+  headers: { payloadSignature?: string | undefined },
   secret: string,
-): { ok: boolean; via: 'payload' | 'key' | null } {
-  if (secret.length === 0) return { ok: false, via: null };
+): { ok: boolean } {
+  if (secret.length === 0) return { ok: false };
+  if (!headers.payloadSignature) return { ok: false };
 
-  if (headers.payloadSignature) {
-    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-    return { ok: safeEqual(headers.payloadSignature, expected), via: 'payload' };
-  }
-
-  if (headers.keySignature) {
-    const expected = createHmac('sha256', secret).update(secret).digest('hex');
-    return { ok: safeEqual(headers.keySignature, expected), via: 'key' };
-  }
-
-  return { ok: false, via: null };
+  const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+  return { ok: safeEqual(headers.payloadSignature, expected) };
 }
 
 /** Constant-time compare of two hex digests. */

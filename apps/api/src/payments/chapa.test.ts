@@ -63,7 +63,7 @@ describe('webhook signatures (T-143)', () => {
    */
   it('accepts a correct payload signature', () => {
     const result = verifyWebhookSignature(BODY, { payloadSignature: payloadSig(BODY) }, SECRET);
-    expect(result).toEqual({ ok: true, via: 'payload' });
+    expect(result).toEqual({ ok: true });
   });
 
   it('refuses a payload signature computed with another key', () => {
@@ -83,25 +83,34 @@ describe('webhook signatures (T-143)', () => {
     );
   });
 
-  it('accepts the constant key signature only when the payload one is absent', () => {
-    expect(verifyWebhookSignature(BODY, { keySignature: keySig() }, SECRET)).toEqual({
-      ok: true,
-      via: 'key',
-    });
-
-    // Present but wrong payload signature is a refusal, not a fallback — the
-    // weaker header must never rescue a failed strong one.
+  /**
+   * The constant header is not accepted at all — not even as a fallback.
+   *
+   * `chapa-signature` is an HMAC of the secret key with itself: the same value
+   * on every delivery forever. It says nothing about the body, so anybody who
+   * has ever seen one webhook can replay it on a body they wrote. A weaker
+   * alternative that is always accepted is not a fallback; it is the option an
+   * attacker picks, and it makes the strong header decorative.
+   */
+  it('refuses the constant key signature, however correctly it is computed', () => {
+    const correctForItsOwnScheme = keySig();
     expect(
       verifyWebhookSignature(
         BODY,
-        { payloadSignature: 'deadbeef'.repeat(8), keySignature: keySig() },
+        { payloadSignature: correctForItsOwnScheme } as { payloadSignature?: string },
         SECRET,
       ).ok,
     ).toBe(false);
+
+    // And it is not read from anywhere else either: a body carrying only that
+    // header is a body with no signature.
+    expect(verifyWebhookSignature(BODY, {} as { payloadSignature?: string }, SECRET).ok).toBe(
+      false,
+    );
   });
 
   it('refuses a request carrying no signature at all', () => {
-    expect(verifyWebhookSignature(BODY, {}, SECRET)).toEqual({ ok: false, via: null });
+    expect(verifyWebhookSignature(BODY, {}, SECRET)).toEqual({ ok: false });
   });
 
   /**
