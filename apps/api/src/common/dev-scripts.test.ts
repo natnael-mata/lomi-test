@@ -68,11 +68,45 @@ describe('the dev scripts stay out of the build (T-199b)', () => {
     expect(config.include).toEqual(['src/**/*.ts']);
   });
 
+  /**
+   * The one `dev-*` file that is allowed into the build, named here rather than
+   * renamed out of the guard's way.
+   *
+   * `src/auth/dev-login.ts` is not a dev *script* — it is production code
+   * implementing the smoke-test sign-in route (T-206a), and the whole point of
+   * that route is that it runs on a deployed box. Renaming it to something the
+   * pattern misses would be dodging the check rather than answering it.
+   *
+   * It is listed as one line so that the guard still catches the next
+   * `dev-something.ts` that appears in `src`, which is what it is for.
+   */
+  const ALLOWED_IN_DIST = [
+    'dist/auth/dev-login.js',
+    'dist/auth/dev-login.js.map',
+    'dist/auth/dev-login.d.ts',
+  ];
+
   it('leaves no compiled dev script in dist', () => {
     const dist = join(API, 'dist');
     if (!existsSync(dist)) return; // Nothing built yet; the checks above still hold.
-    const compiled = files(dist, /^dev-/).map((f) => relative(API, f));
+    const compiled = files(dist, /^dev-/)
+      .map((f) => relative(API, f))
+      .filter((f) => !ALLOWED_IN_DIST.includes(f));
     expect(compiled, `these shipped: ${compiled.join(', ')}`).toEqual([]);
+  });
+
+  /**
+   * The exception is not a hole. `dev-login.ts` may ship, but it may only ship
+   * shut — and T-206a is the launch blocker that deletes it outright.
+   */
+  it('lets the smoke-test door ship only because it is shut by default', () => {
+    const source = readFileSync(join(API, 'src/auth/dev-login.ts'), 'utf8');
+    // No default, no fallback, no inference from NODE_ENV.
+    expect(source).toContain('DEV_LOGIN_SECRET');
+    expect(source).not.toMatch(/DEV_LOGIN_SECRET\s*\?\?/);
+    expect(source).not.toContain("NODE_ENV !== 'production'");
+    // And it is tracked for removal, in the file a launch checklist reads.
+    expect(readFileSync(join(API, '../../TASK.md'), 'utf8')).toContain('T-206a');
   });
 
   /**
