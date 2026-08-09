@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { PracticeCta, practiceHref } from './PracticeCta';
+import { en } from '../lib/i18n/dictionary';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const read = (file: string): string => readFileSync(resolve(HERE, file), 'utf8');
@@ -43,7 +44,7 @@ describe('PracticeCta (T-139)', () => {
   it('still offers practice when there is nothing to recommend', () => {
     const source = read('PracticeCta.tsx');
     expect(source).toContain('href="/practice"');
-    expect(source).toContain('Start practising');
+    expect(en.practice.startPractising).toBe('Start practising');
   });
 });
 

@@ -10,6 +10,7 @@ import { Chip } from './Chip';
 import { PracticeCta } from './PracticeCta';
 import { StatedFigure } from './StatedFigure';
 import { PASS_SAFE_PCT } from './readiness';
+import { copy } from '../lib/i18n';
 
 export interface SessionSummaryData {
   answered: number;
@@ -29,11 +30,13 @@ export interface SessionSummaryData {
 }
 
 export function SessionSummary({ summary }: { summary: SessionSummaryData }) {
+  const c = copy();
+
   if (summary.answered === 0) {
     return (
       <Card data-summary="empty">
-        <h2 className="text-title">Nothing answered yet</h2>
-        <p className="text-body text-ink-2 mt-2">Answer a question and the summary starts here.</p>
+        <h2 className="text-title">{c.summary.nothingAnswered}</h2>
+        <p className="text-body text-ink-2 mt-2">{c.summary.answerToStart}</p>
       </Card>
     );
   }
@@ -43,7 +46,7 @@ export function SessionSummary({ summary }: { summary: SessionSummaryData }) {
       {/* A proportion of questions answered, not a total that sums — so the
           stated treatment, never a total bar (T-096). */}
       <StatedFigure
-        label="Today"
+        label={c.summary.today}
         value={`${summary.correct} / ${summary.answered}`}
         derivation={`${summary.scorePct}% across ${summary.topics.length} topic${
           summary.topics.length === 1 ? '' : 's'
@@ -63,7 +66,9 @@ export function SessionSummary({ summary }: { summary: SessionSummaryData }) {
               <div className="min-w-0">
                 <p className="text-label truncate">{topic.topic}</p>
                 {topic.weightPct !== null && (
-                  <p className="text-caption text-ink-2">{topic.weightPct}% share of past papers</p>
+                  <p className="text-caption text-ink-2">
+                    {c.summary.shareOfPastPapers(topic.weightPct)}
+                  </p>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -72,7 +77,7 @@ export function SessionSummary({ summary }: { summary: SessionSummaryData }) {
                 </span>
                 {topic.topic === summary.weakestTopic && (
                   <Chip tone="pending" data-next="">
-                    Practise next
+                    {c.summary.practiseNext}
                   </Chip>
                 )}
               </div>

@@ -16,6 +16,7 @@ import { Card } from './Card';
 import { Chip } from './Chip';
 import { PracticeCta } from './PracticeCta';
 import { StatedFigure } from './StatedFigure';
+import { copy } from '../lib/i18n';
 
 export interface ExamTopicRow {
   topicId: string;
@@ -39,11 +40,13 @@ export interface ExamSummaryData {
 }
 
 export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
+  const c = copy();
+
   if (summary.totalQuestions === 0) {
     return (
       <Card data-exam-summary="empty">
-        <h2 className="text-title">Nothing to summarise</h2>
-        <p className="text-body text-ink-2 mt-2">This paper had no questions on it.</p>
+        <h2 className="text-title">{c.summary.nothingToSummarise}</h2>
+        <p className="text-body text-ink-2 mt-2">{c.summary.noQuestions}</p>
       </Card>
     );
   }
@@ -55,12 +58,12 @@ export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
       {/* A proportion of a paper, not a total that sums — so the stated figure
           treatment, never a total bar (T-096). */}
       <StatedFigure
-        label="This mock"
+        label={c.summary.thisMock}
         value={`${summary.scoreCorrect} / ${summary.totalQuestions}`}
         derivation={
           unanswered > 0
-            ? `${summary.scorePct}% of the paper · ${unanswered} left unanswered`
-            : `${summary.scorePct}% of the paper`
+            ? c.summary.ofThePaperWithUnanswered(summary.scorePct, unanswered)
+            : c.summary.ofThePaper(summary.scorePct)
         }
       />
 
@@ -76,8 +79,8 @@ export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
               <p className="text-label truncate">{topic.topic}</p>
               <p className="text-caption text-ink-2">
                 {topic.weightPct === null
-                  ? 'Share of past papers not worked out yet'
-                  : `${topic.weightPct}% share of past papers`}
+                  ? c.summary.shareNotWorkedOut
+                  : c.summary.shareOfPastPapers(topic.weightPct)}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -86,7 +89,7 @@ export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
               </span>
               {topic.topic === summary.weakestTopic && (
                 <Chip tone="pending" data-next="">
-                  Revise next
+                  {c.summary.reviseNext}
                 </Chip>
               )}
             </div>
@@ -98,8 +101,7 @@ export function ExamSummary({ summary }: { summary: ExamSummaryData }) {
           this the ranking looks wrong to anyone who counted their own misses. */}
       {summary.weakestTopic !== null && (
         <p className="text-caption text-ink-2" data-why-weakest="">
-          Ranked by how many marks each topic cost — a topic's share of past papers against how much
-          of it you missed, not the number of misses.
+          {c.practice.whyRanked}
         </p>
       )}
 

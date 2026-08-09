@@ -15,6 +15,7 @@ import { Chip } from './Chip';
 import { PracticeCta } from './PracticeCta';
 import { StatedFigure } from './StatedFigure';
 import { elidedLabel, PASS_SAFE_PCT, type ReadinessStatement as Statement } from './readiness';
+import { copy } from '../lib/i18n';
 
 export interface ReadinessStatementProps {
   statement: Statement;
@@ -44,13 +45,15 @@ export function ReadinessStatement({
   derivation,
   practiceNext,
 }: ReadinessStatementProps) {
+  const c = copy();
+
   const { rows, elided, headlinePct } = statement;
   const listedCount = rows.length + (elided ? 1 : 0);
 
   return (
     <div className="flex flex-col gap-4">
       <StatedFigure
-        label="Readiness"
+        label={c.progress.readiness}
         value={`${headlinePct}%`}
         derivation={derivation ?? `weighted mean of ${listedCount} topic groups`}
       />
@@ -74,7 +77,7 @@ export function ReadinessStatement({
                 </span>
                 {pending && (
                   <Chip tone="pending" data-focus-chip="">
-                    Focus
+                    {c.progress.focus}
                   </Chip>
                 )}
               </div>

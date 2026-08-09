@@ -20,6 +20,7 @@ import { useEffect } from 'react';
 
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { copy } from '../lib/i18n';
 
 export default function RouteError({
   error,
@@ -28,6 +29,8 @@ export default function RouteError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const c = copy();
+
   useEffect(() => {
     // The digest is what ties this screen to a server log line. Logged rather
     // than shown: it means nothing to a student and everything to support, and
@@ -44,13 +47,10 @@ export default function RouteError({
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center p-4">
       <Card data-error-boundary="route">
-        <h1 className="text-title">That did not load</h1>
-        <p className="text-body text-ink-2 mt-2">
-          Nothing you have answered is lost — your work is saved as you go. Try again, and if it
-          keeps happening, tell support{error.digest ? ` and quote ${error.digest}` : ''}.
-        </p>
+        <h1 className="text-title">{c.error.didNotLoad}</h1>
+        <p className="text-body text-ink-2 mt-2">{c.error.routeBody(error.digest ?? '')}</p>
         <Button className="mt-4" onClick={reset} data-recover="">
-          Try again
+          {c.common.tryAgain}
         </Button>
       </Card>
     </main>

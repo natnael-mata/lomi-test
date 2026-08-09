@@ -11,8 +11,10 @@
  */
 import { Chip } from './Chip';
 import { weightSum, type WeightRow } from './weight-sum';
+import { copy } from '../lib/i18n';
 
 export function WeightSumIndicator({ rows }: { rows: WeightRow[] }) {
+  const c = copy();
   const sum = weightSum(rows);
   const balanced = sum.state === 'balanced';
 
@@ -26,7 +28,7 @@ export function WeightSumIndicator({ rows }: { rows: WeightRow[] }) {
         {sum.message}
       </p>
       <Chip tone={balanced ? 'correct' : 'pending'} data-sum-chip="">
-        {balanced ? 'Balanced' : `${sum.differencePct}% ${sum.state}`}
+        {balanced ? c.admin.balanced : `${sum.differencePct}% ${sum.state}`}
       </Chip>
     </div>
   );

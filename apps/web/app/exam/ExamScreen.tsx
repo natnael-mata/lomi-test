@@ -36,6 +36,7 @@ import {
   type SittingManifest,
   type SittingResult,
 } from '../../lib/api';
+import { copy } from '../../lib/i18n';
 
 type Phase =
   | { kind: 'idle' }
@@ -45,6 +46,7 @@ type Phase =
   | { kind: 'error'; message: string; code: string | null };
 
 export function ExamScreen() {
+  const c = copy();
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [sittingId, setSittingId] = useState<string | null>(null);
   const [manifest, setManifest] = useState<SittingManifest | null>(null);
@@ -167,7 +169,7 @@ export function ExamScreen() {
       const fields = await api.myFields();
       const fieldId = fields[0]?.id;
       if (!fieldId) {
-        setPhase({ kind: 'error', message: 'Choose a programme first.', code: 'FIELD_REQUIRED' });
+        setPhase({ kind: 'error', message: c.exam.chooseProgramme, code: 'FIELD_REQUIRED' });
         return;
       }
       const started = await api.startExam(fieldId);
@@ -272,12 +274,10 @@ export function ExamScreen() {
   if (phase.kind === 'idle') {
     return (
       <Card data-state="idle">
-        <h1 className="text-title">Mock exam</h1>
-        <p className="text-body text-ink-2 mt-2">
-          100 questions in 3 hours, sat once through. Nothing is marked until you submit.
-        </p>
+        <h1 className="text-title">{c.exam.title}</h1>
+        <p className="text-body text-ink-2 mt-2">{c.exam.intro}</p>
         <Button className="mt-4" onClick={() => void start()}>
-          Start the mock
+          {c.exam.start}
         </Button>
       </Card>
     );
@@ -286,7 +286,7 @@ export function ExamScreen() {
   if (phase.kind === 'loading') {
     return (
       <p data-state="loading" className="text-body text-ink-2 py-8 text-center">
-        Preparing your paper…
+        {c.exam.preparing}
       </p>
     );
   }
@@ -295,7 +295,9 @@ export function ExamScreen() {
     return (
       <Card data-state="error">
         <p className="text-body">{phase.message}</p>
-        {phase.code === 'SUBSCRIPTION_REQUIRED' && <Button className="mt-4">See the plans</Button>}
+        {phase.code === 'SUBSCRIPTION_REQUIRED' && (
+          <Button className="mt-4">{c.exam.seePlans}</Button>
+        )}
       </Card>
     );
   }
@@ -304,10 +306,8 @@ export function ExamScreen() {
     if (!phase.result) {
       return (
         <Card data-state="closed">
-          <h1 className="text-title">Sitting finished</h1>
-          <p className="text-body text-ink-2 mt-2">
-            Your answers are recorded. The review is on its way.
-          </p>
+          <h1 className="text-title">{c.exam.finished}</h1>
+          <p className="text-body text-ink-2 mt-2">{c.exam.answersRecorded}</p>
         </Card>
       );
     }
@@ -325,9 +325,7 @@ export function ExamScreen() {
   return (
     <div className="flex flex-col gap-4" data-state="sitting">
       <header className="flex items-center justify-between gap-2">
-        <Chip>
-          Question {item.position} of {item.totalQuestions}
-        </Chip>
+        <Chip>{c.exam.questionOf(item.position, item.totalQuestions)}</Chip>
         <ExamTimer remainingSec={remaining} durationSec={durationRef.current} />
       </header>
 
@@ -369,20 +367,18 @@ export function ExamScreen() {
         <Button
           variant="ghost"
           disabled={item.position <= 1}
-          blockingReason={item.position <= 1 ? 'This is the first question' : undefined}
+          blockingReason={item.position <= 1 ? c.exam.firstQuestion : undefined}
           onClick={() => void goTo(sittingId, item.position - 1)}
         >
-          Back
+          {c.common.back}
         </Button>
         <Button
           variant="ghost"
           disabled={item.position >= item.totalQuestions}
-          blockingReason={
-            item.position >= item.totalQuestions ? 'This is the last question' : undefined
-          }
+          blockingReason={item.position >= item.totalQuestions ? c.exam.lastQuestion : undefined}
           onClick={() => void goTo(sittingId, item.position + 1)}
         >
-          Next
+          {c.common.next}
         </Button>
       </div>
 
@@ -392,7 +388,7 @@ export function ExamScreen() {
         aria-pressed={item.flagged}
         onClick={() => void save({ isFlagged: !item.flagged })}
       >
-        {item.flagged ? 'Remove flag' : 'Flag for review'}
+        {item.flagged ? c.exam.unflag : c.exam.flag}
       </Button>
 
       <JumpGrid
@@ -402,7 +398,7 @@ export function ExamScreen() {
       />
 
       <Button onClick={() => void submit()}>
-        Submit — {answeredCount} of {manifest.totalQuestions} answered
+        {c.exam.submit(answeredCount, manifest.totalQuestions)}
       </Button>
     </div>
   );

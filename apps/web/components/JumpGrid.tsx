@@ -8,6 +8,7 @@
  * changes nothing about what the grid says.
  */
 import { cellsFor, type SlotState } from './jump-grid';
+import { copy } from '../lib/i18n';
 
 export interface JumpGridProps {
   slots: SlotState[];
@@ -19,7 +20,7 @@ export function JumpGrid({ slots, currentPosition, onJump }: JumpGridProps) {
   const cells = cellsFor(slots, currentPosition);
 
   return (
-    <nav aria-label="Question navigator" data-jump-grid="">
+    <nav aria-label={copy().exam.questionNavigator} data-jump-grid="">
       <ul className="grid grid-cols-6 gap-2 sm:grid-cols-10">
         {cells.map((cell) => (
           <li key={cell.position}>

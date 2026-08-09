@@ -16,8 +16,10 @@ import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { ScoreTrend } from '../../components/ScoreTrend';
 import { StatedFigure } from '../../components/StatedFigure';
 import { api, type Readiness, type TrendPoint } from '../../lib/api';
+import { copy } from '../../lib/i18n';
 
 export function ProgressScreen() {
+  const c = copy();
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function ProgressScreen() {
         const fields = await api.myFields();
         const fieldId = fields[0]?.id;
         if (!fieldId) {
-          if (!cancelled) setError('Choose a programme to see your progress.');
+          if (!cancelled) setError(c.progress.chooseProgramme);
           return;
         }
         const [r, t] = await Promise.all([api.readiness(fieldId), api.trend(fieldId)]);
@@ -56,7 +58,7 @@ export function ProgressScreen() {
   if (!readiness) {
     return (
       <p data-state="loading" className="text-body text-ink-2 py-8 text-center">
-        Working out where you are…
+        {c.progress.working}
       </p>
     );
   }
@@ -66,7 +68,7 @@ export function ProgressScreen() {
   if (readiness.headlinePct === null) {
     return (
       <div className="flex flex-col gap-4" data-state="unassessed">
-        <h1 className="text-title">Progress</h1>
+        <h1 className="text-title">{c.progress.title}</h1>
         <Card>
           <p className="text-body">
             Nothing answered yet, so there is no readiness figure to show. Answer a few questions
@@ -124,12 +126,14 @@ export function ProgressScreen() {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-title">Mock scores</h2>
+        <h2 className="text-title">{c.progress.mockScores}</h2>
         <StatedFigure
-          label="Mocks sat"
+          label={c.progress.mocksSat}
           value={String(trend.length)}
           derivation={
-            trend.length === 0 ? 'none yet' : `most recent: ${trend[trend.length - 1]!.scorePct}%`
+            trend.length === 0
+              ? c.progress.noneYet
+              : c.progress.mostRecent(trend[trend.length - 1]!.scorePct)
           }
         />
         <ScoreTrend points={trend} />

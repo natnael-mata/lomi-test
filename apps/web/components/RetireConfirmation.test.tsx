@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RetireConfirmation } from './RetireConfirmation';
 import { stripComments } from '../lib/strip-comments';
+import { en } from '../lib/i18n/dictionary';
 
 const source = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), 'RetireConfirmation.tsx'),
@@ -53,7 +54,7 @@ describe('RetireConfirmation (T-165)', () => {
   // Guards the stripping, at both ends of the file.
   it('still sees the component after comments are stripped', () => {
     expect(copy).toContain('RetireConfirmation');
-    expect(copy).toContain('Withdraw it');
+    expect(copy).toContain('c.admin.withdrawIt');
   });
 
   /**
@@ -63,9 +64,19 @@ describe('RetireConfirmation (T-165)', () => {
    * one number would let all three be skimmed past.
    */
   it('itemises all three counts', () => {
-    for (const line of ['attempts', 'sittings in progress', 'readiness']) {
-      expect(copy, `${line} is not itemised`).toContain(line);
+    /*
+     * The labels moved to the dictionary in T-210, so the wording is asserted
+     * there and the *structure* — three separate lines, no total — is asserted
+     * on the component. Between them they still say the whole rule.
+     */
+    for (const label of [
+      en.admin.attemptsRecorded,
+      en.admin.sittingsInProgress,
+      en.admin.readinessFigures,
+    ]) {
+      expect(label.length, 'a radius line lost its label').toBeGreaterThan(0);
     }
+    expect(copy.match(/<Line\b/g), 'the radius is not three separate lines').toHaveLength(3);
   });
 
   it('never summarises the radius', () => {
@@ -80,7 +91,7 @@ describe('RetireConfirmation (T-165)', () => {
    * the exact reason the counts were null until the attempt tables existed.
    */
   it('says "not known" rather than zero when a count is unmeasurable', () => {
-    expect(copy).toContain('Not known');
+    expect(en.admin.notKnown).toBe('Not known');
     expect(copy).toContain('=== null');
   });
 
@@ -101,7 +112,7 @@ describe('RetireConfirmation (T-165)', () => {
   // Says what withdrawing does and does not do. "Are you sure?" is a question
   // that tells an operator nothing they did not already know.
   it('explains what happens, rather than asking if they are sure', () => {
-    expect(copy).toContain('not deleted');
-    expect(copy).not.toMatch(/are you sure/i);
+    expect(en.admin.withdrawIntro).toContain('not deleted');
+    expect(JSON.stringify(en)).not.toMatch(/are you sure/i);
   });
 });

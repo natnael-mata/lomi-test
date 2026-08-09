@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest';
 
 import { stripComments } from '../lib/strip-comments';
 import { ExamSummary, type ExamSummaryData } from './ExamSummary';
+import { en } from '../lib/i18n/dictionary';
 
 const source = readFileSync(
   resolve(dirname(fileURLToPath(import.meta.url)), 'ExamSummary.tsx'),
@@ -78,10 +79,17 @@ describe('ExamSummary (T-130)', () => {
     expect(copy.length).toBeGreaterThan(400);
   });
 
+  /*
+   * The wording assertions below read the DICTIONARY, not this component.
+   * Since T-210 the words live in one place, which makes these exact rather
+   * than a search of JSX — and a component that stopped using a key would fail
+   * the no-literals lint instead.
+   */
+
   // "Revise next", not "worst" — the screen is a study plan, not a scoreboard.
   it('names the topic to revise rather than ranking weaknesses', () => {
-    expect(copy).toContain('Revise next');
-    expect(copy).not.toMatch(/\bworst\b/i);
+    expect(en.summary.reviseNext).toBe('Revise next');
+    expect(JSON.stringify(en)).not.toMatch(/\bworst\b/i);
   });
 
   /**
@@ -91,21 +99,21 @@ describe('ExamSummary (T-130)', () => {
    * form rather than captioning a weight with no framing at all.
    */
   it('frames a weight as a share of past papers', () => {
-    expect(copy).toContain('share of past papers');
+    expect(en.summary.shareOfPastPapers(40)).toContain('share of past papers');
   });
 
   // Unknown is not zero, on the screen as much as in the calculation.
   it('says a missing weight is missing instead of showing a zero', () => {
-    expect(copy).toContain('not worked out yet');
+    expect(en.summary.shareNotWorkedOut).toContain('not worked out yet');
   });
 
   // Anyone who counted their own red marks will otherwise think it picked wrong.
   it('explains why the named topic is not the one with the most misses', () => {
-    expect(copy).toContain('not the number of misses');
+    expect(en.practice.whyRanked).toContain('not the number of misses');
   });
 
   // An unanswered question is not a wrong one, and the difference is the student's.
   it('reports what was left unanswered rather than folding it into the score', () => {
-    expect(copy).toContain('left unanswered');
+    expect(en.summary.ofThePaperWithUnanswered(50, 1)).toContain('left unanswered');
   });
 });

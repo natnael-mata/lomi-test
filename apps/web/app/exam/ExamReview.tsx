@@ -18,11 +18,13 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ExamSummary } from '../../components/ExamSummary';
 import type { SittingResult } from '../../lib/api';
+import { copy } from '../../lib/i18n';
 
 /** How many explanations to render before the student asks for the rest. */
 const FIRST_PAGE = 10;
 
 export function ExamReview({ result }: { result: SittingResult }) {
+  const c = copy();
   // Not a disclosure control — every explanation is unlocked and reachable. A
   // hundred AnswerViews at once is simply a slow first paint on the phones this
   // is built for, so the rest arrive on request. The button says how many.
@@ -38,9 +40,7 @@ export function ExamReview({ result }: { result: SittingResult }) {
         <h1 className="text-title">{result.examName}</h1>
         {closedEarly && (
           <Card data-closed-early="">
-            <p className="text-body">
-              The time ran out before you submitted. Everything you answered was kept.
-            </p>
+            <p className="text-body">{c.exam.ranOutOfTime}</p>
           </Card>
         )}
       </header>
@@ -48,14 +48,14 @@ export function ExamReview({ result }: { result: SittingResult }) {
       <ExamSummary summary={result} />
 
       <section className="flex flex-col gap-4" data-review-items="">
-        <h2 className="text-title">Every question</h2>
+        <h2 className="text-title">{c.exam.everyQuestion}</h2>
         {visible.map((item) => (
           <article
             key={item.position}
             data-review-item={item.position}
             className="flex flex-col gap-2"
           >
-            <p className="text-caption text-ink-2">Question {item.position}</p>
+            <p className="text-caption text-ink-2">{c.exam.questionNumber(item.position)}</p>
             <AnswerView
               answer={item.answerView}
               isCorrect={item.answerView.chosenLabel === item.answerView.correctLabel}
@@ -65,7 +65,7 @@ export function ExamReview({ result }: { result: SittingResult }) {
 
         {rest > 0 && (
           <Button variant="ghost" onClick={() => setShown((n) => n + FIRST_PAGE)}>
-            Show {Math.min(rest, FIRST_PAGE)} more
+            {c.exam.showMore(Math.min(rest, FIRST_PAGE))}
           </Button>
         )}
       </section>

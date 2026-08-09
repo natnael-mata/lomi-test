@@ -16,8 +16,10 @@ import { Chip } from '../../../components/Chip';
 import { WeightSumIndicator } from '../../../components/WeightSumIndicator';
 import { validateOverride } from '../../../components/weight-sum';
 import { api, type EffectiveWeight } from '../../../lib/api';
+import { copy } from '../../../lib/i18n';
 
 export function WeightEditor() {
+  const c = copy();
   const [fieldId, setFieldId] = useState<string | null>(null);
   const [rows, setRows] = useState<EffectiveWeight[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export function WeightEditor() {
         const fields = await api.myFields();
         const first = fields[0]?.id;
         if (!first) {
-          if (!cancelled) setError('No published programme to weight yet.');
+          if (!cancelled) setError(c.admin.noProgramme);
           return;
         }
         const weights = await api.adminWeights(first);
@@ -81,10 +83,10 @@ export function WeightEditor() {
   return (
     <div className="flex flex-col gap-4" data-admin-weights="">
       <header className="flex items-center justify-between gap-2">
-        <h1 className="text-title">Topic weights</h1>
+        <h1 className="text-title">{c.admin.topicWeights}</h1>
         {fieldId && (
           <Button variant="ghost" onClick={() => void run(() => api.adminDeriveWeights(fieldId))}>
-            Recompute from the bank
+            {c.admin.recompute}
           </Button>
         )}
       </header>
@@ -118,13 +120,13 @@ export function WeightEditor() {
             <p className="text-caption text-ink-2 mt-1">
               {/* Both numbers, always. The size of a correction is only legible
                   next to what it corrected. */}
-              {row.publishedCount} published · bank says {row.derivedPct}%
+              {c.admin.publishedBankSays(row.publishedCount, row.derivedPct)}
             </p>
 
             {row.weightSource === 'override' && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Chip tone="pending" data-override="">
-                  Set by a reviewer
+                  {c.admin.setByReviewer}
                 </Chip>
                 <span className="text-caption text-ink-2">{row.overrideReason}</span>
               </div>
@@ -137,19 +139,19 @@ export function WeightEditor() {
                   inputMode="numeric"
                   value={draft.weightPct}
                   onChange={(e) => setDraft({ ...draft, weightPct: e.target.value })}
-                  aria-label={`Weight for ${row.topicName}, whole percent`}
+                  aria-label={c.admin.weightLabel(row.topicName)}
                 />
                 <input
                   className="field"
                   value={draft.reason}
                   onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
-                  aria-label={`Why ${row.topicName} is being overridden`}
-                  placeholder="Past papers give this more than the bank does."
+                  aria-label={c.admin.reasonLabel(row.topicName)}
+                  placeholder={c.admin.reasonPlaceholder}
                 />
                 <div className="flex items-center gap-2">
-                  <Button onClick={() => void save(row.topicId)}>Save</Button>
+                  <Button onClick={() => void save(row.topicId)}>{c.common.save}</Button>
                   <Button variant="ghost" onClick={() => setEditing(null)}>
-                    Cancel
+                    {c.common.cancel}
                   </Button>
                 </div>
               </div>
@@ -162,7 +164,7 @@ export function WeightEditor() {
                     setDraft({ weightPct: String(row.weightPct), reason: '' });
                   }}
                 >
-                  Override
+                  {c.admin.override}
                 </Button>
                 {row.weightSource === 'override' && fieldId && (
                   <Button
@@ -171,7 +173,7 @@ export function WeightEditor() {
                       void run(() => api.adminClearWeightOverride(fieldId, row.topicId))
                     }
                   >
-                    Back to the bank
+                    {c.admin.backToBank}
                   </Button>
                 )}
               </div>

@@ -13,6 +13,7 @@
  * of separate events, not a continuous measurement.
  */
 import { Chip } from './Chip';
+import { copy } from '../lib/i18n';
 
 export interface TrendPoint {
   sittingId: string;
@@ -25,10 +26,12 @@ export interface TrendPoint {
 }
 
 export function ScoreTrend({ points }: { points: TrendPoint[] }) {
+  const c = copy();
+
   if (points.length === 0) {
     return (
       <div data-trend="empty">
-        <p className="text-body text-ink-2">Your mock scores appear here once you have sat one.</p>
+        <p className="text-body text-ink-2">{c.progress.trendEmpty}</p>
       </div>
     );
   }
@@ -71,7 +74,7 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
                 finished badly, and a bar alone cannot tell them apart. */}
             {point.ranOutOfTime && (
               <Chip tone="pending" data-ran-out="">
-                {point.unanswered} not reached
+                {c.progress.notReached(point.unanswered)}
               </Chip>
             )}
           </li>

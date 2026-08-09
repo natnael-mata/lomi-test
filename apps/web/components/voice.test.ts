@@ -6,12 +6,17 @@
  * reward for getting it wrong, and a missed day *adjusts the plan*, it does not
  * break a streak."
  *
- * **Scoped to rendered text, not to all source.** A lint over every string
- * literal flags `className` and a variable called `failed`, and a lint that
- * cries wolf gets narrowed until it catches nothing. What is extracted here is
- * JSX text and the props that become visible words — which is a heuristic, and
- * one that misses copy assembled at runtime. The extractor's own guard checks it
- * is still finding a realistic amount.
+ * **Reads the dictionary, and then whatever text is left in components.**
+ *
+ * Until T-210 this was a heuristic over JSX text, which missed copy assembled at
+ * runtime and flagged `className` if written carelessly. Now that every visible
+ * string lives in `lib/i18n/dictionary.ts`, the dictionary can be walked
+ * exactly — every leaf, including the ones behind interpolation functions, which
+ * a source scan could never see.
+ *
+ * The JSX pass stays as a backstop: the design gallery and the global error
+ * boundary are deliberately outside the dictionary (T-210), and copy could
+ * always reappear in a component by accident.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -19,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { en } from '../lib/i18n/dictionary';
 import { stripComments } from '../lib/strip-comments';
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -43,15 +49,51 @@ interface Copy {
  * `>text<` is crude but right for this codebase — the components here are plain
  * JSX with no templating layer between the source and the page.
  */
+/**
+ * Every leaf of the dictionary, with interpolation functions called.
+ *
+ * A function is invoked with plausible arguments rather than skipped: half the
+ * sentences in this product are built by one, and those are exactly the ones
+ * where a number gets glued to a verb badly.
+ */
+function dictionaryCopy(node: unknown, path: string): Copy[] {
+  if (typeof node === 'string') return [{ file: `dictionary:${path}`, text: node }];
+  if (typeof node === 'function') {
+    const fn = node as (...args: unknown[]) => unknown;
+    // Arity-shaped guesses; every interpolation here takes numbers or a name.
+    const args = Array.from({ length: fn.length }, (_, i) => (i === 0 ? 3 : 7));
+    try {
+      const out = fn(...args);
+      const withName = fn.length === 1 ? String(fn('Taxation')) : '';
+      return [
+        { file: `dictionary:${path}`, text: String(out) },
+        ...(withName ? [{ file: `dictionary:${path}`, text: withName }] : []),
+      ];
+    } catch {
+      return [];
+    }
+  }
+  if (node && typeof node === 'object') {
+    return Object.entries(node as Record<string, unknown>).flatMap(([key, value]) =>
+      dictionaryCopy(value, path ? `${path}.${key}` : key),
+    );
+  }
+  return [];
+}
+
+const DICTIONARY: Copy[] = dictionaryCopy(en, '');
+
 const COPY: Copy[] = ROOTS.flatMap(sources).flatMap((file) => {
   const source = stripComments(readFileSync(file, 'utf8'));
   const rel = relative(WEB, file);
   const found: Copy[] = [];
 
-  for (const [, text] of source.matchAll(/>([^<>{}\n][^<>{}]*)</g)) {
+  for (const [, text] of source.matchAll(/>([^<>{}\n]+)</g)) {
     const trimmed = (text ?? '').trim();
     // Two or more words, so `%`, `·` and single tokens do not flood the list.
-    if (/\s/.test(trimmed) && /[a-z]/i.test(trimmed)) found.push({ file: rel, text: trimmed });
+    if (/^[A-Za-z0-9]/.test(trimmed) && /\s/.test(trimmed) && /[a-z]/i.test(trimmed)) {
+      found.push({ file: rel, text: trimmed });
+    }
   }
 
   for (const [, text] of source.matchAll(
@@ -82,15 +124,17 @@ const BANNED: [RegExp, string][] = [
   [/something went wrong/i, 'leaves the reader with no move'],
 ];
 
+const ALL = [...DICTIONARY, ...COPY];
+
 describe('the voice a student reads (T-209)', () => {
   it('found copy to check', () => {
-    // Guards the extractor: a lint over zero strings passes forever, and this
-    // one is a heuristic that could silently stop matching.
-    expect(COPY.length).toBeGreaterThan(40);
+    // Guards both extractors: a lint over zero strings passes forever.
+    expect(DICTIONARY.length, 'the dictionary walk found nothing').toBeGreaterThan(50);
+    expect(COPY.length, 'the JSX backstop found nothing').toBeGreaterThan(10);
   });
 
   it('never shames or blames', () => {
-    const offenders = COPY.flatMap(({ file, text }) =>
+    const offenders = ALL.flatMap(({ file, text }) =>
       BANNED.filter(([pattern]) => pattern.test(text)).map(
         ([, why]) => `${file}: "${text}" — ${why}`,
       ),
@@ -138,7 +182,7 @@ describe('the voice a student reads (T-209)', () => {
    * threat lives.
    */
   it('never attaches loss to a streak', () => {
-    const offenders = COPY.filter(
+    const offenders = ALL.filter(
       ({ text }) =>
         /\bstreak\b/i.test(text) && /\b(lost|lose|broke|broken|break|ended)\b/i.test(text),
     ).map(({ file, text }) => `${file}: "${text}"`);

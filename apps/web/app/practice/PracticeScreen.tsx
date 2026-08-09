@@ -24,6 +24,7 @@ import {
   type PracticeSummary,
   type ServedQuestion,
 } from '../../lib/api';
+import { copy } from '../../lib/i18n';
 
 type Phase =
   | { kind: 'loading' }
@@ -34,6 +35,7 @@ type Phase =
   | { kind: 'error'; message: string };
 
 export function PracticeScreen() {
+  const c = copy();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [chosen, setChosen] = useState<OptionLabel | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +134,7 @@ export function PracticeScreen() {
     return (
       <div className="flex flex-col gap-4" data-state="exhausted">
         <Card>
-          <h1 className="text-title">Done for today</h1>
+          <h1 className="text-title">{c.practice.doneForToday}</h1>
           <p className="text-body text-ink-2 mt-2">{phase.reason}</p>
         </Card>
         {phase.summary && <SessionSummary summary={phase.summary} />}
@@ -143,12 +145,12 @@ export function PracticeScreen() {
   if (phase.kind === 'paywalled') {
     return (
       <Card data-state="paywalled">
-        <h1 className="text-title">That is your ten free questions</h1>
+        <h1 className="text-title">{c.practice.freeLimit}</h1>
         <p className="text-body text-ink-2 mt-2">
           Every question in the bank comes with a full explanation. Unlock the rest for six or
           twelve months.
         </p>
-        <Button className="mt-4">See the plans</Button>
+        <Button className="mt-4">{c.practice.seePlans}</Button>
       </Card>
     );
   }
@@ -204,7 +206,7 @@ export function PracticeScreen() {
             pacing={phase.result.pacing}
             timeTakenSec={phase.result.timeTakenSec}
           />
-          <Button onClick={() => void load()}>Next question</Button>
+          <Button onClick={() => void load()}>{c.practice.nextQuestion}</Button>
         </>
       )}
     </div>

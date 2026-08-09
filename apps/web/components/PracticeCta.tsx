@@ -12,6 +12,7 @@
  * still resolves next term.
  */
 import { Button } from './Button';
+import { copy } from '../lib/i18n';
 
 export interface PracticeCtaProps {
   /** The topic to practise, or `null` when there is nothing to recommend. */
@@ -25,20 +26,22 @@ export function practiceHref(topicId: string): string {
 }
 
 export function PracticeCta({ topicId, topicName }: PracticeCtaProps) {
+  const c = copy();
+
   // Nothing to recommend yet — but the action is still offered, because a
   // student who has answered nothing is exactly the one who should be
   // practising. It just does not pretend to know what.
   if (!topicId || !topicName) {
     return (
       <a href="/practice" data-practice-cta="" data-topic="">
-        <Button className="w-full">Start practising</Button>
+        <Button className="w-full">{c.practice.startPractising}</Button>
       </a>
     );
   }
 
   return (
     <a href={practiceHref(topicId)} data-practice-cta="" data-topic={topicId}>
-      <Button className="w-full">Practise {topicName}</Button>
+      <Button className="w-full">{c.practice.practiseTopic(topicName)}</Button>
     </a>
   );
 }

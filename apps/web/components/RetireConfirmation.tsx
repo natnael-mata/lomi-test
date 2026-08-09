@@ -14,6 +14,7 @@
  */
 import { Button } from './Button';
 import { Card } from './Card';
+import { copy } from '../lib/i18n';
 
 export interface RetireBlastRadius {
   attempts: number | null;
@@ -38,7 +39,7 @@ function Line({ count, label, note }: { count: number | null; label: string; not
       <span className="text-label num">
         {/* Null is "not measurable", never zero — reporting 0 would say this
             disturbs nobody, which is a claim the code cannot make. */}
-        {count === null ? 'Not known' : count} <span className="text-body">{label}</span>
+        {count === null ? copy().admin.notKnown : count} <span className="text-body">{label}</span>
       </span>
       <span className="text-caption text-ink-2">{note}</span>
     </li>
@@ -53,40 +54,39 @@ export function RetireConfirmation({
   onConfirm,
   onCancel,
 }: RetireConfirmationProps) {
+  const c = copy();
+
   return (
     <Card data-retire-confirmation={stableId}>
-      <h2 className="text-title">Withdraw {stableId}?</h2>
-      <p className="text-body text-ink-2 mt-2">
-        The question stops being served and stops being sampled into new papers. It is not deleted —
-        students&rsquo; history keeps pointing at something real.
-      </p>
+      <h2 className="text-title">{c.admin.withdrawTitle(stableId)}</h2>
+      <p className="text-body text-ink-2 mt-2">{c.admin.withdrawIntro}</p>
 
       <ul className="mt-4 flex flex-col gap-3" data-blast-radius="">
         <Line
           count={radius.attempts}
-          label="attempts recorded"
-          note="Kept as they are. A past answer stays what it was."
+          label={c.admin.attemptsRecorded}
+          note={c.admin.attemptsNote}
         />
         <Line
           count={radius.liveSittings}
-          label="sittings in progress"
-          note="Students in a timed exam right now, with this question on their paper."
+          label={c.admin.sittingsInProgress}
+          note={c.admin.sittingsNote}
         />
         <Line
           count={radius.studentsAffected}
-          label="students’ readiness figures"
-          note="Their readiness rests partly on this question."
+          label={c.admin.readinessFigures}
+          note={c.admin.readinessNote}
         />
       </ul>
 
       <label className="mt-4 flex flex-col gap-1" htmlFor="retire-reason">
-        <span className="text-caption text-ink-2">Why is it being withdrawn?</span>
+        <span className="text-caption text-ink-2">{c.admin.withdrawReasonLabel}</span>
         <input
           id="retire-reason"
           className="field"
           value={reason}
           onChange={(e) => onReasonChange(e.target.value)}
-          placeholder="Option B is also correct."
+          placeholder={c.admin.withdrawReasonPlaceholder}
         />
       </label>
 
@@ -94,14 +94,14 @@ export function RetireConfirmation({
         <Button
           variant="danger"
           disabled={reason.trim().length === 0}
-          blockingReason={reason.trim().length === 0 ? 'Say why first' : undefined}
+          blockingReason={reason.trim().length === 0 ? c.admin.sayWhyFirst : undefined}
           onClick={onConfirm}
           data-confirm-retire=""
         >
-          Withdraw it
+          {c.admin.withdrawIt}
         </Button>
         <Button variant="ghost" onClick={onCancel}>
-          Cancel
+          {c.common.cancel}
         </Button>
       </div>
     </Card>

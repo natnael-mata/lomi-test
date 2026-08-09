@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { SessionSummary, type SessionSummaryData } from './SessionSummary';
+import { en } from '../lib/i18n/dictionary';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const source = readFileSync(resolve(HERE, 'SessionSummary.tsx'), 'utf8');
@@ -33,7 +34,7 @@ describe('SessionSummary (T-118)', () => {
         summary: summary({ answered: 0, correct: 0, topics: [], weakestTopic: null }),
       }),
     ).not.toThrow();
-    expect(source).toContain('Nothing answered yet');
+    expect(en.summary.nothingAnswered).toBe('Nothing answered yet');
   });
 
   // A proportion of questions answered is not a column that sums, so it takes
@@ -46,13 +47,15 @@ describe('SessionSummary (T-118)', () => {
   // A study order, not a scoreboard: the thing to do next is at the top, and it
   // is labelled as an action rather than as a failure.
   it('marks the weakest topic as what to practise next', () => {
-    expect(source).toContain('Practise next');
+    // The wording is asserted against the DICTIONARY since T-210; the component
+    // is asserted to still do the comparison that decides which row gets it.
+    expect(en.summary.practiseNext).toBe('Practise next');
     expect(source).toContain('topic.topic === summary.weakestTopic');
   });
 
   // T-097a: never "% of exam".
   it('captions weights as share of past papers', () => {
-    expect(source).toContain('share of past papers');
+    expect(en.summary.shareOfPastPapers(30)).toContain('share of past papers');
     expect(source).not.toMatch(/%\s*of\s*(the\s*)?exam/i);
   });
 

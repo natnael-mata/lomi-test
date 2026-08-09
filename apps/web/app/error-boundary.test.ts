@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { en } from '../lib/i18n/dictionary';
 import { stripComments } from '../lib/strip-comments';
 
 const APP = dirname(fileURLToPath(import.meta.url));
@@ -99,11 +100,18 @@ describe('error boundaries (T-208)', () => {
       expect(stripComments(readFileSync(file, 'utf8'))).not.toMatch(/something went wrong/i);
     });
 
-    it.each([
-      ['route', rootError],
-      ['global', globalError],
-    ])('%s boundary reassures about saved work', (_name, file) => {
-      expect(readFileSync(file, 'utf8')).toContain('is lost');
+    /*
+     * The route boundary's words moved to the dictionary in T-210; the global
+     * one keeps its own, because it renders when the app has failed to start and
+     * must not depend on a module that may be part of what failed.
+     */
+    it('the route boundary reassures about saved work, from the dictionary', () => {
+      expect(en.error.routeBody('abc')).toContain('is lost');
+      expect(readFileSync(rootError, 'utf8')).toContain('c.error.routeBody');
+    });
+
+    it('the global boundary reassures about saved work, in its own words', () => {
+      expect(readFileSync(globalError, 'utf8')).toContain('is lost');
     });
   });
 
