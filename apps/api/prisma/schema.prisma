@@ -1038,6 +1038,14 @@ model Payment {
   /// an operator confirming both would grant twelve months for one payment.
   txRef String @unique
 
+  /// The provider's own reference for the same money, once it tells us one.
+  ///
+  /// Distinct from `txRef`, which is *ours* and exists before the charge does.
+  /// This is what a student reads off their telebirr SMS and what Chapa support
+  /// searches on, so reconciling a disputed payment does not depend on our side
+  /// of the boundary being right.
+  providerRef String?
+
   /// Free text from whoever settled or refused it.
   note String?
 
@@ -1052,10 +1060,22 @@ model Payment {
   @@index([status, createdAt])
 }
 
+/// How the money was moved — not who processed it.
+///
+/// `TELEBIRR` and `CBEBIRR` both go through Chapa's direct-charge API, but they
+/// are recorded separately because that is what the student chose, what their
+/// receipt says, and what a support conversation will be about. Collapsing them
+/// into `CHAPA` would save a row in an enum and cost every reconciliation.
 enum PaymentMethod {
   /// A transfer the student made themselves, evidenced by a reference.
   BANK
+
+  /// Chapa's hosted checkout page.
   CHAPA
+
+  /// Direct charge: a USSD push the student approves on their handset.
+  TELEBIRR
+  CBEBIRR
 }
 
 enum PaymentStatus {

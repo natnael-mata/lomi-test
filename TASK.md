@@ -2233,12 +2233,51 @@ size` — literally raw misses over a constant — so this genuinely depends on
   >
   > `hasActiveSubscription` still takes a `fieldId` and ignores it: the interface is the one
   > `practice/` already calls, and a future per-field product would need it back.
-- [ ] **T-142** `POST /payments/chapa/init` returns a redirect URL for the field's price.
+- [x] **T-142** `POST /payments/chapa/init` returns a redirect URL for the field's price.
       **Test:** Sandbox call returns a URL; amount matches `priceEtb`.
-- [ ] **T-143** Chapa webhook activates the subscription and is signature-verified.
+  > **Widened to four ways to pay**, at the user's request (2026-08-09). One route was never going
+  > to be enough: Chapa's hosted page is a browser redirect, and a student paying from a handset on
+  > mobile data would rather approve a USSD push than load a checkout. So `/payments/telebirr` and
+  > `/payments/cbebirr` are direct charges (`POST /v1/charges?type=…`), `/payments/chapa` is the
+  > hosted page, and `/payments/manual` (T-145) is any bank with a pasted reference.
+  >
+  > `TELEBIRR` and `CBEBIRR` are separate `PaymentMethod` values rather than all being `CHAPA`.
+  > Collapsing them would save a row in an enum and cost every reconciliation — what the student
+  > chose is what their receipt says and what a support conversation will be about.
+  >
+  > The `tx_ref` is **ours and minted before the charge** (`lomi-<subscriptionId>-<nonce>`): it is
+  > the only identifier that exists on both sides of the boundary, and if the call to Chapa fails
+  > halfway, the row it names is already there to be closed.
+  >
+  > Not connected to a live Chapa account — built against the documented API and proved with a stub
+  > gateway. `CHAPA_SECRET_KEY` is still blank; without it the three Chapa routes answer 503 rather
+  > than pretending to take money.
+- [x] **T-143** Chapa webhook activates the subscription and is signature-verified.
       **Test:** Unsigned webhook → 401; valid webhook → subscription `ACTIVE`.
-- [ ] **T-144** The webhook is idempotent — a replay does not extend access twice.
+  > **400, not 401** — the test's number was written before the route existed. There is no
+  > credential to be missing, so there is nothing to challenge; the body either verifies or it does
+  > not.
+  >
+  > Chapa sends two signature headers and they are **not** equally useful. `x-chapa-signature` is an
+  > HMAC of the payload. `chapa-signature` is an HMAC of the secret key *with itself* — the same
+  > value on every request forever, so anyone who ever saw one webhook can replay that header on a
+  > body they wrote. Chapa's docs say either is sufficient; that is true of authenticity and false
+  > of integrity. The payload signature is checked first and the constant one is accepted only in
+  > its absence.
+  >
+  > Needs `rawBody: true` on the app: the HMAC covers the bytes that were sent, and a re-serialised
+  > body is a different document with a different hash.
+- [x] **T-144** The webhook is idempotent — a replay does not extend access twice.
       **Test:** Fire the same webhook twice; `expiresAt` is unchanged on the second.
+  > **A signed webhook is still only a claim.** Access is granted in one place, and only after
+  > Chapa's verify endpoint has been asked directly — their own docs ask for the re-query, because a
+  > message about a transaction and the transaction can disagree. The same call backs the polling
+  > endpoint, so a student whose webhook was never delivered is not left staring at a spinner over
+  > money that has left their account.
+  >
+  > Underpayment is neither granted nor rejected: it becomes a note on a `PENDING` payment for an
+  > operator (the amount half of T-151). Granting sells six months for four; rejecting leaves
+  > somebody out of pocket with a closed case and nothing to point at.
 - [x] **T-145** `POST /payments/manual` accepts a `txRef` and creates a `PENDING` payment.
       **Test:** Duplicate `txRef` → 409.
   > **A payment is a claim until something confirms it.** A reference typed off a receipt proves
