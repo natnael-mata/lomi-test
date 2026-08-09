@@ -28,6 +28,7 @@
     "prisma:migrate": "npm run prisma:migrate -w api",
     "prisma:generate": "npm run prisma:generate -w api",
     "prisma:deploy": "npm run prisma:deploy -w api",
+    "test:a11y": "vitest run --root apps/web a11y",
     "analyze": "node apps/web/scripts/js-budget.mjs",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present && node scripts/runner-report.mjs test",

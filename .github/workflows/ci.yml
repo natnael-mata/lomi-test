@@ -75,6 +75,12 @@ jobs:
       - name: Test
         run: npm test
 
+      # Runs inside `npm test` as well; called out separately so a failure reads
+      # as "accessibility" in the CI log rather than as one test among twelve
+      # hundred (T-200).
+      - name: Accessibility
+        run: npm run test:a11y
+
       # A hand-kept progress index is wrong within a day, and a wrong index is
       # worse than none — it is what people read instead of counting.
       - name: TASK.md progress index is current
