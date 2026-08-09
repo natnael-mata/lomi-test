@@ -27,7 +27,38 @@ source "$HERE/deploy.env"
 : "${API_PORT:?set API_PORT}"
 : "${WEB_PORT:?set WEB_PORT}"
 
-SSH=(ssh -p "$SSH_PORT" "$SSH_TARGET")
+# One connection, reused, with retries.
+#
+# The link to this box drops. A deploy is half a dozen separate remote steps,
+# and one that dies between the rsync and the migration leaves the box in a
+# state nobody can describe — so every step shares a multiplexed connection and
+# every step is retried rather than being allowed to fail alone.
+CTRL="${TMPDIR:-/tmp}/lomi-deploy-%r@%h:%p"
+SSH_OPTS=(
+  -p "$SSH_PORT"
+  -o ControlMaster=auto -o "ControlPath=$CTRL" -o ControlPersist=300
+  -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=4
+)
+SSH=(ssh "${SSH_OPTS[@]}" "$SSH_TARGET")
+
+cleanup() { ssh "${SSH_OPTS[@]}" -O exit "$SSH_TARGET" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+
+# Retries the whole command, three times, with a pause. Safe because every
+# remote step below is idempotent — that is a property they were written to
+# have, not an accident.
+retry() {
+  local attempt=1
+  until "$@"; do
+    if (( attempt >= 3 )); then
+      echo "failed after $attempt attempts: $*" >&2
+      return 1
+    fi
+    echo "  … attempt $attempt failed, retrying in 5s" >&2
+    sleep 5
+    ((attempt++))
+  done
+}
 
 # The neighbours on this box, by name.
 #
@@ -46,7 +77,7 @@ remote() {
     grep -inE "$NEIGHBOURS" <<<"$script" >&2
     exit 1
   fi
-  "${SSH[@]}" bash -seuo pipefail <<<"$script"
+  retry "${SSH[@]}" bash -seuo pipefail <<<"$script"
 }
 RELEASE="$(git -C "$REPO" rev-parse --short HEAD)"
 REMOTE_RELEASE="$REMOTE_ROOT/releases/$RELEASE"
@@ -92,7 +123,7 @@ REMOTE
 say "Shipping $RELEASE"
 # Source is not shipped, only what runs: dist, .next, the Prisma schema and
 # migrations, and the manifests needed to install production dependencies.
-rsync -az --delete -e "ssh -p $SSH_PORT" \
+retry rsync -az --delete -e "ssh ${SSH_OPTS[*]}" \
   --include='apps/' \
   --include='apps/api/***' --include='apps/web/***' --include='apps/bot/***' \
   --include='package.json' --include='package-lock.json' \
@@ -121,10 +152,10 @@ REMOTE
 say "Restarting"
 # Named explicitly, one by one. Never `systemctl restart all` or anything that
 # resolves to a set — on this box that set contains other people's products.
-"${SSH[@]}" "systemctl restart lomi-api lomi-web lomi-bot && sleep 3 && systemctl is-active lomi-api lomi-web lomi-bot"
+retry "${SSH[@]}" "systemctl restart lomi-api lomi-web lomi-bot && sleep 3 && systemctl is-active lomi-api lomi-web lomi-bot"
 
 say "Health — ours, then the neighbours"
-"${SSH[@]}" "curl -fsS http://127.0.0.1:$API_PORT/health && echo"
+retry "${SSH[@]}" "curl -fsS http://127.0.0.1:$API_PORT/health && echo"
 # nginx is shared. If this deploy touched it, the neighbours are how you find
 # out — checking only our own site is how a shared box goes down quietly.
 "${SSH[@]}" "for host in chaw admin eims; do printf '%s: ' \$host; curl -s -o /dev/null -w '%{http_code}\\n' -k https://\$host.196-190-212-158.nip.io/ || echo unreachable; done"
