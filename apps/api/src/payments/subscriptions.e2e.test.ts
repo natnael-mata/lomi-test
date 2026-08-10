@@ -491,10 +491,18 @@ describe('plans and paid access (Phase 8)', () => {
       expect(await access.hasActiveSubscription(userId, fieldA)).toBe(false);
     });
 
+    /**
+     * Asserted on **this suite's own row**, not on the sweep's global count.
+     *
+     * `sweepExpired` is a whole-table operation, so `toBe(1)` was a claim about
+     * every other suite's leftovers as well as ours — and it failed exactly once,
+     * on a database that had rows in it from an earlier run. A count of "at
+     * least ours" is the strongest thing that is actually true.
+     */
     it('downgrades the status when the sweep runs', async () => {
       await expired();
       const count = await subscriptions.sweepExpired(AUGUST);
-      expect(count).toBe(1);
+      expect(count).toBeGreaterThanOrEqual(1);
 
       const swept = await prisma.subscription.findFirstOrThrow({ where: { userId } });
       expect(swept.status).toBe('EXPIRED');
@@ -514,14 +522,18 @@ describe('plans and paid access (Phase 8)', () => {
       const { id } = await subscriptions.begin(userId, 'TWELVE_MONTH');
       await subscriptions.activate(id, AUGUST);
 
-      expect(await subscriptions.sweepExpired(AUGUST)).toBe(0);
+      await subscriptions.sweepExpired(AUGUST);
+      // The row, not the count: whether the sweep found somebody else's stale
+      // subscription is not this test's business.
       const row = await prisma.subscription.findFirstOrThrow({ where: { id } });
       expect(row.status).toBe('ACTIVE');
     });
 
+    // The second call returning zero IS a fair global claim: whatever the first
+    // pass found, there is nothing left for the second.
     it('is safe to run twice', async () => {
       await expired();
-      expect(await subscriptions.sweepExpired(AUGUST)).toBe(1);
+      expect(await subscriptions.sweepExpired(AUGUST)).toBeGreaterThanOrEqual(1);
       expect(await subscriptions.sweepExpired(AUGUST)).toBe(0);
     });
 
