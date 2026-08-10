@@ -456,6 +456,14 @@ model User {
   /// asserting nothing in the product branches on it.
   isRetaker Boolean?
 
+  /// Whether this student is hidden from public boards (T-194).
+  ///
+  /// **Opting out hides the row, not the rank.** A student who does not want to
+  /// be seen competing still wants to know where they stand — and a product that
+  /// answers "you have opted out" when asked "how am I doing" has punished
+  /// somebody for a privacy choice.
+  leaderboardOptOut Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -463,6 +471,49 @@ model User {
   attempts Attempt[]
 
   @@index([fieldId])
+}
+
+/// One award, and why (T-190).
+///
+/// **The ledger is the only truth about points and streaks.** There is no
+/// `totalPoints` column and no `streakDays` column anywhere, deliberately: a
+/// counter kept in step by a write path is a counter that will one day disagree
+/// with the rows it claims to summarise, and the first anybody hears of it is a
+/// student saying the number is wrong. Total points is a SUM over these rows and
+/// the streak is a COUNT of distinct days, so neither can drift from what
+/// actually happened.
+model PointEntry {
+  id String @id @default(cuid())
+
+  /// Scalar, with the foreign key written by hand — the same pattern the exam
+  /// tables use.
+  userId String
+
+  /// Which rule awarded this, from `engagement/points.ts`. Stored as the id
+  /// rather than an enum so a rule can be retired without a migration, and so
+  /// the ledger stays readable after one is.
+  ruleId String
+
+  /// Whole points. Zero is meaningful: a `plan-adjusted` row (T-191) records
+  /// that a gap was seen and nothing was taken away.
+  points Int
+
+  /// The sentence shown to the student, copied in at award time.
+  ///
+  /// **Denormalised on purpose.** Rewording a rule must not silently rewrite
+  /// history — a student who reads their ledger next month should see what they
+  /// were told at the time, not what the copy says today.
+  reason String
+
+  /// The Addis calendar day, `YYYY-MM-DD`. The streak counts distinct values of
+  /// this, so it is stored rather than derived from `createdAt` at read time.
+  day String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, day])
+  @@index([userId, createdAt])
+  @@index([day])
 }
 
 /// One signed-in device.

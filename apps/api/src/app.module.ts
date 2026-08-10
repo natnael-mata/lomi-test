@@ -3,6 +3,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuditModule } from './audit/audit.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
+import { EngagementModule } from './engagement/engagement.module';
 import { BotModule } from './bot/bot.module';
 import { ExamsModule } from './exams/exams.module';
 import { HealthController } from './health/health.controller';
@@ -17,6 +18,7 @@ import { TaxonomyModule } from './taxonomy/taxonomy.module';
 
 @Module({
   imports: [
+    EngagementModule,
     PrismaModule,
     CommonModule,
     AuditModule,
