@@ -47,6 +47,17 @@ export const RATE_LIMITS = {
   signIn: { limit: 5, windowSec: 600 },
   attempt: { limit: 60, windowSec: 60 },
   payment: { limit: 5, windowSec: 300 },
+
+  /**
+   * Community posting (T-197).
+   *
+   * Two windows, not one. Five a minute stops a flood; forty an hour stops a
+   * slow one. Somebody answering three classmates quickly is not the failure
+   * being prevented, and a limit that catches ordinary enthusiasm gets worked
+   * around rather than respected.
+   */
+  communityPost: { limit: 5, windowSec: 60 },
+  communityPostHourly: { limit: 40, windowSec: 3600 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

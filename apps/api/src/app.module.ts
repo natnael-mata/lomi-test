@@ -3,6 +3,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuditModule } from './audit/audit.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
+import { CommunityModule } from './community/community.module';
 import { EngagementModule } from './engagement/engagement.module';
 import { BotModule } from './bot/bot.module';
 import { ExamsModule } from './exams/exams.module';
@@ -18,6 +19,7 @@ import { TaxonomyModule } from './taxonomy/taxonomy.module';
 
 @Module({
   imports: [
+    CommunityModule,
     EngagementModule,
     PrismaModule,
     CommonModule,

@@ -1144,3 +1144,104 @@ enum PaymentStatus {
   /// arrived: "we looked and it was not there" is a different conversation.
   REJECTED
 }
+
+/// A community thread, scoped to one topic (T-195).
+///
+/// **Scoped by `topicId`, and `fieldId` is denormalised beside it** — the same
+/// trade `Question` makes and for the same reason. Every read is "threads in
+/// this student's field, on this topic", and the alternative is a join through
+/// topic → course → field on a list screen.
+///
+/// The cost is that it can drift from the topic's real field, which is why it is
+/// written from the topic at insert time and never taken from the caller.
+model Thread {
+  id String @id @default(cuid())
+
+  topicId String
+  fieldId String
+
+  authorId String
+
+  /// The question it opens with. Threads are questions, not chat rooms.
+  title String
+  body  String
+
+  /// Set when an operator hides it (T-197). A timestamp rather than a boolean
+  /// so "when" is answerable without the audit log.
+  hiddenAt   DateTime?
+  hiddenBy   String?
+  hiddenNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts Post[]
+
+  @@index([topicId, createdAt])
+  @@index([fieldId, createdAt])
+  @@index([authorId])
+  @@index([hiddenAt])
+}
+
+/// A reply (T-196, T-197).
+model Post {
+  id String @id @default(cuid())
+
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  authorId String
+
+  /// The author's staff role **at the time of writing**, copied in.
+  ///
+  /// Denormalised on purpose: a reply that carried the product's word when it
+  /// was written should keep carrying it after the reviewer moves on, and a
+  /// student who is later made a reviewer should not have their old guesses
+  /// retroactively endorsed. The badge is a fact about the reply, not about the
+  /// person today.
+  authorRole String
+
+  body String
+
+  hiddenAt   DateTime?
+  hiddenBy   String?
+  hiddenNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports Report[]
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
+  @@index([hiddenAt])
+}
+
+/// A student flagging a post (T-197).
+///
+/// **A report hides nothing.** One report is one person's opinion, and a product
+/// where a single tap removes another student's question has handed every
+/// argument to whoever reports first. This row queues the post for a person.
+model Report {
+  id String @id @default(cuid())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  reporterId String
+
+  /// From a fixed set, because free text is not triage.
+  reason String
+  note   String?
+
+  /// Set when an operator has looked. Null means it is still in the queue.
+  reviewedAt DateTime?
+  reviewedBy String?
+
+  createdAt DateTime @default(now())
+
+  /// One report per person per post. A student who taps twice has not found two
+  /// problems, and a queue that counts them twice misleads whoever works it.
+  @@unique([postId, reporterId])
+  @@index([reviewedAt, createdAt])
+}
