@@ -79,11 +79,16 @@ PUBLISHED → RETIRED`.
 - **Taxonomy:** Field → Course → Topic → Question. Question types are `CONCEPT` or
   `CALCULATION` and render differently. Topic blueprint weights must sum to 100% before a
   field can publish.
-- **Identity (confirmed this session — keep as built):** signup stays light (phone + OTP on
-  web, `initData` HMAC in Telegram). **Fayda / National ID binds at purchase only**, stored
-  as a salted FIN hash — one FIN, one account — as the anti-sharing control. A verified real
-  name is **never** shown on any public surface; leaderboards use student-chosen display
-  names, with opt-out.
+- **Identity (revised 2026-08-10):** signup stays light (Telegram deep link on web,
+  `initData` HMAC inside the bot). ~~Fayda / National ID binds at purchase, stored as a salted
+  FIN hash — one FIN, one account — as the anti-sharing control.~~ **Fayda is dropped.**
+  Relying-party approval was applied for and never granted, and the product is not waiting on
+  it.
+  **The anti-sharing control is therefore the device limit alone**, and that is a real
+  reduction: two students who trust each other can share one account indefinitely by staying
+  under two devices. Whether that is acceptable is a pricing question, not a technical one.
+  No legal name is collected at all now, which makes the privacy commitment below trivially
+  true rather than carefully maintained.
 - **Device limit:** two concurrent sessions; a third login evicts the oldest.
 - **Subscription is duration-based (confirmed):** **6 months for Br 500** and **12 months for
   Br 800**, measured from activation, status `PENDING → ACTIVE → REJECTED | EXPIRED`. This
@@ -130,7 +135,8 @@ segmentation, and no screen may branch on it.
 - **What a plan grants** — access to the student's own field, or to every field. Pricing is now
   duration-based, so the per-field assumption baked into the schema no longer follows.
 - **verify.et** API credentials and the exact response field that authorizes activation.
-- **Fayda relying-party approval** from the National ID Program is applied for, not granted.
+- ~~**Fayda relying-party approval** from the National ID Program is applied for, not granted.~~
+  **Closed 2026-08-10: dropped from scope rather than waited on.**
 
 **Known doc conflict:** `PLAN.md` describes an Express + React/Vite monorepo. The repository
 is NestJS + Next.js and considerably further along. Where they disagree, **the repository is
@@ -145,7 +151,9 @@ product truth**; PLAN.md is a wish-list to reconcile.
   Errors state cause _and_ fix. **Never shame** a wrong answer or a missed day — the
   explanation is the reward for getting it wrong, and a missed day _adjusts the plan_, it
   does not break a streak.
-- **Privacy commitment:** the Fayda-verified legal name never appears on a public surface.
+- **Privacy commitment:** no legal name is collected, so none can appear on a public surface.
+  Guarded by a test rather than by the absence of a feature — `identity-privacy.e2e.test.ts`
+  sweeps every student-reachable route and fails the day an identity field appears.
 - **Anti-piracy commitment:** no downloadable or printable content views.
 
 ## Evidence on Hand

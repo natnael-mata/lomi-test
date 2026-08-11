@@ -2,11 +2,16 @@
  * Integration test — no identity document reaches a student-facing route
  * (T-148, T-149).
  *
- * Fayda verification itself is blocked on D7 and nothing binds a FIN yet. That
- * makes this the moment to write the guard rather than a reason to skip it: the
- * cheapest time to stop a national identity number from leaking is before there
- * is one to leak, and a guard added after the field exists is a guard written by
- * somebody who already has the leak to fix.
+ * **Fayda was dropped on 2026-08-10 (T-147), so no identity number ever enters
+ * the system.** That changes what this file is for rather than removing the need
+ * for it. It was written as a guard against a field that did not exist yet; it
+ * is now a guard against a field the product has decided never to add, which is
+ * a permanent property and a cheaper one to keep than to re-derive if identity
+ * ever comes back.
+ *
+ * The privacy commitment is now trivially true rather than carefully maintained
+ * — and this is the test that says so, and that fails the day it stops being
+ * true.
  *
  * Two claims, checked two ways:
  *
@@ -173,10 +178,11 @@ describe('identity never leaves the building (T-148, T-149)', () => {
   });
 
   /**
-   * T-148: the raw number is never stored, so it can never be dumped, logged or
-   * subpoenaed out of us. A salted hash answers "is this the same person" — the
-   * only question the product actually asks — without holding the answer to
-   * "who is this person" for anybody who reaches the database.
+   * T-148, now satisfied by there never being a number at all.
+   *
+   * With Fayda dropped there is nothing to hash and nothing to store, so the
+   * strongest version of "the raw FIN is never stored" is that no column exists
+   * to store one in. This test is what keeps that true.
    */
   it('has no column holding a raw identity number', async () => {
     const columns = schema

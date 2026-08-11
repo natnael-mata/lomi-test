@@ -42,7 +42,8 @@ Do not batch tasks, and never tick a box you have not actually tested.
 - **Plans:** 6 months Br 500 · 12 months Br 800, measured from activation.
 - **Mock exam:** 100 questions, 180 minutes. Pacing budgets 60s concept / 180s calculation,
   which implies a 60/40 concept-to-calculation mix.
-- **Identity:** signup is light (phone + OTP, or Telegram). Fayda binds once, at purchase.
+- **Identity:** signup is light (Telegram deep link). No national ID is collected — Fayda was
+  dropped 2026-08-10, so the anti-sharing control is the two-device limit alone.
 - **Retakers:** captured via `isRetaker`, but drives no behaviour yet.
 - **No official blueprint exists.** Topic weights are _derived_ from the observed share of
   questions in past papers. Student-facing copy says **"share of past papers"**, never
@@ -52,7 +53,6 @@ Do not batch tasks, and never tick a box you have not actually tested.
 
 - Does a plan grant one field or all fields? (`TASK.md` T-141b)
 - verify.et credentials and the response field that authorises activation.
-- Fayda relying-party approval from the National ID Program.
 
 ## Deploying
 
