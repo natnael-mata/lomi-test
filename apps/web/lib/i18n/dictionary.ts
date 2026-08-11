@@ -150,6 +150,65 @@ export const en = {
       'That way of paying is not available right now. The bank transfer below still works.',
   },
 
+  standing: {
+    title: 'Where you stand',
+    working: 'Counting…',
+    couldNotLoad: 'Your standing could not be loaded. Nothing is lost — try again.',
+
+    points: 'Points',
+    pointsFrom: 'from every award you have earned',
+    streak: 'Days practised',
+    streakNever: 'No days yet. The first one counts from today.',
+    streakDays: (days: number) => `${days} day${days === 1 ? '' : 's'}`,
+    toNextTier: (points: number, tier: string) => `${points} points to ${tier}`,
+    topTier: 'You are at the top tier.',
+
+    howEarned: 'How you earned them',
+    recentOnly: 'Your most recent awards. Older ones are counted in the total above.',
+    ledgerEmpty: 'Nothing yet. Points appear here the moment you answer a question.',
+
+    board: 'The board',
+    boardEmpty: 'Nobody has scored yet. Answer a question and you are first.',
+    yourRank: (rank: number) =>
+      `You are ${rank}${rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'}`,
+    notListed: 'You are not shown on the board. Your rank is still yours to see.',
+    hideMe: 'Hide me from the board',
+    showMe: 'Show me on the board',
+  },
+
+  community: {
+    title: 'Ask about this topic',
+    working: 'Loading…',
+    couldNotLoad: 'The discussion could not be loaded. Try again.',
+    empty: 'No questions on this topic yet. Ask the first one.',
+
+    askTitle: 'Your question, in a few words',
+    askBody: 'What is confusing you?',
+    ask: 'Ask',
+    asking: 'Posting…',
+    titleRequired: 'Give your question a title so somebody can find it.',
+    bodyRequired: 'Write your question before posting.',
+
+    replies: (count: number) => `${count} repl${count === 1 ? 'y' : 'ies'}`,
+    reply: 'Reply',
+    replyPlaceholder: 'Answer or add to this',
+    verified: 'Reviewer',
+    verifiedMeans: 'Checked by the people who review the questions.',
+    yours: 'You',
+    hidden: 'Hidden by a moderator. Only you can see this.',
+
+    report: 'Report',
+    reported: 'Reported. Somebody will look at it.',
+    reportWhy: 'Why are you reporting this?',
+    reportWrong: 'The answer is wrong',
+    reportAbusive: 'Abusive',
+    reportSpam: 'Spam',
+    reportOffTopic: 'Off topic',
+
+    tooFast: 'You are posting quickly. Give it a moment and try again.',
+    chooseProgramme: 'Choose a programme before joining the discussion.',
+  },
+
   dashboard: {
     title: 'Overview',
     working: 'Counting…',
@@ -358,6 +417,64 @@ export const am: Copy = {
       'እንደተገኘም መዳረሻዎ ወዲያውኑ ይጀምራል።',
     couldNotStart: 'ክፍያው ሊጀመር አልቻለም። ምንም አልተከፈለም — እንደገና ይሞክሩ።',
     unavailable: 'ይህ የመክፈያ መንገድ አሁን አይሰራም። ከታች ያለው የባንክ ዝውውር አሁንም ይሰራል።',
+  },
+
+  standing: {
+    title: 'ያሉበት ደረጃ',
+    working: 'በመቁጠር ላይ…',
+    couldNotLoad: 'ደረጃዎ ሊጫን አልቻለም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
+
+    points: 'ነጥቦች',
+    pointsFrom: 'ካገኙት ከእያንዳንዱ ሽልማት',
+    streak: 'የተለማመዱባቸው ቀናት',
+    streakNever: 'ገና ምንም ቀን የለም። የመጀመሪያው ከዛሬ ይጀምራል።',
+    streakDays: (days: number) => `${days} ቀን`,
+    toNextTier: (points: number, tier: string) => `ወደ ${tier} ${points} ነጥብ ይቀራል`,
+    topTier: 'በከፍተኛው ደረጃ ላይ ነዎት።',
+
+    howEarned: 'እንዴት እንዳገኙዋቸው',
+    recentOnly: 'የቅርብ ጊዜ ሽልማቶችዎ። የቀድሞዎቹ ከላይ ባለው ጠቅላላ ውስጥ ተቆጥረዋል።',
+    ledgerEmpty: 'ገና ምንም የለም። ጥያቄ እንደመለሱ ነጥቦች እዚህ ይታያሉ።',
+
+    board: 'ሰሌዳው',
+    boardEmpty: 'እስካሁን ማንም ነጥብ አላገኘም። ጥያቄ ይመልሱና የመጀመሪያው ይሁኑ።',
+    yourRank: (rank: number) => `${rank}ኛ ደረጃ ላይ ነዎት`,
+    notListed: 'በሰሌዳው ላይ አይታዩም። ደረጃዎ ግን የእርስዎ ነው።',
+    hideMe: 'ከሰሌዳው ደብቀኝ',
+    showMe: 'በሰሌዳው ላይ አሳየኝ',
+  },
+
+  community: {
+    title: 'ስለዚህ ርዕስ ጠይቅ',
+    working: 'በመጫን ላይ…',
+    couldNotLoad: 'ውይይቱ ሊጫን አልቻለም። እንደገና ይሞክሩ።',
+    empty: 'በዚህ ርዕስ ላይ ገና ጥያቄ የለም። የመጀመሪያውን ይጠይቁ።',
+
+    askTitle: 'ጥያቄዎ፣ በጥቂት ቃላት',
+    askBody: 'ምን ግራ አጋባዎት?',
+    ask: 'ጠይቅ',
+    asking: 'በመላክ ላይ…',
+    titleRequired: 'ሰዎች እንዲያገኙት ለጥያቄዎ ርዕስ ይስጡት።',
+    bodyRequired: 'ከመላክዎ በፊት ጥያቄዎን ይጻፉ።',
+
+    replies: (count: number) => `${count} መልስ`,
+    reply: 'መልስ',
+    replyPlaceholder: 'መልስ ይስጡ ወይም ያክሉ',
+    verified: 'ገምጋሚ',
+    verifiedMeans: 'ጥያቄዎቹን በሚገመግሙት ሰዎች የተረጋገጠ።',
+    yours: 'እርስዎ',
+    hidden: 'በአወያይ ተደብቋል። ይህን ማየት የሚችሉት እርስዎ ብቻ ነዎት።',
+
+    report: 'ሪፖርት አድርግ',
+    reported: 'ሪፖርት ተደርጓል። አንድ ሰው ይመለከተዋል።',
+    reportWhy: 'ለምን ሪፖርት እያደረጉ ነው?',
+    reportWrong: 'መልሱ ስህተት ነው',
+    reportAbusive: 'ስድብ',
+    reportSpam: 'አላስፈላጊ መልእክት',
+    reportOffTopic: 'ከርዕስ ውጪ',
+
+    tooFast: 'በፍጥነት እየለጠፉ ነው። ትንሽ ቆይተው እንደገና ይሞክሩ።',
+    chooseProgramme: 'ውይይቱን ከመቀላቀልዎ በፊት የትምህርት ዘርፍ ይምረጡ።',
   },
 
   dashboard: {

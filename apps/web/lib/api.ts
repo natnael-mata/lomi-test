@@ -285,6 +285,70 @@ export interface UserSearchHit {
   txRef?: string;
 }
 
+/** Where a student stands (T-190, T-191). Every figure derived from the ledger. */
+export interface StandingView {
+  totalPoints: number;
+  streakDays: number;
+  tier: 'NONE' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+  pointsToNextTier: number | null;
+  lastActiveDay: string | null;
+}
+
+/** One award, and why it was given (T-190). */
+export interface LedgerRow {
+  ruleId: string;
+  points: number;
+  reason: string;
+  day: string;
+  at: string;
+}
+
+/**
+ * One row of the board (T-193).
+ *
+ * Display name only — deliberately nowhere to put a legal name, mirroring the
+ * server type exactly.
+ */
+export interface LeaderboardRow {
+  rank: number;
+  displayName: string;
+  points: number;
+  tier: StandingView['tier'];
+  isYou: boolean;
+}
+
+export interface LeaderboardView {
+  rows: LeaderboardRow[];
+  /** Present even when opted out — hiding the row never hides the rank (T-194). */
+  you: { rank: number; points: number; tier: StandingView['tier']; listed: boolean } | null;
+}
+
+export interface ThreadSummary {
+  id: string;
+  title: string;
+  topicId: string;
+  replies: number;
+  authorName: string;
+  authorVerified: boolean;
+  createdAt: string;
+}
+
+export interface PostView {
+  id: string;
+  body: string;
+  authorName: string;
+  /** T-196: the product vouches for this reply. */
+  verified: boolean;
+  isYours: boolean;
+  hidden: boolean;
+  createdAt: string;
+}
+
+export interface ThreadView extends ThreadSummary {
+  body: string;
+  posts: PostView[];
+}
+
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
 
@@ -392,6 +456,39 @@ export const api = {
   /** Phone, display name or an exact transaction reference (T-163). */
   adminSearchUsers: (query: string): Promise<UserSearchHit[]> =>
     call<UserSearchHit[]>(`/admin/analytics/users/search?q=${encodeURIComponent(query)}`),
+
+  standing: (): Promise<StandingView> => call<StandingView>('/me/standing'),
+
+  pointsLedger: (): Promise<LedgerRow[]> => call<LedgerRow[]>('/me/points'),
+
+  leaderboard: (): Promise<LeaderboardView> => call<LeaderboardView>('/me/leaderboard'),
+
+  setLeaderboardOptOut: (optOut: boolean): Promise<{ optedOut: boolean }> =>
+    call('/me/leaderboard/opt-out', { method: 'POST', body: JSON.stringify({ optOut }) }),
+
+  threads: (topicId: string): Promise<ThreadSummary[]> =>
+    call<ThreadSummary[]>(`/community/topics/${topicId}/threads`),
+
+  openThread: (topicId: string, title: string, body: string): Promise<{ id: string }> =>
+    call(`/community/topics/${topicId}/threads`, {
+      method: 'POST',
+      body: JSON.stringify({ title, body }),
+    }),
+
+  thread: (threadId: string): Promise<ThreadView> =>
+    call<ThreadView>(`/community/threads/${threadId}`),
+
+  reply: (threadId: string, body: string): Promise<{ id: string }> =>
+    call(`/community/threads/${threadId}/posts`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+
+  reportPost: (postId: string, reason: string, note?: string): Promise<{ queued: true }> =>
+    call(`/community/posts/${postId}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, note }),
+    }),
 
   /** Admin. Every one of these is ADMIN-guarded and audited on the server. */
   adminWeights: (fieldId: string): Promise<EffectiveWeight[]> =>
