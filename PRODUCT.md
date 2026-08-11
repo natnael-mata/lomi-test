@@ -64,7 +64,9 @@ Three things a neighboring prep app cannot truthfully copy without doing the sam
 PUBLISHED → RETIRED`.
 - **Payment reality:** Chapa (Telebirr / CBE Birr) for automated payment, plus a manual
   "Pay & Share" path where a student pastes a bank/Telebirr transaction reference that is
-  verified via verify.et before activation. Manual payments sit in an admin queue.
+  ~~verified via verify.et before activation~~ **settled by an operator reading the bank
+  statement** (verify.et dropped 2026-08-10). Manual payments sit in an admin queue, and that
+  queue is now the permanent path rather than a stopgap.
 - **Offline matters.** Students practice from saved questions and sync later.
 
 ## Capabilities and Constraints
@@ -134,7 +136,8 @@ segmentation, and no screen may branch on it.
 
 - **What a plan grants** — access to the student's own field, or to every field. Pricing is now
   duration-based, so the per-field assumption baked into the schema no longer follows.
-- **verify.et** API credentials and the exact response field that authorizes activation.
+- ~~**verify.et** API credentials and the exact response field that authorizes activation.~~
+  **Closed 2026-08-10: dropped from scope. Bank transfers settle manually, and always will.**
 - ~~**Fayda relying-party approval** from the National ID Program is applied for, not granted.~~
   **Closed 2026-08-10: dropped from scope rather than waited on.**
 

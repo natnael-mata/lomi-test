@@ -51,12 +51,25 @@ Do not batch tasks, and never tick a box you have not actually tested.
 
 ## Still open
 
-- Does a plan grant one field or all fields? (`TASK.md` T-141b)
-- verify.et credentials and the response field that authorises activation.
+- **How much account sharing is acceptable**, now that Fayda is dropped and the two-device
+  limit is the only control. A pricing question, not a technical one.
+- **Pilot content** (`TASK.md` T-212): the three launch fields, fully reviewed.
+
+_Decided since this list was last written: a plan grants **every** field, not one
+(`TASK.md` T-141b)._
 
 ## Deploying
 
-Build and run the API from `dist`. Nothing else is a supported entry point.
+`deploy/README.md` has the runbook. In short:
+
+```bash
+./deploy/deploy.sh
+```
+
+It builds and tests locally, ships `dist` and `.next` only, migrates with
+`prisma migrate deploy`, and restarts by name. Nothing is built on the server.
+
+To run the API by hand from a build:
 
 ```bash
 npm run build -w api && node apps/api/dist/main.js
