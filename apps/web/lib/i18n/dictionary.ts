@@ -30,6 +30,28 @@ export const en = {
     somethingSaved: 'Nothing you have answered is lost — your work is saved as you go.',
   },
 
+  home: {
+    tagline: 'Practise for your exit exam, one question at a time.',
+    working: 'Loading…',
+
+    signedOut: 'Open Lomi-Test from the Telegram bot to sign in.',
+    signedOutWhy: 'Signing in through Telegram means no password to remember and none to lose.',
+
+    goPractice: 'Practise',
+    goPracticeWhy: 'Answer questions and see why each answer is right.',
+    goExam: 'Mock exam',
+    goExamWhy: '100 questions in 3 hours, sat once through.',
+    goProgress: 'Progress',
+    goProgressWhy: 'Where you are strong, and what to work on next.',
+    goStanding: 'Where you stand',
+    goStandingWhy: 'Your points, your streak and the board.',
+    goCheckout: 'Get full access',
+    goCheckoutWhy: 'Six or twelve months, from the day you pay.',
+
+    accessUntil: (date: string) => `Full access until ${date}.`,
+    freeTier: 'You are on the free questions.',
+  },
+
   practice: {
     startPractising: 'Start practising',
     doneForToday: 'Done for today',
@@ -307,6 +329,28 @@ export const am: Copy = {
     back: 'ተመለስ',
     next: 'ቀጣይ',
     somethingSaved: 'የመለሱት ምንም አልጠፋም — ስራዎ በሂደት ላይ ይቀመጣል።',
+  },
+
+  home: {
+    tagline: 'ለመውጫ ፈተናዎ ይዘጋጁ፣ በአንድ ጥያቄ በአንድ ጊዜ።',
+    working: 'በመጫን ላይ…',
+
+    signedOut: 'ለመግባት ሎሚ-ቴስትን ከቴሌግራም ቦቱ ይክፈቱ።',
+    signedOutWhy: 'በቴሌግራም መግባት ማለት የሚያስታውሱት የይለፍ ቃል የለም፣ የሚጠፋም የለም።',
+
+    goPractice: 'ተለማመድ',
+    goPracticeWhy: 'ጥያቄዎችን ይመልሱ እና እያንዳንዱ መልስ ለምን ትክክል እንደሆነ ይመልከቱ።',
+    goExam: 'ሙከራ ፈተና',
+    goExamWhy: '100 ጥያቄዎች በ3 ሰዓት፣ በአንድ ጊዜ።',
+    goProgress: 'እድገት',
+    goProgressWhy: 'የት እንደጠነከሩ፣ እና ቀጥሎ ምን መስራት እንዳለብዎ።',
+    goStanding: 'ያሉበት ደረጃ',
+    goStandingWhy: 'ነጥቦችዎ፣ ተከታታይ ቀናትዎ እና ሰሌዳው።',
+    goCheckout: 'ሙሉ መዳረሻ ያግኙ',
+    goCheckoutWhy: 'ስድስት ወይም አስራ ሁለት ወራት፣ ከከፈሉበት ቀን ጀምሮ።',
+
+    accessUntil: (date: string) => `ሙሉ መዳረሻ እስከ ${date} ድረስ።`,
+    freeTier: 'በነጻ ጥያቄዎች ላይ ነዎት።',
   },
 
   practice: {

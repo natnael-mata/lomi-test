@@ -37,6 +37,7 @@ import { JumpGrid } from '../components/JumpGrid';
 import { PracticeCta } from '../components/PracticeCta';
 import { ReadinessStatement } from '../components/ReadinessStatement';
 import { RetireConfirmation } from '../components/RetireConfirmation';
+import { TierBadge } from '../components/TierBadge';
 import { ScoreTrend } from '../components/ScoreTrend';
 import { SessionSummary } from '../components/SessionSummary';
 import { WeightSumIndicator } from '../components/WeightSumIndicator';
@@ -271,6 +272,22 @@ const SURFACES: [name: string, element: ReactElement][] = [
       onCancel={() => undefined}
     />,
   ],
+  /*
+   * The tier badges (T-192).
+   *
+   * Both forms, because they carry their meaning differently: beside its own
+   * name the shape is decoration and must be hidden from a screen reader; on
+   * its own it IS the message and must carry the label. Getting that backwards
+   * reads the tier twice or not at all, and only one of those is visible.
+   */
+  [
+    'the tier badges, labelled',
+    <>
+      <TierBadge tier="BRONZE" />
+      <TierBadge tier="GOLD" />
+    </>,
+  ],
+  ['a tier badge on its own', <TierBadge tier="PLATINUM" showLabel={false} />],
 ];
 
 describe('accessibility (T-200)', () => {
