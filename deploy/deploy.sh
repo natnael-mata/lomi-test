@@ -50,12 +50,14 @@ trap cleanup EXIT
 retry() {
   local attempt=1
   until "$@"; do
-    if (( attempt >= 3 )); then
+    if (( attempt >= 5 )); then
       echo "failed after $attempt attempts: $*" >&2
       return 1
     fi
-    echo "  … attempt $attempt failed, retrying in 5s" >&2
-    sleep 5
+    # 30s, not 5s. This link does not flicker — it goes away for minutes at a
+    # time, and a backoff measured in seconds gives up while it is still down.
+    echo "  … attempt $attempt failed, retrying in 30s" >&2
+    sleep 30
     ((attempt++))
   done
 }
@@ -150,9 +152,21 @@ remote <<REMOTE
 REMOTE
 
 say "Restarting"
+#
+# `enable` on every deploy, not only on the first.
+#
+# This was missed once and cost an outage: the box rebooted, the services were
+# installed but not enabled, and the product stayed down until somebody looked.
+# Doing it here rather than in a setup step means it cannot be forgotten on a
+# box built later — `enable` is idempotent, so the cost of repeating it is zero.
+#
+# The bot is deliberately excluded while it has no TELEGRAM_BOT_TOKEN: it
+# refuses to start without one, and enabling it would add a crash loop to every
+# boot. Restart it by hand once the token exists.
+#
 # Named explicitly, one by one. Never `systemctl restart all` or anything that
 # resolves to a set — on this box that set contains other people's products.
-retry "${SSH[@]}" "systemctl restart lomi-api lomi-web lomi-bot && sleep 3 && systemctl is-active lomi-api lomi-web lomi-bot"
+retry "${SSH[@]}" "systemctl enable lomi-api lomi-web >/dev/null 2>&1; systemctl restart lomi-api lomi-web && sleep 3 && systemctl is-active lomi-api lomi-web"
 
 say "Health — ours, then the neighbours"
 retry "${SSH[@]}" "curl -fsS http://127.0.0.1:$API_PORT/health && echo"

@@ -47,6 +47,12 @@ sudo -u postgres createuser lomi --pwprompt
 sudo -u postgres createdb lomi_test --owner lomi
 ```
 
+**`deploy.sh` enables the services on every run**, so a reboot brings them back.
+That was missed once and cost an outage — the box restarted, the units were
+installed but not enabled, and the product stayed down until somebody noticed.
+`lomi-bot` is excluded while it has no token, since it refuses to start without
+one and would otherwise crash-loop on every boot.
+
 Then the units and the site:
 
 ```bash
