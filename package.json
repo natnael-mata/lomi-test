@@ -31,6 +31,7 @@
     "test:a11y": "vitest run --root apps/web a11y",
     "analyze": "node apps/web/scripts/js-budget.mjs",
     "build": "npm run build --workspaces --if-present",
+    "start": "npm run start:hosted -w ${APP:-api}",
     "test": "npm run test --workspaces --if-present && node scripts/runner-report.mjs test",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",

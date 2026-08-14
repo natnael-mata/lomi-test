@@ -28,6 +28,7 @@
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput & node --watch dist/main.js",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
+    "start:hosted": "prisma migrate deploy && node dist/main.js",
     "db:dev": "node scripts/db-dev.mjs",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
