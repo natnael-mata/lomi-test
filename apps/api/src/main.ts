@@ -13,7 +13,16 @@ async function bootstrap(): Promise<void> {
     logger: new RedactingLogger(),
     rawBody: true,
   });
-  const port = Number(process.env.API_PORT ?? DEFAULT_PORT);
+  /*
+   * `PORT` first, then `API_PORT`, then the default.
+   *
+   * Managed hosting assigns a port and expects the process to bind whatever it
+   * was given — an app that listens on a port of its own choosing builds fine
+   * and then fails every health check, which presents as "the platform is
+   * broken". `API_PORT` stays ahead of the default so the systemd deployment,
+   * which sets it, keeps working unchanged.
+   */
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? DEFAULT_PORT);
   await app.listen(port);
   console.log(`api listening on http://localhost:${port}`);
 }

@@ -138,3 +138,29 @@ describe('the dev scripts stay out of the build (T-199b)', () => {
     expect(readme).toContain('dist');
   });
 });
+
+/**
+ * The app binds the port it is given (portability).
+ *
+ * Managed hosting assigns a port through `PORT` and expects the process to use
+ * it. An app that listens on a port of its own choosing builds fine and then
+ * fails every health check — which presents as "the platform is broken" and is
+ * a genuinely horrible afternoon.
+ *
+ * Asserted against the source rather than by booting: the failure is a missing
+ * line, and a boot test would need a real socket to prove the negative.
+ */
+describe('the API binds the port it is given', () => {
+  const main = readFileSync(join(API, 'src/main.ts'), 'utf8');
+
+  it('reads PORT first', () => {
+    expect(main).toContain('process.env.PORT');
+    // Ahead of API_PORT, or a platform-assigned port loses to a leftover
+    // variable in the environment.
+    expect(main.indexOf('process.env.PORT')).toBeLessThan(main.indexOf('process.env.API_PORT'));
+  });
+
+  it('still honours API_PORT, so the systemd deployment is unaffected', () => {
+    expect(main).toContain('process.env.API_PORT');
+  });
+});
