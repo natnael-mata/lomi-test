@@ -22,6 +22,20 @@ async function bootstrap(): Promise<void> {
    * broken". `API_PORT` stays ahead of the default so the systemd deployment,
    * which sets it, keeps working unchanged.
    */
+  /*
+   * A global prefix, only where the platform asks for one.
+   *
+   * AletCloud routes an app by path prefix and passes the prefix **through** —
+   * mounted at `/api`, the process receives `/api/health`, not `/health`. The
+   * VPS does the opposite: nginx's `proxy_pass …:4400/` strips it, so Nest sees
+   * `/health` there.
+   *
+   * Env-driven and off by default, so the same build serves both without
+   * either deployment carrying the other's assumption.
+   */
+  const prefix = process.env.API_GLOBAL_PREFIX?.trim();
+  if (prefix) app.setGlobalPrefix(prefix);
+
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? DEFAULT_PORT);
   await app.listen(port);
   console.log(`api listening on http://localhost:${port}`);
