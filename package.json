@@ -21,6 +21,7 @@
     "vitest": "^3.2.7"
   },
   "scripts": {
+    "postinstall": "prisma generate --schema apps/api/prisma/schema.prisma",
     "dev:api": "npm run dev -w api",
     "dev:web": "npm run dev -w web",
     "dev:bot": "npm run dev -w bot",
