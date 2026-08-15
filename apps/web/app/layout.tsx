@@ -3,6 +3,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
+import { AppShell } from '../components/AppShell';
 import { TelegramHost } from '../components/TelegramHost';
 import { THEME_BOOT_SCRIPT } from '../components/theme';
 import { fontVariables } from './fonts';
@@ -53,7 +54,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         {/* No-op outside Telegram; see the component. */}
         <TelegramHost />
-        {children}
+        {/* Navigation and the reading measure come from here, so no page can
+            disagree with DESIGN.md about either. */}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

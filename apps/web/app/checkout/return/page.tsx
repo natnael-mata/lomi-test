@@ -5,13 +5,11 @@ import { ReturnScreen } from './ReturnScreen';
 export const metadata = { title: 'Payment' };
 
 export default function CheckoutReturnPage() {
+  // `useSearchParams` needs a boundary or the whole route opts out of static
+  // rendering.
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col p-4">
-      {/* `useSearchParams` needs a boundary or the whole route opts out of
-          static rendering. */}
-      <Suspense fallback={null}>
-        <ReturnScreen />
-      </Suspense>
-    </main>
+    <Suspense fallback={null}>
+      <ReturnScreen />
+    </Suspense>
   );
 }

@@ -30,6 +30,75 @@ export const en = {
     somethingSaved: 'Nothing you have answered is lost — your work is saved as you go.',
   },
 
+  importer: {
+    title: 'Upload questions',
+    intro:
+      'Questions arrive as drafts. Nothing you upload reaches a student until a reviewer publishes it.',
+    pickFile: 'Choose a CSV file',
+    orPaste: 'Or paste the file contents',
+    upload: 'Upload',
+    uploading: 'Reading the file…',
+    formatHint: 'Use the 16 columns in docs/question_import_template.csv.',
+
+    read: 'Rows read',
+    created: 'Added',
+    updated: 'Updated',
+    rejected: 'Not taken',
+    nothingRead: 'That file had no rows in it. Check it is the right file and try again.',
+    couldNotUpload: 'The upload did not go through. Nothing was changed — try again.',
+    allTaken: 'Every row was taken. They are drafts until a reviewer publishes them.',
+    someRejected: (count: number) =>
+      `${count} row${count === 1 ? '' : 's'} could not be taken. Each one says why below.`,
+    line: (n: number) => `line ${n}`,
+  },
+
+  choose: {
+    title: 'Which programme are you sitting?',
+    intro: 'This decides every question you practise. You can change it later.',
+    working: 'Loading programmes…',
+    couldNotLoad: 'The programmes could not be loaded. Nothing is lost — try again.',
+    none: 'No programmes are available yet. Check back shortly.',
+
+    retakerQuestion: 'Have you sat the exit exam before?',
+    retakerYes: 'Yes, I am retaking it',
+    retakerNo: 'No, this is my first time',
+    retakerWhy:
+      'It changes nothing about your questions today. We ask so we can help retakers better later.',
+
+    confirm: 'Start practising',
+    saving: 'Saving…',
+    couldNotSave: 'That did not save. Choose again — nothing else is affected.',
+    chosen: (name: string) => `You are practising ${name}.`,
+    change: 'Change programme',
+  },
+
+  nav: {
+    practice: 'Practise',
+    exam: 'Mock',
+    progress: 'Progress',
+    standing: 'Standing',
+    checkout: 'Access',
+  },
+
+  devLogin: {
+    title: 'Sign in for testing',
+    intro: 'Choose who to sign in as. This page is for local testing only.',
+    password: 'Password',
+    passwordHint: 'Already filled in. Leave it as it is.',
+    signingIn: 'signing in…',
+    wrongPassword: 'That password is not right, or testing sign-in is switched off on this server.',
+    failed: (status: number) => `Could not sign in (${status}). Check the API is running.`,
+    noServer: 'Could not reach the server. Is the API running?',
+    student1: 'Student one',
+    student1Note: 'A normal student. Start here.',
+    student2: 'Student two',
+    student2Note: 'A second student, to compare.',
+    student3: 'Student three',
+    student3Note: 'A third, for the leaderboard.',
+    admin: 'Admin',
+    adminNote: 'Sees the admin pages and can settle payments.',
+  },
+
   home: {
     tagline: 'Practise for your exit exam, one question at a time.',
     working: 'Loading…',
@@ -329,6 +398,72 @@ export const am: Copy = {
     back: 'ተመለስ',
     next: 'ቀጣይ',
     somethingSaved: 'የመለሱት ምንም አልጠፋም — ስራዎ በሂደት ላይ ይቀመጣል።',
+  },
+
+  importer: {
+    title: 'ጥያቄዎችን ይጫኑ',
+    intro: 'ጥያቄዎች እንደ ረቂቅ ይገባሉ። ገምጋሚ እስኪያትም ድረስ የጫኑት ምንም ወደ ተማሪ አይደርስም።',
+    pickFile: 'የCSV ፋይል ይምረጡ',
+    orPaste: 'ወይም የፋይሉን ይዘት ይለጥፉ',
+    upload: 'ጫን',
+    uploading: 'ፋይሉ እየተነበበ ነው…',
+    formatHint: 'docs/question_import_template.csv ውስጥ ያሉትን 16 አምዶች ይጠቀሙ።',
+
+    read: 'የተነበቡ ረድፎች',
+    created: 'የተጨመሩ',
+    updated: 'የተሻሻሉ',
+    rejected: 'ያልተወሰዱ',
+    nothingRead: 'ያ ፋይል ምንም ረድፍ አልነበረውም። ትክክለኛው ፋይል መሆኑን አረጋግጠው እንደገና ይሞክሩ።',
+    couldNotUpload: 'መጫኑ አልተሳካም። ምንም አልተቀየረም — እንደገና ይሞክሩ።',
+    allTaken: 'ሁሉም ረድፎች ተወስደዋል። ገምጋሚ እስኪያትማቸው ድረስ ረቂቅ ናቸው።',
+    someRejected: (count: number) => `${count} ረድፍ ሊወሰድ አልቻለም። እያንዳንዱ ምክንያቱን ከታች ይናገራል።`,
+    line: (n: number) => `መስመር ${n}`,
+  },
+
+  choose: {
+    title: 'የትኛውን ዘርፍ ነው የሚፈተኑት?',
+    intro: 'ይህ የሚለማመዷቸውን ጥያቄዎች በሙሉ ይወስናል። በኋላ መቀየር ይችላሉ።',
+    working: 'ዘርፎቹ እየተጫኑ ነው…',
+    couldNotLoad: 'ዘርፎቹ ሊጫኑ አልቻሉም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
+    none: 'እስካሁን የቀረበ ዘርፍ የለም። ቆይተው ይመልከቱ።',
+
+    retakerQuestion: 'የመውጫ ፈተናውን ከዚህ በፊት ተፈትነዋል?',
+    retakerYes: 'አዎ፣ እንደገና እየተፈተንኩ ነው',
+    retakerNo: 'አይ፣ ይህ የመጀመሪያዬ ነው',
+    retakerWhy: 'ዛሬ በሚያገኙት ጥያቄ ላይ ምንም አይለውጥም። ወደፊት እንደገና ለሚፈተኑ በተሻለ ለመርዳት ነው የምንጠይቀው።',
+
+    confirm: 'ልምምድ ጀምር',
+    saving: 'በማስቀመጥ ላይ…',
+    couldNotSave: 'አልተቀመጠም። እንደገና ይምረጡ — ሌላ ምንም አልተነካም።',
+    chosen: (name: string) => `${name} እየተለማመዱ ነው።`,
+    change: 'ዘርፍ ቀይር',
+  },
+
+  nav: {
+    practice: 'ተለማመድ',
+    exam: 'ሙከራ',
+    progress: 'እድገት',
+    standing: 'ደረጃ',
+    checkout: 'መዳረሻ',
+  },
+
+  devLogin: {
+    title: 'ለሙከራ ይግቡ',
+    intro: 'በማን ስም እንደሚገቡ ይምረጡ። ይህ ገጽ ለአካባቢያዊ ሙከራ ብቻ ነው።',
+    password: 'የይለፍ ቃል',
+    passwordHint: 'አስቀድሞ ተሞልቷል። እንዳለ ይተውት።',
+    signingIn: 'በመግባት ላይ…',
+    wrongPassword: 'የይለፍ ቃሉ ትክክል አይደለም፣ ወይም የሙከራ መግቢያ በዚህ ሰርቨር ላይ ጠፍቷል።',
+    failed: (status: number) => `መግባት አልተቻለም (${status})። ኤፒአይው እየሄደ መሆኑን ያረጋግጡ።`,
+    noServer: 'ሰርቨሩ ሊደረስ አልቻለም። ኤፒአይው እየሄደ ነው?',
+    student1: 'ተማሪ አንድ',
+    student1Note: 'ተራ ተማሪ። ከዚህ ይጀምሩ።',
+    student2: 'ተማሪ ሁለት',
+    student2Note: 'ሁለተኛ ተማሪ፣ ለማነጻጸር።',
+    student3: 'ተማሪ ሦስት',
+    student3Note: 'ሦስተኛው፣ ለሰሌዳው።',
+    admin: 'አስተዳዳሪ',
+    adminNote: 'የአስተዳዳሪ ገጾችን ያያል እና ክፍያዎችን ማረጋገጥ ይችላል።',
   },
 
   home: {

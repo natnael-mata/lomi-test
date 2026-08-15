@@ -349,6 +349,21 @@ export interface ThreadView extends ThreadSummary {
   posts: PostView[];
 }
 
+export interface RowOutcome {
+  stableId: string;
+  line: number;
+  action: 'created' | 'updated' | 'rejected';
+  messages: string[];
+}
+
+export interface ImportReport {
+  read: number;
+  created: number;
+  updated: number;
+  rejected: number;
+  rows: RowOutcome[];
+}
+
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
 
@@ -400,6 +415,18 @@ export const api = {
   myFields: (): Promise<{ id: string; name: string; slug: string }[]> =>
     call<{ id: string; name: string; slug: string }[]>('/me/fields'),
 
+  /**
+   * Picks the programme every question is scoped to (PLAN.md 4.1).
+   *
+   * `isRetaker` rides along because the programme choice is the only onboarding
+   * question the product asks — see TASK.md T-166.
+   */
+  chooseField: (fieldId: string, isRetaker?: boolean): Promise<{ fieldId: string; name: string }> =>
+    call('/me/field', {
+      method: 'PUT',
+      body: JSON.stringify(isRetaker === undefined ? { fieldId } : { fieldId, isRetaker }),
+    }),
+
   startExam: (fieldId: string): Promise<SittingStart> =>
     call<SittingStart>(`/exams/${fieldId}/start`, { method: 'POST', body: '{}' }),
 
@@ -447,6 +474,13 @@ export const api = {
   readiness: (fieldId: string): Promise<Readiness> => call<Readiness>(`/me/readiness/${fieldId}`),
 
   trend: (fieldId: string): Promise<TrendPoint[]> => call<TrendPoint[]>(`/me/trend/${fieldId}`),
+
+  /** Bulk question upload (PLAN.md 4.6). Every row lands DRAFT — T-054. */
+  adminImportCsv: (csv: string): Promise<ImportReport> =>
+    call<ImportReport>('/admin/questions/import', {
+      method: 'POST',
+      body: JSON.stringify({ csv }),
+    }),
 
   adminOverview: (): Promise<DashboardOverview> =>
     call<DashboardOverview>('/admin/analytics/overview'),

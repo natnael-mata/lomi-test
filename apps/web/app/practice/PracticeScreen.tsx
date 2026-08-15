@@ -71,7 +71,9 @@ export function PracticeScreen() {
         return;
       }
       if (e instanceof ApiError && e.code === 'FIELD_REQUIRED') {
-        setPhase({ kind: 'error', message: 'Choose a programme before practising.' });
+        // Send them to the screen that fixes it rather than telling them to
+        // do something the product gave them no way to do.
+        window.location.assign('/choose');
         return;
       }
       setPhase({
