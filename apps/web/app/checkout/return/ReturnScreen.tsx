@@ -17,6 +17,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { Card } from '../../../components/Card';
 import { api } from '../../../lib/api';
+import { day } from '../../../lib/dates';
 import { copy } from '../../../lib/i18n';
 
 const POLL_MS = 3_000;
@@ -67,9 +68,7 @@ export function ReturnScreen() {
       <Card as="section" className="flex flex-col gap-2">
         <h1 className="text-title">{c.checkout.confirmed}</h1>
         {expiresAt ? (
-          <p className="text-body text-ink-2">
-            {c.checkout.accessUntil(new Date(expiresAt).toLocaleDateString())}
-          </p>
+          <p className="text-body text-ink-2">{c.checkout.accessUntil(day(expiresAt))}</p>
         ) : null}
       </Card>
     );

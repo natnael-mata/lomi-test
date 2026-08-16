@@ -5,6 +5,40 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { SubscriptionAccess } from '../practice/subscription-access';
 import { expiresAtFrom, isLive, offersFrom, renewalStartsAt, type PlanOffer } from './plan';
 
+/** One line of a student's own payment history (T-154). */
+export interface PaymentHistoryRow {
+  id: string;
+  method: string;
+  status: string;
+  amountEtb: number;
+  txRef: string;
+  months: number | null;
+  claimedAt: string;
+  settledAt: string | null;
+  accessUntil: string | null;
+}
+
+export interface PaymentHistory {
+  payments: PaymentHistoryRow[];
+}
+
+/** One claimed bank transfer, as an operator settling it needs to see it (T-224). */
+export interface ManualClaim {
+  paymentId: string;
+  userId: string;
+  status: string;
+  amountEtb: number;
+  txRef: string;
+  note: string | null;
+  claimedAt: string;
+  settledAt: string | null;
+  student: string | null;
+  phone: string | null;
+  joinedAt: string | null;
+  priorPayments: number;
+  priorVerified: number;
+}
+
 /**
  * Paid access (T-140a, T-141, T-141b).
  *
@@ -193,6 +227,144 @@ export class SubscriptionsService implements SubscriptionAccess {
       expiresAt: latest.expiresAt?.toISOString() ?? null,
       planCode: latest.plan.code,
     };
+  }
+
+  /**
+   * Everything this student has paid, newest first (T-154).
+   *
+   * The receipt and the history are one query because they are one fact read at
+   * two zoom levels: the top of the screen shows the most recent settled
+   * payment in full, and the list under it shows the rest. Splitting them into
+   * two endpoints would let the two halves disagree about which payment is the
+   * latest.
+   *
+   * **Includes pending and rejected rows.** A student whose bank transfer is
+   * still being checked needs to see it sitting there with its reference —
+   * showing only confirmed payments makes a claim look like it was never
+   * received, which is when somebody pays twice.
+   */
+  async historyFor(userId: string): Promise<PaymentHistory> {
+    const payments = await this.prisma.payment.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        method: true,
+        status: true,
+        amountEtb: true,
+        txRef: true,
+        createdAt: true,
+        settledAt: true,
+        subscriptionId: true,
+      },
+    });
+
+    // One extra query rather than a join per row: the plan length is what the
+    // receipt calls "12 months · every programme", and a payment row does not
+    // carry it.
+    const subscriptions = await this.prisma.subscription.findMany({
+      where: { id: { in: payments.map((p) => p.subscriptionId) } },
+      select: { id: true, expiresAt: true, plan: { select: { months: true } } },
+    });
+    const months = new Map(subscriptions.map((s) => [s.id, s.plan.months]));
+    const expiries = new Map(subscriptions.map((s) => [s.id, s.expiresAt]));
+
+    return {
+      payments: payments.map((p) => ({
+        id: p.id,
+        method: p.method,
+        status: p.status,
+        amountEtb: p.amountEtb,
+        txRef: p.txRef,
+        months: months.get(p.subscriptionId) ?? null,
+        // Claimed at, for a pending row; settled at, once somebody has looked.
+        // Labelling a claim's date as "paid" would put a date on a payment
+        // nobody has confirmed happened.
+        claimedAt: p.createdAt.toISOString(),
+        settledAt: p.settledAt?.toISOString() ?? null,
+        accessUntil: expiries.get(p.subscriptionId)?.toISOString() ?? null,
+      })),
+    };
+  }
+
+  /**
+   * Claimed bank transfers waiting for somebody to read a statement (T-224).
+   *
+   * Pending first and oldest first within that, because the queue is worked
+   * from the top and the person who has been waiting longest is the one owed an
+   * answer. Settled rows are kept in the list, capped, so an operator can see
+   * what they just did rather than watching it vanish.
+   *
+   * The student's Telegram handle and phone come along because settling a claim
+   * means matching a name on a statement to an account — that is the whole job,
+   * and sending an operator to another screen for the phone number is how
+   * claims get approved without being checked.
+   */
+  async manualClaims(limit = 50): Promise<ManualClaim[]> {
+    const payments = await this.prisma.payment.findMany({
+      where: { method: 'BANK' },
+      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+      take: limit,
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        amountEtb: true,
+        txRef: true,
+        note: true,
+        createdAt: true,
+        settledAt: true,
+      },
+    });
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: payments.map((p) => p.userId) } },
+      select: {
+        id: true,
+        telegramUsername: true,
+        displayName: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
+    const byId = new Map(users.map((u) => [u.id, u]));
+
+    // How many payments each claimant has settled before. An operator deciding
+    // on a reference they cannot find in the statement wants to know whether
+    // this is somebody's first claim or their fourth.
+    const priors = await this.prisma.payment.groupBy({
+      by: ['userId', 'status'],
+      where: { userId: { in: payments.map((p) => p.userId) } },
+      _count: { _all: true },
+    });
+
+    return payments.map((p) => {
+      const user = byId.get(p.userId);
+      const mine = priors.filter((row) => row.userId === p.userId);
+      return {
+        paymentId: p.id,
+        userId: p.userId,
+        status: p.status,
+        amountEtb: p.amountEtb,
+        txRef: p.txRef,
+        note: p.note,
+        claimedAt: p.createdAt.toISOString(),
+        settledAt: p.settledAt?.toISOString() ?? null,
+        // The Telegram handle, falling back to the display name — never a
+        // legal name. DESIGN.md forbids one on any surface a person other than
+        // the student reads, and an operator settling money does not need one
+        // to match a reference. The fallback matters: an account created any
+        // way other than a Telegram sign-in has no handle, and a dash in the
+        // Student column makes the row unmatchable.
+        student: user?.telegramUsername ?? user?.displayName ?? null,
+        phone: user?.phone ?? null,
+        joinedAt: user?.createdAt.toISOString() ?? null,
+        priorPayments: mine.reduce((sum, row) => sum + row._count._all, 0) - 1,
+        priorVerified: mine
+          .filter((row) => row.status === 'CONFIRMED')
+          .reduce((sum, row) => sum + row._count._all, 0),
+      };
+    });
   }
 
   /**

@@ -198,6 +198,9 @@ export class BotService {
       orderBy: { stableId: 'asc' },
       include: { options: { orderBy: { label: 'asc' } }, topic: { select: { name: true } } },
     });
-    return question ? toServedQuestion(question) : null;
+    // `null`: the bot shows the question of the day, which is outside the
+    // free allowance rather than inside it. Passing a count here would put a
+    // number on a Telegram message that the web app would then contradict.
+    return question ? toServedQuestion(question, null) : null;
   }
 }

@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { en } from './i18n/dictionary';
+
 import { ApiError } from './api';
 import { stripComments } from './strip-comments';
 
@@ -102,7 +104,11 @@ describe('the practice screen', () => {
   });
 
   it('blocks submission until an answer is chosen, saying why', () => {
-    expect(screen).toContain('Choose an answer first');
+    // The reason comes from the dictionary (T-210), so the assertion is on the
+    // key AND on the sentence behind it — checking only the key would pass on
+    // an empty string, which is a disabled button with no explanation.
+    expect(screen).toContain('blockingReason={chosen === null ? c.practice.chooseFirst');
+    expect(en.practice.chooseFirst.split(/\s+/).length).toBeGreaterThan(2);
     expect(screen).toMatch(/disabled=\{chosen === null/);
   });
 

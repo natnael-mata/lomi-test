@@ -11,6 +11,9 @@
  */
 import type { KeyboardEvent } from 'react';
 
+import { Icon, type IconName } from './icons';
+import { copy } from '../lib/i18n';
+
 export type OptionState = 'default' | 'selected' | 'correct' | 'wrong';
 
 export const OPTION_LABELS = ['A', 'B', 'C', 'D'] as const;
@@ -31,10 +34,42 @@ export function ariaCheckedFor(state: OptionState, wasChosen: boolean): boolean 
   return false;
 }
 
-/** The word shown beside a resolved option, or null while unanswered. */
+/**
+ * The word shown beside a resolved option, or null while unanswered.
+ *
+ * The English is the **contract**, not the rendering: this function answers
+ * "is there a verdict on this row, and which one", and the row renders the
+ * translated word from the dictionary. Two callers already depend on the
+ * literal — including the answer-contract test, which is checking that an
+ * unanswered row carries no verdict at all — so the words stay here and the
+ * lookup happens at the point of display.
+ */
 export function verdictWordFor(state: OptionState, wasChosen: boolean): string | null {
   if (state === 'correct') return 'Correct';
   if (state === 'wrong' && wasChosen) return 'Yours';
+  return null;
+}
+
+/**
+ * How a resolved row is marked: an icon, a word, and a colour — in that order
+ * of what survives being photocopied.
+ *
+ * `selected` is in here too, and it is the one that matters most. Before an
+ * answer is checked, the *only* thing distinguishing the row a student picked
+ * is a violet border and a violet fill; somebody on a cheap phone in sunlight,
+ * or anyone who cannot separate violet from grey, is choosing blind. The word
+ * SELECTED is what makes the choice legible.
+ */
+function markFor(
+  state: OptionState,
+  wasChosen: boolean,
+): { icon: IconName | null; word: string; tone: string } | null {
+  const c = copy();
+  if (state === 'correct') return { icon: 'check', word: c.answer.correct, tone: 'text-correct' };
+  if (state === 'wrong' && wasChosen) {
+    return { icon: 'cross', word: c.answer.yours, tone: 'text-wrong' };
+  }
+  if (state === 'selected') return { icon: null, word: c.answer.selected, tone: 'text-brand' };
   return null;
 }
 
@@ -74,7 +109,7 @@ export function AnswerOption({
   isTabStop = false,
 }: AnswerOptionProps) {
   const checked = ariaCheckedFor(state, wasChosen);
-  const verdict = verdictWordFor(state, wasChosen);
+  const mark = markFor(state, wasChosen);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>): void => {
     if (!onNavigate) return;
@@ -109,7 +144,15 @@ export function AnswerOption({
         {label}
       </span>
       <span className="flex-1 text-left">{text}</span>
-      {verdict !== null && <span className="text-caption shrink-0">{verdict}</span>}
+      {mark !== null && (
+        <span
+          data-mark={mark.word}
+          className={`text-caption inline-flex shrink-0 items-center gap-1.5 uppercase ${mark.tone}`}
+        >
+          {mark.icon === null ? null : <Icon name={mark.icon} size={16} strokeWidth={2.5} />}
+          {mark.word}
+        </span>
+      )}
     </button>
   );
 }

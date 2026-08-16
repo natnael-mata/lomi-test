@@ -237,7 +237,11 @@ export class ExamsService {
     return {
       position: slot.position,
       totalQuestions: total,
-      question: toServedQuestion(question),
+      // `null`: a mock exam is one three-hour block that the student has
+      // already been let into, so no free-question allowance applies to a
+      // paper item — and a count on an exam screen would be a number with
+      // nothing to do with the paper.
+      question: toServedQuestion(question, null),
       chosenLabel: answer?.chosenLabel ?? null,
       flagged: answer?.isFlagged ?? false,
       clock: clockFor(sitting, exam.durationSec, now),

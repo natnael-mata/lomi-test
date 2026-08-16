@@ -78,6 +78,25 @@ export const en = {
     progress: 'Progress',
     standing: 'Standing',
     checkout: 'Access',
+
+    main: 'Main',
+    accessUntil: (date: string) => `Access until ${date}`,
+  },
+
+  theme: {
+    // Says which theme is on and what pressing it does. Half of that sentence
+    // on its own leaves somebody guessing which half they are looking at.
+    lightSwitchToDark: 'Light · switch to dark',
+    darkSwitchToLight: 'Dark · switch to light',
+  },
+
+  answer: {
+    // The words that sit beside a resolved option. Short because they share a
+    // 56px row with the option text, and set in capitals with an icon so the
+    // row still reads in greyscale.
+    correct: 'Correct',
+    yours: 'Yours',
+    selected: 'Selected',
   },
 
   devLogin: {
@@ -122,6 +141,7 @@ export const en = {
   },
 
   practice: {
+    title: 'Practise',
     startPractising: 'Start practising',
     doneForToday: 'Done for today',
     freeLimit: 'That is your ten free questions',
@@ -130,6 +150,82 @@ export const en = {
     practiseTopic: (topic: string) => `Practise ${topic}`,
     whyRanked:
       "Ranked by how many marks each topic cost — a topic's share of past papers against how much of it you missed, not the number of misses.",
+
+    loading: 'Loading a question…',
+    checkAnswer: 'Check answer',
+    checking: 'Checking…',
+    chooseFirst: 'Choose an answer first',
+    nothingLeftToday: 'Nothing left to practise in this programme today.',
+    didNotLoad: 'That did not load. Nothing you have answered is lost — try again.',
+
+    // Uppercased in the chip; written here in sentence case so the Amharic,
+    // which has no capitals to set, is not asked to imitate them (T-101).
+    freeLeft: (count: number) => `${count} free left`,
+  },
+
+  /**
+   * The tenth free question (design handoff 1e).
+   *
+   * A different screen with a different action, not an error — so it has its
+   * own copy rather than borrowing the error strings. The per-month figure is
+   * stated beside the price because a number a student cannot reconstruct is a
+   * number they have to trust.
+   */
+  paywall: {
+    title: 'That was your 10th free question',
+    intro:
+      'Every question in the bank comes with a full explanation. Unlock the rest for six or ' +
+      'twelve months — one plan covers every programme.',
+    months: (count: number) => `${count} months`,
+    perMonth: (etb: number) => `Br ${etb} / month`,
+    price: (etb: number) => `Br ${etb}`,
+    bestValue: 'Best value',
+    footnote: 'Counted from the day you pay. telebirr, CBE Birr, card, or bank transfer.',
+    cta: 'See plans and pay',
+  },
+
+  /**
+   * Signing in (design handoff 2a, 2b).
+   *
+   * There is no password anywhere in this product, so there is no password
+   * copy here — no reset, no "forgot", no email verification. The pairing code
+   * is sent BY the student TO the bot, which is why nothing on this screen is
+   * secret and why the code can sit in 34px type on a laptop in a lab.
+   */
+  signIn: {
+    title: 'Sign in with Telegram',
+    intro:
+      'No passwords, no forms. Open Telegram, press Start, and this page signs you in by itself.',
+    open: 'Open Telegram',
+    beforeYouApprove: 'Before you approve',
+    checkCode: (bot: string) =>
+      `${bot} will ask you to confirm this sign-in. Check it shows this code before you press ` +
+      'approve — if the numbers differ, somebody else asked, and you should decline.',
+    waiting: 'Waiting for Telegram — this page checks by itself',
+    expiresIn: (clock: string) => `Code expires in ${clock}`,
+    newCode: 'Get a new code',
+    starting: 'Getting your code…',
+
+    // The signed-out home. Three lines are the whole onboarding story.
+    valueTitle: 'Ready for the Exit Exam',
+    valueBody:
+      'Practise real questions with full explanations, sit timed mocks, and see exactly which ' +
+      'topics to study next.',
+    step1: 'Open Telegram and press Start — that is the whole sign-up.',
+    step2: 'You come straight back here, signed in. No password, ever.',
+    step3: 'Your first 10 questions are free — explanations included.',
+    continue: 'Continue with Telegram',
+    coverage: 'One plan covers Computer Science, Public Health, and Accounting & Finance.',
+
+    signedIn: 'You are signed in.',
+    goPractise: 'Start practising',
+    // Names the fix. The bot token being unset is an operator's problem, and
+    // the student reading this can do nothing about it — so it says who can.
+    notConfigured:
+      'Telegram sign-in is not switched on for this server yet. Nothing is wrong with your ' +
+      'account — tell whoever runs this copy of Lomi-Test.',
+    couldNotStart:
+      'The sign-in code could not be fetched. Nothing is lost — try again in a moment.',
   },
 
   exam: {
@@ -204,22 +300,56 @@ export const en = {
     howToPay: 'How would you like to pay?',
 
     telebirr: 'telebirr',
-    telebirrHow: 'A request comes to your phone. Approve it with your PIN.',
+    telebirrHow: 'We send a request to your phone — you approve it there.',
     cbebirr: 'CBE Birr',
-    cbebirrHow: 'A request comes to your phone. Approve it with your PIN.',
+    cbebirrHow: 'We send a request to your phone — you approve it there.',
     chapa: 'Card or another wallet',
-    chapaHow: 'Opens Chapa, where you can pay the way you prefer.',
+    chapaHow: "Opens Chapa's secure payment page.",
     bank: 'Bank transfer',
-    bankHow: 'Transfer from any bank, then paste the transaction number here.',
+    bankHow: 'Pay from any bank, then paste the reference — a person verifies it.',
 
     mobileLabel: 'The phone number you pay with',
     mobileHint: 'For example 0911223344.',
     mobileInvalid: 'That does not look like an Ethiopian mobile number. Check it and try again.',
-    txRefLabel: 'Transaction number',
-    txRefHint: 'The reference on your transfer receipt or SMS.',
+    txRefLabel: 'Transfer reference',
+    txRefHint:
+      "The reference is on your bank's confirmation SMS. A person checks every claim — access is " +
+      'granted after it is verified, usually within a few hours.',
     txRefRequired: 'Enter the transaction number from your transfer receipt.',
     txRefTaken:
       'That transaction number has already been sent to us. Support can look it up for you.',
+
+    // The screen title in the rail's words, so the tab a student pressed and
+    // the heading they land on say the same thing.
+    heading: 'Access',
+    chosen: 'Chosen',
+    countedFromToday: 'Counted from today. One plan covers every programme.',
+
+    // telebirr / CBE Birr, waiting for the handset.
+    waitingBanner: 'Check your phone',
+    requestSentTo: (method: string, mobile: string) =>
+      `We sent a ${method} request to ${mobile}. Approve it there — this page updates by itself.`,
+    waitingFor: (clock: string) => `Waiting ${clock} — requests usually arrive within a minute.`,
+    slowBanner: 'Taking longer than usual',
+    slowBody:
+      'The request can take up to two minutes on a slow network. Nothing has been charged yet — ' +
+      'you can wait, or send a fresh request.',
+    sendAgain: 'Send the request again',
+    payDifferently: 'Pay a different way',
+
+    // Bank transfer.
+    transferTo: (amount: string) => `Transfer ${amount} from any bank to:`,
+    accountLabel: 'Account',
+    accountNotPublished:
+      'The account to pay into is not published on this server. Ask support for it before you ' +
+      'transfer — a claim with no matching transfer cannot be verified.',
+    submitForVerification: 'Submit for verification',
+    submittedBanner: 'Submitted — being verified',
+    submittedBody: (ref: string) =>
+      `Reference ${ref} is with our team. We will message you on Telegram the moment it is ` +
+      'confirmed — you can keep practising your free questions meanwhile.',
+
+    verifiedBanner: 'Payment verified',
 
     pay: 'Pay',
     sending: 'Sending…',
@@ -239,6 +369,37 @@ export const en = {
     couldNotStart: 'The payment could not be started. Nothing has been charged — try again.',
     unavailable:
       'That way of paying is not available right now. The bank transfer below still works.',
+  },
+
+  /**
+   * The receipt and the history behind it (T-154, design handoff 2f).
+   *
+   * Lives under the Access tab rather than on a screen of its own: a student
+   * looking for proof of payment goes to the place they paid, and a sixth
+   * destination for a page read twice a year would break the five.
+   */
+  receipt: {
+    working: 'Loading your payments…',
+    couldNotLoad: 'Your payments could not be loaded. Nothing is lost — try again.',
+
+    plan: 'Plan',
+    planValue: (months: number) => `${months} months · every programme`,
+    amount: 'Amount',
+    method: 'Method',
+    reference: 'Reference',
+    paid: 'Paid',
+    accessUntil: 'Access until',
+
+    history: 'Payment history',
+    historyRow: (amount: string, months: number) => `${amount} · ${months} months`,
+    historyMeta: (method: string, date: string) => `${method} · ${date}`,
+    noHistory: 'Nothing yet. Anything you pay for appears here, with its reference.',
+
+    verified: 'Verified',
+    pending: 'Pending',
+    notAccepted: 'Not accepted',
+
+    backToPractising: 'Back to practising',
   },
 
   standing: {
@@ -337,6 +498,96 @@ export const en = {
   },
 
   admin: {
+    nav: {
+      title: 'Lomi-Test Admin',
+      label: 'Admin sections',
+      dashboard: 'Dashboard',
+      payments: 'Payments',
+      import: 'Import',
+      weights: 'Weights',
+      users: 'Users',
+    },
+
+    /**
+     * Settling a claimed bank transfer (T-224, design handoff 2g).
+     *
+     * Every string here is written for somebody with a bank statement open in
+     * another window. That is why the summary restates the reference, the
+     * amount and the account rather than assuming the row above is still on
+     * screen, and why the reason field says plainly that it is kept whichever
+     * button is pressed — a note written believing it is private is a different
+     * note.
+     */
+    payments: {
+      title: 'Claimed bank transfers',
+      working: 'Loading claims…',
+      couldNotLoad: 'The claims could not be loaded. Nothing has been settled — try again.',
+      waiting: (count: number) => `${count} waiting`,
+      nothingWaiting: 'Nothing is waiting to be checked.',
+
+      colClaimed: 'Claimed',
+      colStudent: 'Student',
+      colPhone: 'Phone',
+      colReference: 'Reference',
+      colAmount: 'Amount',
+      colStatus: 'Status',
+
+      open: 'Open this claim',
+      close: 'Close this claim',
+
+      checkAgainst: 'Check against the bank statement',
+      expected: (reference: string, amount: string, account: string) =>
+        `Reference ${reference} · expected ${amount} to ${account}.`,
+      expectedNoAccount: (reference: string, amount: string) =>
+        `Reference ${reference} · expected ${amount}.`,
+      claimedBy: (student: string, joined: string) => `Claimed by ${student}, signed up ${joined}.`,
+      priorPayments: (verified: number, total: number) =>
+        `${total} prior payment${total === 1 ? '' : 's'}, ${verified} verified.`,
+      noPriorPayments: 'No prior payments on this account.',
+
+      reasonLabel: 'Reason — required for reject, kept on the record either way',
+      reasonPlaceholder: 'Amount received matches, reference found on the statement.',
+      approve: 'Approve — grant access',
+      approving: 'Granting access…',
+      reject: 'Reject with reason',
+      rejecting: 'Recording the rejection…',
+      approveNote: 'Approval grants access immediately and messages the student on Telegram.',
+      rejectNeedsReason: 'Say why before rejecting — the student is told this reason.',
+      settled: 'Settled. The list below no longer shows it as waiting.',
+      couldNotSettle: 'That did not go through. Nothing was granted or refused — try again.',
+    },
+
+    /**
+     * The two controls an operator has over an account (T-225).
+     *
+     * Both are worded as what they do to a person, not as what they do to a
+     * row. "Reset devices" sounds harmless until you are the student locked
+     * out of a mock at 11pm, so the copy says which of those is happening.
+     */
+    users: {
+      title: 'Students',
+      intro:
+        'Find an account by phone, name or transaction number, then reset its devices or close ' +
+        'it. Both are recorded against your name.',
+      resetDevices: 'Reset devices',
+      resetDevicesWhy:
+        'Signs this student out everywhere and lets them sign in on two devices again. Use it ' +
+        'when somebody has changed phones.',
+      resetting: 'Signing them out…',
+      deactivate: 'Close the account',
+      deactivateWhy:
+        'Stops this account signing in. Their answers and payments are kept — nothing is ' +
+        'deleted.',
+      deactivating: 'Closing…',
+      reasonLabel: 'Why, for the record',
+      reasonPlaceholder: 'Student asked for a device reset after losing their phone.',
+      needsReason: 'Say why first — this is written to the record with your name.',
+      devicesReset: 'Devices reset. They can sign in again on a new phone.',
+      accountClosed: 'Account closed. It can be reopened by whoever runs the server.',
+      alreadyClosed: 'Already closed',
+      couldNotDo: 'That did not go through. Nothing was changed — try again.',
+    },
+
     topicWeights: 'Topic weights',
     recompute: 'Recompute from the bank',
     override: 'Override',
@@ -445,6 +696,20 @@ export const am: Copy = {
     progress: 'እድገት',
     standing: 'ደረጃ',
     checkout: 'መዳረሻ',
+
+    main: 'ዋና',
+    accessUntil: (date: string) => `መዳረሻ እስከ ${date}`,
+  },
+
+  theme: {
+    lightSwitchToDark: 'ብሩህ · ወደ ጨለማ ቀይር',
+    darkSwitchToLight: 'ጨለማ · ወደ ብሩህ ቀይር',
+  },
+
+  answer: {
+    correct: 'ትክክል',
+    yours: 'የእርስዎ',
+    selected: 'ተመርጧል',
   },
 
   devLogin: {
@@ -489,6 +754,7 @@ export const am: Copy = {
   },
 
   practice: {
+    title: 'ተለማመድ',
     startPractising: 'ልምምድ ጀምር',
     doneForToday: 'ለዛሬ ተጠናቋል',
     freeLimit: 'ያ አስሩ ነጻ ጥያቄዎችዎ ናቸው',
@@ -497,6 +763,56 @@ export const am: Copy = {
     practiseTopic: (topic: string) => `${topic}ን ተለማመድ`,
     whyRanked:
       'የተመደበው እያንዳንዱ ርዕስ ባስከተለው ውጤት መጠን ነው — ባለፉት ፈተናዎች ያለው ድርሻ ከስንቱ እንዳመለጠዎት ጋር ተያይዞ፣ በስህተት ብዛት አይደለም።',
+
+    loading: 'ጥያቄ በመጫን ላይ…',
+    checkAnswer: 'መልሱን ይመልከቱ',
+    checking: 'በመመልከት ላይ…',
+    chooseFirst: 'መጀመሪያ መልስ ይምረጡ',
+    nothingLeftToday: 'በዚህ ፕሮግራም ውስጥ ዛሬ የሚለማመዱት ነገር የለም።',
+    didNotLoad: 'አልተጫነም። የመለሱት ምንም አልጠፋም — እንደገና ይሞክሩ።',
+
+    freeLeft: (count: number) => `${count} ነጻ ቀርቷል`,
+  },
+
+  paywall: {
+    title: 'ያ 10ኛው ነጻ ጥያቄዎ ነበር',
+    intro:
+      'በባንኩ ውስጥ ያለ እያንዳንዱ ጥያቄ ሙሉ ማብራሪያ አለው። የቀሩትን ለስድስት ወይም ለአስራ ሁለት ወራት ይክፈቱ — አንድ እቅድ ሁሉንም ፕሮግራሞች ይሸፍናል።',
+    months: (count: number) => `${count} ወራት`,
+    perMonth: (etb: number) => `ብር ${etb} / ወር`,
+    price: (etb: number) => `ብር ${etb}`,
+    bestValue: 'የተሻለ ዋጋ',
+    footnote: 'ከከፈሉበት ቀን ጀምሮ ይቆጠራል። telebirr፣ CBE Birr፣ ካርድ ወይም የባንክ ዝውውር።',
+    cta: 'እቅዶቹን ይመልከቱ እና ይክፈሉ',
+  },
+
+  signIn: {
+    title: 'በTelegram ይግቡ',
+    intro: 'የይለፍ ቃል የለም፣ ቅጽ የለም። Telegram ይክፈቱ፣ Start ይጫኑ፣ ይህ ገጽ በራሱ ያስገባዎታል።',
+    open: 'Telegram ክፈት',
+    beforeYouApprove: 'ከማጽደቅዎ በፊት',
+    checkCode: (bot: string) =>
+      `${bot} ይህን መግቢያ እንዲያረጋግጡ ይጠይቅዎታል። ከማጽደቅዎ በፊት ይህን ኮድ እንደሚያሳይ ያረጋግጡ — ቁጥሮቹ ከተለያዩ ሌላ ሰው ጠይቋል፣ ` +
+      'እርስዎም መከልከል አለብዎት።',
+    waiting: 'Telegramን በመጠበቅ ላይ — ይህ ገጽ በራሱ ይመለከታል',
+    expiresIn: (clock: string) => `ኮዱ በ${clock} ውስጥ ያበቃል`,
+    newCode: 'አዲስ ኮድ ያግኙ',
+    starting: 'ኮድዎን በማምጣት ላይ…',
+
+    valueTitle: 'ለመውጫ ፈተና ዝግጁ',
+    valueBody:
+      'እውነተኛ ጥያቄዎችን ከሙሉ ማብራሪያ ጋር ይለማመዱ፣ በሰዓት የተገደቡ ሙከራዎችን ይቀመጡ፣ እና ቀጥሎ የትኞቹን ርዕሶች ማጥናት እንዳለብዎት በትክክል ይመልከቱ።',
+    step1: 'Telegram ይክፈቱ እና Start ይጫኑ — ምዝገባው ያ ብቻ ነው።',
+    step2: 'ወዲያውኑ ወደዚህ ተመልሰው ገብተዋል። የይለፍ ቃል፣ በፍጹም።',
+    step3: 'የመጀመሪያዎቹ 10 ጥያቄዎችዎ ነጻ ናቸው — ማብራሪያዎቹን ጨምሮ።',
+    continue: 'በTelegram ይቀጥሉ',
+    coverage: 'አንድ እቅድ ኮምፒውተር ሳይንስን፣ የሕዝብ ጤናን እና አካውንቲንግ እና ፋይናንስን ይሸፍናል።',
+
+    signedIn: 'ገብተዋል።',
+    goPractise: 'ልምምድ ጀምር',
+    notConfigured:
+      'የTelegram መግቢያ በዚህ አገልጋይ ላይ ገና አልተከፈተም። በመለያዎ ላይ ምንም ችግር የለም — ይህን የLomi-Test ቅጂ ለሚያስተዳድረው ሰው ይንገሩ።',
+    couldNotStart: 'የመግቢያ ኮዱን ማምጣት አልተቻለም። ምንም አልጠፋም — ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።',
   },
 
   exam: {
@@ -566,21 +882,48 @@ export const am: Copy = {
     howToPay: 'እንዴት መክፈል ይፈልጋሉ?',
 
     telebirr: 'ቴሌብር',
-    telebirrHow: 'ወደ ስልክዎ ጥያቄ ይመጣል። በፒን ኮድዎ ያጽድቁት።',
+    telebirrHow: 'ወደ ስልክዎ ጥያቄ እንልካለን — እዚያው ላይ ያጸድቁታል።',
     cbebirr: 'ሲቢኢ ብር',
-    cbebirrHow: 'ወደ ስልክዎ ጥያቄ ይመጣል። በፒን ኮድዎ ያጽድቁት።',
+    cbebirrHow: 'ወደ ስልክዎ ጥያቄ እንልካለን — እዚያው ላይ ያጸድቁታል።',
     chapa: 'ካርድ ወይም ሌላ ዋሌት',
-    chapaHow: 'ቻፓን ይከፍታል፣ በሚመርጡት መንገድ መክፈል ይችላሉ።',
+    chapaHow: 'የቻፓን ደህንነቱ የተጠበቀ የክፍያ ገጽ ይከፍታል።',
     bank: 'የባንክ ዝውውር',
-    bankHow: 'ከማንኛውም ባንክ ያዛውሩ፣ ከዚያ የግብይት ቁጥሩን እዚህ ይለጥፉ።',
+    bankHow: 'ከማንኛውም ባንክ ይክፈሉ፣ ከዚያ ማመሳከሪያውን ይለጥፉ — አንድ ሰው ያረጋግጠዋል።',
 
     mobileLabel: 'የሚከፍሉበት ስልክ ቁጥር',
     mobileHint: 'ለምሳሌ 0911223344።',
     mobileInvalid: 'ይህ የኢትዮጵያ የሞባይል ቁጥር አይመስልም። አረጋግጠው እንደገና ይሞክሩ።',
-    txRefLabel: 'የግብይት ቁጥር',
-    txRefHint: 'በዝውውር ደረሰኝዎ ወይም በኤስኤምኤስ ላይ ያለው ቁጥር።',
+    txRefLabel: 'የዝውውር ማመሳከሪያ',
+    txRefHint:
+      'ማመሳከሪያው በባንክዎ የማረጋገጫ ኤስኤምኤስ ላይ ነው። እያንዳንዱን ጥያቄ አንድ ሰው ይመለከተዋል — መዳረሻ የሚሰጠው ከተረጋገጠ በኋላ ነው፣ ' +
+      'አብዛኛውን ጊዜ በጥቂት ሰዓታት ውስጥ።',
     txRefRequired: 'ከዝውውር ደረሰኝዎ ላይ ያለውን የግብይት ቁጥር ያስገቡ።',
     txRefTaken: 'ይህ የግብይት ቁጥር ቀድሞ ደርሶናል። ድጋፍ ሰጪው ሊፈትሽልዎ ይችላል።',
+
+    heading: 'መዳረሻ',
+    chosen: 'ተመርጧል',
+    countedFromToday: 'ከዛሬ ጀምሮ ይቆጠራል። አንድ እቅድ ሁሉንም ፕሮግራሞች ይሸፍናል።',
+
+    waitingBanner: 'ስልክዎን ይመልከቱ',
+    requestSentTo: (method: string, mobile: string) =>
+      `የ${method} ጥያቄ ወደ ${mobile} ልከናል። እዚያው ላይ ያጽድቁት — ይህ ገጽ በራሱ ይዘምናል።`,
+    waitingFor: (clock: string) => `${clock} ተጠብቋል — ጥያቄዎች አብዛኛውን ጊዜ በአንድ ደቂቃ ውስጥ ይደርሳሉ።`,
+    slowBanner: 'ከወትሮው በላይ እየዘገየ ነው',
+    slowBody:
+      'በዝግተኛ ኔትወርክ ላይ ጥያቄው እስከ ሁለት ደቂቃ ሊወስድ ይችላል። እስካሁን ምንም አልተከፈለም — መጠበቅ ወይም አዲስ ጥያቄ መላክ ይችላሉ።',
+    sendAgain: 'ጥያቄውን እንደገና ላክ',
+    payDifferently: 'በሌላ መንገድ ይክፈሉ',
+
+    transferTo: (amount: string) => `${amount} ከማንኛውም ባንክ ወደዚህ ያዛውሩ፦`,
+    accountLabel: 'ሂሳብ',
+    accountNotPublished:
+      'የሚከፈልበት ሂሳብ በዚህ አገልጋይ ላይ አልታተመም። ከማዛወርዎ በፊት ከድጋፍ ሰጪው ይጠይቁ — ተመሳሳይ ዝውውር የሌለው ጥያቄ ሊረጋገጥ አይችልም።',
+    submitForVerification: 'ለማረጋገጫ አስገባ',
+    submittedBanner: 'ገብቷል — በማረጋገጥ ላይ',
+    submittedBody: (ref: string) =>
+      `ማመሳከሪያ ${ref} ከቡድናችን ጋር ነው። እንደተረጋገጠ ወዲያውኑ በTelegram እንልክልዎታለን — እስከዚያው ነጻ ጥያቄዎችዎን መለማመድ ይችላሉ።`,
+
+    verifiedBanner: 'ክፍያው ተረጋግጧል',
 
     pay: 'ክፈል',
     sending: 'በመላክ ላይ…',
@@ -596,6 +939,30 @@ export const am: Copy = {
       'እንደተገኘም መዳረሻዎ ወዲያውኑ ይጀምራል።',
     couldNotStart: 'ክፍያው ሊጀመር አልቻለም። ምንም አልተከፈለም — እንደገና ይሞክሩ።',
     unavailable: 'ይህ የመክፈያ መንገድ አሁን አይሰራም። ከታች ያለው የባንክ ዝውውር አሁንም ይሰራል።',
+  },
+
+  receipt: {
+    working: 'ክፍያዎችዎ እየተጫኑ ነው…',
+    couldNotLoad: 'ክፍያዎችዎ ሊጫኑ አልቻሉም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
+
+    plan: 'እቅድ',
+    planValue: (months: number) => `${months} ወራት · ሁሉም ፕሮግራሞች`,
+    amount: 'መጠን',
+    method: 'መንገድ',
+    reference: 'ማመሳከሪያ',
+    paid: 'የተከፈለበት',
+    accessUntil: 'መዳረሻ እስከ',
+
+    history: 'የክፍያ ታሪክ',
+    historyRow: (amount: string, months: number) => `${amount} · ${months} ወራት`,
+    historyMeta: (method: string, date: string) => `${method} · ${date}`,
+    noHistory: 'እስካሁን ምንም የለም። የከፈሉት ሁሉ ከማመሳከሪያው ጋር እዚህ ይታያል።',
+
+    verified: 'ተረጋግጧል',
+    pending: 'በመጠባበቅ ላይ',
+    notAccepted: 'አልተቀበልንም',
+
+    backToPractising: 'ወደ ልምምድ ተመለስ',
   },
 
   standing: {
@@ -693,6 +1060,75 @@ export const am: Copy = {
   },
 
   admin: {
+    nav: {
+      title: 'Lomi-Test አስተዳደር',
+      label: 'የአስተዳደር ክፍሎች',
+      dashboard: 'ማጠቃለያ',
+      payments: 'ክፍያዎች',
+      import: 'ማስገባት',
+      weights: 'ክብደቶች',
+      users: 'ተማሪዎች',
+    },
+
+    payments: {
+      title: 'የተጠየቁ የባንክ ዝውውሮች',
+      working: 'ጥያቄዎች እየተጫኑ ነው…',
+      couldNotLoad: 'ጥያቄዎቹ ሊጫኑ አልቻሉም። ምንም አልተወሰነም — እንደገና ይሞክሩ።',
+      waiting: (count: number) => `${count} በመጠባበቅ ላይ`,
+      nothingWaiting: 'የሚመረመር ምንም ነገር የለም።',
+
+      colClaimed: 'የተጠየቀበት',
+      colStudent: 'ተማሪ',
+      colPhone: 'ስልክ',
+      colReference: 'ማመሳከሪያ',
+      colAmount: 'መጠን',
+      colStatus: 'ሁኔታ',
+
+      open: 'ይህን ጥያቄ ክፈት',
+      close: 'ይህን ጥያቄ ዝጋ',
+
+      checkAgainst: 'ከባንክ ሪፖርቱ ጋር ያመሳክሩ',
+      expected: (reference: string, amount: string, account: string) =>
+        `ማመሳከሪያ ${reference} · ${amount} ወደ ${account} ይጠበቃል።`,
+      expectedNoAccount: (reference: string, amount: string) =>
+        `ማመሳከሪያ ${reference} · ${amount} ይጠበቃል።`,
+      claimedBy: (student: string, joined: string) => `በ${student} የተጠየቀ፣ የተመዘገበው ${joined}።`,
+      priorPayments: (verified: number, total: number) =>
+        `${total} ቀደም ያሉ ክፍያዎች፣ ${verified} የተረጋገጡ።`,
+      noPriorPayments: 'በዚህ መለያ ላይ ቀደም ያለ ክፍያ የለም።',
+
+      reasonLabel: 'ምክንያት — ለመከልከል ያስፈልጋል፣ በሁለቱም ሁኔታ በመዝገብ ላይ ይቀመጣል',
+      reasonPlaceholder: 'የገባው መጠን ይመሳሰላል፣ ማመሳከሪያው በሪፖርቱ ላይ ተገኝቷል።',
+      approve: 'አጽድቅ — መዳረሻ ስጥ',
+      approving: 'መዳረሻ በመስጠት ላይ…',
+      reject: 'በምክንያት ከልክል',
+      rejecting: 'መከልከሉ በመመዝገብ ላይ…',
+      approveNote: 'ማጽደቅ ወዲያውኑ መዳረሻ ይሰጣል እና ለተማሪው በTelegram ይነግረዋል።',
+      rejectNeedsReason: 'ከመከልከልዎ በፊት ምክንያቱን ይጻፉ — ይህ ምክንያት ለተማሪው ይነገራል።',
+      settled: 'ተወስኗል። ከታች ያለው ዝርዝር እንደሚጠባበቅ አያሳየውም።',
+      couldNotSettle: 'አልተሳካም። ምንም አልተሰጠም አልተከለከለም — እንደገና ይሞክሩ።',
+    },
+
+    users: {
+      title: 'ተማሪዎች',
+      intro:
+        'መለያን በስልክ፣ በስም ወይም በግብይት ቁጥር ያግኙ፣ ከዚያ መሣሪያዎቹን ዳግም ያስጀምሩ ወይም መለያውን ይዝጉ። ሁለቱም በስምዎ ይመዘገባሉ።',
+      resetDevices: 'መሣሪያዎችን ዳግም አስጀምር',
+      resetDevicesWhy:
+        'ይህን ተማሪ ከሁሉም ቦታ ያስወጣል እና በሁለት መሣሪያዎች ላይ እንደገና እንዲገባ ይፈቅዳል። ስልክ የቀየረ ሰው ሲኖር ይጠቀሙበት።',
+      resetting: 'በማስወጣት ላይ…',
+      deactivate: 'መለያውን ዝጋ',
+      deactivateWhy: 'ይህ መለያ እንዳይገባ ያግዳል። መልሶቻቸውና ክፍያዎቻቸው ይቀመጣሉ — ምንም አይሰረዝም።',
+      deactivating: 'በመዝጋት ላይ…',
+      reasonLabel: 'ለመዝገብ፣ ለምን',
+      reasonPlaceholder: 'ተማሪው ስልኩን ስላጣ የመሣሪያ ዳግም ማስጀመር ጠየቀ።',
+      needsReason: 'መጀመሪያ ምክንያቱን ይጻፉ — ይህ ከስምዎ ጋር በመዝገብ ላይ ይጻፋል።',
+      devicesReset: 'መሣሪያዎቹ ዳግም ተጀምረዋል። በአዲስ ስልክ እንደገና መግባት ይችላሉ።',
+      accountClosed: 'መለያው ተዘግቷል። አገልጋዩን በሚያስተዳድረው ሰው እንደገና ሊከፈት ይችላል።',
+      alreadyClosed: 'አስቀድሞ ተዘግቷል',
+      couldNotDo: 'አልተሳካም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
+    },
+
     topicWeights: 'የርዕስ ክብደቶች',
     recompute: 'ከመጠባበቂያው እንደገና አስላ',
     override: 'ሻር',

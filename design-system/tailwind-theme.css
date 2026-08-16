@@ -55,6 +55,12 @@
   --font-sans:
     var(--font-figtree, 'Figtree'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
     -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* The mark — `ሎሚ` in the logo square, and nothing else. Named separately from
+     the body stack because it must be Ge'ez FIRST rather than as a fallback:
+     Figtree has no Ge'ez coverage, so the browser substitutes whatever the
+     phone happens to have, and the one element that must look identical
+     everywhere renders differently on every device. */
+  --font-mark: var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui, sans-serif;
 
   --text-display: 2.125rem; /* 34px — countdown, score, readiness      */
   --text-display--line-height: 2.5rem;

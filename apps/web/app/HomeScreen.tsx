@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 
 import { Card } from '../components/Card';
 import { api } from '../lib/api';
+import { day } from '../lib/dates';
 import { copy } from '../lib/i18n';
 
 type Session =
@@ -64,19 +65,23 @@ export function HomeScreen() {
       </header>
 
       {session.kind === 'signedOut' ? (
-        <Card as="section" className="flex flex-col gap-1">
+        <Card as="section" className="flex flex-col gap-3">
           <p className="text-body">{c.home.signedOut}</p>
           {/* Why, not just what. "Sign in with Telegram" reads as a hoop; the
               reason it is Telegram is a benefit worth one sentence. */}
           <p className="text-caption text-ink-2">{c.home.signedOutWhy}</p>
+          {/* Somewhere to press. Telling somebody to open a bot they have not
+              found yet, with no link to the screen that mints one, is the
+              instruction this card used to end on. */}
+          <a href="/signin" className="btn-primary">
+            {c.signIn.continue}
+          </a>
         </Card>
       ) : null}
 
       {session.kind === 'signedIn' ? (
         <p className="text-caption text-ink-2">
-          {session.activeUntil
-            ? c.home.accessUntil(new Date(session.activeUntil).toLocaleDateString())
-            : c.home.freeTier}
+          {session.activeUntil ? c.home.accessUntil(day(session.activeUntil)) : c.home.freeTier}
         </p>
       ) : null}
 

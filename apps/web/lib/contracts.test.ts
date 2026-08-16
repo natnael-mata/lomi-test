@@ -119,6 +119,9 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'ThreadView', api: 'ThreadView', file: 'community/community.service.ts' },
   { web: 'ImportReport', api: 'ImportReport', file: 'import/import.service.ts' },
   { web: 'RowOutcome', api: 'RowOutcome', file: 'import/import.service.ts' },
+  { web: 'LoginLink', api: 'LoginLinkCreated', file: 'auth/login-link.service.ts' },
+  { web: 'PaymentHistoryRow', api: 'PaymentHistoryRow', file: 'payments/subscriptions.service.ts' },
+  { web: 'ManualClaim', api: 'ManualClaim', file: 'payments/subscriptions.service.ts' },
 ];
 
 describe('cross-workspace contracts (T-199c)', () => {

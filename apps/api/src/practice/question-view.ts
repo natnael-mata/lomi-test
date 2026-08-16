@@ -26,6 +26,18 @@ export interface ServedQuestion {
   timeLimitSec: number;
   topic: string;
   options: ServedOption[];
+  /**
+   * Free questions left, or `null` where the free limit does not apply to this
+   * delivery — a subscriber, an exam paper, a bot session with its own quota.
+   *
+   * A **count of the student's own allowance**, not question content, which is
+   * why it is allowed through the pre-answer gate above. It is here rather than
+   * only on the attempt result because the design states it while the student
+   * is still choosing (handoff 1a/1d): learning that you are on your last free
+   * question *after* spending it is the version of this number that helps
+   * nobody.
+   */
+  freeRemaining: number | null;
 }
 
 /** Every key the pre-answer payload may contain. Asserted against a live response. */
@@ -38,6 +50,7 @@ export const SERVED_QUESTION_FIELDS = [
   'timeLimitSec',
   'topic',
   'options',
+  'freeRemaining',
 ] as const;
 
 /** Keys that would leak the answer. Asserted absent, by name, in the e2e test. */
@@ -68,8 +81,18 @@ export interface ServableQuestion {
   options: readonly { label: string; text: string }[];
 }
 
-export function toServedQuestion(q: ServableQuestion): ServedQuestion {
+/**
+ * @param freeRemaining Free questions left, or `null` where no free limit
+ * applies here. **Required, not defaulted**: a default would be a decision
+ * about somebody's quota made silently by whichever call site forgot, and
+ * `null` reads as "unlimited" to the screen showing it.
+ */
+export function toServedQuestion(
+  q: ServableQuestion,
+  freeRemaining: number | null,
+): ServedQuestion {
   return {
+    freeRemaining,
     questionId: q.id,
     stableId: q.stableId,
     qType: q.qType,

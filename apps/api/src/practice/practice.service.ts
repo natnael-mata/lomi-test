@@ -125,7 +125,25 @@ export class PracticeService {
       },
     });
 
-    return toServedQuestion(question);
+    /*
+     * The allowance, worked out on the way out.
+     *
+     * Two extra reads on the hottest route in the product, and they are worth
+     * it: without them a student learns they were on their last free question
+     * only after spending it. Both are indexed lookups the attempt path already
+     * makes, and `distinct` keeps the second one to one row per question rather
+     * than one per attempt.
+     */
+    const subscribed = await this.subscriptions.hasActiveSubscription(userId, user.fieldId);
+    const attempted = subscribed
+      ? []
+      : await this.prisma.attempt.findMany({
+          where: { userId, fieldId: user.fieldId },
+          select: { questionId: true },
+          distinct: ['questionId'],
+        });
+
+    return toServedQuestion(question, subscribed ? null : freeRemaining(attempted.length));
   }
 
   /**

@@ -9,6 +9,7 @@
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { CodeBlock } from './CodeBlock';
+import { Icon } from './icons';
 import {
   isOwnAnswer,
   orderWhyWrongs,
@@ -16,6 +17,7 @@ import {
   verdictWord,
   type AnswerOption,
 } from './answer-order';
+import { copy } from '../lib/i18n';
 
 export interface AnswerViewData {
   qType: string;
@@ -57,6 +59,16 @@ const VERDICT_CLASS = {
   wrong: 'bg-wrong-soft text-wrong',
 } as const;
 
+/**
+ * The glyph beside the verdict word.
+ *
+ * `pending` is the interesting one: it is "correct, but over the time" and it
+ * takes the clock, not the cross. A student who got the answer right and took
+ * too long has not got it wrong, and giving those two the same mark would say
+ * they had.
+ */
+const VERDICT_ICON = { correct: 'check', pending: 'clock', wrong: 'cross' } as const;
+
 /** mm:ss, in tabular figures so two times line up when compared. */
 function clock(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -81,7 +93,10 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
         data-verdict={verdict}
         className={`${VERDICT_CLASS[verdict]} rounded-card animate-pop flex items-center justify-between gap-3 p-4`}
       >
-        <span className="text-label">{verdictWord(verdict)}</span>
+        <span className="text-label inline-flex items-center gap-2">
+          <Icon name={VERDICT_ICON[verdict]} size={20} strokeWidth={2.5} />
+          {verdictWord(verdict)}
+        </span>
         {timed && (
           <span className="text-label num">
             {clock(timeTakenSec)} / {clock(answer.timeLimitSec)}
@@ -153,7 +168,7 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
               >
                 <div className="mb-1 flex items-center gap-2">
                   <span className="option-key">{option.label}</span>
-                  {mine && <Chip tone="wrong">Yours</Chip>}
+                  {mine && <Chip tone="wrong">{copy().answer.yours}</Chip>}
                 </div>
                 <p className="text-body text-ink-2">{option.whyWrong}</p>
               </div>

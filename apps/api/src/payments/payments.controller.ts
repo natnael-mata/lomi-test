@@ -14,7 +14,11 @@ import {
 import { AdminGuard } from '../auth/staff.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
 import { ChapaService } from './chapa.service';
-import { SubscriptionsService } from './subscriptions.service';
+import {
+  SubscriptionsService,
+  type ManualClaim,
+  type PaymentHistory,
+} from './subscriptions.service';
 import type { DirectChannel } from './chapa';
 import type { PlanOffer } from './plan';
 
@@ -132,6 +136,19 @@ export class PaymentsController {
   me(@Req() req: AuthedRequest) {
     return this.subscriptions.statusFor(req.auth!.userId);
   }
+
+  /**
+   * The receipt, and every payment behind it (T-154).
+   *
+   * Their own, from the session — there is no `?userId=`, because a route that
+   * takes one is a route that lists somebody else's payments the first time a
+   * guard is wired in the wrong order.
+   */
+  @Get('history')
+  @UseGuards(SessionGuard)
+  history(@Req() req: AuthedRequest): Promise<PaymentHistory> {
+    return this.subscriptions.historyFor(req.auth!.userId);
+  }
 }
 
 /**
@@ -198,6 +215,18 @@ function apiBaseUrl(): string {
 @UseGuards(SessionGuard, AdminGuard)
 export class AdminPaymentsController {
   constructor(private readonly subscriptions: SubscriptionsService) {}
+
+  /**
+   * The queue: claimed bank transfers, oldest pending first (T-224).
+   *
+   * Until this existed, settling a payment meant a developer with a database
+   * client — so every student who paid by transfer waited on somebody being at
+   * a laptop with credentials.
+   */
+  @Get()
+  claims(): Promise<ManualClaim[]> {
+    return this.subscriptions.manualClaims();
+  }
 
   @Post(':paymentId/confirm')
   confirm(

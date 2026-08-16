@@ -368,6 +368,25 @@ Bottom bar on phones: exactly five labelled destinations, 56px, with the active 
 sitting in a Brand Soft pill and its label in brand colour. Labels are never hidden. Desktop
 moves the same five to a left rail.
 
+The rail has two widths. A tablet gets it **compact at 104px** — icon above a 13px label,
+each destination an 88px block, the wordmark dropped and the glyph kept. A desktop gets it
+**full at 232px** — icon beside a 15px label, the wordmark restored, and a footer carrying
+when access runs out and the theme switch. Compacting rather than dropping to icons is the
+point: "labels are never hidden" survives the narrower rail, because a student who has to
+recognise five glyphs is a student who presses the wrong one.
+
+The active item takes the Brand Soft pill on both rails; on the bottom bar the pill sits
+behind the **icon only**, since a filled cell in a 56px bar reads as a button rather than as
+"you are here".
+
+**Admin does not get the rail.** It takes a 64px top bar with the same five-destination
+treatment as pills — Dashboard, Payments, Import, Weights, Users — because admin work is a
+table that wants every pixel of the 1200px it is allowed, and 232px of rail beside a
+six-column table is 232px taken from the column holding a reference number.
+
+Sign-in has **no navigation at all**. Five destinations shown to somebody who cannot reach any
+of them is an invitation to five sign-in walls.
+
 ### The destructive control
 
 Emergency retire is the only Danger button and the only modal in the system. Its blast radius

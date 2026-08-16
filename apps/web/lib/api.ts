@@ -74,6 +74,8 @@ export interface ServedQuestion {
   timeLimitSec: number;
   topic: string;
   options: { label: string; text: string }[];
+  /** Free questions left, or null where no free limit applies to this delivery. */
+  freeRemaining: number | null;
 }
 
 export interface AttemptResult {
@@ -356,6 +358,46 @@ export interface RowOutcome {
   messages: string[];
 }
 
+/** A login request in flight (T-075–T-078). See `app/signin/SignInScreen.tsx`. */
+export interface LoginLink {
+  /** Goes in the deep link. Safe to be seen; on its own it produces nothing. */
+  nonce: string;
+  /** Stays in this browser. Never shown, never sent to Telegram. */
+  pollSecret: string;
+  deepLink: string;
+  /** Six digits the student sends TO the bot. The OTP, in the safe direction. */
+  pairingCode: string;
+  expiresAt: string;
+}
+
+export interface PaymentHistoryRow {
+  id: string;
+  method: string;
+  status: string;
+  amountEtb: number;
+  txRef: string;
+  months: number | null;
+  claimedAt: string;
+  settledAt: string | null;
+  accessUntil: string | null;
+}
+
+export interface ManualClaim {
+  paymentId: string;
+  userId: string;
+  status: string;
+  amountEtb: number;
+  txRef: string;
+  note: string | null;
+  claimedAt: string;
+  settledAt: string | null;
+  student: string | null;
+  phone: string | null;
+  joinedAt: string | null;
+  priorPayments: number;
+  priorVerified: number;
+}
+
 export interface ImportReport {
   read: number;
   created: number;
@@ -366,6 +408,89 @@ export interface ImportReport {
 
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
+
+  /**
+   * Starts a sign-in. Returns the deep link, the pairing code and the secret
+   * this browser keeps.
+   */
+  createLoginLink: (deviceLabel: string): Promise<LoginLink> =>
+    call('/auth/login-link', { method: 'POST', body: JSON.stringify({ deviceLabel }) }),
+
+  /**
+   * Asks whether the student has confirmed yet, and takes the session if so.
+   *
+   * `{ pending: true }` is the ordinary answer, not a failure — the page polls
+   * this every couple of seconds while the student is in Telegram.
+   */
+  claimLoginLink: (
+    nonce: string,
+    pollSecret: string,
+    deviceLabel: string,
+  ): Promise<{ pending: true } | { userId: string }> =>
+    call('/auth/login-link/claim', {
+      method: 'POST',
+      body: JSON.stringify({ nonce, pollSecret, deviceLabel }),
+    }),
+
+  /** The receipt and the payments behind it. Their own, from the session. */
+  paymentHistory: (): Promise<{ payments: PaymentHistoryRow[] }> =>
+    call<{ payments: PaymentHistoryRow[] }>('/payments/history'),
+
+  /** ADMIN: claimed bank transfers, oldest pending first. */
+  adminClaims: (): Promise<ManualClaim[]> => call<ManualClaim[]>('/admin/payments'),
+
+  /** ADMIN: the money arrived. Grants access and messages the student. */
+  adminConfirmPayment: (
+    paymentId: string,
+    note: string,
+  ): Promise<{ activated: boolean; expiresAt: string | null }> =>
+    call(`/admin/payments/${paymentId}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
+
+  /** ADMIN: it did not. The reason is required — the student is told it. */
+  adminRejectPayment: (
+    paymentId: string,
+    reason: string,
+  ): Promise<{ paymentId: string; status: 'REJECTED' }> =>
+    call(`/admin/payments/${paymentId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  /** ADMIN: sign a student out everywhere so they can pair a new phone. */
+  adminResetDevices: (
+    userId: string,
+    reason: string,
+  ): Promise<{ userId: string; displayName: string; revoked: number }> =>
+    call(`/admin/users/${userId}/reset-devices`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  /**
+   * ADMIN: stop an account signing in, or let it back in. Nothing is deleted.
+   *
+   * `active` is explicit rather than a toggle: a route that flips whatever it
+   * finds will reactivate an account when two operators press the button at
+   * once, and the second one will believe they closed it.
+   */
+  adminSetActive: (
+    userId: string,
+    active: boolean,
+    reason: string,
+  ): Promise<{
+    userId: string;
+    displayName: string;
+    active: boolean;
+    deactivatedAt: string | null;
+    revoked: number;
+  }> =>
+    call(`/admin/users/${userId}/deactivate`, {
+      method: 'POST',
+      body: JSON.stringify({ active, reason }),
+    }),
 
   plans: (): Promise<PlanOffer[]> => call<PlanOffer[]>('/payments/plans'),
 

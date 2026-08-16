@@ -252,7 +252,12 @@ describe('the community (T-195, T-196, T-197)', () => {
     });
 
     it('tells somebody how long to wait', async () => {
-      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C and got it wrong.');
+      const { id } = await community.openThread(
+        student.userId,
+        topicA,
+        'Why B?',
+        'I chose C and got it wrong.',
+      );
       for (let i = 0; i < 4; i++) await community.reply(student.userId, id, `Reply ${i}`);
 
       const res = await request(app.getHttpServer())
@@ -280,7 +285,12 @@ describe('the community (T-195, T-196, T-197)', () => {
     });
 
     it('counts one report per person however many times they tap', async () => {
-      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C and got it wrong.');
+      const { id } = await community.openThread(
+        student.userId,
+        topicA,
+        'Why B?',
+        'I chose C and got it wrong.',
+      );
       const post = await community.reply(reviewer.userId, id, 'B is correct.');
 
       await community.report(student.userId, post.id, 'WRONG');
@@ -294,7 +304,12 @@ describe('the community (T-195, T-196, T-197)', () => {
     });
 
     it('refuses a reason it cannot triage', async () => {
-      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C and got it wrong.');
+      const { id } = await community.openThread(
+        student.userId,
+        topicA,
+        'Why B?',
+        'I chose C and got it wrong.',
+      );
       const post = await community.reply(reviewer.userId, id, 'B is correct.');
       await expect(community.report(student.userId, post.id, 'because')).rejects.toMatchObject({
         status: 403,
@@ -302,7 +317,12 @@ describe('the community (T-195, T-196, T-197)', () => {
     });
 
     it('hides a post only when an operator does', async () => {
-      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C and got it wrong.');
+      const { id } = await community.openThread(
+        student.userId,
+        topicA,
+        'Why B?',
+        'I chose C and got it wrong.',
+      );
       const post = await community.reply(reviewer.userId, id, 'Something unhelpful.');
       await community.report(student.userId, post.id, 'ABUSIVE');
 
@@ -319,7 +339,12 @@ describe('the community (T-195, T-196, T-197)', () => {
      * explanation assumes it was censored, and they are halfway right.
      */
     it('still shows the author their own hidden post', async () => {
-      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C and got it wrong.');
+      const { id } = await community.openThread(
+        student.userId,
+        topicA,
+        'Why B?',
+        'I chose C and got it wrong.',
+      );
       const post = await community.reply(reviewer.userId, id, 'Something unhelpful.');
       await community.setPostHidden(post.id, 'staff-1', true);
 
@@ -329,7 +354,12 @@ describe('the community (T-195, T-196, T-197)', () => {
     });
 
     it('puts a post back', async () => {
-      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C and got it wrong.');
+      const { id } = await community.openThread(
+        student.userId,
+        topicA,
+        'Why B?',
+        'I chose C and got it wrong.',
+      );
       const post = await community.reply(reviewer.userId, id, 'Fine after all.');
       await community.setPostHidden(post.id, 'staff-1', true);
       await community.setPostHidden(post.id, 'staff-1', false);

@@ -10,6 +10,7 @@
  */
 import { useEffect, useState } from 'react';
 
+import { Icon } from './icons';
 import {
   isThemePreference,
   nextPreference,
@@ -17,6 +18,7 @@ import {
   THEME_STORAGE_KEY,
   type ThemePreference,
 } from './theme';
+import { copy } from '../lib/i18n';
 
 const prefersDark = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -35,7 +37,17 @@ function applyPreference(preference: ThemePreference): void {
   root.dataset.themePreference = preference;
 }
 
-export function ThemeToggle() {
+/**
+ * Two shapes, one behaviour.
+ *
+ * `button` is the specimen-sheet form. `rail` is what the design handoff draws
+ * at the foot of the desktop rail: an icon and a sentence, no button chrome —
+ * the rail already has one filled shape in it (the active destination) and a
+ * second would compete with it for "the thing to press here".
+ */
+export type ThemeToggleVariant = 'button' | 'rail';
+
+export function ThemeToggle({ variant = 'button' }: { variant?: ThemeToggleVariant | undefined }) {
   // Starts as `system` on the server and on first client render, so the markup
   // matches and hydration does not warn. The real preference is read in an
   // effect, after the boot script has already painted the right theme.
@@ -65,16 +77,25 @@ export function ThemeToggle() {
   };
 
   const showingDark = resolveTheme(preference, prefersDark()) === 'dark';
+  const c = copy();
+  // Says which theme is on AND what pressing it does. "Switch to dark" alone
+  // leaves somebody who has just arrived unsure which half they are reading.
+  const label = showingDark ? c.theme.darkSwitchToLight : c.theme.lightSwitchToDark;
 
   return (
     <button
       type="button"
       onClick={toggle}
-      className="btn-ghost"
+      className={
+        variant === 'rail'
+          ? 'text-caption text-ink-2 rounded-control inline-flex items-center gap-2 py-1 text-left'
+          : 'btn-ghost'
+      }
       data-theme-preference={preference}
       aria-pressed={showingDark}
     >
-      {showingDark ? 'Switch to light' : 'Switch to dark'}
+      <Icon name={showingDark ? 'moon' : 'sun'} size={18} />
+      {label}
     </button>
   );
 }
