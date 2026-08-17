@@ -33,7 +33,7 @@ import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons';
 import { Input } from '../../components/Input';
 import { Receipt } from '../../components/Receipt';
-import { ApiError, api, type PlanCode, type PlanOffer } from '../../lib/api';
+import { ApiError, api, signInRequired, type PlanCode, type PlanOffer } from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
 type Method = 'telebirr' | 'cbebirr' | 'chapa' | 'bank';
@@ -100,7 +100,11 @@ export function CheckoutScreen() {
         // selected one agree.
         setPlanCode(offers.find((o) => o.bestValue)?.code ?? offers[0]?.code ?? 'TWELVE_MONTH');
         setPhase(subscription?.active ? { kind: 'subscribed' } : { kind: 'choosing' });
-      } catch {
+      } catch (e) {
+        if (signInRequired(e)) {
+          window.location.assign('/signin');
+          return;
+        }
         if (alive) setPhase({ kind: 'error', message: c.checkout.couldNotStart });
       }
     })();

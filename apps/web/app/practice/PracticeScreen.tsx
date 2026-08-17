@@ -29,6 +29,7 @@ import type { OptionLabel } from '../../components/AnswerOption';
 import {
   ApiError,
   api,
+  signInRequired,
   type AttemptResult,
   type PlanOffer,
   type PracticeSummary,
@@ -86,6 +87,12 @@ export function PracticeScreen() {
         // went, not just that there is nothing left.
         const summary = await api.practiceSummary().catch(() => null);
         setPhase({ kind: 'exhausted', summary });
+        return;
+      }
+      if (signInRequired(e)) {
+        // The sign-in screen, not an error card. This route is the installed
+        // app's start_url, so an expired session lands here first.
+        window.location.assign('/signin');
         return;
       }
       if (e instanceof ApiError && e.code === 'FIELD_REQUIRED') {

@@ -99,6 +99,29 @@ both **deliberately** so:
 - `TELEGRAM_BOT_USERNAME` — the bot handle. Without it `/signin` says so plainly
   instead of building a dead deep link.
 
+Three checks need a browser and a running app, so they are scripts rather than
+tests:
+
+```bash
+npm run focus-ring
+```
+
+```bash
+npm run brand-icons
+```
+
+```bash
+DEV_LOGIN_SECRET=... npm run lighthouse
+```
+
+`focus-ring` tabs through five screens with real key events and fails if any
+control is missing the ring DESIGN.md requires — `:focus-visible` does not match
+programmatic focus, so nothing short of a real Tab can check it. `brand-icons`
+re-renders the app icons from the mark; the PNGs are committed, so a build never
+needs Chrome. `lighthouse` measures the production build on the mid-tier mobile
+preset and signs in first, because a signed-out `/practice` measures the error
+card.
+
 ## Deploying
 
 `deploy/README.md` has the runbook. In short:

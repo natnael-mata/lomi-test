@@ -32,6 +32,7 @@ import {
 import {
   ApiError,
   api,
+  signInRequired,
   type SittingItem,
   type SittingManifest,
   type SittingResult,
@@ -131,6 +132,10 @@ export function ExamScreen() {
   }, [sittingId, flush]);
 
   const fail = (e: unknown): void => {
+    if (signInRequired(e)) {
+      window.location.assign('/signin');
+      return;
+    }
     const code = e instanceof ApiError ? e.code : null;
     setPhase({
       kind: 'error',

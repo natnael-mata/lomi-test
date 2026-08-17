@@ -25,9 +25,25 @@ describe('the smoke-test door (T-206a)', () => {
   let prisma: PrismaService;
   let previous: string | undefined;
 
+  /**
+   * Accounts this run made, and only those.
+   *
+   * It used to delete **every** account with a negative telegram id — the whole
+   * smoke-test range — which was correct isolation right up until somebody kept
+   * prepared accounts in that range. `npm test` then silently emptied User A, B
+   * and C: they came back on the next sign-in with fresh names, no programme and
+   * no history, and the product looked broken for reasons nothing in the test
+   * output mentioned.
+   *
+   * Scoped by creation time rather than by label, because one of the labels this
+   * test uses is a cuid minted while it runs — there is no static list to check
+   * against. "Created since this file started" is exactly the set it owns.
+   */
+  let startedAt: Date;
+
   const wipe = async (): Promise<void> => {
     const testers = await prisma.user.findMany({
-      where: { telegramId: { startsWith: '-' } },
+      where: { telegramId: { startsWith: '-' }, createdAt: { gte: startedAt } },
       select: { id: true },
     });
     const ids = testers.map((u) => u.id);
@@ -36,6 +52,9 @@ describe('the smoke-test door (T-206a)', () => {
   };
 
   beforeAll(async () => {
+    // A second early, so a row written in the same millisecond as this line is
+    // still inside the window rather than a millisecond outside it.
+    startedAt = new Date(Date.now() - 1000);
     previous = process.env.DEV_LOGIN_SECRET;
     delete process.env.DEV_LOGIN_SECRET;
     process.env.JWT_SECRET = TEST_JWT_SECRET;

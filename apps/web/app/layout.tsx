@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import { AppShell } from '../components/AppShell';
+import { ServiceWorker } from '../components/ServiceWorker';
 import { TelegramHost } from '../components/TelegramHost';
 import { THEME_BOOT_SCRIPT } from '../components/theme';
 import { fontVariables } from './fonts';
@@ -23,6 +24,12 @@ export const metadata: Metadata = {
     template: '%s · Lomi-Test',
   },
   applicationName: 'Lomi-Test',
+  // iOS reads these rather than the manifest.
+  appleWebApp: { capable: true, title: 'Lomi-Test', statusBarStyle: 'default' },
+  icons: {
+    icon: [{ url: '/brand/lomi-test-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/brand/lomi-test-apple-180.png', sizes: '180x180', type: 'image/png' }],
+  },
   description:
     'Exit-exam preparation for Ethiopian university students — every answer fully explained.',
 };
@@ -30,6 +37,19 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  /*
+   * The colour a phone paints its own chrome, matched to the app's ground
+   * rather than to the brand (T-202).
+   *
+   * Installed, this is the band above the content; setting it to Brand Violet
+   * would put a violet bar over a screen whose rule is that violet means the
+   * primary action. Per-scheme, because the ground is re-derived in dark rather
+   * than dimmed, and one value would be wrong in one of them.
+   */
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F6F6FB' },
+    { media: '(prefers-color-scheme: dark)', color: '#101018' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -54,6 +74,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         {/* No-op outside Telegram; see the component. */}
         <TelegramHost />
+        {/* No-op outside production; see the component. */}
+        <ServiceWorker />
         {/* Navigation and the reading measure come from here, so no page can
             disagree with DESIGN.md about either. */}
         <AppShell>{children}</AppShell>

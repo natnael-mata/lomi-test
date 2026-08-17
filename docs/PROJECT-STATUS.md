@@ -56,17 +56,19 @@ Verified by running it, not by reading the task list.
 
 ## 3. What is not built
 
-Two things. One matters for launch.
+One thing, and it is the launch blocker.
 
-| Missing                     | Why it matters                                                                        |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| **Real exam questions**     | **The launch blocker.** Only demo content exists; the three real programmes have none |
-| **Phone-app install (PWA)** | Needs the brand icons                                                                 |
+| Missing                 | Why it matters                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| **Real exam questions** | **The launch blocker.** Only demo content exists; the three real programmes have none |
 
-The four screens listed here before — sign-in, payment approval, user management and the
-receipt — were built on 2026-08-16 against the design handoff. Sign-in still needs a Telegram
-bot token to do anything: the screen mints a pairing request and says so plainly when the
-server has no bot configured.
+Everything else on this list has been built. Sign-in, payment approval, user management and
+the receipt landed on 2026-08-16 against the design handoff; the phone-app install landed on
+2026-08-17, with an offline page that deliberately caches no question content — the bank is
+the asset, and a cache is a copy on a device.
+
+Sign-in still needs a Telegram bot token to do anything. The screen mints a pairing request
+and says so plainly when the server has no bot configured.
 
 ---
 
@@ -107,7 +109,7 @@ In order of what blocks the most.
 4. **The bank account number** — set `NEXT_PUBLIC_BANK_ACCOUNT`. Until it is set the
    bank-transfer screen says the account is not published rather than showing an invented
    one, which means nobody can complete a transfer.
-5. **Brand icons** — for installing as a phone app.
+5. **A Chapa key and a bot token** — see above; nothing else is waiting on code.
 
 ---
 

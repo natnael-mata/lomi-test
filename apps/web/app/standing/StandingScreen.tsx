@@ -22,7 +22,13 @@ import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { TierBadge } from '../../components/TierBadge';
 import { StatedFigure } from '../../components/StatedFigure';
-import { api, type LeaderboardView, type LedgerRow, type StandingView } from '../../lib/api';
+import {
+  api,
+  signInRequired,
+  type LeaderboardView,
+  type LedgerRow,
+  type StandingView,
+} from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
 type Phase =
@@ -51,7 +57,11 @@ export function StandingScreen() {
         api.leaderboard(),
       ]);
       setPhase({ kind: 'ready', standing, ledger, board });
-    } catch {
+    } catch (e) {
+      if (signInRequired(e)) {
+        window.location.assign('/signin');
+        return;
+      }
       setPhase({ kind: 'error' });
     }
   }, []);

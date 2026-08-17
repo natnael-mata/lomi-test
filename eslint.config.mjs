@@ -72,6 +72,20 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.browser } },
   },
 
+  /*
+   * The service worker (T-202).
+   *
+   * A worker is not a page: `self` is a ServiceWorkerGlobalScope, `caches` and
+   * `clients` exist and `document` and `window` do not. Linting it with the
+   * browser globals reports `caches` as undefined — and, worse, would let a
+   * reference to `document` through, which throws at runtime in the one script
+   * with no console anybody reads.
+   */
+  {
+    files: ['apps/web/public/sw.js'],
+    languageOptions: { globals: { ...globals.serviceworker } },
+  },
+
   // Must come last: turns off every rule Prettier owns.
   prettier,
 );

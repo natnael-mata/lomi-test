@@ -81,6 +81,29 @@ jobs:
       - name: Accessibility
         run: npm run test:a11y
 
+      # T-204's threshold, measured on Lighthouse's mid-tier mobile preset —
+      # 4x CPU slowdown and a throttled connection, which is roughly the phone
+      # this product is designed for. Run against the production build on a
+      # spare port, and signed in: measuring `/practice` signed out measures the
+      # error card, which paints in half the time and is nobody's screen.
+      #
+      # `continue-on-error` for now, deliberately. The score sits AT the
+      # threshold rather than above it — LCP is the question stem, which cannot
+      # paint before the server has chosen a question — so a hard gate would
+      # fail on run-to-run variance and teach people to ignore the job. It
+      # reports; it does not yet block.
+      - name: Performance (mid-tier mobile)
+        continue-on-error: true
+        env:
+          DEV_LOGIN_SECRET: ci-lighthouse-secret-000000000000
+        run: |
+          npm run start:hosted -w api & 
+          PORT=3200 npm run start -w web &
+          npx wait-on http://localhost:3200 http://localhost:4000/health
+          npm run dev:publish -w api
+          npm run dev:testers -w api
+          npm run lighthouse
+
       # A hand-kept progress index is wrong within a day, and a wrong index is
       # worse than none — it is what people read instead of counting.
       - name: TASK.md progress index is current

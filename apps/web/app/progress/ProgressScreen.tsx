@@ -15,7 +15,7 @@ import { PracticeCta } from '../../components/PracticeCta';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { ScoreTrend } from '../../components/ScoreTrend';
 import { StatedFigure } from '../../components/StatedFigure';
-import { api, type Readiness, type TrendPoint } from '../../lib/api';
+import { api, signInRequired, type Readiness, type TrendPoint } from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
 export function ProgressScreen() {
@@ -43,7 +43,11 @@ export function ProgressScreen() {
         setReadiness(r);
         setTrend(t);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Something went wrong.');
+        if (signInRequired(e)) {
+          window.location.assign('/signin');
+          return;
+        }
+        if (!cancelled) setError(c.progress.couldNotLoad);
       }
     })();
     return () => {

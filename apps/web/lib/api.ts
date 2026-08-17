@@ -64,6 +64,24 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+/**
+ * Whether this failure means "you are not signed in".
+ *
+ * **A screen that renders 401 as an error is a screen that tells a signed-out
+ * student their app is broken.** `/practice` did exactly that: it is the
+ * manifest's `start_url`, so somebody opening the installed icon after their
+ * session expired met "That did not load" — with a Try again button that could
+ * never work, because trying again is not what was missing.
+ *
+ * A helper rather than a redirect inside `call`, deliberately. The home screen
+ * asks about the session on purpose and renders a signed-out state; a client
+ * that navigated away by itself would take that decision from every caller,
+ * including the ones that have already thought about it.
+ */
+export function signInRequired(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 401;
+}
+
 /** The pre-answer payload. Deliberately carries no answer content (T-106). */
 export interface ServedQuestion {
   questionId: string;

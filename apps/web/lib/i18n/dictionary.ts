@@ -277,6 +277,7 @@ export const en = {
   progress: {
     title: 'Progress',
     working: 'Working out where you are…',
+    couldNotLoad: 'Your progress did not load. Nothing you have answered is lost — try again.',
     nothingYet:
       'Nothing answered yet, so there is no readiness figure to show. Answer a few questions and it starts here.',
     chooseProgramme: 'Choose a programme to see your progress.',
@@ -862,6 +863,7 @@ export const am: Copy = {
   progress: {
     title: 'እድገት',
     working: 'የት እንዳሉ እየተሰላ ነው…',
+    couldNotLoad: 'እድገትዎ አልተጫነም። የመለሱት ምንም አልጠፋም — እንደገና ይሞክሩ።',
     nothingYet: 'እስካሁን ምንም አልተመለሰም፣ ስለዚህ የሚታይ የዝግጁነት አኃዝ የለም። ጥቂት ጥያቄዎችን ይመልሱ፣ ከዚህ ይጀምራል።',
     chooseProgramme: 'እድገትዎን ለማየት የትምህርት ዘርፍ ይምረጡ።',
     mockScores: 'የሙከራ ውጤቶች',
