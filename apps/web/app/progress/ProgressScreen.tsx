@@ -29,7 +29,11 @@ export function ProgressScreen() {
     void (async () => {
       try {
         const fields = await api.myFields();
-        const fieldId = fields[0]?.id;
+        // The student's own programme, not whichever sorts first. Reading
+        // `fields[0]` showed a Public Health student Accounting & Finance's
+        // readiness — "Nothing answered yet" over a screen full of their
+        // answers.
+        const fieldId = fields.find((f) => f.chosen)?.id;
         if (!fieldId) {
           if (!cancelled) setError(c.progress.chooseProgramme);
           return;

@@ -537,8 +537,15 @@ export const api = {
 
   practiceSummary: (): Promise<PracticeSummary> => call<PracticeSummary>('/practice/summary'),
 
-  myFields: (): Promise<{ id: string; name: string; slug: string }[]> =>
-    call<{ id: string; name: string; slug: string }[]>('/me/fields'),
+  /**
+   * Every published programme, with the student's own marked `chosen`.
+   *
+   * One call rather than a list plus a "which is mine" — two calls can disagree,
+   * and the screens that got this wrong were reading `fields[0]` and calling it
+   * the student's programme.
+   */
+  myFields: (): Promise<{ id: string; name: string; slug: string; chosen: boolean }[]> =>
+    call<{ id: string; name: string; slug: string; chosen: boolean }[]>('/me/fields'),
 
   /**
    * Picks the programme every question is scoped to (PLAN.md 4.1).

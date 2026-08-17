@@ -17,10 +17,18 @@
  * same pure function the publish endpoint runs, and is refused if it does not
  * genuinely pass.
  *
+ * The bank itself lives in `dev-fixtures.ts` — four weighted topics and twenty
+ * questions, which is the smallest bank that can demonstrate the product: ten
+ * distinct questions is the free wall, four topics is a readiness table with
+ * something in it, and twenty is enough to sample a short mock from.
+ *
  *   npm run dev:publish -w api
  */
 import { PrismaClient } from '@prisma/client';
 
+import { FIXTURES, TOPICS } from './dev-fixtures';
+import { isDevTelegramId } from '../src/auth/dev-login';
+import { DEV_SESSION_TELEGRAM_ID } from './dev-accounts';
 import { gateBlockers, type DraftQuestion } from '../src/questions/publish-gate';
 
 const prisma = new PrismaClient();
@@ -28,101 +36,76 @@ const prisma = new PrismaClient();
 /** Everything this script owns is under this slug and nothing else is. */
 const FIELD_SLUG = 'local-dev';
 
-interface Fixture {
-  stableId: string;
-  qType: 'CONCEPT' | 'CALCULATION';
-  stem: string;
-  codeBlock?: string;
-  conceptLine: string;
-  explanation?: string;
-  timeLimitSec: number;
-  options: { label: 'A' | 'B' | 'C' | 'D'; text: string; isCorrect?: boolean; whyWrong?: string }[];
-  steps?: { stepNo: number; text: string; formula?: string }[];
-}
+/**
+ * Removes demo content this script no longer owns.
+ *
+ * **Without this the field's weights stop summing to 100.** An earlier version
+ * of the demo bank was one topic at 100%; the four topics here are 30/25/25/20,
+ * and leaving the old one behind makes 200 — which fails the taxonomy check, so
+ * no mock paper can be built and the failure reads as a product bug rather than
+ * as a stale fixture.
+ *
+ * Only inside `local-dev`, and only for accounts in the smoke-test range. If a
+ * real attempt ever pointed at one of these questions the script leaves it
+ * alone and says so: local convenience does not get to delete somebody's
+ * history, even history that looks like a fixture's.
+ */
+async function removeSupersededContent(fieldId: string, keepTopics: Set<string>): Promise<void> {
+  const keepIds = new Set(FIXTURES.map((f) => f.stableId));
 
-const FIXTURES: Fixture[] = [
-  {
-    stableId: 'DEV-CALC-1',
-    qType: 'CALCULATION',
-    stem: 'A retailer sells goods for Br 1,150,000 VAT inclusive (15%). How much VAT is contained in that amount?',
-    conceptLine: 'VAT inside a gross amount is extracted with ×15/115.',
-    timeLimitSec: 180,
-    options: [
-      {
-        label: 'A',
-        text: '172,500',
-        whyWrong: 'That is 15% of the net amount, not the tax inside the gross.',
-      },
-      { label: 'B', text: '150,000', isCorrect: true },
-      { label: 'C', text: '15,000', whyWrong: 'Off by a factor of ten.' },
-      { label: 'D', text: '1,000,000', whyWrong: 'That is the net amount, not the VAT.' },
-    ],
-    steps: [
-      { stepNo: 1, text: 'The amount is VAT-inclusive, so the tax is already inside it.' },
-      { stepNo: 2, text: 'Extract the tax fraction.', formula: 'gross × 15/115' },
-      { stepNo: 3, text: '1,150,000 × 15/115' },
-      { stepNo: 4, text: '= 150,000 → answer B' },
-    ],
-  },
-  {
-    stableId: 'DEV-CONCEPT-1',
-    qType: 'CONCEPT',
-    stem: 'To ensure every household in a village has an equal chance of being selected for a survey, you would use:',
-    conceptLine: 'Equal probability for every unit is simple random sampling.',
-    explanation: 'Only simple random sampling gives every household the same chance of selection.',
-    timeLimitSec: 60,
-    options: [
-      {
-        label: 'A',
-        text: 'Purposive sampling',
-        whyWrong: 'Picks units deliberately, not by chance.',
-      },
-      {
-        label: 'B',
-        text: 'Snowball sampling',
-        whyWrong: 'Recruits through referral, so chances are unequal.',
-      },
-      { label: 'C', text: 'Simple random sampling', isCorrect: true },
-      {
-        label: 'D',
-        text: 'Convenience sampling',
-        whyWrong: 'Takes whoever happens to be reachable.',
-      },
-    ],
-  },
-  {
-    stableId: 'DEV-CODE-1',
-    qType: 'CONCEPT',
-    stem: 'What problem does this CSS solve when creating a navigation bar?',
-    codeBlock: 'nav ul { list-style-type: none; margin: 0; padding: 0; }',
-    conceptLine: 'Lists carry default bullets and spacing that a navbar must clear first.',
-    explanation:
-      'Removing the marker and the default margin and padding lets the list be laid out freely.',
-    timeLimitSec: 60,
-    options: [
-      {
-        label: 'A',
-        text: 'Removes bullet points and default spacing, allowing custom layout',
-        isCorrect: true,
-      },
-      {
-        label: 'B',
-        text: 'Aligns the navbar to the right of the page',
-        whyWrong: 'Alignment is a layout property; none is set here.',
-      },
-      {
-        label: 'C',
-        text: 'Adds hover effects to list items',
-        whyWrong: 'No :hover rule is present.',
-      },
-      {
-        label: 'D',
-        text: 'Converts the list into a dropdown menu',
-        whyWrong: 'Nothing here changes visibility or positioning.',
-      },
-    ],
-  },
-];
+  const stale = await prisma.question.findMany({
+    where: { fieldId, stableId: { notIn: [...keepIds] } },
+    select: { id: true, stableId: true },
+  });
+
+  for (const question of stale) {
+    const attempts = await prisma.attempt.findMany({
+      where: { questionId: question.id },
+      select: { id: true, user: { select: { telegramId: true } } },
+    });
+    // `dev:session` signs in as a fixture account whose telegram id is a
+    // string, so `isDevTelegramId` — which is about the reserved *numeric*
+    // range — correctly says no. It is still a fixture account, and treating it
+    // as a real student would leave this content uncleanable forever.
+    const real = attempts.filter(
+      (a) => !isDevTelegramId(a.user.telegramId) && a.user.telegramId !== DEV_SESSION_TELEGRAM_ID,
+    );
+    if (real.length > 0) {
+      console.log(
+        `${question.stableId}: kept — ${real.length} attempt(s) from outside the smoke-test range.`,
+      );
+      continue;
+    }
+
+    await prisma.attempt.deleteMany({ where: { questionId: question.id } });
+    await prisma.examQuestion.deleteMany({ where: { questionId: question.id } });
+    await prisma.step.deleteMany({ where: { questionId: question.id } });
+    await prisma.option.deleteMany({ where: { questionId: question.id } });
+    await prisma.question.delete({ where: { id: question.id } });
+    console.log(`${question.stableId}: removed — superseded by the current demo bank.`);
+  }
+
+  // Topics and courses left holding nothing. Deleted last, and only when empty,
+  // so a topic that kept a question above keeps its topic too.
+  const topics = await prisma.topic.findMany({
+    where: { course: { fieldId } },
+    select: { id: true, slug: true, _count: { select: { questions: true } } },
+  });
+  for (const topic of topics) {
+    if (keepTopics.has(topic.id) || topic._count.questions > 0) continue;
+    await prisma.topic.delete({ where: { id: topic.id } });
+    console.log(`topic "${topic.slug}": removed — no questions left in it.`);
+  }
+  const courses = await prisma.course.findMany({
+    where: { fieldId },
+    select: { id: true, slug: true, _count: { select: { topics: true } } },
+  });
+  for (const course of courses) {
+    if (course._count.topics > 0) continue;
+    await prisma.course.delete({ where: { id: course.id } });
+    console.log(`course "${course.slug}": removed — no topics left in it.`);
+  }
+}
 
 async function main(): Promise<void> {
   const field = await prisma.field.upsert({
@@ -130,27 +113,60 @@ async function main(): Promise<void> {
     update: { isPublished: true },
     create: { slug: FIELD_SLUG, name: 'Local Dev', isPublished: true },
   });
-  const course = await prisma.course.upsert({
-    where: { fieldId_slug: { fieldId: field.id, slug: 'local-dev-course' } },
-    update: {},
-    create: { fieldId: field.id, slug: 'local-dev-course', name: 'Local Dev Course' },
-  });
-  const topic = await prisma.topic.upsert({
-    where: { courseId_slug: { courseId: course.id, slug: 'local-dev-topic' } },
-    update: { weightPct: 100 },
-    create: {
-      courseId: course.id,
-      slug: 'local-dev-topic',
-      name: 'Local Dev Topic',
-      weightPct: 100,
-    },
-  });
+
+  /*
+   * One course per topic rather than one course holding all four.
+   *
+   * The taxonomy is Field → Course → Topic and the demo topics come from four
+   * different subjects; hanging Depreciation under a course called "Local Dev
+   * Course" would make every screen that names the course say something false.
+   */
+  const topicIds = new Map<string, string>();
+  for (const spec of TOPICS) {
+    const course = await prisma.course.upsert({
+      where: { fieldId_slug: { fieldId: field.id, slug: `${spec.slug}-course` } },
+      update: { name: spec.course },
+      create: { fieldId: field.id, slug: `${spec.slug}-course`, name: spec.course },
+    });
+    const topic = await prisma.topic.upsert({
+      where: { courseId_slug: { courseId: course.id, slug: spec.slug } },
+      update: { name: spec.name, weightPct: spec.weightPct },
+      create: {
+        courseId: course.id,
+        slug: spec.slug,
+        name: spec.name,
+        weightPct: spec.weightPct,
+      },
+    });
+    topicIds.set(spec.slug, topic.id);
+  }
+
+  await removeSupersededContent(field.id, new Set(topicIds.values()));
+
+  const stated = TOPICS.reduce((sum, t) => sum + t.weightPct, 0);
+  if (stated !== 100) {
+    // The exam builder samples against these and the readiness screen ranks by
+    // them. A set that does not sum to 100 produces a paper with a hole in it
+    // and a progress screen whose bars do not add up — both of which look like
+    // product bugs rather than like a bad fixture file.
+    console.error(`Topic weights sum to ${stated}, not 100. Fix dev-fixtures.ts.`);
+    process.exitCode = 1;
+    return;
+  }
 
   let published = 0;
+  let refused = 0;
 
   for (const fixture of FIXTURES) {
+    const topicId = topicIds.get(fixture.topic);
+    if (!topicId) {
+      console.error(`${fixture.stableId}: no topic "${fixture.topic}" in TOPICS.`);
+      refused++;
+      continue;
+    }
+
     const data = {
-      topicId: topic.id,
+      topicId,
       fieldId: field.id,
       qType: fixture.qType,
       stem: fixture.stem,
@@ -222,6 +238,7 @@ async function main(): Promise<void> {
     if (blockers.length > 0) {
       console.log(`${fixture.stableId}: REFUSED by the gate —`);
       for (const b of blockers) console.log(`    ${b}`);
+      refused++;
       continue;
     }
 
@@ -229,12 +246,21 @@ async function main(): Promise<void> {
       where: { id: fresh.id },
       data: { status: 'PUBLISHED', reviewerId: 'dev-publish-script' },
     });
-    console.log(`${fixture.stableId}: published (${fresh.qType})`);
     published++;
   }
 
+  const byTopic = TOPICS.map((t) => {
+    const count = FIXTURES.filter((f) => f.topic === t.slug).length;
+    return `  ${t.name.padEnd(26)} ${String(count).padStart(2)} questions · ${t.weightPct}%`;
+  }).join('\n');
+
   console.log(`\n${published} question(s) published in "${field.name}" (${FIELD_SLUG}).`);
-  console.log(`Point a dev session at it:  npm run dev:session -w api -- ${FIELD_SLUG}`);
+  console.log(byTopic);
+  if (refused > 0) {
+    console.log(`\n${refused} refused — see above. The gate is the same one the API runs.`);
+    process.exitCode = 1;
+  }
+  console.log(`\nSet up the test accounts next:  npm run dev:testers -w api`);
 }
 
 main()

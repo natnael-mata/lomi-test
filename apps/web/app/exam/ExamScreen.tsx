@@ -167,7 +167,9 @@ export function ExamScreen() {
     setPhase({ kind: 'loading' });
     try {
       const fields = await api.myFields();
-      const fieldId = fields[0]?.id;
+      // The student's own programme. `fields[0]` would hand somebody a paper
+      // from a subject they are not sitting.
+      const fieldId = fields.find((f) => f.chosen)?.id;
       if (!fieldId) {
         setPhase({ kind: 'error', message: c.exam.chooseProgramme, code: 'FIELD_REQUIRED' });
         return;

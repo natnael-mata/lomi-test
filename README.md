@@ -58,6 +58,47 @@ Do not batch tasks, and never tick a box you have not actually tested.
 _Decided since this list was last written: a plan grants **every** field, not one
 (`TASK.md` T-141b)._
 
+## Running it locally
+
+Four terminals' worth of work in three commands. The database is embedded, so
+nothing has to be installed first.
+
+```bash
+npm run db:dev
+```
+
+```bash
+npm run dev:api & npm run dev:web
+```
+
+```bash
+npm run dev:publish -w api && npm run dev:testers -w api
+```
+
+The third line fills a **demo bank** — twenty questions across four weighted
+topics, under the `local-dev` field and nowhere near the three launch
+programmes — and prepares four accounts to sign in as at
+<http://localhost:3100/dev-login>:
+
+| Account    | State                                               | What it reaches                                                |
+| ---------- | --------------------------------------------------- | -------------------------------------------------------------- |
+| **User A** | brand new                                           | the programme chooser, the first question, the free counter    |
+| **User B** | 8 of 10 free questions used, one bank claim pending | the free wall two answers away, and a claim in the admin queue |
+| **User C** | paid, 12 months                                     | the receipt, payment history, and the mock exam                |
+| **Admin**  | ADMIN staff                                         | every `/admin` screen, including settling User B's claim       |
+
+Both scripts are re-runnable and idempotent; run them again after `db:dev`
+recreates the database.
+
+Two environment variables are worth knowing about, both unset by default and
+both **deliberately** so:
+
+- `NEXT_PUBLIC_BANK_ACCOUNT` — the account a bank transfer is paid into. Unset,
+  the checkout says the account is not published rather than showing a number
+  somebody invented, because that number is where a student's money goes.
+- `TELEGRAM_BOT_USERNAME` — the bot handle. Without it `/signin` says so plainly
+  instead of building a dead deep link.
+
 ## Deploying
 
 `deploy/README.md` has the runbook. In short:

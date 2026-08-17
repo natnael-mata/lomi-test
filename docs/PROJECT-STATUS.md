@@ -47,6 +47,8 @@ Verified by running it, not by reading the task list.
 | Points, streaks, badges, leaderboard                     | Working                                                        |
 | Community — threads, verified replies, moderation        | Working                                                        |
 | Navigation, programme choosing                           | Working (built 2026-08-15)                                     |
+| Sign-in screen, payment approval, user management        | Working (built 2026-08-16 to the design handoff)               |
+| Receipt and payment history                              | Working                                                        |
 
 **Tests:** 1,011 API · 490 web · 33 bot. All passing.
 
@@ -54,16 +56,17 @@ Verified by running it, not by reading the task list.
 
 ## 3. What is not built
 
-Six things. Three matter for launch.
+Two things. One matters for launch.
 
 | Missing                     | Why it matters                                                                        |
 | --------------------------- | ------------------------------------------------------------------------------------- |
 | **Real exam questions**     | **The launch blocker.** Only demo content exists; the three real programmes have none |
-| **Sign-in screen**          | The API is complete; the screen was never built. Testing uses a temporary door        |
-| **Payment approval screen** | An operator cannot approve a bank transfer without a developer                        |
-| **User management screen**  | Cannot deactivate an account or reset devices from the UI                             |
-| **Payment receipt**         | The reference shows once; there is no receipt to keep                                 |
 | **Phone-app install (PWA)** | Needs the brand icons                                                                 |
+
+The four screens listed here before — sign-in, payment approval, user management and the
+receipt — were built on 2026-08-16 against the design handoff. Sign-in still needs a Telegram
+bot token to do anything: the screen mints a pairing request and says so plainly when the
+server has no bot configured.
 
 ---
 
@@ -101,7 +104,9 @@ In order of what blocks the most.
    unblocks the receipt, the contact capture, and lets the temporary testing door be
    deleted.
 3. **A Chapa key** — turns on three of the four ways to pay.
-4. **The remaining screens** — sign-in, payment approval, user management.
+4. **The bank account number** — set `NEXT_PUBLIC_BANK_ACCOUNT`. Until it is set the
+   bank-transfer screen says the account is not published rather than showing an invented
+   one, which means nobody can complete a transfer.
 5. **Brand icons** — for installing as a phone app.
 
 ---

@@ -11,8 +11,10 @@ export class MeController {
 
   /** The programmes on offer. Guarded like the rest of `/me`, but not field-gated. */
   @Get('fields')
-  fields(): Promise<{ id: string; name: string; slug: string }[]> {
-    return this.auth.publishedFields();
+  fields(
+    @Req() req: AuthedRequest,
+  ): Promise<{ id: string; name: string; slug: string; chosen: boolean }[]> {
+    return this.auth.publishedFields(req.auth!.userId);
   }
 
   @Put('field')

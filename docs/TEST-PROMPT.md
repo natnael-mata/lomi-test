@@ -20,10 +20,20 @@ not connected yet, so use the testing door:
 
 1. Go to **http://localhost:3100/dev-login**
 2. The password box is already filled in — leave it alone
-3. Click one of four buttons: **Student one**, **Student two**, **Student three**, **Admin**
+3. Click one of four buttons
 
-Each button signs you in as that person and keeps their history. Use **Student one** for
-the student journey and **Admin** for the admin screens.
+Each button signs you in as that account and keeps its history. The four are set up in
+different states on purpose, so between them they reach every screen:
+
+| Button     | Where it starts you                                    | Use it for                                                            |
+| ---------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| **User A** | nothing chosen yet                                     | first run: choosing a programme, the first question, the free counter |
+| **User B** | 8 of 10 free questions used, one bank transfer waiting | the free wall, two answers away                                       |
+| **User C** | paid for 12 months                                     | the receipt, the payment history, the mock exam                       |
+| **Admin**  | admin staff                                            | every `/admin` screen, including settling User B's transfer           |
+
+Do the student journey as **User A**, then switch to **User B** for the paywall and
+**User C** for everything a paying student sees.
 
 ## What to test, in order
 
@@ -32,7 +42,7 @@ Take a screenshot at every numbered step, on **desktop width first**, then repea
 
 ### 1. First run — choosing a programme
 
-Sign in as **Student one**. If you land anywhere other than a programme chooser, go to
+Sign in as **User A**. If you land anywhere other than a programme chooser, go to
 `/practice` — a student with no programme should be sent to `/choose`.
 
 - Are the programmes listed and selectable?
@@ -40,7 +50,9 @@ Sign in as **Student one**. If you land anywhere other than a programme chooser,
   why it is asked?
 - Does the page say the choice can be changed later?
 
-Choose **Local Dev** — it is the only programme with practisable questions today.
+Choose **Local Dev** — it is the only programme with questions in it today. It holds twenty
+demo questions across four topics: Processes and Scheduling, Depreciation, Study Design and
+Value Added Tax.
 
 ### 2. Practising
 
@@ -48,7 +60,9 @@ Choose **Local Dev** — it is the only programme with practisable questions tod
 - **Before you answer:** is the correct answer visible anywhere on screen? It must not be.
   Check the visible page only.
 - Answer one question. Is the explanation shown, including why the wrong options are wrong?
-- Is there a count of free questions remaining, and does it go down?
+- Is there a count of free questions remaining **before** you answer, and does it go down?
+- Do the four options stay on screen after you check, with the right one marked and your own
+  marked if it was wrong?
 
 ### 3. Progress
 
@@ -62,6 +76,16 @@ Go to **Standing**. Check the points figure, the streak, the tier badge and the 
 - Does every points row say **why** it was earned, not just a number?
 - Is there a button to hide yourself from the board? Click it — are you removed from the
   list but still told your rank?
+
+### 4b. Running out of free questions
+
+Sign in as **User B**, who has two left. Answer two questions.
+
+- The third should be a **different screen with a different action** — not an error, not a
+  red box. It should say it was your tenth free question, show both plans with the per-month
+  price worked out, and offer one button.
+- Go to **Access**. Your pending bank transfer should be listed with its reference and a word
+  saying it is being checked.
 
 ### 5. Getting access
 
@@ -81,18 +105,32 @@ The design specifies **exactly five destinations**, with labels always visible.
 - Are there five, with words next to the icons at both sizes?
 - Is the current page marked in a way you could still see **in black and white**?
 
+### 6b. What a paying student sees
+
+Sign in as **User C**.
+
+- **Access** should show a receipt — plan, amount, method, reference, the date paid, and the
+  date access ends — plus a payment history underneath.
+- **Mock** should start a paper. It is **20 questions in 45 minutes** here rather than the
+  100 in 3 hours the intro text promises: the real paper is sampled from a real bank, and the
+  demo bank only holds twenty. Check the timer, the question navigator and flagging.
+- **Practise** should never hit a paywall.
+
 ### 7. Admin
 
 Sign in as **Admin** (go to `/dev-login` again).
 
+- **`/admin/payments`** — User B's transfer should be waiting. Open the row: does it give you
+  enough to check against a bank statement? Try rejecting without a reason — it should refuse.
+  Approve it, then sign in as User B and check their Access tab now shows a receipt.
+- **`/admin/users`** — search for `User`. Both actions should say what they do to a person.
 - **`/admin/dashboard`** — do the four signup figures add up to the total shown?
 - **`/admin/import`** — upload a questions file. Use
   `docs/question_import_template.csv` from the project folder. Does it report how many rows
   were read, added or refused, and does a refused row say which line and why?
 - **`/admin/weights`** — does it show topic weights and a running total?
 
-Then sign back in as **Student one** and try to open `/admin/dashboard`. You should be
-refused.
+Then sign back in as **User A** and try to open `/admin/dashboard`. You should be refused.
 
 ## The rules to judge against
 
@@ -113,13 +151,17 @@ These come from the product's own design document. Report anything that breaks o
 
 ## Already known — do not report as new
 
-- **The three real programmes have no questions.** Only "Local Dev" does. Choosing
-  Accounting & Finance, Computer Science or Public Health correctly says there is nothing
-  to practise.
-- **There is no sign-in screen** — that is why `/dev-login` exists.
-- **Telegram and card payments are switched off.** No keys are configured.
+- **The three real programmes have no questions.** Only "Local Dev" does, and its twenty
+  questions are invented for testing. Choosing Accounting & Finance, Computer Science or
+  Public Health correctly says there is nothing to practise.
+- **The mock exam is 20 questions in 45 minutes locally**, not the 100 in 3 hours the intro
+  promises. The paper is sampled from the bank, and the demo bank is twenty questions.
+- **Telegram is not connected.** `/signin` renders and explains itself; nothing reaches
+  Telegram, which is why `/dev-login` exists.
+- **Card and wallet payments are switched off.** No Chapa key is configured.
+- **The bank account is not published.** The bank-transfer screen says so rather than showing
+  an invented account number. You can still submit a claim and settle it as Admin.
 - **No profile page, no password change** — the product has no passwords.
-- **No admin screen for approving payments or deactivating users** yet.
 
 If you find one of these, note it as _confirmed known_, not as a new bug.
 

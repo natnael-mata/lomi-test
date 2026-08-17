@@ -90,7 +90,14 @@ export function buildReadiness(
   };
 }
 
-/** The elided row's label — "58% across 12 other topics". */
+/**
+ * The elided row's label — "58% across 12 other topics".
+ *
+ * Singular when there is one of them. "1 other topics" is the kind of small
+ * wrongness that makes a reader stop trusting the figures beside it, and this
+ * row exists precisely so the weights visibly add up.
+ */
 export function elidedLabel(elided: ElidedRow): string {
-  return elided.topicCount > 0 ? `${elided.topicCount} other topics` : `all other topics`;
+  if (elided.topicCount <= 0) return 'all other topics';
+  return `${elided.topicCount} other topic${elided.topicCount === 1 ? '' : 's'}`;
 }

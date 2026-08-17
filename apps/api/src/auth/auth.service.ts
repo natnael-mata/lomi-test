@@ -302,12 +302,33 @@ export class AuthService {
   }
 
   /** The programmes a student may choose between. */
-  async publishedFields(): Promise<{ id: string; name: string; slug: string }[]> {
-    return this.prisma.field.findMany({
+  async publishedFields(
+    userId?: string,
+  ): Promise<{ id: string; name: string; slug: string; chosen: boolean }[]> {
+    const fields = await this.prisma.field.findMany({
       where: { isPublished: true },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, slug: true },
     });
+
+    /*
+     * Which one is theirs, marked on the list itself.
+     *
+     * **This closed a real bug.** Progress and the mock exam both did
+     * `fields[0]` and called that the student's programme, so a student sitting
+     * Public Health saw Accounting & Finance's readiness — "Nothing answered
+     * yet" over a screen full of their own answers — and would have been handed
+     * the wrong paper. Neither screen was wrong to want one field; there was
+     * simply no way to ask which.
+     *
+     * A flag on the existing list rather than a second route, so a caller
+     * cannot fetch the list and the choice separately and have them disagree.
+     */
+    const user = userId
+      ? await this.prisma.user.findUnique({ where: { id: userId }, select: { fieldId: true } })
+      : null;
+
+    return fields.map((f) => ({ ...f, chosen: f.id === user?.fieldId }));
   }
 
   /**

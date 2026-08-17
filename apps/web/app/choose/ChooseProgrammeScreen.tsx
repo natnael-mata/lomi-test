@@ -26,6 +26,8 @@ interface Field {
   id: string;
   name: string;
   slug: string;
+  /** The student's current programme. See the note where it is used. */
+  chosen: boolean;
 }
 
 type Phase =
@@ -49,7 +51,12 @@ export function ChooseProgrammeScreen() {
     void (async () => {
       try {
         const fields = await api.myFields();
-        if (live) setPhase({ kind: 'ready', fields });
+        if (!live) return;
+        setPhase({ kind: 'ready', fields });
+        // Pre-selected when they already have one, because this screen is also
+        // how a programme is *changed* — and a change screen that opens with
+        // nothing selected does not say what it is changing from.
+        setChosen(fields.find((f) => f.chosen)?.id ?? null);
       } catch {
         if (live) setPhase({ kind: 'error', message: c.choose.couldNotLoad });
       }

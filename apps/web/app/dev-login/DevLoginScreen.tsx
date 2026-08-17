@@ -23,10 +23,17 @@ import { copy } from '../../lib/i18n';
 /** The testers. Same label every time, so each keeps its own history. */
 const c = copy();
 
+/*
+ * The labels must match `PERSONAS` in `apps/api/scripts/dev-testers.ts`.
+ *
+ * The label is hashed into the account's Telegram id, so it *is* the identity:
+ * change one here without changing it there and this button signs in to a fresh
+ * empty account while the prepared one sits unreachable.
+ */
 const TESTERS = [
-  { label: 'student1', who: c.devLogin.student1, note: c.devLogin.student1Note },
-  { label: 'student2', who: c.devLogin.student2, note: c.devLogin.student2Note },
-  { label: 'student3', who: c.devLogin.student3, note: c.devLogin.student3Note },
+  { label: 'usera', who: c.devLogin.userA, note: c.devLogin.userANote },
+  { label: 'userb', who: c.devLogin.userB, note: c.devLogin.userBNote },
+  { label: 'userc', who: c.devLogin.userC, note: c.devLogin.userCNote },
   { label: 'admin', who: c.devLogin.admin, note: c.devLogin.adminNote },
 ] as const;
 

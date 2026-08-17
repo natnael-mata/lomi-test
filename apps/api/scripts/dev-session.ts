@@ -15,6 +15,8 @@
  */
 import { PrismaClient } from '@prisma/client';
 
+import { DEV_SESSION_TELEGRAM_ID } from './dev-accounts';
+
 import { generateDisplayName } from '../src/auth/display-name';
 import { signSessionToken } from '../src/auth/tokens';
 
@@ -44,7 +46,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const telegramId = 'dev-local-session';
+  const telegramId = DEV_SESSION_TELEGRAM_ID;
   const user =
     (await prisma.user.findUnique({ where: { telegramId } })) ??
     (await prisma.user.create({
