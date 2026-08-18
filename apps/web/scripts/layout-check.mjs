@@ -53,6 +53,8 @@ const ROUTES = [
   { path: '/admin/users', as: 'admin' },
   { path: '/admin/import', as: 'admin' },
   { path: '/admin/weights', as: 'admin' },
+  { path: '/provider/activity', as: 'provider' },
+  { path: '/provider/health', as: 'provider' },
 ];
 
 /** Phone, tablet, desktop — the three the navigation has shapes for. */

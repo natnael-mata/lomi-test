@@ -416,6 +416,42 @@ export interface ManualClaim {
   priorVerified: number;
 }
 
+/** One thing that happened, in the provider's feed (T-227). */
+export interface ActivityEvent {
+  id: string;
+  kind: 'staff' | 'signin' | 'signout' | 'payment' | 'practice' | 'exam';
+  at: string;
+  who: string;
+  whoId: string;
+  staff: boolean;
+  what: string;
+  reference: string | null;
+}
+
+export interface ActivityPage {
+  events: ActivityEvent[];
+  nextCursor: string | null;
+  totals: { staff: number; signins: number; payments: number; attempts: number; sittings: number };
+}
+
+export type ComponentStatus = 'ok' | 'degraded' | 'down' | 'not_configured';
+
+/** One thing being watched, and what was measured to say so (T-228). */
+export interface HealthComponent {
+  key: 'database' | 'api' | 'web' | 'security' | 'vps' | 'sms';
+  status: ComponentStatus;
+  value: string | null;
+  derivation: string;
+  details: { label: string; value: string }[];
+  latencyMs: number | null;
+}
+
+export interface HealthReport {
+  checkedAt: string;
+  overall: ComponentStatus;
+  components: HealthComponent[];
+}
+
 export interface ImportReport {
   read: number;
   created: number;
@@ -453,6 +489,21 @@ export const api = {
   /** The receipt and the payments behind it. Their own, from the session. */
   paymentHistory: (): Promise<{ payments: PaymentHistoryRow[] }> =>
     call<{ payments: PaymentHistoryRow[] }>('/payments/history'),
+
+  /** What this account may reach beyond a student's own screens. Null for a student. */
+  myStaffRole: (): Promise<{ role: 'REVIEWER' | 'ADMIN' | 'PROVIDER' | null }> => call('/me/staff'),
+
+  /** PROVIDER: everything that happened, newest first. */
+  activity: (kinds: readonly string[], before?: string): Promise<ActivityPage> => {
+    const query = new URLSearchParams();
+    if (kinds.length > 0) query.set('kinds', kinds.join(','));
+    if (before) query.set('before', before);
+    const suffix = query.toString();
+    return call<ActivityPage>(`/provider/activity${suffix ? `?${suffix}` : ''}`);
+  },
+
+  /** PROVIDER: live health, measured at the moment of asking. */
+  providerHealth: (): Promise<HealthReport> => call<HealthReport>('/provider/health'),
 
   /** ADMIN: claimed bank transfers, oldest pending first. */
   adminClaims: (): Promise<ManualClaim[]> => call<ManualClaim[]>('/admin/payments'),

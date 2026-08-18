@@ -35,6 +35,7 @@ const TESTERS = [
   { label: 'userb', who: c.devLogin.userB, note: c.devLogin.userBNote },
   { label: 'userc', who: c.devLogin.userC, note: c.devLogin.userCNote },
   { label: 'admin', who: c.devLogin.admin, note: c.devLogin.adminNote },
+  { label: 'provider', who: c.devLogin.provider, note: c.devLogin.providerNote },
 ] as const;
 
 type State =

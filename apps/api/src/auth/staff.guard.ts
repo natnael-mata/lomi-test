@@ -57,8 +57,31 @@ export class AdminGuard extends StaffGuard {
   protected override readonly required: StaffRole = 'ADMIN';
 }
 
-/** ADMIN satisfies a REVIEWER requirement; the reverse is not true. */
+/**
+ * The activity log and the health board.
+ *
+ * A separate guard rather than a flag on `AdminGuard`, because the question it
+ * answers is different: ADMIN asks "may you change this", PROVIDER asks "may you
+ * see who changed it". Somebody who settles payments should not automatically be
+ * able to read the record of everybody who settles payments.
+ */
+@Injectable()
+export class ProviderGuard extends StaffGuard {
+  protected override readonly required: StaffRole = 'PROVIDER';
+}
+
+/**
+ * Whether a held role satisfies a required one.
+ *
+ * Three levels, each containing the one below: PROVIDER ⊃ ADMIN ⊃ REVIEWER.
+ *
+ * **Written as an explicit rank rather than a chain of `||`.** The two-role
+ * version was two `if`s and adding a third role to it would have been one
+ * forgotten clause away from an ADMIN satisfying a PROVIDER requirement — which
+ * is the failure that makes the audit log readable by the people it audits.
+ */
+const RANK: Record<StaffRole, number> = { REVIEWER: 1, ADMIN: 2, PROVIDER: 3 };
+
 export function satisfies(held: StaffRole, required: StaffRole): boolean {
-  if (required === 'REVIEWER') return held === 'REVIEWER' || held === 'ADMIN';
-  return held === 'ADMIN';
+  return RANK[held] >= RANK[required];
 }

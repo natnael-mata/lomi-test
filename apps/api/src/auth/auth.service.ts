@@ -6,6 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+import type { StaffRole } from '@prisma/client';
+
 import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
@@ -302,6 +304,15 @@ export class AuthService {
   }
 
   /** The programmes a student may choose between. */
+  /** The caller's staff role, or null. See `MeController.staff` for why it exists. */
+  async staffRoleOf(userId: string): Promise<StaffRole | null> {
+    const staff = await this.prisma.staffMember.findUnique({
+      where: { userId },
+      select: { role: true },
+    });
+    return staff?.role ?? null;
+  }
+
   async publishedFields(
     userId?: string,
   ): Promise<{ id: string; name: string; slug: string; chosen: boolean }[]> {

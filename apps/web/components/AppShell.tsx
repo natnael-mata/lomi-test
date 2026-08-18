@@ -48,7 +48,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     return <main className="mx-auto flex min-h-dvh max-w-[640px] flex-col p-4">{children}</main>;
   }
 
-  if (pathname.startsWith('/admin')) {
+  // `/provider` shares the admin frame: the same top bar, the same 1200px, and
+  // the same person. A third layout for two screens would be a third thing to
+  // keep in step with DESIGN.md.
+  if (pathname.startsWith('/admin') || pathname.startsWith('/provider')) {
     return (
       <>
         <AdminBar pathname={pathname} />

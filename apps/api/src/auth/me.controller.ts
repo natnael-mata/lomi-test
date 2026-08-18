@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import type { StaffRole } from '@prisma/client';
 
 import { AuthService, type DeviceEntry, type RevokeResult } from './auth.service';
 import { SessionGuard, type AuthedRequest } from './session.guard';
@@ -8,6 +9,25 @@ import { SessionGuard, type AuthedRequest } from './session.guard';
 @UseGuards(SessionGuard)
 export class MeController {
   constructor(private readonly auth: AuthService) {}
+
+  /**
+   * What this account is allowed to reach, if anything beyond a student's own
+   * screens.
+   *
+   * **The interface needs this and there was nowhere to ask.** A provider gets
+   * two destinations an admin does not, and the alternatives were both wrong:
+   * render them for everybody and let the 403 explain, or have the browser probe
+   * a guarded route to find out. `null` for a student, which is most people, and
+   * the answer costs one indexed lookup.
+   *
+   * It says the role and nothing else. A route that returned the staff list, or
+   * who granted it, would be a route that tells any signed-in student who the
+   * operators are.
+   */
+  @Get('staff')
+  async staff(@Req() req: AuthedRequest): Promise<{ role: StaffRole | null }> {
+    return { role: await this.auth.staffRoleOf(req.auth!.userId) };
+  }
 
   /** The programmes on offer. Guarded like the rest of `/me`, but not field-gated. */
   @Get('fields')

@@ -15,6 +15,7 @@
  * | User B  | 8 questions used, one bank claim pending | the free wall two answers away, and a claim sitting in the admin queue |
  * | User C  | paid, 12 months active | the receipt, the payment history, the mock exam, practice with no wall |
  * | Admin   | ADMIN staff | every `/admin` screen, including settling User B's claim |
+ * | Provider | PROVIDER staff | the activity log and the live health board, above admin |
  *
  * **Re-runnable.** Every write is an upsert or is guarded, so running it twice
  * leaves the same four accounts in the same four states rather than a second set
@@ -50,6 +51,7 @@ const PERSONAS = [
   { label: 'userb', name: 'User B' },
   { label: 'userc', name: 'User C' },
   { label: 'admin', name: 'Admin' },
+  { label: 'provider', name: 'Provider' },
 ] as const;
 
 /** How many distinct questions User B has already used of the ten free ones. */
@@ -169,6 +171,14 @@ async function main(): Promise<void> {
     create: { userId: adminId, role: 'ADMIN', grantedBy: 'dev-testers script' },
   });
 
+  // ---- Provider: above admin, and the only role that sees the activity log --
+  const providerId = ids.get('provider')!;
+  await prisma.staffMember.upsert({
+    where: { userId: providerId },
+    update: { role: 'PROVIDER' },
+    create: { userId: providerId, role: 'PROVIDER', grantedBy: 'dev-testers script' },
+  });
+
   // ---- User A: nothing at all ---------------------------------------------
   // Deliberately left with no field: the programme chooser is a screen, and the
   // only way to see it is to be somebody who has not chosen.
@@ -267,6 +277,7 @@ async function main(): Promise<void> {
     line('User C', `${USER_C_ANSWERED} questions answered · 12-month access, receipt and history`),
   );
   console.log(line('Admin', 'ADMIN staff — dashboard, payments, import, weights, students'));
+  console.log(line('Provider', 'PROVIDER staff — the activity log and the live health board'));
   console.log(`\n  Mock paper: ${examNote}`);
 }
 

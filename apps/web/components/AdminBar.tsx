@@ -18,6 +18,9 @@
  * same question a student does, and answering it differently in the same
  * product is how two design systems start.
  */
+import { useEffect, useState } from 'react';
+
+import { api } from '../lib/api';
 import { copy } from '../lib/i18n';
 import { Logo } from './Logo';
 
@@ -31,7 +34,43 @@ export const ADMIN_DESTINATIONS: readonly { href: string; label: string }[] = [
   { href: '/admin/users', label: c.admin.nav.users },
 ];
 
+/**
+ * The two a provider gets and an admin does not.
+ *
+ * Appended rather than a separate bar: a provider is also an operator here, and
+ * two rows of navigation for one person is two places to look for the thing
+ * they want. They are shown only when the server says the role is PROVIDER —
+ * rendering them for everybody and letting the 403 explain would put two dead
+ * links in front of every admin.
+ */
+export const PROVIDER_DESTINATIONS: readonly { href: string; label: string }[] = [
+  { href: '/provider/activity', label: c.provider.nav.activity },
+  { href: '/provider/health', label: c.provider.nav.health },
+];
+
 export function AdminBar({ pathname }: { pathname: string }) {
+  const [provider, setProvider] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const { role } = await api.myStaffRole();
+        if (alive) setProvider(role === 'PROVIDER');
+      } catch {
+        // Signed out, or not staff. The guard on every one of these routes is
+        // the thing that actually decides; this only chooses what to draw.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const destinations = provider
+    ? [...ADMIN_DESTINATIONS, ...PROVIDER_DESTINATIONS]
+    : ADMIN_DESTINATIONS;
+
   return (
     <header className="bg-surface border-border sticky top-0 z-10 border-b">
       <div className="mx-auto flex min-h-16 max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 sm:px-8">
@@ -45,7 +84,7 @@ export function AdminBar({ pathname }: { pathname: string }) {
         </span>
 
         <nav aria-label={c.admin.nav.label} className="flex flex-wrap gap-1">
-          {ADMIN_DESTINATIONS.map((d) => {
+          {destinations.map((d) => {
             const active = pathname === d.href || pathname.startsWith(`${d.href}/`);
             return (
               <a

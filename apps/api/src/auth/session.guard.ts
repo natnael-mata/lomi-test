@@ -2,14 +2,23 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import type { Request } from 'express';
 
 import { PrismaService } from '../prisma/prisma.service';
+import type { StaffRole } from '@prisma/client';
+
 import { readSessionCookie } from './session-cookie';
 import { verifySessionToken } from './tokens';
 
 /** What a guarded handler can rely on having. */
 export interface AuthedRequest extends Request {
   auth?: { userId: string; sessionId: string };
-  /** Set by `StaffGuard` when the caller is staff. */
-  staffRole?: 'REVIEWER' | 'ADMIN';
+  /**
+   * Set by `StaffGuard` when the caller is staff.
+   *
+   * The Prisma enum rather than a hand-written union: the union was written when
+   * there were two roles, and adding a third to the schema left this quietly
+   * narrower than the database — which typechecks everywhere except the one
+   * assignment that tried to store the new one.
+   */
+  staffRole?: StaffRole;
 }
 
 /**

@@ -25,12 +25,13 @@ not connected yet, so use the testing door:
 Each button signs you in as that account and keeps its history. The four are set up in
 different states on purpose, so between them they reach every screen:
 
-| Button     | Where it starts you                                    | Use it for                                                            |
-| ---------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
-| **User A** | nothing chosen yet                                     | first run: choosing a programme, the first question, the free counter |
-| **User B** | 8 of 10 free questions used, one bank transfer waiting | the free wall, two answers away                                       |
-| **User C** | paid for 12 months                                     | the receipt, the payment history, the mock exam                       |
-| **Admin**  | admin staff                                            | every `/admin` screen, including settling User B's transfer           |
+| Button       | Where it starts you                                    | Use it for                                                                     |
+| ------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| **User A**   | nothing chosen yet                                     | first run: choosing a programme, the first question, the free counter          |
+| **User B**   | 8 of 10 free questions used, one bank transfer waiting | the free wall, two answers away                                                |
+| **User C**   | paid for 12 months                                     | the receipt, the payment history, the mock exam                                |
+| **Admin**    | admin staff                                            | every `/admin` screen, including settling User B's transfer                    |
+| **Provider** | provider staff                                         | the activity log and the live health board — two screens an admin cannot reach |
 
 Do the student journey as **User A**, then switch to **User B** for the paywall and
 **User C** for everything a paying student sees.
@@ -131,6 +132,22 @@ Sign in as **Admin** (go to `/dev-login` again).
 - **`/admin/weights`** — does it show topic weights and a running total?
 
 Then sign back in as **User A** and try to open `/admin/dashboard`. You should be refused.
+
+### 8. Provider
+
+Sign in as **Provider**. Two extra pills appear in the admin bar that were not there before.
+
+- **`/provider/activity`** — does the feed show staff actions, sign-ins, payments and practice
+  together, newest first? Do the filters work? Does it say where its numbers came from?
+- Look for anything that should not be on this screen: a **legal name**, an **IP address**, or a
+  student's **score** attached to their name. None of the three should appear.
+- **`/provider/health`** — six components, each with a status in words, a figure, and a line
+  saying what was measured to get it. Watch it for fifteen seconds: the "checked" time should
+  move on its own and the countdown should tick.
+- Press **Pause**. It should stop, and say it has stopped.
+- SMS should read **Not set up** rather than red or green — there is no SMS in this product.
+
+Then sign back in as **Admin** and open `/provider/health`. You should be refused.
 
 ## The rules to judge against
 

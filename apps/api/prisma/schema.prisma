@@ -601,6 +601,17 @@ model Attempt {
 enum StaffRole {
   REVIEWER
   ADMIN
+
+  /// The people who run this copy of the product.
+  ///
+  /// **Above ADMIN, and the only role that can read the activity log.** An
+  /// operator settles payments, publishes questions and closes accounts; a
+  /// provider answers "who did that, and when" — including about the operators.
+  /// A hierarchy where the top role can also *do* everything is the weaker of
+  /// the two designs and the honest one here: this is a small team, the same
+  /// person is often both, and a provider who cannot open the screen they are
+  /// auditing cannot check the thing they are auditing.
+  PROVIDER
 }
 
 /// Who is allowed near `/admin/*`.

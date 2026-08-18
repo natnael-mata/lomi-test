@@ -119,6 +119,8 @@ export const en = {
     userCNote: 'Paid for 12 months — receipt, payment history and the mock exam.',
     admin: 'Admin',
     adminNote: "Sees the admin pages and can settle User B's payment.",
+    provider: 'Provider',
+    providerNote: 'Above admin — the activity log and the live health board.',
   },
 
   home: {
@@ -620,6 +622,73 @@ export const en = {
     readinessNote: 'Their readiness rests partly on this question.',
   },
 
+  /**
+   * The provider's two screens (T-227, T-228).
+   *
+   * Written for somebody whose job is oversight rather than operation. Every
+   * figure names what was measured to get it, because a status board is where
+   * an unexplained number does the most damage — somebody acts on it at two in
+   * the morning.
+   */
+  provider: {
+    nav: { activity: 'Activity', health: 'Health' },
+
+    activity: {
+      title: 'Activity',
+      intro:
+        'Everything that has happened, newest first — staff actions, sign-ins, payments, practice and mock exams, in one feed.',
+      working: 'Reading the record…',
+      couldNotLoad: 'The activity could not be read. Nothing is lost — try again.',
+      empty: 'Nothing has happened yet on this server.',
+      more: 'Show older',
+      loadingMore: 'Reading…',
+      end: 'That is the whole record.',
+
+      all: 'Everything',
+      kindStaff: 'Staff actions',
+      kindSignin: 'Sign-ins',
+      kindSignout: 'Sign-outs',
+      kindPayment: 'Payments',
+      kindPractice: 'Practice',
+      kindExam: 'Mock exams',
+
+      staffTag: 'Staff',
+      counted: (shown: number) => `${shown} events shown`,
+      scanned: (staff: number, signins: number, payments: number, attempts: number) =>
+        `read from ${staff} staff actions, ${signins} sessions, ${payments} payments and ${attempts} attempts`,
+    },
+
+    health: {
+      title: 'Health',
+      intro: 'Measured now, every time this page asks. Nothing here is cached.',
+      working: 'Checking…',
+      couldNotLoad: 'The health check did not answer. That is itself worth knowing — try again.',
+
+      live: 'Live',
+      lastChecked: (clock: string) => `checked ${clock}`,
+      nextIn: (seconds: number) => `next in ${seconds}s`,
+      pause: 'Pause',
+      resume: 'Resume',
+      recent: (count: number) => `last ${count} checks`,
+
+      database: 'Database',
+      api: 'API',
+      web: 'Front end',
+      security: 'Security',
+      vps: 'Server',
+      sms: 'SMS',
+
+      ok: 'Working',
+      degraded: 'Needs a look',
+      down: 'Not answering',
+      notConfigured: 'Not set up',
+
+      allWell: 'Everything is answering.',
+      somethingUp: 'Something needs a look.',
+      somethingDown: 'Something is not answering.',
+    },
+  },
+
   error: {
     didNotLoad: 'That did not load',
     routeBody: (digest: string) =>
@@ -733,6 +802,8 @@ export const am: Copy = {
     userCNote: 'ለ12 ወራት ከፍሏል — ደረሰኝ፣ የክፍያ ታሪክ እና የሙከራ ፈተና።',
     admin: 'አስተዳዳሪ',
     adminNote: 'የአስተዳዳሪ ገጾችን ያያል እና ክፍያዎችን ማረጋገጥ ይችላል።',
+    provider: 'አቅራቢ',
+    providerNote: 'ከአስተዳዳሪ በላይ — የእንቅስቃሴ መዝገብ እና የቀጥታ ጤንነት ሰሌዳ።',
   },
 
   home: {
@@ -1160,6 +1231,64 @@ export const am: Copy = {
     sittingsNote: 'አሁን በሰዓት በተወሰነ ፈተና ላይ ያሉ ተማሪዎች፣ ይህ ጥያቄ በወረቀታቸው ላይ ነው።',
     readinessFigures: 'የተማሪዎች የዝግጁነት አኃዞች',
     readinessNote: 'ዝግጁነታቸው በከፊል በዚህ ጥያቄ ላይ ይመሰረታል።',
+  },
+
+  provider: {
+    nav: { activity: 'እንቅስቃሴ', health: 'ጤንነት' },
+
+    activity: {
+      title: 'እንቅስቃሴ',
+      intro: 'የተከሰተው ሁሉ፣ አዲሱ መጀመሪያ — የሠራተኞች እርምጃዎች፣ መግቢያዎች፣ ክፍያዎች፣ ልምምድ እና የሙከራ ፈተናዎች፣ በአንድ ዝርዝር።',
+      working: 'መዝገቡ በመነበብ ላይ…',
+      couldNotLoad: 'እንቅስቃሴው ሊነበብ አልቻለም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
+      empty: 'በዚህ አገልጋይ ላይ እስካሁን ምንም አልተከሰተም።',
+      more: 'የቀደሙትን አሳይ',
+      loadingMore: 'በማንበብ ላይ…',
+      end: 'መዝገቡ ይህ ብቻ ነው።',
+
+      all: 'ሁሉም',
+      kindStaff: 'የሠራተኛ እርምጃዎች',
+      kindSignin: 'መግቢያዎች',
+      kindSignout: 'መውጫዎች',
+      kindPayment: 'ክፍያዎች',
+      kindPractice: 'ልምምድ',
+      kindExam: 'የሙከራ ፈተናዎች',
+
+      staffTag: 'ሠራተኛ',
+      counted: (shown: number) => `${shown} ክስተቶች ታይተዋል`,
+      scanned: (staff: number, signins: number, payments: number, attempts: number) =>
+        `ከ${staff} የሠራተኛ እርምጃዎች፣ ${signins} ክፍለ ጊዜዎች፣ ${payments} ክፍያዎች እና ${attempts} ሙከራዎች የተነበበ`,
+    },
+
+    health: {
+      title: 'ጤንነት',
+      intro: 'ይህ ገጽ በሚጠይቅበት ጊዜ ሁሉ አሁን ይለካል። እዚህ ምንም አልተከማቸም።',
+      working: 'በመመልከት ላይ…',
+      couldNotLoad: 'የጤንነት ምርመራው አልመለሰም። ያ ራሱ የሚታወቅ ነገር ነው — እንደገና ይሞክሩ።',
+
+      live: 'ቀጥታ',
+      lastChecked: (clock: string) => `የተመለከተው ${clock}`,
+      nextIn: (seconds: number) => `ቀጣይ በ${seconds}ሰ`,
+      pause: 'አቁም',
+      resume: 'ቀጥል',
+      recent: (count: number) => `የመጨረሻዎቹ ${count} ምርመራዎች`,
+
+      database: 'ዳታቤዝ',
+      api: 'ኤፒአይ',
+      web: 'የፊት ገጽ',
+      security: 'ደህንነት',
+      vps: 'አገልጋይ',
+      sms: 'ኤስኤምኤስ',
+
+      ok: 'እየሠራ ነው',
+      degraded: 'መታየት አለበት',
+      down: 'አይመልስም',
+      notConfigured: 'አልተዘጋጀም',
+
+      allWell: 'ሁሉም እየመለሰ ነው።',
+      somethingUp: 'የሚታይ ነገር አለ።',
+      somethingDown: 'የማይመልስ ነገር አለ።',
+    },
   },
 
   error: {
