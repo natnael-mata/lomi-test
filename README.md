@@ -107,6 +107,10 @@ npm run focus-ring
 ```
 
 ```bash
+npm run layout-check
+```
+
+```bash
 npm run brand-icons
 ```
 
@@ -116,7 +120,10 @@ DEV_LOGIN_SECRET=... npm run lighthouse
 
 `focus-ring` tabs through five screens with real key events and fails if any
 control is missing the ring DESIGN.md requires — `:focus-visible` does not match
-programmatic focus, so nothing short of a real Tab can check it. `brand-icons`
+programmatic focus, so nothing short of a real Tab can check it. `layout-check`
+loads every screen at phone, tablet and desktop widths in both themes — 84 in
+all — and fails on sideways scroll, nested cards, controls under 44px or text
+under 11px; jsdom has no layout engine, so none of that is checkable in a test. `brand-icons`
 re-renders the app icons from the mark; the PNGs are committed, so a build never
 needs Chrome. `lighthouse` measures the production build on the mid-tier mobile
 preset and signs in first, because a signed-out `/practice` measures the error

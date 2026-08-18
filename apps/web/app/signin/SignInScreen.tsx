@@ -9,20 +9,18 @@
  *
  * There is no password field here and there never will be. The flow is:
  *
- * 1. Mint a request. The server returns a deep link, a six-digit pairing code,
- *    and a `pollSecret` that **stays in this browser**.
- * 2. The student either taps the link — Telegram opens, they press Start — or,
- *    if Telegram is on another phone, sends the pairing code to the bot from
- *    that phone.
+ * 1. Mint a request. The server returns a deep link, a pairing code, and a
+ *    `pollSecret` that **stays in this browser**.
+ * 2. The student taps the link. Telegram opens, the bot asks them to confirm,
+ *    and its prompt carries the same pairing code this page is showing.
  * 3. This page polls `claim` with the secret. The bot's approval is what turns
  *    the request into a session; the secret is what proves the session belongs
  *    to *this* browser rather than to whoever knows the nonce.
  *
- * **The code travels in the safe direction.** It is sent BY the student TO the
- * bot, so nothing secret is ever typed into this page and a code read over
- * somebody's shoulder buys nothing — the reader would have to send it from the
- * student's own Telegram account. That is why it can sit on screen in 34px
- * type in a university lab.
+ * **Nothing secret is ever typed here.** The code is shown so the student can
+ * check it against the bot's prompt before approving — see the note on
+ * `Pairing` for why that is the defence rather than the decoration, and for
+ * where the design handoff describes this backwards.
  *
  * Nothing here is behind a "sign up" tab, because there is no sign-up: pressing
  * Start in Telegram creates the account and signs in with the same tap.
@@ -227,9 +225,16 @@ function Pairing({
         {c.signIn.waiting}
       </p>
 
-      <p className="text-caption text-ink-2 num text-center">
-        {c.signIn.expiresIn(clock(remaining))}{' '}
-        <button type="button" className="text-brand font-semibold" onClick={onRenew}>
+      {/* The countdown and the way out of it, on one line. The button is set to
+          44px rather than to its text height: it is the only escape from an
+          expired code, and an 18px tap target is one a thumb misses. */}
+      <p className="text-caption text-ink-2 num flex flex-wrap items-center justify-center gap-1 text-center">
+        {c.signIn.expiresIn(clock(remaining))}
+        <button
+          type="button"
+          className="text-brand rounded-control inline-flex min-h-11 items-center px-2 font-semibold"
+          onClick={onRenew}
+        >
           {c.signIn.newCode}
         </button>
       </p>

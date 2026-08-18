@@ -88,7 +88,7 @@ export function ThemeToggle({ variant = 'button' }: { variant?: ThemeToggleVaria
       onClick={toggle}
       className={
         variant === 'rail'
-          ? 'text-caption text-ink-2 rounded-control inline-flex items-center gap-2 py-1 text-left'
+          ? 'text-caption text-ink-2 rounded-control inline-flex min-h-11 items-center gap-2 text-left'
           : 'btn-ghost'
       }
       data-theme-preference={preference}

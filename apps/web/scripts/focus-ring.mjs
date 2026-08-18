@@ -242,7 +242,16 @@ async function main() {
     cdp.close();
   } finally {
     chrome.kill();
-    rmSync(profile, { recursive: true, force: true });
+    await new Promise((done) => chrome.once('exit', done));
+    // Best effort. Chrome can still be flushing its profile when it reports
+    // exit, and an ENOTEMPTY on a temp directory is not a reason to fail an
+    // audit whose findings are already computed — a check that fails for
+    // reasons unrelated to what it checks is a check people learn to ignore.
+    try {
+      rmSync(profile, { recursive: true, force: true });
+    } catch {
+      /* the OS will clear it */
+    }
   }
 
   if (checked === 0) {
@@ -258,7 +267,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`\n${checked} controls tabbed through with a real keyboard. Every one shows the ring.`);
+  console.log(
+    `\n${checked} controls tabbed through with a real keyboard. Every one shows the ring.`,
+  );
 }
 
 await main();

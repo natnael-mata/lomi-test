@@ -92,7 +92,11 @@ jobs:
       # paint before the server has chosen a question — so a hard gate would
       # fail on run-to-run variance and teach people to ignore the job. It
       # reports; it does not yet block.
-      - name: Performance (mid-tier mobile)
+      # The performance number and the layout rules both need a running app, so
+      # they share one boot. Layout is the cheaper of the two and still the one
+      # more likely to catch something: jsdom has no layout engine, so sideways
+      # scroll and 30px controls are invisible to the test suite.
+      - name: Performance and layout (mid-tier mobile)
         continue-on-error: true
         env:
           DEV_LOGIN_SECRET: ci-lighthouse-secret-000000000000
@@ -103,6 +107,7 @@ jobs:
           npm run dev:publish -w api
           npm run dev:testers -w api
           npm run lighthouse
+          npm run layout-check http://localhost:3200
 
       # A hand-kept progress index is wrong within a day, and a wrong index is
       # worse than none — it is what people read instead of counting.

@@ -52,7 +52,12 @@ export function AdminBar({ pathname }: { pathname: string }) {
                 key={d.href}
                 href={d.href}
                 className={[
-                  'text-label rounded-full px-3.5 py-2',
+                  // 44px, not the 36 that `py-2` gives. Admin is mostly a
+                  // laptop surface and the temptation is to treat the touch
+                  // floor as a phone rule — but the operator settling payments
+                  // on a tablet is the same person, and DESIGN.md sets the floor
+                  // for controls, not for devices.
+                  'text-label inline-flex min-h-11 items-center rounded-full px-3.5',
                   active ? 'bg-brand-soft text-brand' : 'text-ink-2',
                 ].join(' ')}
                 {...(active ? { 'aria-current': 'page' as const } : {})}

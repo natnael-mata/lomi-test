@@ -75,6 +75,10 @@ export function ImportScreen() {
           id="csv-file"
           type="file"
           accept=".csv,text/csv"
+          // A native file input renders at whatever height the browser's own
+          // button is — 26px here, well under the 44px floor. The rule is about
+          // controls, and the browser drawing this one does not exempt it.
+          className="min-h-11 py-2"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void readFile(file);

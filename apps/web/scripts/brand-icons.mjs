@@ -175,7 +175,15 @@ async function main() {
     // when nothing failed.
     chrome.kill();
     await new Promise((done) => chrome.once('exit', done));
-    rmSync(profile, { recursive: true, force: true });
+    // Best effort. Chrome can still be flushing its profile when it reports
+    // exit, and an ENOTEMPTY on a temp directory is not a reason to fail an
+    // audit whose findings are already computed — a check that fails for
+    // reasons unrelated to what it checks is a check people learn to ignore.
+    try {
+      rmSync(profile, { recursive: true, force: true });
+    } catch {
+      /* the OS will clear it */
+    }
   }
 
   console.log(`\nWritten to ${OUT}. Committed, so a build never depends on Chrome.`);
