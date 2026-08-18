@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { safeDeviceLabel } from '../auth/device-label';
 
 /**
  * One thing that happened, whoever it happened to.
@@ -180,9 +181,11 @@ export class ActivityService {
           whoId: row.userId,
           staff: false,
           what: 'Signed in',
-          // The device label, which is "Chrome on Android" — never an IP. The
-          // schema says so and this is the surface that would leak it.
-          reference: row.deviceLabel,
+          // The device label — "Chrome on Android". Passed through
+          // `safeDeviceLabel` again on the way out, even though it is now
+          // constrained on the way in: rows written before that existed are
+          // still in the table, and this is the surface that would show them.
+          reference: safeDeviceLabel(row.deviceLabel),
         });
       }
       if (wanted.has('signout') && row.revokedAt) {

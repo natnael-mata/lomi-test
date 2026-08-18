@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
 import { devDisplayName, devTelegramId, isDevLoginEnabled, secretMatches } from './dev-login';
+import { safeDeviceLabel } from './device-label';
 import { signSessionToken } from './tokens';
 
 /** PRODUCT.md: two concurrent sessions; a third login evicts the oldest. */
@@ -194,7 +195,11 @@ export class AuthService {
       }
 
       return tx.session.create({
-        data: { userId, deviceLabel: deviceLabel ?? null },
+        // Constrained here, where it is written. A client supplies this
+        // string and the provider's activity feed shows it to somebody other
+        // than its author; a filter at the display would leave the original in
+        // the database for the next reader to find.
+        data: { userId, deviceLabel: safeDeviceLabel(deviceLabel) },
         select: { id: true },
       });
     });
