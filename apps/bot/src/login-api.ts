@@ -67,6 +67,8 @@ export function createBotApi(baseUrl: string, sharedSecret: string): BotApi {
       }) as Promise<{ userId: string; referredVia: string | null; wasFirst: boolean }>,
     optOut: (userId, optOut) =>
       post('/bot/opt-out', { userId, optOut }) as Promise<{ botOptOut: boolean }>,
+    contact: (input) =>
+      post('/bot/contact', input) as Promise<{ stored: boolean; reason?: string }>,
     claimDaily: () => post('/bot/daily/claim', {}) as Promise<import('./daily.js').DailyClaim>,
   };
 }

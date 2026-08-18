@@ -29,6 +29,21 @@ export class MeController {
     return { role: await this.auth.staffRoleOf(req.auth!.userId) };
   }
 
+  /**
+   * The number this student pays with, if Telegram has vouched for one (T-078a).
+   *
+   * Their own, from the session. The checkout reads it so somebody who has
+   * already shared their number does not type it again — which is the entire
+   * payoff of asking, and without it the capture is a permission prompt that
+   * buys nobody anything.
+   */
+  @Get('contact')
+  async contact(
+    @Req() req: AuthedRequest,
+  ): Promise<{ phone: string | null; verifiedAt: string | null }> {
+    return this.auth.contactOf(req.auth!.userId);
+  }
+
   /** The programmes on offer. Guarded like the rest of `/me`, but not field-gated. */
   @Get('fields')
   fields(

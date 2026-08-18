@@ -316,6 +316,7 @@ export const en = {
 
     mobileLabel: 'The phone number you pay with',
     mobileHint: 'For example 0911223344.',
+    mobileFromTelegram: 'From the number you shared on Telegram. Change it if you pay with another.',
     mobileInvalid: 'That does not look like an Ethiopian mobile number. Check it and try again.',
     txRefLabel: 'Transfer reference',
     txRefHint:
@@ -968,6 +969,7 @@ export const am: Copy = {
 
     mobileLabel: 'የሚከፍሉበት ስልክ ቁጥር',
     mobileHint: 'ለምሳሌ 0911223344።',
+    mobileFromTelegram: 'በTelegram ካጋሩት ቁጥር። በሌላ ቁጥር የሚከፍሉ ከሆነ ይቀይሩት።',
     mobileInvalid: 'ይህ የኢትዮጵያ የሞባይል ቁጥር አይመስልም። አረጋግጠው እንደገና ይሞክሩ።',
     txRefLabel: 'የዝውውር ማመሳከሪያ',
     txRefHint:

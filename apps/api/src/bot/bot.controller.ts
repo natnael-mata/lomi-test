@@ -39,6 +39,24 @@ export class BotController {
     );
   }
 
+  /**
+   * A phone number Telegram vouched for (T-078a).
+   *
+   * Takes the sender and the contact's owner as separate arguments so the
+   * service can compare them, rather than taking a phone and a promise that
+   * somebody already checked.
+   */
+  @Post('contact')
+  contact(
+    @Body() body: { telegramId?: string; contactUserId?: string; phone?: string },
+  ): Promise<{ stored: boolean; reason?: string }> {
+    return this.bot.recordContact({
+      telegramId: String(body?.telegramId ?? ''),
+      contactUserId: String(body?.contactUserId ?? ''),
+      phone: String(body?.phone ?? ''),
+    });
+  }
+
   /** Turns nudges off or back on. */
   @Post('opt-out')
   optOut(@Body() body: { userId?: string; optOut?: boolean }): Promise<{ botOptOut: boolean }> {

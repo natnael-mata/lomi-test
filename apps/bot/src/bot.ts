@@ -1,7 +1,15 @@
-import { Bot, InlineKeyboard, type BotConfig } from 'grammy';
+import { Bot, InlineKeyboard, Keyboard, type BotConfig } from 'grammy';
 import type { Context } from 'grammy';
 
 import { OPTED_IN_TEXT, OPTED_OUT_TEXT, type BotApi } from './daily.js';
+import {
+  ASK_BUTTON,
+  ASK_TEXT,
+  NOT_OWN_TEXT,
+  NO_NUMBER_TEXT,
+  acceptedText,
+  verifiedContact,
+} from './contact.js';
 import {
   APPROVED_TEXT,
   CONFIRM_PREFIX,
@@ -154,6 +162,59 @@ export function createBot(
       await ctx.reply(OPTED_IN_TEXT);
     } catch {
       await ctx.reply(UNUSABLE_TEXT);
+    }
+  });
+
+  /*
+   * The number a payment request goes to (T-078a).
+   *
+   * Asked for **at checkout, not at sign-up** — a permission prompt before
+   * somebody has seen anything worth paying for is a prompt they decline; asked
+   * at the moment it has a purpose, it is a button that saves them typing. The
+   * web checkout links here with `?start=pay`, and `/pay` is the same thing for
+   * anyone who reaches the bot directly.
+   */
+  const askForNumber = async (ctx: Context): Promise<void> => {
+    await ctx.reply(ASK_TEXT, {
+      reply_markup: new Keyboard().requestContact(ASK_BUTTON).oneTime().resized(),
+    });
+  };
+
+  bot.command('pay', askForNumber);
+
+  bot.on('message:contact', async (ctx) => {
+    const outcome = verifiedContact({
+      from: ctx.from ? { id: ctx.from.id } : undefined,
+      contact: ctx.message.contact,
+    });
+
+    if (!outcome.ok) {
+      // Worded as a mistake rather than an accusation: sharing the wrong
+      // contact is one tap away from sharing the right one.
+      await ctx.reply(outcome.reason === 'no-number' ? NO_NUMBER_TEXT : NOT_OWN_TEXT, {
+        reply_markup: { remove_keyboard: true },
+      });
+      return;
+    }
+
+    const from = ctx.from;
+    if (!api || !from) return;
+
+    try {
+      const result = await api.contact({
+        telegramId: String(from.id),
+        // Sent separately rather than as a single "trust me" flag: the API
+        // compares them itself, so a bug in the check above cannot write an
+        // arbitrary number into a column that says verified.
+        contactUserId: String(ctx.message.contact.user_id ?? ''),
+        phone: outcome.phone,
+      });
+
+      await ctx.reply(result.stored ? acceptedText(outcome.phone) : UNUSABLE_TEXT, {
+        reply_markup: { remove_keyboard: true },
+      });
+    } catch {
+      await ctx.reply(UNUSABLE_TEXT, { reply_markup: { remove_keyboard: true } });
     }
   });
 

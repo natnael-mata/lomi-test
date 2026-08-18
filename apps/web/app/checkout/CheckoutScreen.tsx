@@ -79,6 +79,8 @@ export function CheckoutScreen() {
   const [plans, setPlans] = useState<PlanOffer[]>([]);
   const [planCode, setPlanCode] = useState<PlanCode>('TWELVE_MONTH');
   const [mobile, setMobile] = useState('');
+  /** Set when the number came from Telegram rather than from the keyboard. */
+  const [verifiedPhone, setVerifiedPhone] = useState(false);
   const [txRef, setTxRef] = useState('');
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -89,12 +91,19 @@ export function CheckoutScreen() {
     let alive = true;
     void (async () => {
       try {
-        const [offers, subscription] = await Promise.all([
+        const [offers, subscription, contact] = await Promise.all([
           api.plans(),
           api.mySubscription().catch(() => null),
+          // Never fatal: a checkout that refuses to open because a convenience
+          // lookup failed is a checkout that refuses money.
+          api.myContact().catch(() => null),
         ]);
         if (!alive) return;
         setPlans(offers);
+        if (contact?.phone && contact.verifiedAt) {
+          setMobile(contact.phone);
+          setVerifiedPhone(true);
+        }
         // Pre-select the best value rather than the cheapest sticker price —
         // the same order the picker leads with, so the highlighted card and the
         // selected one agree.
@@ -314,12 +323,20 @@ export function CheckoutScreen() {
           {direct ? (
             <Input
               label={c.checkout.mobileLabel}
-              hint={c.checkout.mobileHint}
+              // Says where the number came from when it was not typed here.
+              // A field that fills itself with no explanation reads as the
+              // product knowing something it should not.
+              hint={verifiedPhone ? c.checkout.mobileFromTelegram : c.checkout.mobileHint}
               error={fieldError ?? undefined}
               inputMode="tel"
               autoComplete="tel"
               value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
+              onChange={(e) => {
+                setMobile(e.target.value);
+                // Edited by hand, so it is no longer the number Telegram
+                // vouched for and the screen must stop saying it is.
+                setVerifiedPhone(false);
+              }}
             />
           ) : null}
 

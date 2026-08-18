@@ -490,6 +490,15 @@ export const api = {
   paymentHistory: (): Promise<{ payments: PaymentHistoryRow[] }> =>
     call<{ payments: PaymentHistoryRow[] }>('/payments/history'),
 
+  /**
+   * The number this student pays with, if Telegram has vouched for one (T-078a).
+   *
+   * Their own. The checkout pre-fills from it so somebody who has already
+   * shared their number does not type it again.
+   */
+  myContact: (): Promise<{ phone: string | null; verifiedAt: string | null }> =>
+    call('/me/contact'),
+
   /** What this account may reach beyond a student's own screens. Null for a student. */
   myStaffRole: (): Promise<{ role: 'REVIEWER' | 'ADMIN' | 'PROVIDER' | null }> => call('/me/staff'),
 

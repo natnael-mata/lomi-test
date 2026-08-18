@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { generateDisplayName } from '../auth/display-name';
 import { PrismaService } from '../prisma/prisma.service';
+import { normaliseEthiopianMobile } from '../payments/chapa';
 import { toServedQuestion, type ServedQuestion } from '../practice/question-view';
 import { addisDate, planDaily, referralFromPayload, type SkipReason } from './daily';
 
@@ -43,6 +44,63 @@ export class BotService {
    * different code is not an error — it is somebody sharing a link — so it is
    * accepted and ignored.
    */
+  /**
+   * Stores a phone number Telegram has vouched for (T-078a).
+   *
+   * **The ownership check runs here as well as in the bot**, and that is not
+   * belt-and-braces for its own sake. The bot is trusted by `BotGuard` — it is a
+   * server with a shared secret — so a bug in its handler that forgot to compare
+   * `contact.user_id` against the sender would write an arbitrary number into a
+   * verified column, and the column would still say verified. The comparison is
+   * cheap and the claim it protects is the whole point of the feature.
+   *
+   * Normalised through the same function the payment path uses. A number stored
+   * as `+251911223344` and a number typed as `0911223344` are the same handset,
+   * and a `@unique` column that thinks otherwise lets one person hold two.
+   */
+  async recordContact(input: {
+    telegramId: string;
+    contactUserId: string;
+    phone: string;
+  }): Promise<{ stored: boolean; reason?: 'not-own-contact' | 'bad-number' | 'taken' }> {
+    if (
+      input.telegramId.length === 0 ||
+      input.contactUserId.length === 0 ||
+      String(input.contactUserId) !== String(input.telegramId)
+    ) {
+      return { stored: false, reason: 'not-own-contact' };
+    }
+
+    const phone = normaliseEthiopianMobile(input.phone);
+    if (phone === null) return { stored: false, reason: 'bad-number' };
+
+    const user = await this.prisma.user.findUnique({
+      where: { telegramId: input.telegramId },
+      select: { id: true },
+    });
+    // No account yet means they have not pressed Start, which cannot happen on
+    // the path that reaches here — but writing to nobody is worse than saying so.
+    if (!user) return { stored: false, reason: 'not-own-contact' };
+
+    try {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { phone, phoneVerifiedAt: new Date() },
+      });
+      return { stored: true };
+    } catch {
+      /*
+       * `phone` is unique, so this is somebody else already holding the number.
+       *
+       * Reported rather than resolved. Two accounts on one handset is either a
+       * student who lost an account and made another, or two people sharing a
+       * subscription — and both of those are conversations rather than
+       * something a bot should decide by overwriting a row.
+       */
+      return { stored: false, reason: 'taken' };
+    }
+  }
+
   async recordArrival(
     telegram: { id: string; username?: string | null },
     chatId: string,

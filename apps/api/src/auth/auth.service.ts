@@ -309,6 +309,29 @@ export class AuthService {
   }
 
   /** The programmes a student may choose between. */
+  /**
+   * The student's own verified number (T-078a).
+   *
+   * Unmasked, because it is theirs and they are the only reader — the masking
+   * on the checkout's waiting screen is for a number being read back at
+   * somebody, which is a different situation.
+   *
+   * `verifiedAt` rides along rather than being inferred from `phone` being
+   * non-null: the column can hold a number from a path that never verified it,
+   * and a screen that says "verified" about one of those would be lying on the
+   * strength of a null check.
+   */
+  async contactOf(userId: string): Promise<{ phone: string | null; verifiedAt: string | null }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { phone: true, phoneVerifiedAt: true },
+    });
+    return {
+      phone: user?.phone ?? null,
+      verifiedAt: user?.phoneVerifiedAt?.toISOString() ?? null,
+    };
+  }
+
   /** The caller's staff role, or null. See `MeController.staff` for why it exists. */
   async staffRoleOf(userId: string): Promise<StaffRole | null> {
     const staff = await this.prisma.staffMember.findUnique({

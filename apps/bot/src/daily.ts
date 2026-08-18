@@ -25,6 +25,12 @@ export interface BotApi {
     payload: string,
   ): Promise<{ userId: string; referredVia: string | null; wasFirst: boolean }>;
   optOut(userId: string, optOut: boolean): Promise<{ botOptOut: boolean }>;
+  /** T-078a. The API compares the two ids again; see `bot.service.ts` for why. */
+  contact(input: {
+    telegramId: string;
+    contactUserId: string;
+    phone: string;
+  }): Promise<{ stored: boolean; reason?: string }>;
   claimDaily(): Promise<DailyClaim>;
 }
 
