@@ -2946,7 +2946,8 @@ measuring the back half of the product against a plan that specifies both halves
 
 - [x] **T-199c** Hold every screen to the layout rules, in a browser.
       **Test:** `npm run layout-check` audits 14 screens at three widths in both themes and
-      fails on sideways scroll, a nested card, a control under 44px or text under 11px.
+      fails on sideways scroll, a nested card, a control under 44px, text under 11px, or text
+      below AA contrast against what is actually behind it.
 
   > Not in the original plan. Added 2026-08-17 because the redesign moved the shell under
   > screens it did not rewrite, and none of these rules is checkable without a layout engine —
@@ -2965,6 +2966,20 @@ measuring the back half of the product against a plan that specifies both halves
   > One rule needed correcting rather than the code: a native radio inside a 56px option row is
   > a 13px dot, and DESIGN.md says the row is the target. The check now measures the label a
   > control sits in, which is what a thumb actually hits.
+  >
+  > **A rendered-contrast rule was added, and the guard on the guard earned its place twice.**
+  > `contrast.test.ts` audits the tokens, which is the right place for "is Pending readable on
+  > Surface"; what it cannot see is the pairs the screens compose — a caption in Ink-2 inside a
+  > Surface-2 well inside a card. Before trusting a clean result, the check puts four
+  > deliberately wrong things on a page and insists each is caught. It caught two bugs in the
+  > check itself: a regex whose backslashes the template literal ate, so every colour parsed as
+  > `NaN` and every comparison against `NaN` was false — the rule reported nothing, on every
+  > screen, silently. And `scrollWidth > window.innerWidth` cannot fire under mobile emulation
+  > at all, because Chrome's shrink-to-fit widens `innerWidth` to match the overflow: the
+  > sideways-scroll rule was inert at exactly the width it exists for. It now measures against
+  > the emulated device width.
+  >
+  > With both fixed: 84 screens, nothing reported.
 
 - [x] **T-199b** Audit the dev-only scripts before launch: `dev:session` and `dev:publish` mint
       sessions and publish questions.

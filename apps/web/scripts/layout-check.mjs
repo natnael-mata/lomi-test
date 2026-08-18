@@ -127,15 +127,25 @@ const AUDIT = `(() => {
     \`<\${el.tagName.toLowerCase()}\${el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\\s+/).slice(0, 2).join('.') : ''}>\` +
     (el.innerText ? \` "\${el.innerText.trim().slice(0, 32)}"\` : '');
 
-  // 1 — the page never moves sideways.
+  /*
+   * 1 — the page never moves sideways.
+   *
+   * Measured against the **emulated device width**, not \`window.innerWidth\`.
+   * Under mobile emulation Chrome applies shrink-to-fit: a 900px box in a 375px
+   * device makes \`innerWidth\` report 901, so \`scrollWidth > innerWidth\` is
+   * false and the rule silently cannot fire — which is exactly what it did here
+   * until the self-test tripped over it. The desktop and tablet passes were
+   * fine; the phone pass, the one that matters, was inert.
+   */
+  const viewport = window.__lomiViewport ?? window.innerWidth;
   const doc = document.documentElement;
-  if (doc.scrollWidth > window.innerWidth + 1) {
+  if (doc.scrollWidth > viewport + 1) {
     // Name the widest thing that sticks out, or the report is unactionable.
     let worst = null;
     for (const el of document.querySelectorAll('body *')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0) continue;
-      const over = r.right - window.innerWidth;
+      const over = r.right - viewport;
       if (over > 1 && (!worst || over > worst.over)) worst = { el, over: Math.round(over) };
     }
     problems.push(
@@ -176,8 +186,129 @@ const AUDIT = `(() => {
     if (size && size < 11) problems.push(\`\${size}px text: \${name(el)}\`);
   }
 
+  /*
+   * 5 — every piece of text is readable against what is actually behind it.
+   *
+   * \`contrast.test.ts\` already audits the *tokens*, and that is the right place
+   * for "is Pending readable on Surface". What it cannot see is the pairs the
+   * screens actually produce: a caption in Ink-2 inside a Surface-2 well inside
+   * a card, an amber chip on a tinted row, white on Correct green. Those are
+   * compositions, and they only exist once something has rendered.
+   *
+   * WCAG AA: 4.5:1 for body text, 3:1 for large text. Disabled controls are
+   * exempt by the standard and exempt here — a disabled button is deliberately
+   * quiet, and failing it would push somebody to make "unavailable" look
+   * available.
+   */
+  const rgb = (value) => {
+    const m = value.match(/rgba?\\(([^)]+)\\)/);
+    if (!m) return null;
+    const parts = m[1].split(',').map((n) => parseFloat(n));
+    return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+  };
+
+  const luminance = ({ r, g, b }) => {
+    const channel = (c) => {
+      const s = c / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  };
+
+  const ratio = (fg, bg) => {
+    const a = luminance(fg) + 0.05;
+    const b = luminance(bg) + 0.05;
+    return a > b ? a / b : b / a;
+  };
+
+  /** The first ancestor that actually paints something. */
+  const behind = (el) => {
+    for (let node = el; node && node !== document.documentElement; node = node.parentElement) {
+      const colour = rgb(getComputedStyle(node).backgroundColor);
+      if (colour && colour.a > 0.99) return colour;
+    }
+    return (
+      rgb(getComputedStyle(document.documentElement).backgroundColor) ?? { r: 255, g: 255, b: 255, a: 1 }
+    );
+  };
+
+  for (const el of document.querySelectorAll('body *')) {
+    if (el.closest('[disabled], [aria-disabled="true"]')) continue;
+    const hasText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!hasText) continue;
+
+    const style = getComputedStyle(el);
+    if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') continue;
+
+    const fg = rgb(style.color);
+    if (!fg || fg.a < 0.99) continue;
+    const bg = behind(el);
+    const size = parseFloat(style.fontSize);
+    const bold = parseInt(style.fontWeight, 10) >= 700;
+    const large = size >= 24 || (size >= 18.66 && bold);
+    const need = large ? 3 : 4.5;
+    const got = ratio(fg, bg);
+
+    if (got < need) {
+      problems.push(
+        \`contrast \${got.toFixed(2)}:1 needs \${need}:1 — \${style.color} on rgb(\${bg.r}, \${bg.g}, \${bg.b}): \${name(el)}\`,
+      );
+    }
+  }
+
   return problems;
 })()`;
+
+/**
+ * The guard on the guard.
+ *
+ * A sweep that reports nothing is either a clean product or a broken sweep, and
+ * only one of those is good news — this repository has shipped both. So before
+ * auditing anything real, put four deliberately wrong things on a blank page and
+ * insist each is caught: an element wider than the viewport, a card inside a
+ * card, a 20px button, and grey-on-grey text.
+ *
+ * It runs against `about:blank` with the rules inlined, so it needs neither the
+ * app nor a stylesheet.
+ */
+async function selfTest(cdp) {
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: 375,
+    height: 700,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  /*
+   * A whole page rather than markup injected into `about:blank`.
+   *
+   * The viewport meta has to be present *when the page loads*: without it,
+   * mobile emulation lays out at 980px and a 900px box fits comfortably, so the
+   * sideways-scroll rule cannot fire against the fixture written to trip it —
+   * about:blank behaving normally, reported as the rule being broken.
+   */
+  const fixture =
+    '<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<body style="margin:0;background:#ffffff">' +
+    '<div style="width:900px">wide</div>' +
+    '<div class="card"><div class="card">nested</div></div>' +
+    '<button style="display:block;height:20px">short</button>' +
+    '<p style="color:#bbbbbb;background:#ffffff;font-size:16px">faint text here</p>';
+
+  await cdp.send('Page.navigate', {
+    url: `data:text/html;charset=utf-8,${encodeURIComponent(fixture)}`,
+  });
+  await sleep(400);
+
+  const found = await cdp.evaluate(`(() => { window.__lomiViewport = 375; return ${AUDIT}; })()`);
+
+  const wanted = ['scrolls sideways', 'nested card', 'under 44', 'contrast'];
+  const missed = wanted.filter((w) => !found.some((f) => f.includes(w)));
+  if (missed.length > 0) {
+    console.error(`The audit itself is broken — it did not catch: ${missed.join(', ')}`);
+    console.error(`It reported: ${found.join(' | ') || '(nothing)'}`);
+    process.exit(1);
+  }
+}
 
 async function main() {
   const profile = mkdtempSync(join(tmpdir(), 'lomi-layout-'));
@@ -215,6 +346,8 @@ async function main() {
     await cdp.send('Runtime.enable');
     await cdp.send('Network.enable');
 
+    await selfTest(cdp);
+
     for (const theme of ['light', 'dark']) {
       await cdp.send('Emulation.setEmulatedMedia', {
         features: [{ name: 'prefers-color-scheme', value: theme }],
@@ -240,7 +373,9 @@ async function main() {
           await cdp.send('Page.navigate', { url: `${BASE}${route.path}` });
           await sleep(2200);
 
-          const problems = await cdp.evaluate(AUDIT);
+          const problems = await cdp.evaluate(
+            `(() => { window.__lomiViewport = ${size.width}; return ${AUDIT}; })()`,
+          );
           screens++;
           const where = `${route.path} · ${size.name} · ${theme}`;
           if (problems.length === 0) continue;
@@ -275,7 +410,8 @@ async function main() {
     process.exit(1);
   }
   console.log(
-    `${screens} screens audited — no sideways scroll, no nested cards, no small targets.`,
+    `${screens} screens audited — no sideways scroll, no nested cards, no control under 44px, ` +
+      'nothing under 11px, and every piece of text at AA contrast against what is behind it.',
   );
 }
 
