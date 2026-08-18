@@ -452,6 +452,51 @@ export interface HealthReport {
   components: HealthComponent[];
 }
 
+/** One draft, with everything standing between it and a student (T-231). */
+export interface QueueDraft {
+  id: string;
+  stableId: string;
+  stem: string;
+  qType: string;
+  field: string;
+  topic: string;
+  status: string;
+  importFlags: string[];
+  blockers: string[];
+  updatedAt: string;
+}
+
+export interface ReviewQueue {
+  counts: { draft: number; inReview: number; published: number; retired: number };
+  drafts: QueueDraft[];
+  more: number;
+}
+
+/** One question waiting on a reviewer, with everything needed to judge it. */
+export interface ReviewItem {
+  id: string;
+  stableId: string;
+  answerView: {
+    qType: string;
+    stem: string;
+    codeBlock: string | null;
+    timeLimitSec: number;
+    chosenLabel: string | null;
+    correctLabel: string | null;
+    conceptLine: string | null;
+    explanation: string | null;
+    steps: { stepNo: number; text: string; formula: string | null }[];
+    options: { label: string; text: string; isCorrect: boolean; whyWrong: string | null }[];
+  };
+  authorId: string | null;
+  importFlags: string[];
+  field: string;
+  course: string;
+  topic: string;
+  topicWeighted: boolean;
+  bounceNote: string | null;
+}
+
 export interface ImportReport {
   read: number;
   created: number;
@@ -513,6 +558,24 @@ export const api = {
 
   /** PROVIDER: live health, measured at the moment of asking. */
   providerHealth: (): Promise<HealthReport> => call<HealthReport>('/provider/health'),
+
+  /** STAFF: what is in the bank and what is stopping it. */
+  reviewQueue: (): Promise<ReviewQueue> => call<ReviewQueue>('/admin/review/queue'),
+
+  /** STAFF: the next question waiting on a reviewer, or null. */
+  reviewNext: (): Promise<ReviewItem | null> => call<ReviewItem | null>('/admin/review/next'),
+
+  /** STAFF: send a draft into the review queue. */
+  reviewSubmit: (id: string): Promise<{ id: string; status: string }> =>
+    call(`/admin/review/${id}/submit`, { method: 'POST' }),
+
+  /** STAFF: send it back to its author. The note is required and is shown to them. */
+  reviewBounce: (id: string, note: string): Promise<{ id: string; status: string }> =>
+    call(`/admin/review/${id}/bounce`, { method: 'POST', body: JSON.stringify({ note }) }),
+
+  /** ADMIN only: a reviewer proposes, an admin decides what a student reads. */
+  reviewPublish: (id: string): Promise<{ id: string; status: string }> =>
+    call(`/admin/review/${id}/publish`, { method: 'POST' }),
 
   /** ADMIN: claimed bank transfers, oldest pending first. */
   adminClaims: (): Promise<ManualClaim[]> => call<ManualClaim[]>('/admin/payments'),

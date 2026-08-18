@@ -4,7 +4,7 @@ import { AdminGuard, StaffGuard } from '../auth/staff.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
 import { QuestionsService } from '../questions/questions.service';
 import type { ReviewPatch } from './review-patch';
-import { ReviewService, type ReviewItem } from './review.service';
+import { ReviewService, type ReviewItem, type ReviewQueue } from './review.service';
 
 /**
  * The review queue.
@@ -25,6 +25,18 @@ export class ReviewController {
     private readonly review: ReviewService,
     private readonly questions: QuestionsService,
   ) {}
+
+  /**
+   * What is in the bank, and what is stopping it (T-231).
+   *
+   * Before this, every imported row landed `DRAFT` and nothing listed drafts —
+   * so a thousand uploaded questions were invisible to every screen and
+   * reachable only with a database client.
+   */
+  @Get('queue')
+  queue(@Req() req: AuthedRequest): Promise<ReviewQueue> {
+    return this.review.queue(req.auth!.userId);
+  }
 
   @Get('next')
   next(@Req() req: AuthedRequest): Promise<ReviewItem | null> {

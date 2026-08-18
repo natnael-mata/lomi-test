@@ -43,7 +43,7 @@ Verified by running it, not by reading the task list.
 | Per-topic results, readiness, score trend                | Working                                                        |
 | Payments — telebirr, CBE Birr, Chapa page, bank transfer | Working; three need a Chapa key                                |
 | Subscriptions, expiry, renewal                           | Working                                                        |
-| Admin — dashboard, question upload, topic weights        | Working                                                        |
+| Admin — dashboard, upload, review queue, weights         | Working                                                        |
 | Points, streaks, badges, leaderboard                     | Working                                                        |
 | Community — threads, verified replies, moderation        | Working                                                        |
 | Navigation, programme choosing                           | Working (built 2026-08-15)                                     |
@@ -61,6 +61,9 @@ One thing, and it is the launch blocker.
 | Missing                 | Why it matters                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------- |
 | **Real exam questions** | **The launch blocker.** Only demo content exists; the three real programmes have none |
+
+Both halves of getting content in now work without a developer: upload at `/admin/import`, then
+see every draft at `/admin/review` with exactly what is stopping it, and publish it there.
 
 Everything else on this list has been built. Sign-in, payment approval, user management and
 the receipt landed on 2026-08-16 against the design handoff; the phone-app install landed on

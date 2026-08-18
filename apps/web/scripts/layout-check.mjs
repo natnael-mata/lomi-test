@@ -53,6 +53,7 @@ const ROUTES = [
   { path: '/admin/users', as: 'admin' },
   { path: '/admin/import', as: 'admin' },
   { path: '/admin/weights', as: 'admin' },
+  { path: '/admin/review', as: 'admin' },
   { path: '/provider/activity', as: 'provider' },
   { path: '/provider/health', as: 'provider' },
 ];

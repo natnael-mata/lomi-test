@@ -46,6 +46,7 @@ const ROUTES = [
   { path: '/signin', as: null, tabs: 8 },
   { path: '/admin/users', as: 'admin', tabs: 10 },
   { path: '/provider/activity', as: 'provider', tabs: 14 },
+  { path: '/admin/review', as: 'admin', tabs: 12 },
 ];
 
 const DEBUG_PORT = 9333;

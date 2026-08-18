@@ -8,6 +8,7 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { toAnswerView, type AnswerView } from '../questions/answer-view';
+import { gateBlockers } from '../questions/publish-gate';
 import { normalisePatch, type ReviewPatch } from './review-patch';
 
 /**
@@ -21,6 +22,18 @@ import { normalisePatch, type ReviewPatch } from './review-patch';
  * it sits in the taxonomy, and what the import said was still missing.
  */
 export interface ReviewItem {
+  /**
+   * The question this is.
+   *
+   * **Absent until T-231, which is why no screen could ever act on this.**
+   * `next()` returned everything needed to *judge* a question and nothing that
+   * could address it — so publish and bounce, which take an id in the path, had
+   * no id to take. The queue was readable and not actionable, and that was
+   * invisible for as long as the only caller was a test asserting the shape.
+   */
+  id: string;
+  /** The human-readable handle. What a reviewer quotes when they ask about it. */
+  stableId: string;
   answerView: AnswerView;
   authorId: string | null;
   importFlags: string[];
@@ -43,6 +56,33 @@ export interface ReviewItem {
  */
 export const MIN_BOUNCE_NOTE = 10;
 
+/** One draft, with everything standing between it and a student. */
+export interface QueueDraft {
+  id: string;
+  stableId: string;
+  stem: string;
+  qType: string;
+  field: string;
+  topic: string;
+  status: string;
+  /** What the importer could not resolve — `needs_answer`, `needs_explanation`. */
+  importFlags: string[];
+  /** Every reason the gate would refuse it, in the order a reviewer fixes them. */
+  blockers: string[];
+  updatedAt: string;
+}
+
+export interface ReviewQueue {
+  counts: { draft: number; inReview: number; published: number; retired: number };
+  /** Drafts and bounced rows, oldest first. Capped — see `queue()`. */
+  drafts: QueueDraft[];
+  /** How many exist beyond the cap, so the screen never implies it showed everything. */
+  more: number;
+}
+
+/** How many drafts one page of the queue carries. */
+const QUEUE_LIMIT = 50;
+
 @Injectable()
 export class ReviewService {
   constructor(
@@ -63,6 +103,88 @@ export class ReviewService {
    * skipping it here means it is never offered in the first place. The two are
    * not redundant — this is the queue being polite, the gate is the rule.
    */
+  /**
+   * What is in the bank and what is stopping it (T-231).
+   *
+   * **The gap this closes is not cosmetic.** Every imported row lands `DRAFT`,
+   * correctly — nothing reaches a student without review. But `next()` only
+   * serves `IN_REVIEW`, and nothing anywhere listed drafts, so a thousand
+   * uploaded questions were invisible to every screen in the product and
+   * reachable only with a database client. Content could be loaded and could
+   * not be released.
+   *
+   * Each row carries **the gate's own blockers**, computed by the same pure
+   * function the publish endpoint runs. That is the answer to the only question
+   * somebody has after an upload — *what is missing* — and computing it here
+   * rather than in the browser means the list cannot disagree with the button.
+   *
+   * `reviewerId` is passed into the gate so the self-review rule (T-044) reports
+   * against the person actually looking: a question you wrote yourself is
+   * blocked for you and not for your colleague, and a list that says otherwise
+   * sends somebody hunting for a fault that is not there.
+   */
+  async queue(reviewerId: string): Promise<ReviewQueue> {
+    const [draft, inReview, published, retired] = await Promise.all([
+      this.prisma.question.count({ where: { status: 'DRAFT' } }),
+      this.prisma.question.count({ where: { status: 'IN_REVIEW' } }),
+      this.prisma.question.count({ where: { status: 'PUBLISHED' } }),
+      this.prisma.question.count({ where: { status: 'RETIRED' } }),
+    ]);
+
+    const rows = await this.prisma.question.findMany({
+      where: { status: 'DRAFT' },
+      // Oldest first: the row that has been waiting longest is the one owed an
+      // answer, which is the same rule the payment queue uses.
+      orderBy: { updatedAt: 'asc' },
+      take: QUEUE_LIMIT,
+      include: {
+        options: { orderBy: { label: 'asc' } },
+        steps: { orderBy: { stepNo: 'asc' } },
+        topic: { include: { course: { include: { field: true } } } },
+      },
+    });
+
+    return {
+      counts: { draft, inReview, published, retired },
+      drafts: rows.map((question) => ({
+        id: question.id,
+        stableId: question.stableId,
+        stem: question.stem,
+        qType: question.qType,
+        field: question.topic.course.field.name,
+        topic: question.topic.name,
+        status: question.status,
+        importFlags: question.importFlags,
+        blockers: gateBlockers({
+          qType: question.qType,
+          stem: question.stem,
+          conceptLine: question.conceptLine,
+          explanation: question.explanation,
+          timeLimitSec: question.timeLimitSec,
+          authorId: question.authorId,
+          reviewerId,
+          topic: {
+            name: question.topic.name,
+            weightPct: question.topic.weightPct?.toNumber() ?? null,
+          },
+          steps: question.steps.map((step) => ({
+            stepNo: step.stepNo,
+            text: step.text,
+            formula: step.formula,
+          })),
+          options: question.options.map((option) => ({
+            label: option.label,
+            text: option.text,
+            isCorrect: option.isCorrect,
+            whyWrong: option.whyWrong,
+          })),
+        }),
+        updatedAt: question.updatedAt.toISOString(),
+      })),
+      more: Math.max(0, draft - rows.length),
+    };
+  }
+
   async next(reviewerId: string): Promise<ReviewItem | null> {
     const question = await this.prisma.question.findFirst({
       where: {
@@ -84,6 +206,8 @@ export class ReviewService {
     if (!question) return null;
 
     return {
+      id: question.id,
+      stableId: question.stableId,
       answerView: toAnswerView(question),
       authorId: question.authorId,
       importFlags: question.importFlags,

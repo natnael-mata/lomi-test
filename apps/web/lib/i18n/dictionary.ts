@@ -316,7 +316,8 @@ export const en = {
 
     mobileLabel: 'The phone number you pay with',
     mobileHint: 'For example 0911223344.',
-    mobileFromTelegram: 'From the number you shared on Telegram. Change it if you pay with another.',
+    mobileFromTelegram:
+      'From the number you shared on Telegram. Change it if you pay with another.',
     mobileInvalid: 'That does not look like an Ethiopian mobile number. Check it and try again.',
     txRefLabel: 'Transfer reference',
     txRefHint:
@@ -511,6 +512,7 @@ export const en = {
       dashboard: 'Dashboard',
       payments: 'Payments',
       import: 'Import',
+      review: 'Review',
       weights: 'Weights',
       users: 'Users',
     },
@@ -593,6 +595,54 @@ export const en = {
       accountClosed: 'Account closed. It can be reopened by whoever runs the server.',
       alreadyClosed: 'Already closed',
       couldNotDo: 'That did not go through. Nothing was changed — try again.',
+    },
+
+    /**
+     * The review queue (T-231).
+     *
+     * Written for the person who has just uploaded a spreadsheet and wants to
+     * know what happened to it. Every row says what is stopping it in the gate's
+     * own words, because "12 drafts" answers nothing anybody asked.
+     */
+    review: {
+      title: 'Review',
+      intro:
+        'Everything uploaded lands here as a draft. Nothing reaches a student until somebody has read it and published it.',
+      working: 'Reading the queue…',
+      couldNotLoad: 'The queue could not be read. Nothing has changed — try again.',
+
+      draft: 'Drafts',
+      inReview: 'Waiting on a reviewer',
+      published: 'Published',
+      retired: 'Withdrawn',
+      countsFrom: 'counted across every programme in the bank',
+
+      ready: 'Ready to publish',
+      notReady: (count: number) =>
+        count === 1 ? '1 thing to fix first' : `${count} things to fix first`,
+      andMore: (count: number) => `${count} more drafts not shown`,
+      noDrafts: 'No drafts. Everything uploaded has been dealt with.',
+
+      sendToReview: 'Send to review',
+      sending: 'Sending…',
+      sentToReview: 'Sent. It is now waiting on a reviewer.',
+
+      nothingWaiting: 'Nothing is waiting on a reviewer.',
+      reviewing: 'Waiting on you',
+      author: 'Written by',
+      bounced: 'Sent back before',
+      publish: 'Publish it',
+      publishing: 'Publishing…',
+      published2: 'Published. Students can see it now.',
+      bounce: 'Send it back',
+      bouncing: 'Sending it back…',
+      bounceLabel: 'What needs fixing — the author reads this',
+      bouncePlaceholder: 'Option C is also correct, and the concept line repeats the stem.',
+      bounceTooShort: 'Say what needs fixing — a note this short leaves the author guessing.',
+      bounced2: 'Sent back to its author.',
+      cannotPublish: 'This cannot be published yet:',
+      topicUnweighted: 'Topic has no weight',
+      couldNotAct: 'That did not go through. Nothing has changed — try again.',
     },
 
     topicWeights: 'Topic weights',
@@ -1144,6 +1194,7 @@ export const am: Copy = {
       dashboard: 'ማጠቃለያ',
       payments: 'ክፍያዎች',
       import: 'ማስገባት',
+      review: 'ግምገማ',
       weights: 'ክብደቶች',
       users: 'ተማሪዎች',
     },
@@ -1205,6 +1256,45 @@ export const am: Copy = {
       accountClosed: 'መለያው ተዘግቷል። አገልጋዩን በሚያስተዳድረው ሰው እንደገና ሊከፈት ይችላል።',
       alreadyClosed: 'አስቀድሞ ተዘግቷል',
       couldNotDo: 'አልተሳካም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
+    },
+
+    review: {
+      title: 'ግምገማ',
+      intro: 'የተጫነው ሁሉ እዚህ እንደ ረቂቅ ይደርሳል። አንድ ሰው አንብቦ እስኪያትመው ድረስ ምንም ወደ ተማሪ አይደርስም።',
+      working: 'ወረፋው በመነበብ ላይ…',
+      couldNotLoad: 'ወረፋው ሊነበብ አልቻለም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
+
+      draft: 'ረቂቆች',
+      inReview: 'ገምጋሚ በመጠበቅ ላይ',
+      published: 'የታተሙ',
+      retired: 'የተነሱ',
+      countsFrom: 'በባንኩ ውስጥ ባሉ ሁሉም ፕሮግራሞች ተቆጥሯል',
+
+      ready: 'ለማተም ዝግጁ',
+      notReady: (count: number) => `${count} መስተካከል ያለባቸው ነገሮች`,
+      andMore: (count: number) => `${count} ተጨማሪ ረቂቆች አልታዩም`,
+      noDrafts: 'ረቂቅ የለም። የተጫነው ሁሉ ተይዟል።',
+
+      sendToReview: 'ወደ ግምገማ ላክ',
+      sending: 'በመላክ ላይ…',
+      sentToReview: 'ተልኳል። አሁን ገምጋሚ በመጠበቅ ላይ ነው።',
+
+      nothingWaiting: 'ገምጋሚ የሚጠብቅ ምንም የለም።',
+      reviewing: 'እርስዎን በመጠበቅ ላይ',
+      author: 'የጻፈው',
+      bounced: 'ቀደም ብሎ ተመልሷል',
+      publish: 'አትመው',
+      publishing: 'በማተም ላይ…',
+      published2: 'ታትሟል። ተማሪዎች አሁን ማየት ይችላሉ።',
+      bounce: 'መልሰው ላኩት',
+      bouncing: 'በመመለስ ላይ…',
+      bounceLabel: 'ምን መስተካከል አለበት — ጸሐፊው ይህን ያነባል',
+      bouncePlaceholder: 'አማራጭ ሐም ትክክል ነው፣ እና የሐሳብ መስመሩ ጥያቄውን ይደግማል።',
+      bounceTooShort: 'ምን መስተካከል እንዳለበት ይጻፉ — በጣም አጭር ማስታወሻ ጸሐፊውን ግራ ያጋባል።',
+      bounced2: 'ወደ ጸሐፊው ተመልሷል።',
+      cannotPublish: 'ይህ ገና ሊታተም አይችልም፦',
+      topicUnweighted: 'ርዕሱ ክብደት የለውም',
+      couldNotAct: 'አልተሳካም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
     },
 
     topicWeights: 'የርዕስ ክብደቶች',

@@ -284,7 +284,19 @@ describe('the review payload is the student answer view (T-066)', () => {
       'bounceNote',
       'course',
       'field',
+      /*
+       * `id` and `stableId` were added by T-231, and this guard is why the
+       * addition is deliberate rather than incidental.
+       *
+       * Without them the payload could be *judged* and not *acted on*: publish
+       * and bounce take an id in the path and this route sent none, so no screen
+       * could ever have used it. Neither is a leak on a staff-only route serving
+       * the full answer key to somebody already reading it — `stableId` is the
+       * handle a reviewer quotes when they ask about a question.
+       */
+      'id',
       'importFlags',
+      'stableId',
       'topic',
       'topicWeighted',
     ]);

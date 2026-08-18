@@ -130,6 +130,9 @@ Sign in as **Admin** (go to `/dev-login` again).
   `docs/question_import_template.csv` from the project folder. Does it report how many rows
   were read, added or refused, and does a refused row say which line and why?
 - **`/admin/weights`** — does it show topic weights and a running total?
+- **`/admin/review`** — after the import, do the uploaded rows appear as drafts? Does each one say
+  what is stopping it, in enough detail to act on? Send one to review, then try to publish it: if
+  it is incomplete the refusal should **name every reason**, not say "try again".
 
 Then sign back in as **User A** and try to open `/admin/dashboard`. You should be refused.
 

@@ -30,6 +30,7 @@ export const ADMIN_DESTINATIONS: readonly { href: string; label: string }[] = [
   { href: '/admin/dashboard', label: c.admin.nav.dashboard },
   { href: '/admin/payments', label: c.admin.nav.payments },
   { href: '/admin/import', label: c.admin.nav.import },
+  { href: '/admin/review', label: c.admin.nav.review },
   { href: '/admin/weights', label: c.admin.nav.weights },
   { href: '/admin/users', label: c.admin.nav.users },
 ];

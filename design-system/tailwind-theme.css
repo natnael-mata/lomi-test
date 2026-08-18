@@ -307,10 +307,19 @@
     @apply bg-surface-2 text-ink-2 cursor-not-allowed active:scale-100;
   }
 
+  /*
+   * The properties are listed, like every other control here, and `transition-
+   * colors` is not used — that shorthand includes `outline-color`, so the focus
+   * ring faded in over 150ms from the button's text colour to brand. It arrived
+   * correct and it was the wrong colour for the moment a keyboard user was
+   * looking at it. Every other control in this file already lists its
+   * properties; this one was the exception, and the focus-ring check tabbing a
+   * ghost button for the first time is what found it.
+   */
   .btn-ghost {
     @apply w-full min-h-[52px] px-6 rounded-control bg-surface text-ink text-label
            border border-border inline-flex items-center justify-center gap-2
-           transition-colors duration-150 hover:bg-surface-2;
+           transition-[background-color,border-color] duration-150 hover:bg-surface-2;
   }
   .btn-ghost:disabled {
     @apply bg-surface-2 text-ink-2 cursor-not-allowed;
