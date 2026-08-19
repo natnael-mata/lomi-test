@@ -3086,6 +3086,109 @@ health board. The role is the part that needed a decision; the rest follows from
 
 ---
 
+## Phase 15 — The QA pass — ✅ complete
+
+An external tester worked through the running product on 2026-08-19 and returned ten findings
+with the verdict _"I would not let a student use this tomorrow"_. Every one was reproduced before
+it was fixed. Two of them turned out to be the same fault, and the two that mattered most were
+invisible to the whole existing suite — which is the part worth keeping.
+
+- [x] **T-233** The screen and the gate must agree about who has paid.
+      **Test:** a student with a PENDING row newer than their ACTIVE one reads as subscribed.
+
+  > `statusFor` returned the newest subscription; `hasActiveSubscription` returned the live one.
+  > A student who abandoned a second checkout was told they had never paid, on a screen reached
+  > through a gate that had just let them in on the strength of the first.
+  >
+  > The fix is one line of intent: prefer the row that is actually live, fall back to the newest
+  > only when nothing is. `hasEverPaid` counts activations rather than reading a status, because
+  > "have they ever paid" is a question about history and a status is only ever about now.
+
+- [x] **T-234** Answering a question awards the points the ledger promises.
+      **Test:** `awarded.e2e.test.ts` posts a real attempt and reads the `PointEntry` rows back.
+
+  > **Phase 11 shipped 11 of 11 with every unit test green, over a ledger nothing wrote to.**
+  > Points, streaks, badges and a leaderboard all worked; `EngagementService` was called from
+  > nowhere. A student who answered fifty questions read "Points 0 · Nothing yet. Points appear
+  > here the moment you answer a question."
+  >
+  > The unit tests were never going to catch it — they tested the award function, and the award
+  > function was never the problem. The only assertion that could have caught it is one that
+  > crosses the gap between the two, which is what the new test does. It fails 4 of 5 with the
+  > wiring removed.
+  >
+  > Wired into the attempt and the mock submit. The mock awards only on the _first_ close, since
+  > submit is idempotent and paying 25 points per reload would make the leaderboard a measure of
+  > who pressed F5 most.
+
+- [x] **T-235** A malformed CSV is answered, not crashed on.
+      **Test:** `import.route.e2e.test.ts` — three broken files, three 422s, no 500.
+
+  > `CsvError` is a plain `Error`, so it left the controller as Nest's `{"statusCode":500}`. An
+  > operator who renamed a column was told the server had broken.
+  >
+  > **The route had no HTTP test at all.** Every existing import test called the service
+  > directly, so all of them agreed a bad file throws and none of them ever saw what that throw
+  > became. It is 422 now, carrying the parser's own words and the line number.
+
+- [x] **T-236** The mock exam asks before it closes on unanswered questions.
+      **Test:** the panel appears with questions blank, and does not when the paper is full.
+
+  > Submitting is the only irreversible action in the product, and the button sat directly under
+  > the jump grid with nothing between a mis-tap and a finished paper.
+  >
+  > An inline panel rather than `window.confirm`: the dialog is unstyleable, renders as browser
+  > chrome inside the Telegram webview where most sittings happen, and cannot carry the count
+  > that makes the question worth asking. The safe action is the filled button.
+
+- [x] **T-237** The weight editor names the programme it is editing.
+      **Test:** the name is on screen, and a second programme is reachable.
+
+  > It loaded `fields[0]` and said nothing — on the screen where a wrong number silently reshapes
+  > every mock paper that programme generates. A label alone would not have been the fix: if you
+  > cannot tell which programme you are editing, you also cannot reach the other one.
+
+- [x] **T-238** The seed produces the state it claims.
+      **Test:** re-running `dev:testers` over drifted accounts restores the brief exactly.
+
+  > **Two of the ten findings were this, not a defect in the product.** `dev:testers` only ever
+  > added, so it printed "8 of 10 free questions used" over an account with ten, and left User B
+  > described as having a claim waiting after a tester had settled it — which is the first thing
+  > the brief asks a tester to do.
+  >
+  > It now trims surplus attempts and drops User B's subscription, both scoped to the reserved
+  > smoke-test id range. Never from `audit_log`.
+  >
+  > Also here because it is the same class of fault: the dev door hashed `"User B"` while the
+  > persona is labelled `userb`, so typing the name printed on the brief minted a _new empty
+  > account_ with a generated display name. Every seeded state a tester was asked to check was
+  > unreachable by the name they had for it. Labels are normalised before hashing now.
+
+- [x] **T-239** The wall arrives before the question, not after it.
+      **Test:** ten draws at zero remaining never serve a question the attempt route would refuse.
+
+  > Reported as _"the last free question skips its own feedback"_. The allowance was computed
+  > **after** the pick, so a student with nothing left was still served a fresh question: they
+  > read the stem, weighed four options, chose one, pressed Check — and met the paywall with no
+  > verdict on the answer they had just committed to.
+  >
+  > Refusing the attempt was right; an explanation released on a refused attempt is a paywall you
+  > can walk through. Offering the question was the mistake. Already-attempted questions stay
+  > answerable, because re-practice costs nothing — so the wall narrows the pick rather than
+  > closing the screen.
+
+- [x] **T-240** A refusal is shown in the server's own words.
+      **Test:** seven screens render the message rather than "try again".
+
+  > `refusalMessage()` reads the message off a 403 or 422 and nothing else — a 500 has no words
+  > worth showing and a 401 is a redirect, not a sentence. The open-mock lock says _"Finish or
+  > submit your exam before practising"_, which is the entire answer, and it was being thrown
+  > away for "Something went wrong."
+
+---
+
+---
+
 ## Phase 12 — Hardening & launch — 2 left
 
 - [x] **T-199a** Verify the focus ring with real keyboard input on every interactive element.
