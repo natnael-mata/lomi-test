@@ -109,6 +109,31 @@ async function seedAttempts(userId: string, fieldId: string, count: number): Pro
     },
   });
 
+  /*
+   * The state this claims, not merely "at least" it.
+   *
+   * This only ever added, so an account that had answered more than `count`
+   * from an earlier session kept them — and the script still printed "8 of 10
+   * free questions used" over an account with ten. QA read the label, saw
+   * "0 FREE LEFT" on the next question, and reported the counter as broken. The
+   * counter was right; the seed was not.
+   *
+   * Trimmed only for smoke-test accounts, and only inside this field, which is
+   * demo content this script owns.
+   */
+  const extra = await prisma.attempt.findMany({
+    where: { userId, fieldId },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, questionId: true },
+  });
+  const keep = new Set<string>();
+  const remove: string[] = [];
+  for (const attempt of [...extra].reverse()) {
+    if (keep.size < count || keep.has(attempt.questionId)) keep.add(attempt.questionId);
+    else remove.push(attempt.id);
+  }
+  if (remove.length > 0) await prisma.attempt.deleteMany({ where: { id: { in: remove } } });
+
   const wanted = questions.slice(0, count);
 
   for (const [index, question] of wanted.entries()) {
@@ -189,6 +214,26 @@ async function main(): Promise<void> {
   const userB = ids.get('userb')!;
   await prisma.user.update({ where: { id: userB }, data: { fieldId: field.id } });
   await seedAttempts(userB, field.id, USER_B_USED);
+
+  /*
+   * Back to *unpaid*, because a tester's first move is to approve the claim.
+   *
+   * User B exists to show the free wall and the admin queue, and settling that
+   * claim is the thing the brief asks an admin to do — which leaves the account
+   * subscribed. Re-running this script then printed "bank claim waiting to be
+   * checked" over a twelve-month subscriber with no wall left to hit, and the
+   * next tester found a screen that matched nothing in their brief.
+   *
+   * Dropped rather than reused: settling is what the tester is here to do, and
+   * a half-cleared subscription is a worse starting state than none. Scoped to
+   * this one smoke-test account, whose id `upsertPersona` has already checked
+   * is in the reserved range. The audit rows stay — they are a record of what
+   * happened, and this is the one table nothing here may delete from.
+   */
+  // Payments first: `Payment.subscriptionId` is RESTRICT, so the other order
+  // fails on the foreign key rather than on anything to do with the state.
+  await prisma.payment.deleteMany({ where: { userId: userB } });
+  await prisma.subscription.deleteMany({ where: { userId: userB } });
 
   const bClaim = await prisma.payment.findFirst({
     where: { userId: userB, method: 'BANK', status: 'PENDING' },

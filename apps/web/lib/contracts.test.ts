@@ -111,6 +111,7 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'RevenueSplit', api: 'RevenueSplit', file: 'admin/admin-dashboard.service.ts' },
   { web: 'UserSearchHit', api: 'UserSearchHit', file: 'admin/admin-dashboard.service.ts' },
   { web: 'StandingView', api: 'StandingView', file: 'engagement/engagement.service.ts' },
+  { web: 'FieldOption', api: 'FieldOption', file: 'auth/auth.service.ts' },
   { web: 'LedgerRow', api: 'LedgerRow', file: 'engagement/engagement.service.ts' },
   { web: 'LeaderboardRow', api: 'LeaderboardRow', file: 'engagement/engagement.service.ts' },
   { web: 'LeaderboardView', api: 'LeaderboardView', file: 'engagement/engagement.service.ts' },

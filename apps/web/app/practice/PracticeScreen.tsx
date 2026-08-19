@@ -34,6 +34,7 @@ import {
   type PlanOffer,
   type PracticeSummary,
   type ServedQuestion,
+  refusalMessage,
 } from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
@@ -89,6 +90,13 @@ export function PracticeScreen() {
         setPhase({ kind: 'exhausted', summary });
         return;
       }
+      if (e instanceof ApiError && e.code === 'FREE_LIMIT_REACHED') {
+        // The wall now arrives here as well as on submit, and arriving here is
+        // the better of the two: the student meets it instead of a question they
+        // would not have been allowed to answer.
+        await paywall();
+        return;
+      }
       if (signInRequired(e)) {
         // The sign-in screen, not an error card. This route is the installed
         // app's start_url, so an expired session lands here first.
@@ -101,9 +109,12 @@ export function PracticeScreen() {
         window.location.assign('/choose');
         return;
       }
-      setPhase({ kind: 'error', message: c.practice.didNotLoad });
+      // The server's own words when it refused — the open-mock lock says
+      // "Finish or submit your exam before practising", which is the whole
+      // answer and used to be thrown away for "try again".
+      setPhase({ kind: 'error', message: refusalMessage(e) ?? c.practice.didNotLoad });
     }
-  }, [c.practice.didNotLoad]);
+  }, [c.practice.didNotLoad, paywall]);
 
   useEffect(() => {
     void load();
@@ -126,7 +137,7 @@ export function PracticeScreen() {
         await paywall();
         return;
       }
-      setPhase({ kind: 'error', message: c.practice.didNotLoad });
+      setPhase({ kind: 'error', message: refusalMessage(e) ?? c.practice.didNotLoad });
     } finally {
       setSubmitting(false);
     }

@@ -112,6 +112,14 @@ describe('what it can reach', () => {
     expect(devTelegramId('student')).toBe(devTelegramId('student'));
     expect(devTelegramId('student')).toBe(devTelegramId('  STUDENT '));
     expect(devTelegramId('student')).not.toBe(devTelegramId('reviewer'));
+
+    // The persona is labelled `userb` and the test brief calls it "User B".
+    // Typing the name the tester was handed used to mint a different, empty
+    // account — so the two have to be one.
+    expect(devTelegramId('userb')).toBe(devTelegramId('User B'));
+    expect(devTelegramId('userb')).toBe(devTelegramId('user-b'));
+    // Distinct personas stay distinct through the same normalising.
+    expect(devTelegramId('User A')).not.toBe(devTelegramId('User B'));
   });
 });
 

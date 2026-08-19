@@ -52,6 +52,14 @@ export interface SignInResult {
   isNew: boolean;
 }
 
+/** A programme a student may choose, and whether they already have. */
+export interface FieldOption {
+  id: string;
+  name: string;
+  slug: string;
+  chosen: boolean;
+}
+
 @Injectable()
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
@@ -341,9 +349,7 @@ export class AuthService {
     return staff?.role ?? null;
   }
 
-  async publishedFields(
-    userId?: string,
-  ): Promise<{ id: string; name: string; slug: string; chosen: boolean }[]> {
+  async publishedFields(userId?: string): Promise<FieldOption[]> {
     const fields = await this.prisma.field.findMany({
       where: { isPublished: true },
       orderBy: { name: 'asc' },

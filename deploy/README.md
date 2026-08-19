@@ -22,14 +22,14 @@ and the failure mode of a careless deploy is not "Lomi-Test is broken" — it is
 
 ## What must be true before the first deploy
 
-| Thing | Why it blocks |
-| --- | --- |
-| A hostname pointing at the box | The Chapa webhook and Telegram both need a public URL |
-| TLS on that hostname | Telegram refuses a non-HTTPS webhook; so should we |
-| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` | **The only way to sign in.** Without it the site opens and nobody can get past the front door |
-| A PostgreSQL role and database | Migrations run against it on every deploy |
-| Published questions | Without them practice and exams serve nothing. See "Content" below |
-| `CHAPA_SECRET_KEY` | Optional. Without it the three Chapa payment routes answer 503 by design; the bank-transfer route still works |
+| Thing                                          | Why it blocks                                                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A hostname pointing at the box                 | The Chapa webhook and Telegram both need a public URL                                                         |
+| TLS on that hostname                           | Telegram refuses a non-HTTPS webhook; so should we                                                            |
+| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_BOT_USERNAME` | **The only way to sign in.** Without it the site opens and nobody can get past the front door                 |
+| A PostgreSQL role and database                 | Migrations run against it on every deploy                                                                     |
+| Published questions                            | Without them practice and exams serve nothing. See "Content" below                                            |
+| `CHAPA_SECRET_KEY`                             | Optional. Without it the three Chapa payment routes answer 503 by design; the bank-transfer route still works |
 
 ## First-time setup on the box
 

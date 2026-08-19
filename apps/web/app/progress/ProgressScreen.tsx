@@ -15,7 +15,13 @@ import { PracticeCta } from '../../components/PracticeCta';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { ScoreTrend } from '../../components/ScoreTrend';
 import { StatedFigure } from '../../components/StatedFigure';
-import { api, signInRequired, type Readiness, type TrendPoint } from '../../lib/api';
+import {
+  api,
+  refusalMessage,
+  signInRequired,
+  type Readiness,
+  type TrendPoint,
+} from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
 export function ProgressScreen() {
@@ -47,7 +53,7 @@ export function ProgressScreen() {
           window.location.assign('/signin');
           return;
         }
-        if (!cancelled) setError(c.progress.couldNotLoad);
+        if (!cancelled) setError(refusalMessage(e) ?? c.progress.couldNotLoad);
       }
     })();
     return () => {

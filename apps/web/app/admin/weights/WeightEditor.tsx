@@ -15,12 +15,22 @@ import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
 import { WeightSumIndicator } from '../../../components/WeightSumIndicator';
 import { validateOverride } from '../../../components/weight-sum';
-import { api, type EffectiveWeight } from '../../../lib/api';
+import { api, type EffectiveWeight, type FieldOption } from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
 
 export function WeightEditor() {
   const c = copy();
   const [fieldId, setFieldId] = useState<string | null>(null);
+  /*
+   * Which programme these weights belong to, kept so the screen can say so.
+   *
+   * It loaded `fields[0]` and named nothing (T-237). An operator with two
+   * programmes was editing one of them without being told which, on the screen
+   * where a wrong number silently reshapes every mock paper that programme
+   * generates. The list is kept as well as the choice, because the fix for "you
+   * cannot tell which" is not a label if you also cannot reach the other one.
+   */
+  const [fields, setFields] = useState<FieldOption[]>([]);
   const [rows, setRows] = useState<EffectiveWeight[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -30,14 +40,15 @@ export function WeightEditor() {
     let cancelled = false;
     void (async () => {
       try {
-        const fields = await api.myFields();
-        const first = fields[0]?.id;
+        const mine = await api.myFields();
+        const first = mine[0]?.id;
         if (!first) {
           if (!cancelled) setError(c.admin.noProgramme);
           return;
         }
         const weights = await api.adminWeights(first);
         if (cancelled) return;
+        setFields(mine);
         setFieldId(first);
         setRows(weights);
       } catch (e) {
@@ -72,6 +83,15 @@ export function WeightEditor() {
     await run(() => api.adminOverrideWeight(fieldId, topicId, weightPct, draft.reason));
   };
 
+  /** The programme these rows belong to. */
+  const current = fields.find((f) => f.id === fieldId) ?? null;
+
+  const switchTo = async (id: string): Promise<void> => {
+    setEditing(null);
+    setFieldId(id);
+    await run(() => api.adminWeights(id));
+  };
+
   if (error && rows.length === 0) {
     return (
       <Card data-state="error">
@@ -82,14 +102,46 @@ export function WeightEditor() {
 
   return (
     <div className="flex flex-col gap-4" data-admin-weights="">
-      <header className="flex items-center justify-between gap-2">
-        <h1 className="text-title">{c.admin.topicWeights}</h1>
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h1 className="text-title">{c.admin.topicWeights}</h1>
+          {current && (
+            <p className="text-caption text-ink-2">
+              {c.admin.weightingProgramme}: <span className="text-ink">{current.name}</span>
+            </p>
+          )}
+        </div>
         {fieldId && (
           <Button variant="ghost" onClick={() => void run(() => api.adminDeriveWeights(fieldId))}>
             {c.admin.recompute}
           </Button>
         )}
       </header>
+
+      {/* Only when there is a choice to make. A select with one option is a
+          control that cannot be used, and it would push the sum further down the
+          screen for every operator who runs a single programme. */}
+      {fields.length > 1 && (
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-2">{c.admin.switchProgramme}</span>
+          <select
+            className="border-border bg-surface text-body min-h-11 rounded-xl border px-3"
+            value={fieldId ?? ''}
+            onChange={(e) => void switchTo(e.target.value)}
+          >
+            {fields.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {/* What these numbers reach. The editor showed a table of percentages with
+          no statement of what they govern — and they govern every mock paper the
+          programme generates. */}
+      {current && <p className="text-caption text-ink-2">{c.admin.weightsScope(current.name)}</p>}
 
       {/* The live sum, above the rows: it is the thing a reviewer is watching
           while they edit, not a summary of what they have finished. */}

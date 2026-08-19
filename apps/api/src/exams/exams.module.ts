@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
+import { EngagementModule } from '../engagement/engagement.module';
 import { TaxonomyModule } from '../taxonomy/taxonomy.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { AdminExamsController } from './admin-exams.controller';
@@ -11,7 +12,7 @@ import { ExamsService } from './exams.service';
 import { SittingLockGuard } from './sitting-lock.guard';
 
 @Module({
-  imports: [PaymentsModule, AuditModule, AuthModule, TaxonomyModule],
+  imports: [PaymentsModule, AuditModule, AuthModule, TaxonomyModule, EngagementModule],
   controllers: [AdminExamsController, ExamsController],
   providers: [ExamBuildService, ExamsService, SittingLockGuard],
   exports: [ExamBuildService, ExamsService, SittingLockGuard],

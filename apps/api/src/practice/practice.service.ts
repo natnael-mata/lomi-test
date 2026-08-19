@@ -3,11 +3,14 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 
+import { EngagementService } from '../engagement/engagement.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RULES } from '../engagement/points';
 import { toAnswerView, type AnswerView } from '../questions/answer-view';
 import {
   freeRemaining,
@@ -68,6 +71,7 @@ export class PracticeService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(SUBSCRIPTION_ACCESS) private readonly subscriptions: SubscriptionAccess,
+    private readonly engagement: EngagementService,
   ) {}
 
   /**
@@ -91,6 +95,32 @@ export class PracticeService {
     // was not wired up — fail rather than serve from an arbitrary programme.
     if (!user?.fieldId) throw new NotFoundException('No programme chosen.');
 
+    /*
+     * The allowance, worked out *before* the pick rather than on the way out.
+     *
+     * It used to be computed after, which meant a student with nothing left was
+     * still served a fresh question: they read the stem, weighed four options,
+     * chose one, pressed Check — and only then met the paywall, with no verdict
+     * on the answer they had just committed to. QA read that as "the last free
+     * question skips its feedback". The attempt route was right to refuse (an
+     * explanation released on a refused attempt is a paywall you can walk
+     * through); the mistake was offering the question at all.
+     *
+     * Already-attempted questions stay answerable, because re-practice costs
+     * nothing — so the wall narrows the pick to those rather than closing the
+     * screen, and only refuses when there is genuinely nothing left to answer.
+     * Same two reads as before, moved earlier.
+     */
+    const subscribed = await this.subscriptions.hasActiveSubscription(userId, user.fieldId);
+    const attempted = subscribed
+      ? []
+      : await this.prisma.attempt.findMany({
+          where: { userId, fieldId: user.fieldId },
+          select: { questionId: true },
+          distinct: ['questionId'],
+        });
+    const remaining = subscribed ? null : freeRemaining(attempted.length);
+
     const eligible = await this.prisma.question.findMany({
       where: {
         fieldId: user.fieldId,
@@ -107,7 +137,11 @@ export class PracticeService {
       throw new NotFoundException('Nothing left to practise in this programme today.');
     }
 
-    const pick = eligible[Math.floor(Math.random() * eligible.length)]!;
+    const seen = new Set(attempted.map((a) => a.questionId));
+    const offerable = remaining === 0 ? eligible.filter((q) => seen.has(q.id)) : eligible;
+    if (offerable.length === 0) throw new FreeLimitReached(0);
+
+    const pick = offerable[Math.floor(Math.random() * offerable.length)]!;
     const question = await this.prisma.question.findUniqueOrThrow({
       where: { id: pick.id },
       // Selected explicitly. `include: { options: true }` would carry
@@ -125,25 +159,7 @@ export class PracticeService {
       },
     });
 
-    /*
-     * The allowance, worked out on the way out.
-     *
-     * Two extra reads on the hottest route in the product, and they are worth
-     * it: without them a student learns they were on their last free question
-     * only after spending it. Both are indexed lookups the attempt path already
-     * makes, and `distinct` keeps the second one to one row per question rather
-     * than one per attempt.
-     */
-    const subscribed = await this.subscriptions.hasActiveSubscription(userId, user.fieldId);
-    const attempted = subscribed
-      ? []
-      : await this.prisma.attempt.findMany({
-          where: { userId, fieldId: user.fieldId },
-          select: { questionId: true },
-          distinct: ['questionId'],
-        });
-
-    return toServedQuestion(question, subscribed ? null : freeRemaining(attempted.length));
+    return toServedQuestion(question, remaining);
   }
 
   /**
@@ -227,6 +243,34 @@ export class PracticeService {
       },
       select: { id: true },
     });
+
+    /*
+     * The points, and the day (T-190, T-191).
+     *
+     * **Nothing called `EngagementService` at all until 2026-08-19.** Points,
+     * streaks, badges and the leaderboard were built, tested in isolation and
+     * ticked complete, and no path in the product ever wrote a ledger row — so
+     * Standing said "Points 0 · Nothing yet" to a student who had answered
+     * fifty questions. Found in QA, by somebody answering questions and
+     * watching the number not move.
+     *
+     * After the attempt is written, and never in front of it. A student's
+     * answer is the thing that must not be lost; the ledger row is bookkeeping,
+     * and bookkeeping that can refuse an answer is worse than bookkeeping that
+     * is occasionally missing. A failure here is logged and swallowed —
+     * swallowed *silently* is how this stayed broken, so it is logged.
+     */
+    try {
+      await this.engagement.record(userId, RULES.ANSWERED);
+      if (isCorrect) await this.engagement.record(userId, RULES.CORRECT);
+      // Marks them active today: the streak measures returning, not volume, so
+      // this is idempotent per day.
+      await this.engagement.touch(userId);
+    } catch (error) {
+      new Logger('practice').error(
+        `points not recorded for ${userId}: ${error instanceof Error ? error.message : error}`,
+      );
+    }
 
     const consumed = isNewQuestion ? alreadyAttempted.size + 1 : alreadyAttempted.size;
 

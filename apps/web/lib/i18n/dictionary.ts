@@ -177,7 +177,7 @@ export const en = {
    * number they have to trust.
    */
   paywall: {
-    title: 'That was your 10th free question',
+    title: 'You have used your ten free questions',
     intro:
       'Every question in the bank comes with a full explanation. Unlock the rest for six or ' +
       'twelve months — one plan covers every programme.',
@@ -248,6 +248,12 @@ export const en = {
     firstQuestion: 'This is the first question',
     lastQuestion: 'This is the last question',
     submit: (answered: number, total: number) => `Submit — ${answered} of ${total} answered`,
+    confirmTitle: 'Submit with questions unanswered?',
+    confirmBody: (left: number) =>
+      `${left} question${left === 1 ? ' has' : 's have'} no answer. ` +
+      'Unanswered questions are marked wrong, and a submitted paper cannot be reopened.',
+    confirmBack: 'Go back to them',
+    confirmSubmit: 'Submit anyway',
     pendingSync: (count: number) =>
       `${count} answer${count === 1 ? '' : 's'} saved on this phone, waiting to send. ` +
       'Keep going — they go up when the connection returns.',
@@ -678,6 +684,10 @@ export const en = {
     backToBank: 'Back to the bank',
     setByReviewer: 'Set by a reviewer',
     noProgramme: 'No published programme to weight yet.',
+    weightingProgramme: 'Weighting',
+    switchProgramme: 'Programme to weight',
+    weightsScope: (name: string) =>
+      `These weights shape every mock paper generated for ${name}, and nothing outside it.`,
     publishedBankSays: (published: number, derived: number) =>
       `${published} published · bank says ${derived}%`,
     weightLabel: (topic: string) => `Weight for ${topic}, whole percent`,
@@ -928,7 +938,7 @@ export const am: Copy = {
   },
 
   paywall: {
-    title: 'ያ 10ኛው ነጻ ጥያቄዎ ነበር',
+    title: 'አስሩንም ነጻ ጥያቄዎችዎን ተጠቅመዋል',
     intro:
       'በባንኩ ውስጥ ያለ እያንዳንዱ ጥያቄ ሙሉ ማብራሪያ አለው። የቀሩትን ለስድስት ወይም ለአስራ ሁለት ወራት ይክፈቱ — አንድ እቅድ ሁሉንም ፕሮግራሞች ይሸፍናል።',
     months: (count: number) => `${count} ወራት`,
@@ -983,6 +993,11 @@ export const am: Copy = {
     firstQuestion: 'ይህ የመጀመሪያው ጥያቄ ነው',
     lastQuestion: 'ይህ የመጨረሻው ጥያቄ ነው',
     submit: (answered: number, total: number) => `አስረክብ — ${answered} ከ${total} ተመልሷል`,
+    confirmTitle: 'ያልተመለሱ ጥያቄዎች እያሉ ያስረክባሉ?',
+    confirmBody: (left: number) =>
+      `${left} ጥያቄ መልስ የለውም። ` + 'ያልተመለሱ ጥያቄዎች እንደ ስህተት ይቆጠራሉ፣ የተረከበ ወረቀትም እንደገና አይከፈትም።',
+    confirmBack: 'ወደ እነሱ ተመለስ',
+    confirmSubmit: 'ለማንኛውም አስረክብ',
     pendingSync: (count: number) =>
       `${count} መልስ በዚህ ስልክ ተቀምጧል፣ ለመላክ በመጠባበቅ ላይ። ` + 'ይቀጥሉ — ግንኙነቱ ሲመለስ ይላካሉ።',
     questionNavigator: 'የጥያቄ መዳሰሻ',
@@ -1354,6 +1369,10 @@ export const am: Copy = {
     backToBank: 'ወደ መጠባበቂያው ተመለስ',
     setByReviewer: 'በገምጋሚ የተቀመጠ',
     noProgramme: 'ገና የታተመ የትምህርት ዘርፍ የለም።',
+    weightingProgramme: 'ክብደት እየተሰጠው ያለው',
+    switchProgramme: 'ክብደት የሚሰጠው የትምህርት ዘርፍ',
+    weightsScope: (name: string) =>
+      `እነዚህ ክብደቶች ለ${name} የሚዘጋጀውን እያንዳንዱን የሙከራ ወረቀት ይቀርጻሉ፣ ከዚያ ውጪ ምንም አይነኩም።`,
     publishedBankSays: (published: number, derived: number) =>
       `${published} ታትሟል · መጠባበቂያው ${derived}% ይላል`,
     weightLabel: (topic: string) => `የ${topic} ክብደት፣ ሙሉ በመቶ`,

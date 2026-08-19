@@ -67,9 +67,25 @@ export function secretMatches(presented: string, configured: string | undefined)
  * Derived from the label so "student" is the same account every time — a tester
  * who signs in twice should find yesterday's practice history, not a new
  * account. Hashed into the reserved negative range.
+ *
+ * **Spacing and punctuation are stripped before hashing**, so "User B", "userb"
+ * and "user-b" are one account rather than three. They were three: the seeded
+ * personas are labelled `userb`, testers are handed a brief that calls them
+ * "User B", and typing the name they were given quietly minted a brand-new
+ * empty account with a generated display name. The account was fine, the
+ * history was gone, and nothing said why — every seeded state a tester was
+ * asked to check was unreachable by the name they had for it.
+ *
+ * Nothing rests on this being hard to guess: the door is closed unless
+ * `DEV_LOGIN_SECRET` is set, and the range it hashes into can only ever hold
+ * smoke-test accounts.
  */
 export function devTelegramId(label: string): number {
-  const digest = createHash('sha256').update(label.trim().toLowerCase()).digest();
+  const key = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  const digest = createHash('sha256').update(key).digest();
   const span = DEV_TELEGRAM_ID_CEILING - DEV_TELEGRAM_ID_FLOOR;
   return DEV_TELEGRAM_ID_FLOOR + (digest.readUInt32BE(0) % span);
 }

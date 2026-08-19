@@ -211,15 +211,52 @@ export class SubscriptionsService implements SubscriptionAccess {
       data: { status: 'EXPIRED' },
     });
 
-    const latest = await this.prisma.subscription.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
+    /*
+     * **The LIVE subscription, not the newest row.**
+     *
+     * This read `findFirst({ orderBy: { createdAt: 'desc' } })` and reported on
+     * whatever came back — which told a student who had paid that they had not.
+     * The path is ordinary: try telebirr, abandon it (a PENDING subscription is
+     * left behind), pay by bank transfer, get approved. The approved row is
+     * older than the abandoned one, so the newest row is PENDING and the Access
+     * tab says `hasEverPaid: false` over a subscription that is running.
+     *
+     * The paywall was never fooled — `hasActiveSubscription` has always asked
+     * the right question — so the student kept their access and was told they
+     * had not paid for it. A screen and a gate disagreeing about the same fact
+     * is worse than either being wrong alone.
+     *
+     * Found in QA, 2026-08-19.
+     */
+    const live = await this.prisma.subscription.findFirst({
+      where: { userId, status: 'ACTIVE', expiresAt: { gt: now } },
+      orderBy: { expiresAt: 'desc' },
       include: { plan: { select: { code: true, months: true } } },
     });
+
+    const latest =
+      live ??
+      (await this.prisma.subscription.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: { plan: { select: { code: true, months: true } } },
+      }));
     if (!latest) return { hasEverPaid: false, active: false, expiresAt: null, planCode: null };
 
+    /*
+     * "Has ever paid" is about the account, not about one row.
+     *
+     * Read off `latest` it meant "the row I happened to pick was activated",
+     * which flips to false the moment somebody starts a second checkout. It is
+     * what a renewal screen keys off, so getting it wrong shows a returning
+     * student the first-purchase copy.
+     */
+    const everActivated = await this.prisma.subscription.count({
+      where: { userId, activatedAt: { not: null } },
+    });
+
     return {
-      hasEverPaid: latest.activatedAt !== null,
+      hasEverPaid: everActivated > 0,
       // Still `&& isLive`, even after the sweep above. The sweep only touches
       // rows that were already stale; the authority is the timestamp, and a
       // status read is never allowed to become the thing that decides.

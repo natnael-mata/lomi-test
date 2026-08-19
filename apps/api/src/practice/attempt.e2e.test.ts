@@ -387,6 +387,39 @@ describe('POST /attempts', () => {
       expect(res.text).not.toContain('answer B');
     });
 
+    /*
+     * The wall has to arrive before the question, not after it.
+     *
+     * QA reported "the last free question skips its own feedback": a student out
+     * of free questions was still served a fresh one, read it, chose an answer,
+     * and met the paywall on Check with no verdict. Refusing the attempt was
+     * right; offering the question was not. So the server may only serve what it
+     * would still accept — one they have already seen, or nothing.
+     */
+    it('never serves a question it would refuse', async () => {
+      const fresh = await signIn(561000006);
+      for (let i = 0; i < FREE_ATTEMPTS_PER_FIELD; i++) {
+        await answer(questionIds[i]!, 'B', 201, 30, fresh.token);
+      }
+      const spent = new Set(questionIds.slice(0, FREE_ATTEMPTS_PER_FIELD));
+
+      // Ten draws, because the pick is random and a single one proves nothing.
+      for (let i = 0; i < 10; i++) {
+        const res = await request(app.getHttpServer())
+          .get('/questions/next')
+          .set('Authorization', `Bearer ${fresh.token}`);
+        if (res.status === 402) {
+          expect(res.body.error).toBe('FREE_LIMIT_REACHED');
+          continue;
+        }
+        expect(res.status).toBe(200);
+        expect(res.body.freeRemaining).toBe(0);
+        // Answerable: all ten were answered wrong, so re-practice is still open
+        // and costs nothing. What must never appear is an eleventh.
+        expect(spent.has(res.body.questionId)).toBe(true);
+      }
+    });
+
     it('writes no attempt for a refused submission', async () => {
       const fresh = await prisma.user.findFirstOrThrow({ where: { telegramId: '561000005' } });
       const rows = await prisma.attempt.count({ where: { userId: fresh.id } });

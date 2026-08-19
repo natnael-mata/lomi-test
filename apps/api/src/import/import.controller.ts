@@ -1,7 +1,8 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UnprocessableEntityException, UseGuards } from '@nestjs/common';
 
 import { AdminGuard } from '../auth/staff.guard';
 import { SessionGuard } from '../auth/session.guard';
+import { CsvError } from './parse-csv';
 import { ImportService, type ImportReport } from './import.service';
 
 /**
@@ -36,7 +37,33 @@ export class ImportController {
    * describing a failed import can paste exactly what they sent.
    */
   @Post('import')
-  import(@Body() body: { csv?: string }): Promise<ImportReport> {
-    return this.imports.importCsv(body?.csv ?? '');
+  async import(@Body() body: { csv?: string }): Promise<ImportReport> {
+    try {
+      return await this.imports.importCsv(body?.csv ?? '');
+    } catch (error) {
+      /*
+       * A file this malformed has no rows to reject one at a time.
+       *
+       * `CsvError` is a plain Error, so it used to leave here as Nest's bare
+       * `{"statusCode":500}` — an operator with a stray quote or a renamed
+       * column was told the server had broken, which is both wrong and the
+       * least actionable thing the product could have said. The parser already
+       * knows what went wrong and on which line; this hands that over intact.
+       *
+       * 422 and not 400: the request was well-formed, the file inside it was
+       * not. It is also the status the admin screen already renders in the
+       * operator's own words rather than as a failure.
+       */
+      if (error instanceof CsvError) {
+        throw new UnprocessableEntityException({
+          message:
+            error.line === undefined
+              ? `This file could not be read: ${error.message}`
+              : `This file could not be read at line ${error.line}: ${error.message}`,
+          line: error.line ?? null,
+        });
+      }
+      throw error;
+    }
   }
 }

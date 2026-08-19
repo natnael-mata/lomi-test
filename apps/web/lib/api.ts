@@ -23,6 +23,14 @@
  * never was, so without it this would have traded XSS exposure for CSRF.
  */
 
+/** A programme as `/me/fields` returns it. */
+export interface FieldOption {
+  id: string;
+  name: string;
+  slug: string;
+  chosen: boolean;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -80,6 +88,34 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
  */
 export function signInRequired(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
+}
+
+/**
+ * The server's own explanation, when it refused rather than failed.
+ *
+ * **Three screens told somebody nothing was wrong while the API was returning a
+ * 403 that said exactly what was.** An admin on `/provider/health` read "The
+ * health check did not answer. That is itself worth knowing — try again"; the
+ * server had said "This is a staff-only endpoint." A student blocked by their
+ * own open mock read "That did not load… try again"; the server had said
+ * "Finish or submit your exam before practising."
+ *
+ * That is worse than a bare error. It denies there is a problem and invites a
+ * retry that cannot work — DESIGN.md's rule is that an error says what to do
+ * next, and a generic message over a specific refusal fails it twice.
+ *
+ * Only 403 and 422: those are the statuses where the server has made a
+ * *decision* and can say why. A 500 has no explanation worth showing a student,
+ * and a 404's message is usually a route name.
+ *
+ * Found in QA, 2026-08-19.
+ */
+export function refusalMessage(error: unknown): string | null {
+  if (!(error instanceof ApiError)) return null;
+  if (error.status !== 403 && error.status !== 422) return null;
+  const body = error.body as { message?: unknown } | null;
+  const message = body?.message;
+  return typeof message === 'string' && message.trim().length > 0 ? message : null;
 }
 
 /** The pre-answer payload. Deliberately carries no answer content (T-106). */
@@ -709,8 +745,7 @@ export const api = {
    * and the screens that got this wrong were reading `fields[0]` and calling it
    * the student's programme.
    */
-  myFields: (): Promise<{ id: string; name: string; slug: string; chosen: boolean }[]> =>
-    call<{ id: string; name: string; slug: string; chosen: boolean }[]>('/me/fields'),
+  myFields: (): Promise<FieldOption[]> => call<FieldOption[]>('/me/fields'),
 
   /**
    * Picks the programme every question is scoped to (PLAN.md 4.1).

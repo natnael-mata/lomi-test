@@ -30,7 +30,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
 import { Icon, type IconName } from '../../../components/icons';
-import { api, signInRequired, type ActivityEvent, type ActivityPage } from '../../../lib/api';
+import {
+  api,
+  refusalMessage,
+  signInRequired,
+  type ActivityEvent,
+  type ActivityPage,
+} from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
 import { dayAndTime } from '../../../lib/dates';
 
@@ -65,7 +71,10 @@ export function ActivityScreen() {
           window.location.assign('/signin');
           return;
         }
-        setPhase({ kind: 'error', message: c.provider.activity.couldNotLoad });
+        setPhase({
+          kind: 'error',
+          message: refusalMessage(error) ?? c.provider.activity.couldNotLoad,
+        });
       }
     },
     [c.provider.activity.couldNotLoad],

@@ -86,20 +86,33 @@ export function CheckoutScreen() {
   const [busy, setBusy] = useState(false);
   /** Counts up while a push is outstanding, so the wait is a number not a mood. */
   const [waited, setWaited] = useState(0);
+  /**
+   * A claim already with the team, if there is one.
+   *
+   * **This screen used to show nothing about it.** A student who submitted a
+   * bank transfer saw the confirmation once and then, on every later visit, the
+   * plan picker again — with no way to tell whether the claim had arrived. The
+   * obvious next move is to pay a second time.
+   */
+  const [pending, setPending] = useState<{ txRef: string; amountEtb: number } | null>(null);
 
   useEffect(() => {
     let alive = true;
     void (async () => {
       try {
-        const [offers, subscription, contact] = await Promise.all([
+        const [offers, subscription, contact, history] = await Promise.all([
           api.plans(),
           api.mySubscription().catch(() => null),
           // Never fatal: a checkout that refuses to open because a convenience
           // lookup failed is a checkout that refuses money.
           api.myContact().catch(() => null),
+          api.paymentHistory().catch(() => null),
         ]);
         if (!alive) return;
         setPlans(offers);
+
+        const waiting = history?.payments.find((p) => p.status === 'PENDING') ?? null;
+        setPending(waiting ? { txRef: waiting.txRef, amountEtb: waiting.amountEtb } : null);
         if (contact?.phone && contact.verifiedAt) {
           setMobile(contact.phone);
           setVerifiedPhone(true);
@@ -382,6 +395,22 @@ export function CheckoutScreen() {
   return (
     <div className="flex flex-1 flex-col gap-3">
       <h1 className="text-title">{c.checkout.heading}</h1>
+
+      {/*
+        The claim already with the team, above the plans.
+        Pending rather than success — nothing has been granted — and it names
+        the reference, because the reference is the only thing a student has to
+        quote if they have to ask about it.
+      */}
+      {pending ? (
+        <Card as="section" className="flex flex-col gap-2">
+          <Banner tone="pending" icon="clock">
+            {c.checkout.submittedBanner}
+          </Banner>
+          <p className="text-body">{c.checkout.submittedBody(pending.txRef)}</p>
+          <p className="text-caption text-ink-2">{c.checkout.yourReference(pending.txRef)}</p>
+        </Card>
+      ) : null}
 
       {/* Side by side, so the two prices and the two per-month figures can be
           compared without scrolling between them. */}

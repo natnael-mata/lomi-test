@@ -31,7 +31,14 @@ import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
 import { Icon } from '../../../components/icons';
 import { StatedFigure } from '../../../components/StatedFigure';
-import { ApiError, api, signInRequired, type ReviewItem, type ReviewQueue } from '../../../lib/api';
+import {
+  ApiError,
+  api,
+  refusalMessage,
+  signInRequired,
+  type ReviewItem,
+  type ReviewQueue,
+} from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
 import { QuestionEditor } from './QuestionEditor';
 
@@ -67,7 +74,7 @@ export function ReviewScreen() {
         window.location.assign('/signin');
         return;
       }
-      setPhase({ kind: 'error', message: c.admin.review.couldNotLoad });
+      setPhase({ kind: 'error', message: refusalMessage(error) ?? c.admin.review.couldNotLoad });
     }
   }, [c.admin.review.couldNotLoad]);
 

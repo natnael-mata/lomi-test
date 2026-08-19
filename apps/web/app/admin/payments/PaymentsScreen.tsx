@@ -30,7 +30,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '../../../components/Button';
 import { Icon, type IconName } from '../../../components/icons';
-import { api, type ManualClaim } from '../../../lib/api';
+import { api, refusalMessage, type ManualClaim } from '../../../lib/api';
 import { dayAndTime } from '../../../lib/dates';
 import { copy } from '../../../lib/i18n';
 
@@ -60,8 +60,11 @@ export function PaymentsScreen() {
     try {
       const claims = await api.adminClaims();
       setPhase({ kind: 'ready', claims });
-    } catch {
-      setPhase({ kind: 'error', message: c.admin.payments.couldNotLoad });
+    } catch (error) {
+      setPhase({
+        kind: 'error',
+        message: refusalMessage(error) ?? c.admin.payments.couldNotLoad,
+      });
     }
   }, [c.admin.payments.couldNotLoad]);
 

@@ -53,6 +53,8 @@ export function ExamScreen() {
   const [manifest, setManifest] = useState<SittingManifest | null>(null);
   const [item, setItem] = useState<SittingItem | null>(null);
   const [saving, setSaving] = useState(false);
+  /** Whether the submit button has been pressed with questions still blank. */
+  const [confirming, setConfirming] = useState(false);
 
   /**
    * The offline outbox (T-131).
@@ -404,9 +406,53 @@ export function ExamScreen() {
         onJump={(position) => void goTo(sittingId, position)}
       />
 
-      <Button onClick={() => void submit()}>
-        {c.exam.submit(answeredCount, manifest.totalQuestions)}
-      </Button>
+      {/*
+        Asked before the paper closes, and only when there is something to ask
+        about (T-236).
+
+        Submitting is the one action in the product that cannot be undone — the
+        sitting closes, unanswered questions score zero, and there is no reopen.
+        The button sat directly under the jump grid with nothing between a
+        mis-tap and a finished exam.
+
+        An inline panel rather than `window.confirm`: the dialog is unstyleable,
+        renders as a browser chrome bar inside the Telegram webview where most of
+        these sittings happen, and cannot carry the count that makes the question
+        worth asking. A student with every question answered still gets the plain
+        button — a confirmation that always fires is one nobody reads.
+      */}
+      {confirming ? (
+        <Card
+          as="section"
+          role="alertdialog"
+          aria-labelledby="submit-confirm"
+          className="flex flex-col gap-3"
+        >
+          <h2 id="submit-confirm" className="text-label">
+            {c.exam.confirmTitle}
+          </h2>
+          <p className="text-body text-ink-2">
+            {c.exam.confirmBody(manifest.totalQuestions - answeredCount)}
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
+            <Button className="sm:flex-1" onClick={() => setConfirming(false)}>
+              {c.exam.confirmBack}
+            </Button>
+            <Button variant="ghost" className="sm:flex-1" onClick={() => void submit()}>
+              {c.exam.confirmSubmit}
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <Button
+          onClick={() => {
+            if (answeredCount < manifest.totalQuestions) setConfirming(true);
+            else void submit();
+          }}
+        >
+          {c.exam.submit(answeredCount, manifest.totalQuestions)}
+        </Button>
+      )}
     </div>
   );
 }

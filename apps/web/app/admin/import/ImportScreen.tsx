@@ -23,7 +23,7 @@ import { useCallback, useState } from 'react';
 import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
 import { StatedFigure } from '../../../components/StatedFigure';
-import { ApiError, api, type ImportReport } from '../../../lib/api';
+import { ApiError, api, refusalMessage, type ImportReport } from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
 
 type State =
@@ -54,7 +54,12 @@ export function ImportScreen() {
     } catch (error) {
       setState({
         kind: 'error',
-        message: error instanceof ApiError ? error.message : c.importer.couldNotUpload,
+        // The server's own account of what is wrong with the file — "could not
+        // be read at line 1: Header does not match the import schema" — rather
+        // than a generic failure the operator cannot act on.
+        message:
+          refusalMessage(error) ??
+          (error instanceof ApiError ? error.message : c.importer.couldNotUpload),
       });
     }
   }, [c.importer.couldNotUpload, csv]);

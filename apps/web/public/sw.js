@@ -30,9 +30,7 @@ const STATIC = `${VERSION}-static`;
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL).then((cache) => cache.addAll([OFFLINE_URL])),
-  );
+  event.waitUntil(caches.open(SHELL).then((cache) => cache.addAll([OFFLINE_URL])));
   // Take over on the next load rather than waiting for every tab to close: a
   // student with the app open for an hour should not be running last week's
   // worker.

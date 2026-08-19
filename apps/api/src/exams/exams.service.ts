@@ -4,11 +4,14 @@ import {
   HttpStatus,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import type { OptionLabel, Prisma } from '@prisma/client';
 
+import { EngagementService } from '../engagement/engagement.service';
+import { RULES } from '../engagement/points';
 import { OPTION_LABELS } from '../import/map-row';
 import { SUBSCRIPTION_ACCESS, type SubscriptionAccess } from '../practice/subscription-access';
 import { toServedQuestion } from '../practice/question-view';
@@ -69,6 +72,7 @@ export class ExamRequiresSubscription extends HttpException {
 export class ExamsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly engagement: EngagementService,
     @Inject(SUBSCRIPTION_ACCESS) private readonly subscriptions: SubscriptionAccess,
   ) {}
 
@@ -351,8 +355,31 @@ export class ExamsService {
     now: Date = new Date(),
   ): Promise<SittingResultView> {
     const { sitting } = await this.load(userId, sittingId);
-    if (sitting.closedAt === null) {
+    const wasOpen = sitting.closedAt === null;
+    if (wasOpen) {
       await this.closeSitting(this.prisma, sitting.id, closeReasonFor(sitting, now), now);
+    }
+
+    /*
+     * Sitting a mock is the largest award in the product (T-190).
+     *
+     * **Only on the submission that actually closes it.** `submit` is
+     * idempotent — a student reloading the result page calls it again — and
+     * paying 25 points per reload would make the leaderboard a measure of how
+     * often somebody pressed F5.
+     *
+     * Swallowed but logged, like the practice award: the result of a
+     * three-hour sitting must not be lost because a ledger write failed.
+     */
+    if (wasOpen) {
+      try {
+        await this.engagement.record(userId, RULES.MOCK_COMPLETED, now);
+        await this.engagement.touch(userId, now);
+      } catch (error) {
+        new Logger('exams').error(
+          `points not recorded for ${userId}: ${error instanceof Error ? error.message : error}`,
+        );
+      }
     }
     return this.result(userId, sittingId);
   }

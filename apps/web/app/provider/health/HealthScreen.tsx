@@ -26,7 +26,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Card } from '../../../components/Card';
 import { Icon, type IconName } from '../../../components/icons';
-import { api, signInRequired, type ComponentStatus, type HealthReport } from '../../../lib/api';
+import {
+  api,
+  refusalMessage,
+  signInRequired,
+  type ComponentStatus,
+  type HealthReport,
+} from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
 
 /** How often the board asks. Short enough to feel live, long enough to be polite. */
@@ -75,7 +81,7 @@ export function HealthScreen() {
         window.location.assign('/signin');
         return;
       }
-      setPhase({ kind: 'error', message: c.provider.health.couldNotLoad });
+      setPhase({ kind: 'error', message: refusalMessage(error) ?? c.provider.health.couldNotLoad });
     }
   }, [c.provider.health.couldNotLoad]);
 

@@ -36,12 +36,12 @@ the root `node_modules`, so a subdirectory deploy would install the wrong tree.
 
 ### App 1 — `lomi-api`
 
-| Setting | Value |
-| --- | --- |
-| Root directory | `/` (repository root) |
-| Build | `npm ci && npx prisma generate --schema apps/api/prisma/schema.prisma && npm run build -w api` |
-| Start | `node apps/api/dist/main.js` |
-| Port | Assigned by the platform. The app reads `PORT` first |
+| Setting        | Value                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------------- |
+| Root directory | `/` (repository root)                                                                          |
+| Build          | `npm ci && npx prisma generate --schema apps/api/prisma/schema.prisma && npm run build -w api` |
+| Start          | `node apps/api/dist/main.js`                                                                   |
+| Port           | Assigned by the platform. The app reads `PORT` first                                           |
 
 `prisma generate` runs **before** `build`: the generated client is what the
 TypeScript compile type-checks against, and without it the build fails on
@@ -49,12 +49,12 @@ missing types rather than on anything informative.
 
 ### App 2 — `lomi-web`
 
-| Setting | Value |
-| --- | --- |
-| Root directory | `/` (repository root) |
-| Build | `npm ci && npm run build -w web` |
-| Start | `npm run start -w web` |
-| Port | Assigned by the platform. `next start` takes `PORT` |
+| Setting        | Value                                               |
+| -------------- | --------------------------------------------------- |
+| Root directory | `/` (repository root)                               |
+| Build          | `npm ci && npm run build -w web`                    |
+| Start          | `npm run start -w web`                              |
+| Port           | Assigned by the platform. `next start` takes `PORT` |
 
 ## Migrations
 
@@ -75,25 +75,25 @@ hand-written foreign keys and triggers with it (see CLAUDE.md).
 
 Set on the **API** app:
 
-| Variable | Notes |
-| --- | --- |
-| `DATABASE_URL` | From the managed PostgreSQL instance |
-| `JWT_SECRET` | `openssl rand -base64 48`. A new one signs out every session |
-| `TELEGRAM_BOT_TOKEN` | The only way in. Blank means nobody can sign in |
-| `TELEGRAM_BOT_USERNAME` | Without the `@` |
-| `BOT_SHARED_SECRET`, `BOT_INTERNAL_TOKEN` | `openssl rand -hex 32` each |
-| `CHAPA_SECRET_KEY` | Blank leaves telebirr, CBE Birr and the Chapa page answering 503 by design; bank transfer still works |
-| `CHAPA_WEBHOOK_SECRET` | Blank verifies against `CHAPA_SECRET_KEY`, which is what Chapa signs with by default |
-| `WEB_BASE_URL` | The **web** app's public URL. Chapa's return URL is built from it |
-| `API_BASE_URL` | The web app's URL plus `/api` — that is the address Chapa's webhook must reach |
-| `NODE_ENV` | `production` |
+| Variable                                  | Notes                                                                                                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                            | From the managed PostgreSQL instance                                                                  |
+| `JWT_SECRET`                              | `openssl rand -base64 48`. A new one signs out every session                                          |
+| `TELEGRAM_BOT_TOKEN`                      | The only way in. Blank means nobody can sign in                                                       |
+| `TELEGRAM_BOT_USERNAME`                   | Without the `@`                                                                                       |
+| `BOT_SHARED_SECRET`, `BOT_INTERNAL_TOKEN` | `openssl rand -hex 32` each                                                                           |
+| `CHAPA_SECRET_KEY`                        | Blank leaves telebirr, CBE Birr and the Chapa page answering 503 by design; bank transfer still works |
+| `CHAPA_WEBHOOK_SECRET`                    | Blank verifies against `CHAPA_SECRET_KEY`, which is what Chapa signs with by default                  |
+| `WEB_BASE_URL`                            | The **web** app's public URL. Chapa's return URL is built from it                                     |
+| `API_BASE_URL`                            | The web app's URL plus `/api` — that is the address Chapa's webhook must reach                        |
+| `NODE_ENV`                                | `production`                                                                                          |
 
 Set on the **web** app:
 
-| Variable | Notes |
-| --- | --- |
+| Variable     | Notes                                                        |
+| ------------ | ------------------------------------------------------------ |
 | `API_ORIGIN` | The **API** app's internal or public URL. The rewrite target |
-| `NODE_ENV` | `production` |
+| `NODE_ENV`   | `production`                                                 |
 
 **`DEV_LOGIN_SECRET` is deliberately absent.** It is the smoke-test sign-in door
 (T-206a) and a launch blocker. Set it only if you need to click through before
