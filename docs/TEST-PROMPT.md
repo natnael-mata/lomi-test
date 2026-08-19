@@ -20,9 +20,9 @@ not connected yet, so use the testing door:
 
 1. Go to **http://localhost:3100/dev-login**
 2. The password box is already filled in — leave it alone
-3. Click one of four buttons
+3. Click one of five buttons
 
-Each button signs you in as that account and keeps its history. The four are set up in
+Each button signs you in as that account and keeps its history. The five are set up in
 different states on purpose, so between them they reach every screen:
 
 | Button       | Where it starts you                                    | Use it for                                                                     |
@@ -130,9 +130,14 @@ Sign in as **Admin** (go to `/dev-login` again).
   `docs/question_import_template.csv` from the project folder. Does it report how many rows
   were read, added or refused, and does a refused row say which line and why?
 - **`/admin/weights`** — does it show topic weights and a running total?
-- **`/admin/review`** — after the import, do the uploaded rows appear as drafts? Does each one say
-  what is stopping it, in enough detail to act on? Send one to review, then try to publish it: if
-  it is incomplete the refusal should **name every reason**, not say "try again".
+- **`/admin/review`** — the content path. Do the uploaded rows appear as drafts, and does each one
+  say what is stopping it in enough detail to act on? Send one to review.
+- Now **fix it**: the question waiting on you has an editor. Pick the correct answer, write a
+  rationale for each of the others, fill in the concept line. Save. **The list of blockers above
+  the fields should shrink as you fix them.**
+- Try to publish it while it is still incomplete. The refusal must **name every reason**, not say
+  "try again" — trying again is the one thing that cannot help.
+- Fix everything it names, then publish. It should go, and the Published count should go up by one.
 
 Then sign back in as **User A** and try to open `/admin/dashboard`. You should be refused.
 
