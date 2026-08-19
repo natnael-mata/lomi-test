@@ -495,6 +495,23 @@ export interface ReviewItem {
   topic: string;
   topicWeighted: boolean;
   bounceNote: string | null;
+  blockers: string[];
+}
+
+/**
+ * What a reviewer may change (T-233).
+ *
+ * Why-wrongs and the concept line are deliberately absent from the import
+ * template, so this is the only way anything imported ever becomes publishable.
+ * Every field is optional and an omitted one is left alone — `null` clears.
+ */
+export interface ReviewPatch {
+  correctOption?: string;
+  whyWrong?: Record<string, string | null>;
+  conceptLine?: string | null;
+  explanation?: string | null;
+  timeLimitSec?: number;
+  steps?: { stepNo: number; text: string; formula?: string | null }[];
 }
 
 export interface ImportReport {
@@ -564,6 +581,13 @@ export const api = {
 
   /** STAFF: the next question waiting on a reviewer, or null. */
   reviewNext: (): Promise<ReviewItem | null> => call<ReviewItem | null>('/admin/review/next'),
+
+  /** STAFF: write the answer content the import could not carry. */
+  reviewPatch: (
+    id: string,
+    patch: ReviewPatch,
+  ): Promise<{ id: string; status: string; changed: string[] }> =>
+    call(`/admin/review/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
   /** STAFF: send a draft into the review queue. */
   reviewSubmit: (id: string): Promise<{ id: string; status: string }> =>

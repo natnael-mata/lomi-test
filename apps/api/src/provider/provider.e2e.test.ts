@@ -371,15 +371,35 @@ describe('the provider role and its screens (T-227, T-228, T-229)', () => {
       }
     });
 
+    /**
+     * The rule, not a fixed answer.
+     *
+     * This asserted `overall === 'degraded'` and failed the first time it ran
+     * without the web app up — the board correctly reported the front end as
+     * `down`, and the test was measuring the environment rather than the rule.
+     * What it means to assert is: **the overall is the worst component, and
+     * `not_configured` counts as fine** — nothing is wrong with a channel
+     * nobody has switched on.
+     */
     it('takes the worst component as the overall status', async () => {
       const previous = process.env.DEV_LOGIN_SECRET;
       process.env.DEV_LOGIN_SECRET = 'a-secret-long-enough-to-count-000';
       try {
         const body = await report();
-        // Security is degraded, SMS is not_configured. `not_configured` must not
-        // drag the overall down — nothing is wrong with a channel nobody has
-        // switched on — but degraded must show.
-        expect(body.overall).toBe('degraded');
+        const RANK: Record<string, number> = { ok: 0, not_configured: 0, degraded: 1, down: 2 };
+        const worst = Math.max(...body.components.map((c) => RANK[c.status] ?? 0));
+        expect(RANK[body.overall]).toBe(worst);
+
+        // And the half that would otherwise go unchecked: SMS is
+        // `not_configured` here, and its presence must not be what set the
+        // overall — a permanent alarm is an alarm nobody reads.
+        const sms = body.components.find((c) => c.key === 'sms')!;
+        expect(sms.status).toBe('not_configured');
+        expect(RANK[sms.status]).toBe(0);
+
+        // The open door is degraded, so the overall can never be plain `ok`
+        // while it is set.
+        expect(body.overall).not.toBe('ok');
       } finally {
         if (previous === undefined) delete process.env.DEV_LOGIN_SECRET;
         else process.env.DEV_LOGIN_SECRET = previous;

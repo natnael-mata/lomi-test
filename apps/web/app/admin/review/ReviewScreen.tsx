@@ -33,6 +33,7 @@ import { Icon } from '../../../components/icons';
 import { StatedFigure } from '../../../components/StatedFigure';
 import { ApiError, api, signInRequired, type ReviewItem, type ReviewQueue } from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
+import { QuestionEditor } from './QuestionEditor';
 
 /** The shortest bounce note the server accepts. Mirrors `MIN_BOUNCE_NOTE`. */
 const MIN_NOTE = 10;
@@ -188,7 +189,7 @@ export function ReviewScreen() {
       </div>
 
       {item ? (
-        <Waiting item={item} busy={busy} note={note} onNote={setNote} onAct={act} />
+        <Waiting item={item} busy={busy} note={note} onNote={setNote} onAct={act} onSaved={load} />
       ) : (
         <p className="text-body text-ink-2">{c.admin.review.nothingWaiting}</p>
       )}
@@ -276,12 +277,14 @@ function Waiting({
   note,
   onNote,
   onAct,
+  onSaved,
 }: {
   item: ReviewItem;
   busy: string | null;
   note: string;
   onNote: (value: string) => void;
   onAct: (what: 'submit' | 'publish' | 'bounce', id: string) => Promise<void>;
+  onSaved: () => Promise<void>;
 }) {
   const c = copy();
   const answer = item.answerView;
@@ -298,49 +301,18 @@ function Waiting({
 
       <p className="text-stem">{answer.stem}</p>
 
-      <ul className="flex flex-col gap-2">
-        {answer.options.map((option) => (
-          <li
-            key={option.label}
-            className={[
-              'rounded-control flex flex-col gap-1 p-3',
-              option.isCorrect ? 'bg-correct-soft' : 'bg-surface-2',
-            ].join(' ')}
-          >
-            <span className="flex items-center gap-2">
-              <span className="option-key">{option.label}</span>
-              <span className="text-body flex-1">{option.text}</span>
-              {option.isCorrect ? (
-                <span className="text-correct text-caption inline-flex items-center gap-1 uppercase">
-                  <Icon name="check" size={14} strokeWidth={2.5} />
-                  {c.answer.correct}
-                </span>
-              ) : null}
-            </span>
-            {/* A distractor with no rationale is the most common reason the
-                gate refuses, so its absence has to be visible here. */}
-            <span className="text-caption text-ink-2">{option.whyWrong ?? '—'}</span>
-          </li>
-        ))}
-      </ul>
+      {/*
+        The editor rather than a read-only rendering of the same fields.
+        Everything the gate can refuse is here as something a reviewer can
+        change — `PATCH /admin/review/:id` is the only path from an imported row
+        to a publishable question, and a screen that displayed the gap without
+        offering the field would send somebody back to the spreadsheet.
 
-      {answer.conceptLine ? (
-        <span className="bg-brand-soft rounded-card p-3">
-          <span className="text-body">{answer.conceptLine}</span>
-        </span>
-      ) : null}
-
-      {answer.explanation ? <p className="text-body text-ink-2">{answer.explanation}</p> : null}
-
-      {answer.steps.length > 0 ? (
-        <ol className="flex flex-col gap-1">
-          {answer.steps.map((step) => (
-            <li key={step.stepNo} className="text-caption text-ink-2 num">
-              {step.stepNo}. {step.text} {step.formula ?? ''}
-            </li>
-          ))}
-        </ol>
-      ) : null}
+        Keyed by question id so the form resets between questions: a half-typed
+        why-wrong following a reviewer onto the next one is a why-wrong that
+        ends up on the wrong question.
+      */}
+      <QuestionEditor key={item.id} item={item} onSaved={onSaved} />
 
       {item.bounceNote ? (
         <span className="bg-pending-soft text-pending rounded-control p-3">

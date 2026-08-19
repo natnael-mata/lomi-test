@@ -44,6 +44,15 @@ export interface ReviewItem {
   topicWeighted: boolean;
   /** What a previous reviewer asked for, if this has been round before. */
   bounceNote: string | null;
+  /**
+   * Every reason the gate would refuse it right now.
+   *
+   * Sent with the item so the editor can close its own loop: a reviewer filling
+   * in a why-wrong sees the blocker disappear on save, rather than finding out
+   * by pressing publish and reading a refusal. The same list the queue carries
+   * and the same function the publish button runs.
+   */
+  blockers: string[];
 }
 
 /**
@@ -216,6 +225,32 @@ export class ReviewService {
       topic: question.topic.name,
       topicWeighted: question.topic.weightPct !== null,
       bounceNote: question.bounceNote,
+      blockers: gateBlockers({
+        qType: question.qType,
+        stem: question.stem,
+        conceptLine: question.conceptLine,
+        explanation: question.explanation,
+        timeLimitSec: question.timeLimitSec,
+        authorId: question.authorId,
+        // The person looking, so the self-review rule (T-044) reports against
+        // them: a question you wrote is blocked for you and not for a colleague.
+        reviewerId,
+        topic: {
+          name: question.topic.name,
+          weightPct: question.topic.weightPct?.toNumber() ?? null,
+        },
+        steps: question.steps.map((step) => ({
+          stepNo: step.stepNo,
+          text: step.text,
+          formula: step.formula,
+        })),
+        options: question.options.map((option) => ({
+          label: option.label,
+          text: option.text,
+          isCorrect: option.isCorrect,
+          whyWrong: option.whyWrong,
+        })),
+      }),
     };
   }
 

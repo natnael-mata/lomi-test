@@ -281,6 +281,12 @@ describe('the review payload is the student answer view (T-066)', () => {
     expect(Object.keys(body).sort()).toEqual([
       'answerView',
       'authorId',
+      /*
+       * `blockers` came with the editor (T-233): a reviewer filling in a
+       * why-wrong watches the reason disappear on save, rather than learning
+       * whether they fixed it by pressing publish and reading a refusal.
+       */
+      'blockers',
       'bounceNote',
       'course',
       'field',
