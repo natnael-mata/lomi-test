@@ -1,25 +1,34 @@
 /**
- * Sets up the four accounts a person needs in order to test this product.
+ * Sets up the twelve accounts a person needs in order to test this product.
  *
  *   npm run dev:testers -w api
  *
  * The smoke-test door (`/dev-login`) mints its accounts on first use, which is
  * enough to get *in* and not enough to try anything: a brand-new account has no
  * programme, no history, no subscription and no staff role, so the paywall, the
- * receipt, the mock exam and every admin screen are unreachable. This puts the
- * four personas into four states that between them cover the product.
+ * receipt, the mock exam and every admin screen are unreachable. This puts ten
+ * students and two operators into states that between them reach every screen.
  *
  * | Account | State | What it is for |
  * | ------- | ----- | -------------- |
- * | User A  | brand new, no programme | first run: choosing a programme, the first question, the free counter |
- * | User B  | 8 questions used, one bank claim pending | the free wall two answers away, and a claim sitting in the admin queue |
+ * | User A  | brand new, no programme | first run: the chooser, the first question, the free counter |
+ * | User B  | 8 of 10 free used, bank claim pending | the wall two answers away, and a claim in the admin queue |
  * | User C  | paid, 12 months active | the receipt, the payment history, the mock exam, practice with no wall |
+ * | User D  | all 10 free spent, never paid | the paywall on arrival — the wall before the question, not after it |
+ * | User E  | subscription expired yesterday | "paid and ran out", which is a different offer from "never paid" |
+ * | User F  | a mock open and unsubmitted | resuming the paper, the practice lock, the submit confirmation |
+ * | User G  | a mock finished | the result, the review of a closed paper, the trend with a point on it |
+ * | User H  | five days engaged, points banked | the standing and the leaderboard with something in them |
+ * | User I  | answered a lot, mostly wrong | readiness low, the focus list full, and the never-shame copy under load |
+ * | User J  | two live devices | the device list at its limit, and revoking one |
  * | Admin   | ADMIN staff | every `/admin` screen, including settling User B's claim |
  * | Provider | PROVIDER staff | the activity log and the live health board, above admin |
  *
- * **Re-runnable.** Every write is an upsert or is guarded, so running it twice
- * leaves the same four accounts in the same four states rather than a second set
- * of them. Run it again after `db:dev` recreates the database.
+ * **Re-runnable, and it produces the state it claims.** Every write is an upsert
+ * or is guarded, and the states that a tester's own actions would move — spent
+ * attempts, a settled claim, an open sitting — are reset rather than added to.
+ * A seed that only ever adds ends up describing an account that no longer
+ * matches it, which is worse than no seed at all: the tester believes the brief.
  *
  * It touches **only** accounts in the reserved smoke-test Telegram range
  * (`isDevTelegramId`), so it cannot reach a real student even if it is run
@@ -30,7 +39,10 @@ import { PrismaClient, type PrismaClient as Client } from '@prisma/client';
 import { AuditService } from '../src/audit/audit.service';
 import { SubscriptionsService } from '../src/payments/subscriptions.service';
 import { devTelegramId, isDevTelegramId } from '../src/auth/dev-login';
+import { EngagementService } from '../src/engagement/engagement.service';
 import { ExamBuildService } from '../src/exams/exam-build.service';
+import { ExamsService } from '../src/exams/exams.service';
+import { RULES } from '../src/engagement/points';
 import { TaxonomyService } from '../src/taxonomy/taxonomy.service';
 import type { PrismaService } from '../src/prisma/prisma.service';
 
@@ -50,6 +62,13 @@ const PERSONAS = [
   { label: 'usera', name: 'User A' },
   { label: 'userb', name: 'User B' },
   { label: 'userc', name: 'User C' },
+  { label: 'userd', name: 'User D' },
+  { label: 'usere', name: 'User E' },
+  { label: 'userf', name: 'User F' },
+  { label: 'userg', name: 'User G' },
+  { label: 'userh', name: 'User H' },
+  { label: 'useri', name: 'User I' },
+  { label: 'userj', name: 'User J' },
   { label: 'admin', name: 'Admin' },
   { label: 'provider', name: 'Provider' },
 ] as const;
@@ -58,6 +77,12 @@ const PERSONAS = [
 const USER_B_USED = 8;
 /** How many User C has answered. Past the free ten, which their subscription covers. */
 const USER_C_ANSWERED = 12;
+/** User D has spent the lot. `FREE_ATTEMPTS_PER_FIELD` is 10. */
+const USER_D_USED = 10;
+/** Days User H has been engaged. The streak counts days, and nothing takes it away. */
+const USER_H_DAYS = 5;
+/** How many User I has answered. Enough for readiness to mean something. */
+const USER_I_ANSWERED = 15;
 
 async function upsertPersona(label: string, name: string): Promise<string> {
   const telegramId = String(devTelegramId(label));
@@ -97,7 +122,21 @@ async function upsertPersona(label: string, name: string): Promise<string> {
  * across the topics in bank order, so the readiness screen has something with
  * shape in it rather than four identical bars.
  */
-async function seedAttempts(userId: string, fieldId: string, count: number): Promise<void> {
+async function seedAttempts(
+  userId: string,
+  fieldId: string,
+  count: number,
+  /**
+   * Whether the answer at this position was right.
+   *
+   * A parameter rather than a constant because User I exists to make the
+   * readiness screen say something uncomfortable, and the default — two in
+   * three correct — cannot produce that. Both shapes are fixtures either way;
+   * what matters is that neither is all-correct, which is the one history that
+   * leaves the focus list empty and proves nothing.
+   */
+  isCorrectAt: (index: number) => boolean = (index) => index % 3 !== 2,
+): Promise<void> {
   const questions = await prisma.question.findMany({
     where: { fieldId, status: 'PUBLISHED' },
     orderBy: { stableId: 'asc' },
@@ -146,7 +185,7 @@ async function seedAttempts(userId: string, fieldId: string, count: number): Pro
     // Every third one wrong. A history that is all correct makes the focus list
     // empty and the readiness figure 100%, which is the one state that proves
     // nothing about the screens being tested.
-    const correct = index % 3 !== 2;
+    const correct = isCorrectAt(index);
     const chosen = correct
       ? question.options.find((o) => o.isCorrect)
       : question.options.find((o) => !o.isCorrect);
@@ -167,6 +206,64 @@ async function seedAttempts(userId: string, fieldId: string, count: number): Pro
       },
     });
   }
+}
+
+/**
+ * Back to owing nothing.
+ *
+ * Every billing persona is set up from a clean slate rather than on top of
+ * whatever the last tester left, because settling a claim and letting a plan
+ * lapse are both things a tester *does*, and a seed that adds to the result
+ * describes an account that no longer exists. Payments before subscriptions:
+ * `Payment.subscriptionId` is RESTRICT, so the other order fails on a foreign
+ * key rather than on anything to do with the state.
+ *
+ * The audit log is never touched. It is the record of what happened, and this
+ * script's convenience is not a reason to edit history.
+ */
+async function clearBilling(userId: string): Promise<void> {
+  await prisma.payment.deleteMany({ where: { userId } });
+  await prisma.subscription.deleteMany({ where: { userId } });
+}
+
+/**
+ * A settled twelve-month plan, created the way a student's would be.
+ *
+ * Through the real service both times: the claim, the reference, the pending
+ * subscription, the activation and the audit row all exist because the same
+ * code that serves a student made them. Writing the rows directly would produce
+ * an account that looks subscribed and has no receipt to print.
+ */
+async function grantTwelveMonths(
+  subscriptions: SubscriptionsService,
+  userId: string,
+  adminId: string,
+  note: string,
+): Promise<void> {
+  const ref = `FT${Math.floor(Math.random() * 9_000_000_000 + 1_000_000_000)}`;
+  const claim = await subscriptions.submitManualPayment(userId, 'TWELVE_MONTH', ref);
+  await subscriptions.confirmManualPayment(claim.paymentId, adminId, note);
+}
+
+/** A live session row, which is what the device list counts and a sitting needs. */
+async function openSession(userId: string, deviceLabel: string): Promise<string> {
+  const existing = await prisma.session.findFirst({
+    where: { userId, revokedAt: null, deviceLabel },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+  const session = await prisma.session.create({
+    data: { userId, deviceLabel },
+    select: { id: true },
+  });
+  return session.id;
+}
+
+/** Midnight-based day offset, so "five days engaged" means five distinct days. */
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
 }
 
 async function main(): Promise<void> {
@@ -230,10 +327,7 @@ async function main(): Promise<void> {
    * is in the reserved range. The audit rows stay — they are a record of what
    * happened, and this is the one table nothing here may delete from.
    */
-  // Payments first: `Payment.subscriptionId` is RESTRICT, so the other order
-  // fails on the foreign key rather than on anything to do with the state.
-  await prisma.payment.deleteMany({ where: { userId: userB } });
-  await prisma.subscription.deleteMany({ where: { userId: userB } });
+  await clearBilling(userB);
 
   const bClaim = await prisma.payment.findFirst({
     where: { userId: userB, method: 'BANK', status: 'PENDING' },
@@ -258,13 +352,62 @@ async function main(): Promise<void> {
     where: { userId: userC, status: 'ACTIVE' },
     select: { id: true },
   });
-  if (!live) {
-    const ref = `FT${(Date.now() + 1).toString().slice(-10)}`;
-    const claim = await subscriptions.submitManualPayment(userC, 'TWELVE_MONTH', ref);
-    // Settled by the admin persona, so the audit row names a real actor and the
-    // receipt has a settledAt to print.
-    await subscriptions.confirmManualPayment(claim.paymentId, adminId, 'Set up by dev:testers.');
-  }
+  // Settled by the admin persona, so the audit row names a real actor and the
+  // receipt has a settledAt to print.
+  if (!live) await grantTwelveMonths(subscriptions, userC, adminId, 'Set up by dev:testers.');
+
+  // ---- User D: the free tier spent, and never paid -------------------------
+  // The account that meets the wall on arrival rather than two answers in. It is
+  // the state T-239 changed: the server now refuses to *serve* a question it
+  // would refuse to accept, so this persona should land on the paywall without
+  // ever being shown a stem it cannot answer.
+  const userD = ids.get('userd')!;
+  await prisma.user.update({ where: { id: userD }, data: { fieldId: field.id } });
+  await clearBilling(userD);
+  /*
+   * Every one right, and today — which is what actually produces the wall.
+   *
+   * Ten spent attempts alone do not: an already-seen question stays answerable
+   * because re-practice costs nothing, so the server rightly offered one of
+   * those instead of refusing. T-110 excludes anything got right *today*, so a
+   * clean sweep leaves nothing offerable and the wall arrives on arrival —
+   * which is the state this persona exists to show.
+   *
+   * Worth knowing while testing: tomorrow those ten become answerable again and
+   * User D goes back to re-practice. Re-run this script to restore the wall.
+   */
+  await seedAttempts(userD, field.id, USER_D_USED, () => true);
+
+  // ---- User E: paid, and ran out -------------------------------------------
+  /*
+   * A separate state from "never paid", deliberately.
+   *
+   * The schema keeps EXPIRED apart from PENDING for exactly this reason: the two
+   * need different words and a different offer. Somebody who paid and lapsed is
+   * being asked to renew; somebody who never paid is being asked to start. This
+   * is the account that proves the product tells them apart.
+   *
+   * Granted through the real service and then aged, rather than written expired:
+   * the receipt, the payment row and the audit trail all have to exist, because
+   * "I paid you in March" is the support question this state generates.
+   */
+  const userE = ids.get('usere')!;
+  await prisma.user.update({ where: { id: userE }, data: { fieldId: field.id } });
+  await clearBilling(userE);
+  await seedAttempts(userE, field.id, USER_C_ANSWERED);
+  await grantTwelveMonths(subscriptions, userE, adminId, 'Set up by dev:testers, then aged.');
+  /*
+   * Aged at both ends, because the database will not accept it otherwise.
+   *
+   * `Subscription_expires_after_activation` refused the first version of this —
+   * expiring yesterday a plan that activated today is not a state a real
+   * account can be in, and the constraint said so. A twelve-month plan that
+   * lapsed yesterday started a year and a day ago, so that is what this writes.
+   */
+  await prisma.subscription.updateMany({
+    where: { userId: userE, status: 'ACTIVE' },
+    data: { status: 'EXPIRED', activatedAt: daysAgo(366), expiresAt: daysAgo(1) },
+  });
 
   // ---- A paper to sit ------------------------------------------------------
   const exam = await prisma.exam.findFirst({ where: { fieldId: field.id, isActive: true } });
@@ -309,8 +452,124 @@ async function main(): Promise<void> {
     }
   }
 
+  /*
+   * The four personas that need something built before they can exist.
+   *
+   * F and G need a paper, so they come after it. H needs days rather than rows.
+   * J needs sessions, which is the one state a tester cannot create twice from
+   * one browser — which is exactly why it has to be seeded.
+   */
+  const engagement = new EngagementService(prisma as PrismaService);
+  const exams = new ExamsService(prisma as PrismaService, engagement, subscriptions);
+
+  // ---- User F: a paper open, mid-sitting -----------------------------------
+  /*
+   * The state a student is in when their phone dies.
+   *
+   * Worth its own account because it locks a screen the tester would otherwise
+   * never see refused: with a sitting open, `/practice` says "Finish or submit
+   * your exam before practising" instead of serving a question. And it is the
+   * only way to reach the submit confirmation without answering twenty
+   * questions first — the panel only appears when something is blank.
+   */
+  const userF = ids.get('userf')!;
+  await prisma.user.update({ where: { id: userF }, data: { fieldId: field.id } });
+  await clearBilling(userF);
+  await grantTwelveMonths(subscriptions, userF, adminId, 'Set up by dev:testers.');
+  let fNote = 'no paper to sit';
+  if (exam) {
+    const sessionF = await openSession(userF, 'Chrome on Android');
+    const started = await exams.start(userF, sessionF);
+    // Three answered out of twenty, so the navigator has a mix and the
+    // confirmation has a real number to report.
+    for (let position = 1; position <= 3; position++) {
+      await exams.answer(userF, started.sittingId, position, { chosenLabel: 'A' }, sessionF);
+    }
+    fNote = 'sitting open, 3 of 20 answered';
+  }
+
+  // ---- User G: a paper finished --------------------------------------------
+  // The only account with a closed sitting, which is the only way to reach the
+  // result screen, the review of a graded paper, and a trend with a point on it.
+  const userG = ids.get('userg')!;
+  await prisma.user.update({ where: { id: userG }, data: { fieldId: field.id } });
+  await clearBilling(userG);
+  await grantTwelveMonths(subscriptions, userG, adminId, 'Set up by dev:testers.');
+  let gNote = 'no paper to sit';
+  if (exam) {
+    const open = await prisma.sitting.findFirst({
+      where: { userId: userG, closedAt: null },
+      select: { id: true },
+    });
+    if (open) {
+      gNote = 'paper already sat';
+    } else {
+      const done = await prisma.sitting.findFirst({ where: { userId: userG } });
+      if (done) {
+        gNote = 'paper already sat';
+      } else {
+        const sessionG = await openSession(userG, 'Firefox on Windows');
+        const started = await exams.start(userG, sessionG);
+        for (let position = 1; position <= 20; position++) {
+          // B every time: some right, some wrong, and none of it a claim about
+          // how a real student answers.
+          await exams.answer(userG, started.sittingId, position, { chosenLabel: 'B' }, sessionG);
+        }
+        const result = await exams.submit(userG, started.sittingId);
+        gNote = `sat and submitted — scored ${result.scoreCorrect} of ${result.totalQuestions}`;
+      }
+    }
+  }
+
+  // ---- User H: five days engaged -------------------------------------------
+  /*
+   * The streak counts **days engaged, and nothing takes it away** — so this is
+   * seeded as five days rather than five rows, through the same `touch` the
+   * product calls. A streak written as a number would be a number this script
+   * made up; this one is derived from the ledger the screen reads.
+   */
+  const userH = ids.get('userh')!;
+  await prisma.user.update({ where: { id: userH }, data: { fieldId: field.id } });
+  await seedAttempts(userH, field.id, USER_C_ANSWERED);
+  for (let back = USER_H_DAYS - 1; back >= 0; back--) {
+    const day = daysAgo(back);
+    await engagement.touch(userH, day);
+    const already = await prisma.pointEntry.findFirst({
+      where: { userId: userH, ruleId: RULES.ANSWERED.id, day: day.toISOString().slice(0, 10) },
+      select: { id: true },
+    });
+    if (!already) await engagement.record(userH, RULES.ANSWERED, day);
+  }
+
+  // ---- User I: answered a lot, and struggling ------------------------------
+  /*
+   * The account that makes the progress screens say something uncomfortable.
+   *
+   * Every other persona is doing fine, which means the never-shame rule has
+   * never actually been under load — a readiness figure of 78% and a focus list
+   * of one topic tests nothing. One in four correct puts a real number on that
+   * screen and asks whether the product can deliver it without making somebody
+   * feel worse for having practised.
+   */
+  const userI = ids.get('useri')!;
+  await prisma.user.update({ where: { id: userI }, data: { fieldId: field.id } });
+  await clearBilling(userI);
+  await grantTwelveMonths(subscriptions, userI, adminId, 'Set up by dev:testers.');
+  await seedAttempts(userI, field.id, USER_I_ANSWERED, (index) => index % 4 === 0);
+
+  // ---- User J: at the two-device limit -------------------------------------
+  // A tester cannot make this state from one browser, so it is seeded: two live
+  // sessions, which is the limit (T-082). Signing in as User J evicts the older
+  // one, which is the behaviour worth watching.
+  const userJ = ids.get('userj')!;
+  await prisma.user.update({ where: { id: userJ }, data: { fieldId: field.id } });
+  await seedAttempts(userJ, field.id, 3);
+  await openSession(userJ, 'Chrome on Android');
+  await openSession(userJ, 'Safari on iPhone');
+
   const line = (label: string, value: string): string => `  ${label.padEnd(9)} ${value}`;
   console.log('\nTest accounts ready. Sign in at http://localhost:3100/dev-login\n');
+  console.log('  Type the name exactly as shown — the door normalises spacing and case.\n');
   console.log(line('User A', 'no programme chosen — starts at the programme chooser'));
   console.log(
     line(
@@ -321,6 +580,17 @@ async function main(): Promise<void> {
   console.log(
     line('User C', `${USER_C_ANSWERED} questions answered · 12-month access, receipt and history`),
   );
+  console.log(
+    line('User D', `all ${USER_D_USED} free spent and right today — the paywall on arrival`),
+  );
+  console.log(line('User E', 'paid and lapsed — expired yesterday, so the offer is renewal'));
+  console.log(line('User F', `subscribed · ${fNote}`));
+  console.log(line('User G', `subscribed · ${gNote}`));
+  console.log(line('User H', `${USER_H_DAYS}-day streak with points banked`));
+  console.log(
+    line('User I', `subscribed · ${USER_I_ANSWERED} answered, 1 in 4 right — readiness under load`),
+  );
+  console.log(line('User J', 'two live devices — at the limit; a third sign-in evicts one'));
   console.log(line('Admin', 'ADMIN staff — dashboard, payments, import, weights, students'));
   console.log(line('Provider', 'PROVIDER staff — the activity log and the live health board'));
   console.log(`\n  Mock paper: ${examNote}`);

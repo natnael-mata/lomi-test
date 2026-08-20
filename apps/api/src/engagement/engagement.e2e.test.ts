@@ -249,12 +249,28 @@ describe('points, streaks and the board (Phase 11)', () => {
       await score(a, 3); // 75
       await score(b, 2); // 50
       await score(c, 1); // 25
+
+      /*
+       * Measured as a change, not as a literal.
+       *
+       * This asserted `rank === 3`, which was only ever true while nothing else
+       * in the database had scored — the board ranks over *everybody*, so any
+       * other student with points shifts the number without touching the
+       * behaviour under test. Seeding ten testing personas, two of whom have
+       * points, broke it and proved nothing.
+       *
+       * The claim is that hiding somebody does not promote the student below
+       * them, so the honest assertion is c's rank before and after, unchanged.
+       */
+      const before = (await engagement.leaderboard(a.userId)).rows.find((r) => r.points === 25);
+      expect(before?.rank).toBeDefined();
+
       await engagement.setLeaderboardOptOut(b.userId, true);
 
-      const view = await engagement.leaderboard(a.userId);
-      const cRow = view.rows.find((r) => r.points === 25);
-      // Third, not second — the student above them still exists.
-      expect(cRow?.rank).toBe(3);
+      const after = (await engagement.leaderboard(a.userId)).rows.find((r) => r.points === 25);
+      // Still behind the student who is now hidden — they still exist, and the
+      // board must report the same competition to every viewer.
+      expect(after?.rank).toBe(before?.rank);
     });
 
     it('gives tied students the same rank', async () => {
