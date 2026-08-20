@@ -66,6 +66,20 @@ export interface FieldOption {
   name: string;
   slug: string;
   chosen: boolean;
+  /**
+   * How many published questions are behind it.
+   *
+   * **A programme can be published and still be empty**, and three of them were:
+   * `isPublished` records that we mean to offer a subject, not that there is
+   * anything to practise in it. A student who chose one landed on a practice
+   * screen that said "Nothing left to practise in this programme today" — which
+   * reads as "you have finished" and was never true; there was never anything.
+   *
+   * Sent rather than filtered out, because a student whose subject is listed but
+   * not ready has learned something true and useful. Hiding it would tell them
+   * we do not cover their exam at all.
+   */
+  questionCount: number;
 }
 
 @Injectable()
@@ -328,6 +342,25 @@ export class AuthService {
       throw new NotFoundException('No such programme.');
     }
 
+    /*
+     * Published is not the same as ready.
+     *
+     * Choosing an empty programme strands a student: every screen behind the
+     * field gate works perfectly and has nothing to show, and practice reports
+     * "nothing left today" about a bank that was never filled. Refused here
+     * rather than left to the first screen that notices, so the answer arrives
+     * while they are still on the chooser and can pick something else.
+     */
+    const published = await this.prisma.question.count({
+      where: { fieldId: field.id, status: 'PUBLISHED' },
+    });
+    if (published === 0) {
+      throw new UnprocessableEntityException({
+        error: 'PROGRAMME_NOT_READY',
+        message: `${field.name} has no questions yet. Choose another for now — this one is being written.`,
+      });
+    }
+
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -395,7 +428,24 @@ export class AuthService {
       ? await this.prisma.user.findUnique({ where: { id: userId }, select: { fieldId: true } })
       : null;
 
-    return fields.map((f) => ({ ...f, chosen: f.id === user?.fieldId }));
+    /*
+     * How much is actually in each one.
+     *
+     * One grouped count rather than a query per field: the chooser is the first
+     * screen a new student sees, on the worst connection they will ever have.
+     */
+    const counts = await this.prisma.question.groupBy({
+      by: ['fieldId'],
+      where: { fieldId: { in: fields.map((f) => f.id) }, status: 'PUBLISHED' },
+      _count: { _all: true },
+    });
+    const byField = new Map(counts.map((c) => [c.fieldId, c._count._all]));
+
+    return fields.map((f) => ({
+      ...f,
+      chosen: f.id === user?.fieldId,
+      questionCount: byField.get(f.id) ?? 0,
+    }));
   }
 
   /**

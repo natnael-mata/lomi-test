@@ -50,9 +50,17 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
             {/* Fixed-height track, so the bars are read against a common
                 baseline rather than against whichever was tallest. */}
             <div className="bg-surface-2 rounded-control flex h-24 w-full items-end overflow-hidden">
+              {/*
+                A floor in pixels, not per cent.
+                `Math.max(2, …)` of a 96px track is a 2px hairline, so a zero
+                drew as an empty outlined box — which reads as a chart that
+                failed to render rather than a score of nothing. QA reported it
+                as a rendering fault, and from the outside that is exactly what
+                it looks like. A 6px foot is unmistakably a bar at the bottom.
+              */}
               <div
                 className="bg-brand w-full rounded-t-[inherit]"
-                style={{ height: `${Math.max(2, Math.min(100, point.scorePct))}%` }}
+                style={{ minHeight: '6px', height: `${Math.min(100, point.scorePct)}%` }}
                 aria-hidden="true"
               />
             </div>
@@ -65,11 +73,18 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
           looking at it, and the numbers are the content. */}
       <ul className="flex flex-col gap-1" data-trend-rows="">
         {points.map((point) => (
-          <li key={point.sittingId} className="flex items-center justify-between gap-2">
-            <span className="text-caption text-ink-2">{point.label}</span>
-            <span className="text-caption num">
-              {point.scoreCorrect} / {point.totalQuestions}
-            </span>
+          /*
+           * The score last and fixed-width, so it holds one column.
+           *
+           * These were three children under `justify-between` with the chip
+           * conditional, so a row with a chip put the score in the middle and a
+           * row without it put the score on the right. Two of three rows lined
+           * up and the third did not — which reads as a glitch, and on a screen
+           * whose whole claim is that every number can be checked, a column
+           * that moves undermines the numbers in it.
+           */
+          <li key={point.sittingId} className="flex items-center gap-2">
+            <span className="text-caption text-ink-2 min-w-0 flex-1 truncate">{point.label}</span>
             {/* A mock that expired at question 60 is a different story from one
                 finished badly, and a bar alone cannot tell them apart. */}
             {point.ranOutOfTime && (
@@ -77,6 +92,9 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
                 {c.progress.notReached(point.unanswered)}
               </Chip>
             )}
+            <span className="text-caption num w-16 shrink-0 text-right">
+              {point.scoreCorrect} / {point.totalQuestions}
+            </span>
           </li>
         ))}
       </ul>

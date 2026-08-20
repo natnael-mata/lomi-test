@@ -51,6 +51,8 @@ export interface FieldOption {
   name: string;
   slug: string;
   chosen: boolean;
+  /** Published questions behind it. Zero means listed but not yet practisable. */
+  questionCount: number;
 }
 
 export class ApiError extends Error {

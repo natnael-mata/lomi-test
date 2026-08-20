@@ -49,7 +49,7 @@ export function orderWhyWrongs(
 export const isOwnAnswer = (option: AnswerOption, chosenLabel: string | null): boolean =>
   chosenLabel !== null && option.label === chosenLabel;
 
-export type Verdict = 'correct' | 'wrong' | 'pending';
+export type Verdict = 'correct' | 'wrong' | 'pending' | 'unanswered';
 
 /**
  * The verdict to show.
@@ -58,7 +58,19 @@ export type Verdict = 'correct' | 'wrong' | 'pending';
  * and a student who got it right slowly has still got it right. Correctness
  * decides the word; pacing only softens it.
  */
-export function verdictFor(isCorrect: boolean, pacing: string): Verdict {
+export function verdictFor(isCorrect: boolean, pacing: string, answered = true): Verdict {
+  /*
+   * A question nobody answered is not a question somebody got wrong.
+   *
+   * In a mock review, `isCorrect` is computed as chosen === correct, and a
+   * blank fails that comparison like any other mismatch — so eighteen questions
+   * a student never reached were all captioned "Not quite", identical to the
+   * ones they attempted and missed. That is both untrue and precisely the
+   * wrong thing to say to somebody reviewing a paper they ran short on: it
+   * reports a mistake they did not make. `answered` defaults true so practice,
+   * where an attempt with no answer is not an attempt at all, is untouched.
+   */
+  if (!answered) return 'unanswered';
   if (!isCorrect) return 'wrong';
   return pacing === 'over' ? 'pending' : 'correct';
 }
@@ -67,5 +79,6 @@ export function verdictFor(isCorrect: boolean, pacing: string): Verdict {
 export function verdictWord(verdict: Verdict): string {
   if (verdict === 'correct') return 'Correct';
   if (verdict === 'pending') return 'Correct, over time';
+  if (verdict === 'unanswered') return 'Not answered';
   return 'Not quite';
 }

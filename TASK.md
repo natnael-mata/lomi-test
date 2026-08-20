@@ -3189,6 +3189,104 @@ invisible to the whole existing suite — which is the part worth keeping.
 
 ---
 
+## Phase 16 — The third QA pass — ✅ complete
+
+Ten more findings on 2026-08-20, and a shape worth naming: **almost none were
+wrong arithmetic.** Every number checked out. What failed was the product
+asserting a cause, a quantity or a state it had no evidence for, and — three
+times — something being built, tested, and having no control anywhere a person
+could reach.
+
+- [x] **T-241** A way to sign out.
+      **Test:** the control exists on Access and ends the session server-side.
+
+  > `POST /auth/sign-out` existed and was tested. Nothing in the product called
+  > it. The test brief said "sign out before switching accounts" and QA finished
+  > the pass by calling the API by hand.
+
+- [x] **T-242** The device list, on a screen.
+      **Test:** two seeded sessions appear; revoking one removes it.
+
+  > Same story as T-241. "Two devices at a time" is PRODUCT.md's rule and there
+  > was no screen where a student could see it applied to them.
+
+- [x] **T-243** The mock says what the paper is before it is sat.
+      **Test:** the splash reports the built paper's counts, not a fixed sentence.
+
+  > "100 questions in 3 hours" over a twenty-question, forty-five-minute paper.
+
+- [x] **T-244** An open paper is admitted to, and resumed where it was left.
+      **Test:** `preview` reports the sitting; starting lands on the first blank.
+
+  > `/practice` refused _because_ a sitting was open while `/exam` offered
+  > "Start the mock" with no sign the answers still existed. Two screens
+  > disagreeing, and the one that was right was the one nobody was looking at.
+  >
+  > The preview is deliberately read-only — it does **not** close a stale
+  > sitting the way `start` does, because looking at a screen must not end
+  > somebody's exam.
+
+- [x] **T-245** A programme cannot be chosen until there is something in it.
+      **Test:** an empty published field is refused; the chooser shows the count.
+
+  > **Three published programmes had no published questions.** `isPublished`
+  > records that we mean to offer a subject; it says nothing about whether there
+  > is anything to practise. Choosing one put a student behind the field gate
+  > with every screen working and nothing to show — and practice reporting
+  > "nothing left to practise in this programme today" about a bank that had
+  > never held a published question.
+  >
+  > Listed rather than hidden, and marked _being written_: a student whose
+  > subject appears but is unfinished has learned something true, where dropping
+  > it from the list would say we do not cover their exam at all.
+  >
+  > This is the student-facing half of T-212. When the pilot content lands the
+  > programmes become choosable on their own, with nothing to switch on.
+
+- [x] **T-246** The free picker prefers a question they have not seen.
+      **Test:** ten draws on a fresh account never repeat while allowance remains.
+
+  > **The free tier looked unenforced and the limit was working perfectly.** The
+  > draw was random over everything eligible, which includes questions already
+  > answered; re-answering consumes nothing, so the counter did not move. QA
+  > answered "an eleventh and a twelfth question" and watched the badge sit
+  > frozen. Both were repeats. The picker was destroying the evidence of the
+  > rule it was obeying.
+  >
+  > And once the allowance is gone the screen says so, rather than silently
+  > looping the same ten round again.
+
+- [x] **T-247** Copy that names a cause only when it knows one.
+
+  > "You came back today. +5" twice — two rows, two different days, `reason`
+  > frozen at write time and the row's own `day` never displayed. "56 mock
+  > questions ran out of time" over a paper submitted early: the field counts
+  > blanks and knows nothing about why. Eighteen untouched questions captioned
+  > "Not quite", identical to ones genuinely got wrong.
+
+- [x] **T-248** Figures carry what they rest on.
+
+  > A topic reading 100% off a single answer, moving the headline twenty points,
+  > with no sample size anywhere. Every other number on that screen is checkable.
+  > `answered` was already on the row.
+
+- [x] **T-249** No database keys on a human surface.
+
+  > Audit rows outlive the accounts that wrote them — that is the point of an
+  > audit log — so an unresolvable actor is normal and permanent. Named scripts
+  > still print; bare cuids are described.
+
+- [x] **T-250** The smoke-test door opens the accounts it claims to, and only those.
+
+  > Seven of twelve personas had no button, and posting any name at all minted a
+  > fresh account — QA left one called "KindLantern3166" in the activity feed
+  > looking like a real signup. Unbounded minting has no defence; the allowlist
+  > is checked after the secret so it cannot be used to enumerate the door.
+
+---
+
+---
+
 ## Phase 12 — Hardening & launch — 2 left
 
 - [x] **T-199a** Verify the focus ring with real keyboard input on every interactive element.

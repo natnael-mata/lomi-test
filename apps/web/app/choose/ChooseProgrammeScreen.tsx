@@ -19,16 +19,20 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { Card } from '../../components/Card';
-import { ApiError, api } from '../../lib/api';
+import { Chip } from '../../components/Chip';
+import { ApiError, api, type FieldOption } from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
-interface Field {
-  id: string;
-  name: string;
-  slug: string;
-  /** The student's current programme. See the note where it is used. */
-  chosen: boolean;
-}
+/*
+ * The shared type, not a local copy of it.
+ *
+ * This declared its own `Field` with the same four fields, which is the drift
+ * `contracts.test.ts` exists to catch — except that guard watches the exported
+ * `FieldOption` in `lib/api.ts` and could not see a private duplicate. Adding
+ * `questionCount` to the real one left this screen quietly reading a type that
+ * no longer described what the server sends.
+ */
+type Field = FieldOption;
 
 type Phase =
   { kind: 'loading' } | { kind: 'ready'; fields: Field[] } | { kind: 'error'; message: string };
@@ -105,22 +109,52 @@ export function ChooseProgrammeScreen() {
       ) : (
         <fieldset className="flex flex-col gap-2">
           <legend className="sr-only">{c.choose.title}</legend>
-          {phase.fields.map((field) => (
-            <label
-              key={field.id}
-              className="bg-surface-2 rounded-card flex min-h-[56px] items-center gap-3 p-4"
-              data-selected={field.id === chosen}
-            >
-              <input
-                type="radio"
-                name="field"
-                value={field.id}
-                checked={field.id === chosen}
-                onChange={() => setChosen(field.id)}
-              />
-              <span className="text-body">{field.name}</span>
-            </label>
-          ))}
+          {phase.fields.map((field) => {
+            /*
+             * Listed, and honest about whether it can be sat.
+             *
+             * `isPublished` says we mean to offer a subject; it does not say
+             * there is anything in it. Three programmes were published and
+             * empty, and choosing one put a student behind the field gate with
+             * every screen working and nothing to show — practice reported
+             * "nothing left to practise today" about a bank that had never held
+             * a question.
+             *
+             * Shown rather than hidden: a student whose subject is listed but
+             * unfinished has learned something true. Dropping it from the list
+             * would say we do not cover their exam at all.
+             */
+            const ready = field.questionCount > 0;
+            return (
+              <label
+                key={field.id}
+                className={[
+                  'rounded-card flex min-h-[56px] items-center gap-3 p-4',
+                  ready ? 'bg-surface-2' : 'bg-surface-2 opacity-60',
+                ].join(' ')}
+                data-selected={field.id === chosen}
+                data-ready={ready}
+              >
+                <input
+                  type="radio"
+                  name="field"
+                  value={field.id}
+                  checked={field.id === chosen}
+                  disabled={!ready}
+                  onChange={() => setChosen(field.id)}
+                />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-body">{field.name}</span>
+                  <span className="text-caption text-ink-2">
+                    {ready
+                      ? c.choose.questionsAvailable(field.questionCount)
+                      : c.choose.notReadyWhy}
+                  </span>
+                </span>
+                {!ready && <Chip tone="pending">{c.choose.notReady}</Chip>}
+              </label>
+            );
+          })}
         </fieldset>
       )}
 

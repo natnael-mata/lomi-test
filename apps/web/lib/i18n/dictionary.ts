@@ -53,6 +53,9 @@ export const en = {
   },
 
   choose: {
+    notReady: 'Being written',
+    notReadyWhy: 'No questions in this programme yet. Pick another for now.',
+    questionsAvailable: (count: number) => `${count} question${count === 1 ? '' : 's'} ready`,
     title: 'Which programme are you sitting?',
     intro: 'This decides every question you practise. You can change it later.',
     working: 'Loading programmes…',
@@ -430,6 +433,13 @@ export const en = {
     confirmed: 'You have full access.',
     accessUntil: (date: string) => `Your access runs until ${date}.`,
     yourReference: (ref: string) => `Your reference is ${ref}. Keep it — support can look it up.`,
+    /*
+     * For where the reference has already been said in the sentence above.
+     * The pending panel ran "Reference FT… is with our team." straight into
+     * "Your reference is FT…", which is the same number twice in consecutive
+     * sentences — it reads as a mistake and buries the part that matters.
+     */
+    keepReference: 'Keep it — support can look it up.',
     manualPending:
       'Thank you. Someone checks the transfer against the bank statement, usually the same day, ' +
       'and your access starts as soon as it is found.',
@@ -886,6 +896,9 @@ export const am: Copy = {
   },
 
   choose: {
+    notReady: 'በመዘጋጀት ላይ',
+    notReadyWhy: 'በዚህ ዘርፍ ገና ጥያቄዎች የሉም። ለጊዜው ሌላ ይምረጡ።',
+    questionsAvailable: (count: number) => `${count} ጥያቄ ተዘጋጅቷል`,
     title: 'የትኛውን ዘርፍ ነው የሚፈተኑት?',
     intro: 'ይህ የሚለማመዷቸውን ጥያቄዎች በሙሉ ይወስናል። በኋላ መቀየር ይችላሉ።',
     working: 'ዘርፎቹ እየተጫኑ ነው…',
@@ -1203,6 +1216,7 @@ export const am: Copy = {
     confirmed: 'ሙሉ መዳረሻ አለዎት።',
     accessUntil: (date: string) => `መዳረሻዎ እስከ ${date} ይቆያል።`,
     yourReference: (ref: string) => `የእርስዎ ማመሳከሪያ ${ref} ነው። ይያዙት — ድጋፍ ሰጪው ሊፈትሸው ይችላል።`,
+    keepReference: 'ይያዙት — ድጋፍ ሰጪው ሊፈትሸው ይችላል።',
     manualPending:
       'እናመሰግናለን። ዝውውሩን ከባንክ ሪፖርት ጋር የሚያመሳክር ሰው አለ፣ አብዛኛውን ጊዜ በዚያው ቀን፣ ' +
       'እንደተገኘም መዳረሻዎ ወዲያውኑ ይጀምራል።',

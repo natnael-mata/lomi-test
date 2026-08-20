@@ -57,6 +57,9 @@ const VERDICT_CLASS = {
   correct: 'bg-correct-soft text-correct',
   pending: 'bg-pending-soft text-pending',
   wrong: 'bg-wrong-soft text-wrong',
+  // Neutral on purpose. A blank is not an error, and dressing it in the wrong
+  // colour would say the student made a mistake they did not make.
+  unanswered: 'bg-surface-2 text-ink-2',
 } as const;
 
 /**
@@ -67,7 +70,13 @@ const VERDICT_CLASS = {
  * too long has not got it wrong, and giving those two the same mark would say
  * they had.
  */
-const VERDICT_ICON = { correct: 'check', pending: 'clock', wrong: 'cross' } as const;
+const VERDICT_ICON = {
+  correct: 'check',
+  pending: 'clock',
+  wrong: 'cross',
+  // Not a cross. The clock says what happened: they did not get to it.
+  unanswered: 'clock',
+} as const;
 
 /** mm:ss, in tabular figures so two times line up when compared. */
 function clock(seconds: number): string {
@@ -78,7 +87,9 @@ function clock(seconds: number): string {
 
 export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerViewProps) {
   const timed = pacing !== undefined && timeTakenSec !== undefined;
-  const verdict = verdictFor(isCorrect, pacing ?? 'within');
+  // A blank is not a wrong answer — the review of a paper somebody ran short on
+  // must not caption eighteen untouched questions "Not quite".
+  const verdict = verdictFor(isCorrect, pacing ?? 'within', answer.chosenLabel !== null);
   const whyWrongs = orderWhyWrongs(answer.options, answer.chosenLabel);
   const isCalculation = answer.qType === 'CALCULATION';
 

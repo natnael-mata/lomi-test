@@ -25,6 +25,8 @@ import { SessionGuard } from './session.guard';
 
 const BOT_TOKEN = '7000000000:AAF-lomi-test-fixture-bot-token-not-real';
 const JWT_SECRET = 'test-secret-not-a-real-one';
+/** Prefix for every row this suite makes, so cleanup can find them all. */
+const SFX = 'FIELD-E2E';
 const TG = 559000001;
 
 @Controller('__test/gated')
@@ -59,6 +61,65 @@ describe('choosing a programme', () => {
   const cleanup = async (): Promise<void> => {
     await prisma.session.deleteMany({ where: { user: { telegramId: String(TG) } } });
     await prisma.user.deleteMany({ where: { telegramId: String(TG) } });
+    await prisma.option.deleteMany({ where: { question: { stableId: { startsWith: SFX } } } });
+    await prisma.question.deleteMany({ where: { stableId: { startsWith: SFX } } });
+    await prisma.topic.deleteMany({ where: { slug: { startsWith: SFX.toLowerCase() } } });
+    await prisma.course.deleteMany({ where: { slug: { startsWith: SFX.toLowerCase() } } });
+  };
+
+  /**
+   * Gives a seeded field one published question, so it can be chosen.
+   *
+   * **Published is not the same as ready** (T-245): choosing a programme with an
+   * empty bank strands a student behind the field gate, with every screen
+   * working and nothing to show, so `chooseField` refuses it. The launch fields
+   * ship unpublished-and-empty on purpose — filling them is T-212 — which left
+   * this suite choosing programmes that legitimately cannot be chosen yet.
+   *
+   * The suite is about the *guard*, not about content, so it brings its own
+   * single question rather than depending on seed data it does not control.
+   */
+  const makeChoosable = async (slug: string): Promise<string> => {
+    const field = await prisma.field.findFirstOrThrow({ where: { slug } });
+    const course = await prisma.course.upsert({
+      // Slugs are unique per field, not globally.
+      where: { fieldId_slug: { fieldId: field.id, slug: `${SFX.toLowerCase()}-${slug}` } },
+      update: {},
+      create: { fieldId: field.id, name: `Course ${slug}`, slug: `${SFX.toLowerCase()}-${slug}` },
+    });
+    const topic = await prisma.topic.upsert({
+      where: { courseId_slug: { courseId: course.id, slug: `${SFX.toLowerCase()}-${slug}` } },
+      update: {},
+      create: {
+        courseId: course.id,
+        name: `Topic ${slug}`,
+        slug: `${SFX.toLowerCase()}-${slug}`,
+        weightPct: 100,
+      },
+    });
+    await prisma.question.upsert({
+      where: { stableId: `${SFX}-${slug}` },
+      update: { status: 'PUBLISHED' },
+      create: {
+        stableId: `${SFX}-${slug}`,
+        topicId: topic.id,
+        fieldId: field.id,
+        qType: 'CONCEPT',
+        stem: `A question in ${slug}`,
+        conceptLine: 'A concept.',
+        explanation: 'An explanation.',
+        timeLimitSec: 60,
+        status: 'PUBLISHED',
+        authorId: 'field-e2e',
+        options: {
+          create: [
+            { label: 'A', text: 'right', isCorrect: true },
+            { label: 'B', text: 'wrong', isCorrect: false, whyWrong: 'Because.' },
+          ],
+        },
+      },
+    });
+    return field.id;
   };
 
   beforeAll(async () => {
@@ -82,6 +143,9 @@ describe('choosing a programme', () => {
     ).body;
     token = body.token;
     userId = body.userId;
+
+    await makeChoosable('computer-science');
+    await makeChoosable('public-health');
   });
 
   afterAll(async () => {
@@ -139,6 +203,40 @@ describe('choosing a programme', () => {
     const geo = await prisma.field.findFirstOrThrow({ where: { slug: 'geography' } });
     await auth(request(app.getHttpServer()).put('/me/field')).send({ fieldId: geo.id }).expect(404);
     await auth(request(app.getHttpServer()).put('/me/field')).send({ fieldId: 'nope' }).expect(404);
+  });
+
+  /*
+   * T-245. Published says we mean to offer a subject; it does not say there is
+   * anything in it.
+   *
+   * Accounting & Finance is the sharp case: it is published and it *has*
+   * questions — five of them — none of which are published. A student who chose
+   * it landed behind the field gate with every screen working and nothing to
+   * show, and practice reporting "nothing left to practise in this programme
+   * today" about a bank that had never served a question. Refused on the
+   * chooser, where they can still pick something else.
+   */
+  it('refuses a published programme with no published questions', async () => {
+    const af = await prisma.field.findFirstOrThrow({ where: { slug: 'accounting-finance' } });
+    expect(await prisma.question.count({ where: { fieldId: af.id, status: 'PUBLISHED' } })).toBe(0);
+
+    const res = await auth(request(app.getHttpServer()).put('/me/field'))
+      .send({ fieldId: af.id })
+      .expect(422);
+    expect(res.body.error).toBe('PROGRAMME_NOT_READY');
+    // Named, so the chooser can say which one and the student is not left
+    // guessing which of four they just failed to pick.
+    expect(res.body.message).toContain('Accounting & Finance');
+  });
+
+  it('tells the chooser how much is behind each programme', async () => {
+    const fields = (await auth(request(app.getHttpServer()).get('/me/fields')).expect(200)).body;
+    const byName = new Map(fields.map((f: { name: string; questionCount: number }) => [f.name, f]));
+
+    // The two this suite filled, and one it deliberately did not.
+    expect(byName.get('Computer Science')?.questionCount).toBeGreaterThan(0);
+    expect(byName.get('Public Health')?.questionCount).toBeGreaterThan(0);
+    expect(byName.get('Accounting & Finance')?.questionCount).toBe(0);
   });
 
   it('leaves the previous choice in place after a refusal', async () => {

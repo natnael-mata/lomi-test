@@ -408,7 +408,9 @@ export function CheckoutScreen() {
             {c.checkout.submittedBanner}
           </Banner>
           <p className="text-body">{c.checkout.submittedBody(pending.txRef)}</p>
-          <p className="text-caption text-ink-2">{c.checkout.yourReference(pending.txRef)}</p>
+          {/* The reference is already in the sentence above; this says only the
+              part that is not — keep it, it is what support looks up. */}
+          <p className="text-caption text-ink-2">{c.checkout.keepReference}</p>
         </Card>
       ) : null}
 
