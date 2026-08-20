@@ -6,174 +6,152 @@ Everything runs locally. Nothing here touches a real payment or a real Telegram 
 ## Getting in
 
 ```bash
-npm run db:dev        # keep this running — everything needs it
-npm run dev:api       # port 4000
-npm run dev:web       # port 3100
+npm run db:dev               # keep running — everything needs it
+npm run dev:api              # port 4000
+npm run dev:web              # port 3100
 npm run dev:testers -w api   # seeds the twelve accounts
 ```
 
-Open **http://localhost:3100/dev-login**. All twelve accounts are buttons on that page —
-press one. Switching signs the previous account out first, so you can move between them
-freely. There is also a **Sign out** control on Access, next to your device list.
+Open **http://localhost:3100/dev-login**. All twelve accounts are buttons — press one.
+Switching signs the previous account out first, so you can move between them freely.
+There is also a **Sign out** control on Access, beside your device list.
 
-> **User F's open paper expires 45 minutes after seeding.** After that `/exam` correctly
-> reports nothing open, because nothing is. Re-seed to get it back.
+> **Re-seed between passes.** `npm run dev:testers -w api` puts the accounts back as
+> described. It _resets_ what your own testing moves — spent questions, a settled claim,
+> an open paper — rather than adding to it.
 >
-> Re-run `npm run dev:testers -w api` whenever you want the accounts back as described.
-> It **resets** the states your own testing moves — spent questions, a settled claim, an
-> open paper — rather than adding to them. User D in particular goes back to re-practice
-> tomorrow, because the wall depends on questions answered correctly _today_.
+> Two states are time-sensitive: **User F's open paper expires 45 minutes after seeding**,
+> and **User D's paywall depends on questions answered correctly today**, so it reverts to
+> re-practice tomorrow. Re-seed to restore either.
 
 ---
 
 ## The accounts
 
-| Account      | State                                       | Go here first                  |
-| ------------ | ------------------------------------------- | ------------------------------ |
-| **User A**   | brand new, no programme                     | `/choose` → `/practice`        |
-| **User B**   | 8 of 10 free used · bank claim pending      | `/practice`, then `/checkout`  |
-| **User C**   | paid, 12 months, 12 answered                | `/checkout` (receipt), `/exam` |
-| **User D**   | all 10 free spent and right today           | `/practice` — the wall         |
-| **User E**   | paid and lapsed yesterday                   | `/practice`, `/checkout`       |
-| **User F**   | subscribed · a paper open, 3 of 20 answered | `/exam`, then try `/practice`  |
-| **User G**   | subscribed · a paper finished               | `/progress`                    |
-| **User H**   | 5 days engaged, points banked               | `/standing`                    |
-| **User I**   | subscribed · 15 answered, 1 in 4 right      | `/progress`                    |
-| **User J**   | two live devices — at the limit             | Access → devices               |
-| **Admin**    | ADMIN staff                                 | `/admin/dashboard`             |
-| **Provider** | PROVIDER staff                              | `/provider/health`             |
+| Account      | State                                  | Start here                    |
+| ------------ | -------------------------------------- | ----------------------------- |
+| **User A**   | brand new, no programme                | `/choose`                     |
+| **User B**   | 8 of 10 free used · bank claim pending | `/practice`, then `/checkout` |
+| **User C**   | paid 12 months, 12 answered            | `/checkout`, `/exam`          |
+| **User D**   | all 10 free spent                      | `/practice`                   |
+| **User E**   | paid, lapsed yesterday                 | `/checkout`                   |
+| **User F**   | subscribed · paper open, 3 of 20       | `/exam`, then `/practice`     |
+| **User G**   | subscribed · paper finished            | `/progress`                   |
+| **User H**   | 5 days engaged, points banked          | `/standing`                   |
+| **User I**   | subscribed · 15 answered, 1 in 4 right | `/progress`                   |
+| **User J**   | two live devices                       | Access → devices              |
+| **Admin**    | ADMIN staff                            | `/admin/dashboard`            |
+| **Provider** | PROVIDER staff                         | `/provider/health`            |
 
 ---
 
-## What to actually do
+## The ten scenarios
 
-Work through these in order. Each one is written so you can tell pass from fail without
-reading any code.
+Each is written so you can tell pass from fail without reading any code.
 
 ### 1 · User A — the first five minutes
 
-The account a real student starts from. Nothing has been set up for them.
-
-- You land on the programme chooser. Pick one.
-- Answer a few questions. **Check that the free counter goes down by one per question**,
-  and that it only counts questions you have not seen before.
-- Get one wrong on purpose. Read the explanation. **Does it tell you why your answer was
-  wrong, not just what the right one was?**
-- Does anything on this screen make you feel stupid for getting it wrong? That is a bug.
+- The chooser lists four programmes. **Three are marked "Being written" and cannot be
+  selected** — they have no questions yet. Only Local Dev can be picked. If an empty one
+  is selectable, that is a bug.
+- Pick Local Dev, answer a few. The counter should start at **10** and drop by one per
+  _new_ question. A question you have seen before is labelled as such and does not count.
+- Get one wrong deliberately. Does the explanation tell you **why your answer** was wrong,
+  not just what the right one was? Does anything make you feel stupid? That is a bug.
 
 ### 2 · User B — the wall, and the claim
 
-Two free questions left and a bank transfer waiting to be checked.
-
-- Answer both. **The tenth question must show its explanation** before anything else
-  happens. Then the next one should be the paywall — you should never be shown a question
-  you are not allowed to answer.
-- Go to `/checkout`. You should see your pending claim, with its reference.
-- Now sign in as **Admin**, go to `/admin/payments`, and approve it.
-- Back as **User B**: you should have access, and `/checkout` should show a receipt.
-  **The screen and the gate must agree** — being let in while being told you have not paid
-  is the specific bug this checks.
+- Two free left. Answer both. The tenth must **show its explanation** before anything else.
+- Then you should be told your ten are used, that going over them again stays free, and
+  where the new questions are. You should never be shown a question you cannot answer.
+- `/checkout` shows your pending claim and its reference — **once**, not twice.
+- Sign in as **Admin** → `/admin/payments` → approve it.
+- Back as **User B**: access granted, receipt on Access, counter gone. **The screen and
+  the gate must agree.**
 
 ### 3 · User D — the wall arrives first
 
-- Go straight to `/practice`. You should meet the paywall **immediately**, without being
-  shown a question first.
-- If you are shown a stem, four options, and only then a paywall when you press Check,
-  that is the bug. Say so.
+- Go to `/practice`. You should meet the paywall **immediately**, without being shown a
+  question first. Being shown a stem and four options and only then paywalled is the bug.
 
 ### 4 · User E — paid, and ran out
 
-- `/practice` and `/checkout`. **Does the product know the difference between "you never
-  paid" and "you paid and it ran out"?** Someone who lapsed is being asked to renew;
-  someone who never paid is being asked to start. If both get the same words, that is
-  worth reporting.
+- `/checkout`. **Does the product tell "you never paid" apart from "you paid and it ran
+  out"?** One is asked to start, the other to renew. Same words for both is worth reporting.
 
 ### 5 · User F — the open paper
 
-- `/exam` should drop you back into the paper you left, on the right question, with the
-  timer still going.
-- Now try `/practice`. It should refuse, **and tell you why** — something like "Finish or
-  submit your exam before practising". "Something went wrong" is a bug.
-- Back in `/exam`, press Submit with questions still blank. **You should be asked to
-  confirm**, and the safe option ("Go back to them") should be the obvious one.
-- Confirm. Check the result screen.
+- `/exam` should say a paper is **open**, how many you have answered, and offer to go back
+  to **the question you left** — not question 1.
+- Then try `/practice`. It should refuse, say why, **and give you a way to your exam.**
+  A dead end with only "Try again" is a bug.
+- In `/exam`, press Submit with questions blank. You should be **asked to confirm**, with
+  the safe choice ("Go back to them") as the obvious one.
 
 ### 6 · User G — a finished paper
 
-- `/progress`. There should be a score, a trend with a point on it, and a weakest topic.
-- Every number should be one you can check. If a figure appears with no explanation of
-  where it came from, report it.
+- `/progress`. A score, a trend, a weakest topic.
+- Every number should be checkable. **Questions you never answered must not be captioned
+  the same as ones you got wrong.**
 
 ### 7 · User I — the uncomfortable case
 
-**The most important one.** This student has answered fifteen questions and got a quarter
-of them right.
+**The most important one.** Fifteen answered, a quarter right.
 
-- `/progress`. The readiness figure will be low and the focus list will be long.
-- **Read it as if you were them.** Does it tell the truth without making you feel worse
-  for having practised? Does it say what to do next?
-- This is a judgement call, not a pass/fail. Write down how it made you feel.
+- `/progress`. Readiness will be low and the focus list long.
+- There is a **"What each score rests on"** section — a topic scored from one answer says
+  so. Check the caveat is there where the evidence is thin.
+- **Read it as if you were them.** Does it tell the truth without making you feel worse for
+  having practised? Write down how it made you feel. Judgement call, not pass/fail.
 
 ### 8 · User H — points and standing
 
-- `/standing`. Points, a five-day streak, and a leaderboard.
-- The streak counts **days you showed up**, and missing a day does not reset it. If
-  anything on screen suggests otherwise, report it.
+- `/standing`. Points, a five-day streak, a leaderboard.
+- Each ledger line should carry **its own date**. Two lines that read identically with
+  nothing to tell them apart is a bug.
+- A missed day must not reset the streak.
 
 ### 9 · User J — two devices
 
-- Access → devices. Two sessions listed, and you are at the limit.
-- Revoke one. Sign in again — the oldest should be evicted, not you locked out.
-- **No screen anywhere should show an IP address or a phone number.**
+- Access → **Where you are signed in**. Two sessions, at the limit. Revoke one.
+- Sign in again — the oldest should be evicted, not you locked out.
+- **No IP address or phone number anywhere.**
 
 ### 10 · Admin and Provider
 
-**Admin** (`/admin/dashboard`)
+**Admin** — `/admin/dashboard`, payments, students, weights, import.
 
-- Dashboard, payments, students, weights.
-- `/admin/weights` — **it must tell you which programme you are editing.**
-- `/admin/import` — try uploading a deliberately broken CSV (rename a column, or delete
-  half a line). You should get a readable explanation naming the line. A bare "500" or
-  "Internal server error" is a bug.
+- `/admin/weights` must name the programme it is editing.
+- `/admin/import`: upload a deliberately broken CSV (rename a column, or truncate a row).
+  You should get a readable explanation **naming the line**. A bare 500 is a bug.
 
-**Provider** (`/provider/health`, `/provider/activity`)
+**Provider** — `/provider/health`, `/provider/activity`.
 
-- The health board refreshes itself every 5 seconds. Watch the countdown.
-- It will say **degraded** — that is correct right now. Security is flagged because the
-  testing sign-in door is still open, and SMS is unconfigured on purpose.
-- `/provider/activity` — the feed of everything that has happened, including your own
-  actions from the steps above. **No IP addresses, no phone numbers, no legal names.**
+- The health board refreshes every 5 seconds with a visible countdown.
+- It will say **degraded** — correct: the testing door is open and SMS is unconfigured.
+- The activity feed shows display names, never database ids, IPs or phone numbers.
 
 ---
 
-## Please also check, on every screen
+## Also, on every screen
 
-- **On a phone.** Resize the window to 390px wide or use your phone on the same network.
-  Nothing should scroll sideways. Every button should be big enough to tap.
-- **Keyboard only.** Tab through a screen. You should always be able to see where you are.
-- **Slow connection.** Throttle to 3G in devtools. Does it tell you it is loading, or does
-  it just sit there?
+- **On a phone.** 390px wide, or a real device on the same network. Nothing scrolls
+  sideways; every control is tappable.
+- **Keyboard only.** Tab through. You should always see where you are.
+- **Slow connection.** Throttle to 3G. Does it say it is loading, or just sit there?
 
-## What is deliberately not finished
+## Deliberately not finished — do not report
 
-Do not report these — they are known and scheduled:
-
-- **Amharic** is written but unreviewed, and not reachable in the UI yet. English only.
-- **There is no dark mode**, by decision. Lomi is a cream page under a lemon marker and
-  has one palette. A dark sheet of paper is a different object, not the same one dimmed.
+- **Amharic** is written but unreviewed and not reachable. English only.
+- **There is no dark mode**, by decision. One cream-and-lemon palette.
 - **Real Telegram sign-in and real card payment** are held until the rest is done. The
   `/dev-login` door and the manual bank-claim flow are what you are testing instead.
-- **The question bank is 20 demo questions**, not the real content.
-- The health board saying "degraded" for security and SMS, as above.
+- **Only Local Dev has questions** (20 demo ones). The other three programmes are
+  correctly marked "Being written".
+- The health board reporting **degraded** for security and SMS, as above.
 
 ## How to report
 
-For each thing you find, please give:
-
-1. **Which account** and **which screen**.
-2. What you did, step by step.
-3. What you expected, and what happened instead.
-4. Whether it stopped you (blocker), annoyed you (medium), or just looked wrong (minor).
-
-Screenshots help. Guesses about the cause are welcome but not needed — what you saw is
-the valuable part.
+For each finding: **which account**, **which screen**, what you did, what you expected,
+what happened, and whether it stopped you (blocker), annoyed you (medium) or just looked
+wrong (minor). Screenshots help. What you saw matters more than why you think it happened.
