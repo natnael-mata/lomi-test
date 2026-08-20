@@ -1,72 +1,59 @@
 ---
-name: Deresegn
-description: Exit-exam prep that feels current and proves its working — modern surface, verifiable underneath.
+name: Lomi
+description: Exit-exam prep on cream paper under a lemon marker — warm to open, exact underneath.
 colors:
-  brand: '#5B4BE0'
-  brand-hover: '#4A3AD0'
-  brand-soft: '#EDEBFF'
-  on-brand: '#FFFFFF'
-  correct: '#067049'
-  correct-soft: '#E3F8EF'
-  wrong: '#C22A22'
-  wrong-soft: '#FEECEB'
-  pending: '#9A6209'
-  pending-soft: '#FDF3DC'
-  reward: '#8A6200'
-  reward-fill: '#F5B301'
-  on-reward: '#16162B'
-  bg: '#F6F6FB'
+  # Lomi v1. Single theme — there are no dark-* entries, by decision (owner,
+  # 2026-08-20). Every value is measured; see components/contrast.test.ts.
+  brand: '#FFE95C' # lemon. A FILL — 1.23:1 on cream, so it never sets text.
+  brand-hover: '#F7DD3C'
+  brand-soft: '#FFF6C4' # selected option, active nav, your own row
+  on-brand: '#1A3300' # ink on lemon, 11.24:1
+  correct: '#0F5F63' # teal, NOT green: the ink is green
+  correct-soft: '#DDF0F0'
+  wrong: '#A3300F' # terracotta darkened from #CB5521 (4.14 -> 6.74)
+  wrong-soft: '#FBE0D6'
+  pending: '#4A4A46' # pencil. Pending is not failure, so it has no hue.
+  pending-soft: '#EDEBE4'
+  reward: '#6B2D78' # plum — the lemon is spoken for
+  reward-fill: '#F6D0FF'
+  on-reward: '#1A3300'
+  on-state: '#FCFAF5' # cream, for text on any SOLID state fill
+  bg: '#FCFAF5' # cream paper
   surface: '#FFFFFF'
-  surface-2: '#F0F0F7'
-  border: '#E3E3EF'
-  ink: '#16162B'
-  ink-2: '#5B5B75'
-  dark-brand: '#8B7CFF'
-  dark-brand-soft: '#241F4D'
-  dark-on-brand: '#101018'
-  dark-correct: '#4ADE9B'
-  dark-correct-soft: '#10291F'
-  dark-wrong: '#FF8A82'
-  dark-wrong-soft: '#331615'
-  dark-pending: '#F0B95B'
-  dark-pending-soft: '#2B1F0C'
-  dark-reward: '#FFD24D'
-  dark-bg: '#101018'
-  dark-surface: '#191926'
-  dark-surface-2: '#232333'
-  dark-border: '#2E2E42'
-  dark-ink: '#ECECF5'
-  dark-ink-2: '#A0A0BC'
+  surface-2: '#F1EFE8'
+  border: '#DFDBD0' # hairline. Never text.
+  ink: '#1A3300' # forest, 13.27:1 on bg
+  ink-2: '#46603A' # 6.72:1 on bg
 typography:
   display:
-    fontFamily: "Gabarito, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Archivo, 'Noto Sans Ethiopic', system-ui, sans-serif"
     fontSize: '2.125rem'
     fontWeight: 800
     lineHeight: '2.5rem'
     letterSpacing: '-0.03em'
   title:
-    fontFamily: "Gabarito, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Archivo, 'Noto Sans Ethiopic', system-ui, sans-serif"
     fontSize: '1.5rem'
     fontWeight: 700
     lineHeight: '1.875rem'
     letterSpacing: '-0.02em'
   stem:
-    fontFamily: "Figtree, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
     fontSize: '1.1875rem'
     fontWeight: 600
     lineHeight: '1.8125rem'
   body:
-    fontFamily: "Figtree, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
     fontSize: '1rem'
     fontWeight: 400
     lineHeight: '1.625rem'
   label:
-    fontFamily: "Figtree, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
     fontSize: '0.9375rem'
     fontWeight: 600
     lineHeight: '1.25rem'
   caption:
-    fontFamily: "Figtree, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
     fontSize: '0.8125rem'
     fontWeight: 600
     lineHeight: '1.125rem'
@@ -143,7 +130,7 @@ components:
 <!-- Implementation: design-system/tailwind-theme.css is the normative Tailwind v4
      @theme block. These tokens and that file are the same values; update both together. -->
 
-# Design System: Deresegn (ደረሰኝ)
+# Design System: Lomi (ሎሚ)
 
 ## Overview
 
@@ -154,18 +141,24 @@ decides whether they graduate. Two things have to be true at once. It has to fee
 they _want_ to open — as current and as pleasant as anything else on their phone. And it has
 to be an app that never lies to them.
 
-So the surface is contemporary and generous: rounded shapes, real elevation, a confident
-violet, spring feedback on the moment that matters. Underneath, a set of rules that do not
+So the surface is warm and generous: rounded shapes, restrained elevation, a confident
+lemon, spring feedback on the moment that matters. Underneath, a set of rules that do not
 bend. Every worked solution ends by stating the answer choice. Every readiness figure is the
 weighted mean of topics whose shares add to 100. Every point names the thing that earned it.
 Every question, payment and user carries an ID a student can read down a phone line. Most of
 this is already enforced in the API, in `publish-gate.ts` — the design's job is to make the
 rigour visible rather than hide it behind a pretty shell.
 
-Violet leads because the category reaches for green and blue, and because keeping the brand
-out of the semantic range lets green mean _correct_, red mean _wrong_ and amber mean _pending_
-without ever competing with the interface itself. Neutrals are slate with a violet bias, so
-nothing reads as unconsidered grey.
+The lemon leads because ሎሚ _means_ lemon: the palette is the name, not a colour chosen and
+then justified. Cream pith, forest leaf, lemon flesh. Neutrals are warm paper rather than
+grey, so nothing reads as unconsidered.
+
+Keeping the brand out of the semantic range is still the rule, but this world enforces it
+differently. The ink is forest green, so **green cannot mean correct** — a conventional
+correct-green sits 13 degrees of hue from the ink and 2.12:1 against it, which makes a verdict
+indistinguishable from the paragraph around it. Correct is therefore teal, 93 degrees off.
+Pending is pencil rather than amber, because amber is the lemon's neighbour and because
+nothing provisional should carry an alarm colour at all.
 
 **Key Characteristics:**
 
@@ -173,38 +166,46 @@ nothing reads as unconsidered grey.
 - Semantic colour never carries meaning alone — an icon and a word travel with it.
 - One springy moment (the verdict) and nothing else animates on entrance.
 - Gamification is loud but legible: no mystery rewards, no punishment for a missed day.
-- Light and dark are both first-class; dark is re-derived, not dimmed.
+- One theme. Paper is a single object, and a dark sheet of paper is a different one.
 - 16px body floor, 52px control floor, 56px option rows — a one-handed product used in a hurry.
 
 ## Colors
 
-A confident violet brand with a fully separated semantic range, over violet-biased neutrals.
+A lemon brand that is a FILL ONLY, a semantic range that avoids green because the ink is
+green, over warm paper neutrals.
 
 ### Primary
 
-- **Brand Violet** (#5B4BE0): the primary action, active navigation, focus ring, and the
-  selected-but-unsubmitted answer. In dark it lifts to #8B7CFF so it stays legible on a dark
-  ground rather than sinking into it.
-- **Brand Soft** (#EDEBFF): selected option fill, the concept card behind every explanation,
-  and the student's own row in any list.
+- **Lemon** (#FFE95C): the primary action, the logo mark, and the marker that highlights the
+  takeaway in a worked solution. **It never sets text.** On cream it measures 1.23:1. Pair it
+  with `on-brand` ink (11.24:1) and nothing else. A darkened amber accent was tried and
+  rejected: no value clears 4.5:1 while staying 45 degrees from both the forest ink and the
+  terracotta of _wrong_, so an amber label reads as an error. Where a brand-coloured label
+  used to go, use ink at 600 over Brand Soft.
+- **Brand Soft** (#FFF6C4): selected option fill, active navigation, the concept card behind
+  every explanation, and the student's own row in any list.
 
 ### Secondary
 
-- **Correct** (#067049): right answers, verified payments, positive deltas. Tested at 4.5:1
-  against both surface and its own soft fill — the earlier, brighter green failed on the fill.
-- **Incorrect** (#C22A22): wrong answers, failed verification, the retire action.
-- **Pending** (#9A6209): awaiting verification, focus topics, exam timer at 20% remaining.
-  Distinct from incorrect because **pending is not failure**.
+- **Correct** (#0F5F63): right answers, verified payments, positive deltas. **Teal, not
+  green** — the ink is forest green, so a green verdict reads as ordinary body copy (13 deg
+  of hue from the ink, 2.12:1 against it). Clears 4.5:1 on bg, on surface and on its own fill.
+- **Incorrect** (#A3300F): wrong answers, failed verification, the retire action. Terracotta,
+  darkened from the source style's #CB5521, which was 4.14:1 on cream and failed body text.
+- **Pending** (#4A4A46): awaiting verification, flagged questions, a payment in the queue.
+  **Pencil, not amber** — written but not yet inked. Achromatic, so it separates from every
+  hue at once, and distinct from incorrect because **pending is not failure**: nothing
+  provisional gets an alarm colour.
 
 ### Tertiary
 
-- **Reward** (#8A6200 text / #F5B301 fill): streaks, points, badges. The fill always pairs
-  with **On Reward** (#16162B), which stays dark in _both_ themes — yellow is a fill, never a
-  text colour, and never carries white text.
+- **Reward** (#6B2D78 text / #F6D0FF fill): streaks, points, badges. **Plum, because the
+  lemon is the brand** — a streak must never look like a primary action. The fill pairs with
+  **On Reward** (#1A3300).
 
 ### Neutral
 
-- **Ink** (#16162B): all primary text. Violet-biased, never pure black.
+- **Ink** (#1A3300): all primary text. Forest, never pure black. 13.27:1 on cream.
 - **Ink 2** (#5B5B75): captions, metadata, secondary copy. Verified ≥4.5:1 on every ground.
 - **Background** (#F6F6FB) / **Surface** (#FFFFFF) / **Surface 2** (#F0F0F7): the three
   ground levels. Surface 2 carries wells, step lists, chips and skeletons.
@@ -214,7 +215,7 @@ A confident violet brand with a fully separated semantic range, over violet-bias
 
 **The Separation Rule.** The brand colour is never used to mean correct, wrong or pending, and
 a semantic colour is never used for a brand moment. A student must never have to work out
-whether violet means "selected" or "right".
+whether the lemon means "selected" or "right".
 
 **The Yellow Is A Fill Rule.** Reward yellow never sets text and never takes white on top of
 it. Ink-on-yellow, in both themes, via the `on-reward` token.
@@ -225,24 +226,28 @@ greyscale, colour blindness and a cheap screen in sunlight.
 
 ## Typography
 
-**Display Font:** Gabarito (with Noto Sans Ethiopic, system-ui)
-**Body Font:** Figtree (with Noto Sans Ethiopic, system-ui)
+**Display Font:** Archivo (with Noto Sans Ethiopic, system-ui)
+**Body Font:** Inter (with Noto Sans Ethiopic, system-ui)
 
-**Character:** Gabarito is warm and geometric with real personality at heavy weights — it
+Archivo stands in for Bricolage Grotesque, which the visual direction names but which is not
+obtainable here; `next/font/google` is banned, so a substituted grotesque beats a silent
+system-ui fallback. Swap it by dropping the woff2 into `apps/web/app/fonts/`.
+
+**Character:** Archivo is a grotesque with real width and presence at heavy weights — it
 carries the numbers students care about (countdown, score, readiness) without feeling
-corporate. Figtree is a highly legible modern UI face that holds up at 15–16px on a low-end
+corporate. Inter is a highly legible modern UI face that holds up at 15–16px on a low-end
 Android screen, which is where nearly all of this product is actually read. Both are variable
 and self-hosted via `next/font`; no CDN, no layout shift.
 
 ### Hierarchy
 
-- **Display** (Gabarito 800, 34/40, -0.03em): countdown, mock score, readiness. One per screen.
-- **Title** (Gabarito 700, 24/30, -0.02em): screen titles.
-- **Stem** (Figtree 600, 19/29): the question — the most-read text in the product.
-- **Body** (Figtree 400, 16/26): options, explanations, prose. Never below 16px on mobile,
+- **Display** (Archivo 800, 34/40, -0.03em): countdown, mock score, readiness. One per screen.
+- **Title** (Archivo 700, 24/30, -0.02em): screen titles.
+- **Stem** (Inter 600, 19/29): the question — the most-read text in the product.
+- **Body** (Inter 400, 16/26): options, explanations, prose. Never below 16px on mobile,
   never truncated, measure ≤70ch.
-- **Label** (Figtree 600, 15/20): buttons, tabs, chips.
-- **Caption** (Figtree 600, 13/18, +0.04em, uppercase): field labels, blueprint weights, meta.
+- **Label** (Inter 600, 15/20): buttons, tabs, chips.
+- **Caption** (Inter 600, 13/18, +0.04em, uppercase): field labels, blueprint weights, meta.
 
 ### Named Rules
 
@@ -281,7 +286,8 @@ total nobody can verify is decoration, and this product cannot afford decorative
 ## Elevation & Depth
 
 Soft, real elevation. Every shadow carries both an offset and a blur, tinted with the
-violet-biased neutral so it reads as depth rather than grey fog.
+forest-biased ink so it reads as depth on cream rather than grey fog. Lighter than Deresegn's
+throughout: paper does not float far off the page.
 
 ### Shadow Vocabulary
 
@@ -291,11 +297,10 @@ violet-biased neutral so it reads as depth rather than grey fog.
   and anything presented as being above the page.
 - **Panel** (`0 4px 8px rgb(22 22 43 / .07), 0 24px 48px rgb(22 22 43 / .16)`): the retire
   modal, bottom sheets.
-- **Brand** (`0 2px 4px rgb(91 75 224 / .18), 0 10px 24px rgb(91 75 224 / .22)`): the primary
-  button only, so the main action is findable without hunting for it.
-
-In dark, shadows switch to black at higher alpha — a violet-tinted shadow is invisible on a
-dark ground and would leave the interface flat.
+- **Brand** (`0 2px 4px rgb(26 51 0 / .10), 0 8px 20px rgb(26 51 0 / .14)`): the primary
+  button only, so the main action is findable without hunting for it. **Ink-tinted, not
+  lemon** — a yellow glow under a yellow button is a halo rather than depth, and lemon at any
+  alpha disappears on cream.
 
 ### Named Rules
 

@@ -25,8 +25,8 @@ describe('self-hosted fonts (T-091)', () => {
     // <html> element. That they actually load is verified in the browser, which
     // is the only place it can be.
     expect(fontVariables.split(' ')).toHaveLength(3);
-    expect(fontVariables).toContain('font-gabarito');
-    expect(fontVariables).toContain('font-figtree');
+    expect(fontVariables).toContain('font-display-face');
+    expect(fontVariables).toContain('font-body-face');
     expect(fontVariables).toContain('font-ethiopic');
   });
 
@@ -37,8 +37,9 @@ describe('self-hosted fonts (T-091)', () => {
 
     const here = dirname(fileURLToPath(import.meta.url));
     for (const file of [
-      'gabarito-variable.woff2',
-      'figtree-variable.woff2',
+      'archivo-700.woff2',
+      'archivo-800.woff2',
+      'inter-variable.woff2',
       'noto-sans-ethiopic-variable.woff2',
     ]) {
       const path = resolve(here, 'fonts', file);

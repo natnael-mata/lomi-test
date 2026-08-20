@@ -220,7 +220,7 @@ export function PaymentsScreen() {
                       {/* Correct green, not brand violet: this is a verdict. */}
                       <button
                         type="button"
-                        className="bg-correct text-on-brand rounded-control text-label inline-flex min-h-[52px] w-full items-center justify-center gap-2 px-6 disabled:opacity-60"
+                        className="bg-correct text-on-state rounded-control text-label inline-flex min-h-[52px] w-full items-center justify-center gap-2 px-6 disabled:opacity-60"
                         disabled={busy || claim.status !== 'PENDING'}
                         onClick={() => void settle(claim, true)}
                       >

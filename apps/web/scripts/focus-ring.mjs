@@ -22,9 +22,9 @@
  *
  * - the element matches `:focus-visible` (the ring is actually on)
  * - `outline-style` is solid, `outline-width` is 2px, `outline-offset` is 2px
- * - the outline colour is the brand colour the theme resolves to *in that
- *   theme* — read from the page rather than hard-coded, because dark mode
- *   re-derives it and a literal would fail on a correct page
+ * - the outline colour is the brand colour the theme resolves to — read from
+ *   the page rather than hard-coded, so a token change moves the expectation
+ *   with it instead of failing a correct page
  *
  * Exits non-zero and names the element on the first control that is focusable
  * and unringed.
@@ -130,7 +130,7 @@ async function sessionCookie(label) {
  * What the page says about the element the keyboard has landed on.
  *
  * The brand colour is read out of the document rather than written down here,
- * so the same assertion holds in dark mode, where the theme re-derives it.
+ * so the assertion follows the token rather than restating it.
  */
 const PROBE = `(() => {
   const el = document.activeElement;

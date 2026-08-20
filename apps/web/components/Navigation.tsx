@@ -15,9 +15,11 @@
  *   shrink the bar.
  * - **Labels are never hidden.** Not at any width, not on scroll. An icon-only
  *   bar asks a stressed student to recognise five glyphs they have seen twice.
- * - **The active item is a Brand Soft pill plus a brand-coloured label** —
+ * - **The active item is a Brand Soft pill plus a heavier, darker label** —
  *   colour never carries the meaning alone, which is the rule the whole design
- *   system is built on.
+ *   system is built on. DESIGN.md says "label in brand colour"; that clause is
+ *   retired with Lomi v1, where the brand is a lemon that cannot legibly set
+ *   text. Weight and ink strength carry it instead, and the pill is unchanged.
  * - **56px**, and the touch target rule (≥44px) is satisfied by the row.
  *
  * The handoff adds a third width between the two DESIGN.md names. A tablet is
@@ -34,7 +36,6 @@ import { useEffect, useState } from 'react';
 
 import { Icon, type IconName } from './icons';
 import { Logo } from './Logo';
-import { ThemeToggle } from './ThemeToggle';
 import { api } from '../lib/api';
 import { day } from '../lib/dates';
 import { copy } from '../lib/i18n';
@@ -78,10 +79,13 @@ function Item({ destination, active }: { destination: Destination; active: boole
         'sm:w-22 sm:flex-none sm:gap-0.5 sm:self-center sm:rounded-card sm:py-2.5',
         // Desktop: a row with the label beside the icon.
         'lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:rounded-full lg:px-3.5 lg:py-3',
-        // The pill AND the brand-coloured label. Colour never alone. On a phone
-        // the pill sits behind the icon only — a filled cell in a 56px bar
-        // reads as a button rather than as "you are here".
-        active ? 'text-ink sm:bg-brand-soft' : 'text-ink-2',
+        // The pill AND weight. This used to lean on a brand-coloured label, but
+        // the lemon cannot set text (1.23:1 on cream), so active is now carried
+        // by full-strength ink at 600 against ink-2 at 400 — a contrast step
+        // from 6.72:1 to 13.27:1 plus a weight step, with the wash behind it.
+        // On a phone the pill sits behind the icon only: a filled cell in a
+        // 56px bar reads as a button rather than as "you are here".
+        active ? 'text-ink font-semibold sm:bg-brand-soft' : 'text-ink-2',
       ].join(' ')}
       {...(active ? { 'aria-current': 'page' as const } : {})}
     >
@@ -144,7 +148,10 @@ export function SideRail({ pathname }: { pathname: string }) {
 }
 
 /**
- * What the rail says at the bottom: when access runs out, and the theme switch.
+ * What the rail says at the bottom: when access runs out.
+ *
+ * It carried the theme switch until Lomi v1 dropped dark mode; the slot stays
+ * because the access date is the thing a student actually looks for here.
  *
  * Desktop only. On a tablet the rail is 104px wide and a date does not fit in
  * it at a readable size — and the answer to "it does not fit" is never to set
@@ -181,7 +188,6 @@ function RailFooter() {
       {until === null ? null : (
         <span className="text-caption text-ink-2 num uppercase">{c.nav.accessUntil(until)}</span>
       )}
-      <ThemeToggle variant="rail" />
     </div>
   );
 }

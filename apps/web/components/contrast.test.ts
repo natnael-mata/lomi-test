@@ -2,9 +2,14 @@
  * Contrast audit over the design tokens (T-099).
  *
  * Runs against `design-system/tailwind-theme.css` itself rather than a rendered
- * page, so it covers **both themes** without a browser and fails the moment a
- * token is edited. A rendered-page check would only ever cover whichever theme
- * happened to be on, and only the pairs that happened to be on screen.
+ * page, so it covers every token without a browser and fails the moment one is
+ * edited. A rendered-page check would only ever cover the pairs that happened to
+ * be on screen.
+ *
+ * **One theme, by decision (owner, 2026-08-20).** Lomi v1 is a cream page under
+ * a lemon marker and has no dark counterpart — paper is one object, and a dark
+ * sheet of paper is a different one. This audited two palettes until then; the
+ * pairs and the threshold are unchanged, there is simply one of them now.
  *
  * WCAG 2.1 AA: 4.5:1 for body text. The threshold is not relaxed for large text
  * anywhere here — the pairs below are all used for reading, and this product is
@@ -61,11 +66,7 @@ function tokens(openerPattern: RegExp): Record<string, string> {
   return out;
 }
 
-const light = tokens(/@theme\s*\{/);
-// The dark tokens are declared twice (see T-098); `.dark` is the explicit
-// override and `theme.test.ts` asserts the media-query copy is identical, so
-// checking one covers both.
-const dark = { ...light, ...tokens(/\n\.dark\s*\{/) };
+const palette = tokens(/@theme\s*\{/);
 
 /**
  * Every foreground/background pair the design actually puts together.
@@ -85,8 +86,11 @@ const PAIRS: [fg: string, bg: string, where: string][] = [
   ['ink-2', 'surface-2', 'chip text'],
   ['on-brand', 'brand', 'primary button label'],
   ['on-brand', 'brand-hover', 'primary button label, hovered'],
-  ['brand', 'surface', 'brand text on a card'],
-  ['brand', 'brand-soft', 'selected option, brand chip'],
+  // `brand` no longer appears as a foreground anywhere. Lomi v1's brand is a
+  // lemon (#ffe95c) that measures 1.23:1 on cream, so it is a FILL only; what
+  // used to be a brand-coloured label is now ink over the wash. The guard that
+  // it never creeps back into text is `brand is never a foreground` below.
+  ['ink', 'brand-soft', 'selected option, brand chip, active nav'],
   ['correct', 'surface', 'correct text on a card'],
   ['correct', 'correct-soft', 'correct option and chip'],
   ['wrong', 'surface', 'wrong text on a card'],
@@ -96,20 +100,21 @@ const PAIRS: [fg: string, bg: string, where: string][] = [
   ['reward', 'surface', 'streak and points text'],
   ['on-reward', 'reward-fill', 'reward chip — solid fill'],
   ['surface', 'ink', 'the total bar: surface text on ink'],
-  // `on-brand` is reused on the danger fill. It is not really "ink for brand" —
-  // it is ink for ANY saturated fill, and it flips per theme (white on red in
-  // light, near-black on light-red in dark), which is exactly what a red button
-  // needs. Caught by the unaudited-pair guard below rather than by review.
-  ['on-brand', 'wrong', 'danger button label'],
+  // `on-brand` used to be reused on saturated fills because it happened to be
+  // white. That coupling only held while the brand was dark; with a lemon brand
+  // `on-brand` is ink, and ink on a solid state fill is 1.5–2.0:1. `on-state`
+  // is now the explicit token for text on ANY solid state fill, and every one
+  // of them is audited here rather than left to whichever is used first.
+  ['on-state', 'correct', 'label on a solid correct fill'],
+  ['on-state', 'wrong', 'danger button label'],
+  ['on-state', 'pending', 'label on a solid pending fill'],
+  ['on-state', 'reward', 'label on a solid reward fill'],
 ];
 
-describe.each([
-  ['light', light],
-  ['dark', dark],
-])('contrast in the %s theme (T-099)', (themeName, palette) => {
+describe('contrast (T-099)', () => {
   it('defines every token the audit references', () => {
     const missing = [...new Set(PAIRS.flatMap(([fg, bg]) => [fg, bg]))].filter((t) => !palette[t]);
-    expect(missing, `undefined in ${themeName}: ${missing.join(', ')}`).toEqual([]);
+    expect(missing, `undefined: ${missing.join(', ')}`).toEqual([]);
   });
 
   it.each(PAIRS)('%s on %s (%s) is at least 4.5:1', (fg, bg) => {
@@ -157,6 +162,26 @@ describe('components use only audited pairs', () => {
     expect(rules().length).toBeGreaterThan(5);
   });
 
+  /**
+   * The lemon is a fill. At 1.23:1 on cream it cannot legibly set text, and the
+   * temptation to reach for `text-brand` as "the accent colour" is exactly how a
+   * brand-coloured label gets reintroduced. Nothing in the audit would catch it:
+   * a `text-brand` with no `bg-` beside it forms no pair.
+   *
+   * A darkened amber was considered instead and rejected — no value clears
+   * 4.5:1 while staying 45 degrees from both the forest ink (89 deg) and the
+   * terracotta of `wrong` (13 deg), so an amber accent reads as an error state.
+   */
+  it('never uses brand as a foreground', () => {
+    const offenders = rules()
+      .filter(({ body }) => /\btext-brand\b/.test(body))
+      .map(({ selector }) => selector);
+    expect(
+      offenders,
+      'the lemon is 1.23:1 on cream — use text-ink over bg-brand-soft instead',
+    ).toEqual([]);
+  });
+
   it('pairs no foreground with a background the audit has not seen', () => {
     const unaudited: string[] = [];
     for (const { selector, body } of rules()) {
@@ -190,10 +215,11 @@ describe('the audit itself', () => {
     expect(contrast('#5b4be0', '#ffffff')).toBeCloseTo(contrast('#ffffff', '#5b4be0'), 10);
   });
 
-  it('reads a real palette out of both blocks', () => {
-    // Guards the parser: an empty palette would make every pair vacuously pass.
-    expect(Object.keys(light).length).toBeGreaterThan(12);
-    expect(Object.keys(dark).length).toBeGreaterThan(12);
-    expect(light.bg).not.toBe(dark.bg);
+  it('reads a real palette', () => {
+    // Guards the parser: an empty palette would make every pair vacuously pass,
+    // which is the failure mode that looks exactly like success.
+    expect(Object.keys(palette).length).toBeGreaterThan(12);
+    expect(palette.bg).toBeDefined();
+    expect(palette.ink).toBeDefined();
   });
 });

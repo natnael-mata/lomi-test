@@ -351,11 +351,23 @@ async function main() {
 
     await selfTest(cdp);
 
-    for (const theme of ['light', 'dark']) {
-      await cdp.send('Emulation.setEmulatedMedia', {
-        features: [{ name: 'prefers-color-scheme', value: theme }],
-      });
+    /*
+     * One theme, so the sweep runs once (owner, 2026-08-20).
+     *
+     * This looped over light and dark and emulated `prefers-color-scheme` for
+     * each. Lomi v1 has no dark counterpart — the contrast audit covers the one
+     * palette against the stylesheet, and emulating a scheme the theme does not
+     * answer to would have doubled the run to re-measure identical pages.
+     *
+     * The emulation is still set, explicitly to light, rather than left to
+     * whatever the machine running this happens to prefer: an unpinned sweep is
+     * one that reports different results on two laptops.
+     */
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-color-scheme', value: 'light' }],
+    });
 
+    {
       for (const route of ROUTES) {
         if (route.as) {
           await cdp.send('Network.setCookie', {
@@ -380,7 +392,7 @@ async function main() {
             `(() => { window.__lomiViewport = ${size.width}; return ${AUDIT}; })()`,
           );
           screens++;
-          const where = `${route.path} · ${size.name} · ${theme}`;
+          const where = `${route.path} · ${size.name}`;
           if (problems.length === 0) continue;
           for (const problem of problems) failures.push(`${where}: ${problem}`);
         }

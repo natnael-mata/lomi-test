@@ -14,11 +14,11 @@ describe('chipClasses (T-095)', () => {
     expect(chipClasses('correct')).toBe('chip bg-correct-soft text-correct');
     expect(chipClasses('wrong')).toBe('chip bg-wrong-soft text-wrong');
     expect(chipClasses('pending')).toBe('chip bg-pending-soft text-pending');
-    expect(chipClasses('brand')).toBe('chip bg-brand-soft text-brand');
+    expect(chipClasses('brand')).toBe('chip bg-brand-soft text-ink');
   });
 
-  // Reward is the exception: a solid fill with fixed ink, because white on
-  // yellow fails contrast in both themes.
+  // Reward is the exception: a solid fill with fixed ink. It was yellow, which
+  // white fails on; in Lomi v1 it is plum, because the lemon became the brand.
   it('gives reward a solid fill with on-reward ink', () => {
     expect(chipClasses('reward')).toBe('chip bg-reward-fill text-on-reward');
   });

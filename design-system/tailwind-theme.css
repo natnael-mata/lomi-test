@@ -1,5 +1,5 @@
 /* ============================================================================
-   Deresegn v3 — Tailwind v4 theme
+   Lomi v1 (ሎሚ) — Tailwind v4 theme.  Replaces Deresegn v3.
    Paste into apps/web/app/globals.css. Tailwind v4 is CSS-first: this @theme
    block IS the config, so tailwind.config.ts is not needed for tokens.
 
@@ -9,39 +9,60 @@
      --shadow-card      -> shadow-card
      --text-stem        -> text-stem
      --ease-spring      -> ease-spring
+
+   The world is a cream page under a lemon marker: paper ground, forest ink,
+   and the lemon spent sparingly. ሎሚ means lemon, so the palette is the name.
+
+   SINGLE THEME, by decision (owner, 2026-08-20). There is no dark counterpart
+   and no `.dark` class: paper is one object, and a dark sheet of paper is a
+   different one. The Mini App inherits this theme rather than forcing its own.
    ============================================================================ */
 
 @import 'tailwindcss';
 
-/* Dark mode is class-driven so the Telegram Mini App can force a theme
-   independently of the OS preference. */
-@custom-variant dark (&:where(.dark, .dark *));
-
 @theme {
-  /* ---- brand ------------------------------------------------------------ */
-  --color-brand: #5b4be0; /* primary action, active nav, focus ring  */
-  --color-brand-hover: #4a3ad0;
-  --color-brand-soft: #edebff; /* selected option, your own row           */
-  --color-on-brand: #ffffff;
+  /* ---- brand ------------------------------------------------------------
+     The lemon is a FILL and never sets text: on cream it measures 1.23:1.
+     `bg-brand` + `text-on-brand` is the only correct pairing. Anything that
+     needs an ACCENT IN TEXT uses ink with weight, over `bg-brand-soft` —
+     there is no readable lemon. A darkened amber was tried and rejected: no
+     value clears 4.5:1 while staying 45 deg from both the forest ink (89 deg)
+     and the terracotta of `wrong` (13 deg). The lemon sits between them on the
+     wheel, so an amber accent would read as an error state. */
+  --color-brand: #ffe95c; /* fill only — buttons, logo, the marker   */
+  --color-brand-hover: #f7dd3c;
+  --color-brand-soft: #fff6c4; /* selected option, active nav, your own row */
+  --color-on-brand: #1a3300; /* ink on lemon, 11.24:1                   */
 
-  /* ---- semantic state — never remapped, not even inside Telegram --------- */
-  --color-correct: #067049; /* text + icon weight, AA on surface       */
-  --color-correct-soft: #e3f8ef;
-  --color-wrong: #c22a22;
-  --color-wrong-soft: #feeceb;
-  --color-pending: #9a6209; /* awaiting verification, timer at 20%     */
-  --color-pending-soft: #fdf3dc;
-  --color-reward: #8a6200; /* streaks, points, badges — text weight   */
-  --color-reward-fill: #f5b301; /* reward fill — pairs with on-reward, never white */
-  --color-on-reward: #16162b; /* fixed: ink on yellow in BOTH themes */
+  /* ---- semantic state — never remapped, not even inside Telegram ---------
+     Each state clears 4.5:1 on bg, on surface AND on its own soft fill, and
+     sits at least 60 deg of hue from the ink and from every other state. */
+  --color-correct: #0f5f63; /* TEAL, not green: the ink IS green.      */
+  --color-correct-soft: #ddf0f0; /* 7.10 on bg · 6.27 on its own fill       */
+  --color-wrong: #a3300f; /* terracotta, darkened from #cb5521       */
+  --color-wrong-soft: #fbe0d6; /* 6.74 on bg · 5.60 on its own fill       */
+  --color-pending: #4a4a46; /* pencil. Pending is not failure, so it   */
+  --color-pending-soft: #edebe4; /* gets no alarm colour: 8.53 on bg        */
+  --color-reward: #6b2d78; /* plum — the lemon is spoken for          */
+  --color-reward-fill: #f6d0ff; /* reward fill — pairs with on-reward      */
+  --color-on-reward: #1a3300; /* ink on the fill, 10.14:1                */
 
-  /* ---- neutrals: slate with a violet bias, so they belong to the brand --- */
-  --color-bg: #f6f6fb;
-  --color-surface: #ffffff;
-  --color-surface-2: #f0f0f7;
-  --color-border: #e3e3ef;
-  --color-ink: #16162b;
-  --color-ink-2: #5b5b75;
+  /* Cream, for text sitting ON a solid state fill. Ink fails there (1.5–2.0);
+     this clears 6.7:1 on all four. Previously such sites borrowed
+     `--color-on-brand` because it happened to be white — a coupling that only
+     held while the brand was dark. */
+  --color-on-state: #fcfaf5;
+
+  /* ---- neutrals: warm paper, so they belong to the lemon ----------------
+     Not grey. Pencil Gray (#b6b6b6) and Whisper Gray (#f1f1f1) from the source
+     style are 1.94:1 and 1.08:1 on cream, so they exist here as hairlines
+     only and must never set text. */
+  --color-bg: #fcfaf5; /* the page — cream paper                  */
+  --color-surface: #ffffff; /* a sheet laid on it                      */
+  --color-surface-2: #f1efe8; /* wells, chips, code, skeletons           */
+  --color-border: #dfdbd0; /* hairline. Never text.                   */
+  --color-ink: #1a3300; /* forest, 13.27:1 on bg                   */
+  --color-ink-2: #46603a; /* captions, 6.72:1 on bg                  */
 
   /* ---- type ------------------------------------------------------------- */
   /* The `var(--font-*)` indirection is what lets the app SELF-HOST these
@@ -50,10 +71,10 @@
      to system-ui while looking correct in the stack. The literal name is kept
      as the var's default, so this file still works pasted anywhere. */
   --font-display:
-    var(--font-gabarito, 'Gabarito'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
+    var(--font-display-face, 'Archivo'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
     sans-serif;
   --font-sans:
-    var(--font-figtree, 'Figtree'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
+    var(--font-body-face, 'Inter'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
     -apple-system, 'Segoe UI', Roboto, sans-serif;
   /* The mark — `ሎሚ` in the logo square, and nothing else. Named separately from
      the body stack because it must be Ge'ez FIRST rather than as a fallback:
@@ -94,11 +115,17 @@
   --radius-panel: 24px; /* bottom sheets, modals                         */
   --radius-full: 999px; /* chips, badges, avatars, progress tracks       */
 
-  /* ---- elevation: every shadow carries an offset AND a blur -------------- */
-  --shadow-card: 0 1px 2px rgb(22 22 43 / 0.05), 0 6px 16px rgb(22 22 43 / 0.07);
-  --shadow-lift: 0 2px 4px rgb(22 22 43 / 0.06), 0 12px 28px rgb(22 22 43 / 0.1);
-  --shadow-panel: 0 4px 8px rgb(22 22 43 / 0.07), 0 24px 48px rgb(22 22 43 / 0.16);
-  --shadow-brand: 0 2px 4px rgb(91 75 224 / 0.18), 0 10px 24px rgb(91 75 224 / 0.22);
+  /* ---- elevation: every shadow carries an offset AND a blur --------------
+     Tinted with the forest ink rather than the old violet-biased slate, so a
+     shadow on cream reads as depth in this world instead of grey fog. Lighter
+     than Deresegn's throughout: paper does not float far off the page, and
+     restraint here is most of what separates a premium surface from a busy one. */
+  --shadow-card: 0 1px 2px rgb(26 51 0 / 0.05), 0 5px 14px rgb(26 51 0 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(26 51 0 / 0.06), 0 10px 24px rgb(26 51 0 / 0.09);
+  --shadow-panel: 0 4px 8px rgb(26 51 0 / 0.07), 0 22px 44px rgb(26 51 0 / 0.14);
+  /* The brand shadow is INK, not lemon. A yellow glow under a yellow button is
+     the halo the craft floor bans — and lemon at any alpha disappears on cream. */
+  --shadow-brand: 0 2px 4px rgb(26 51 0 / 0.1), 0 8px 20px rgb(26 51 0 / 0.14);
 
   /* ---- motion ----------------------------------------------------------- */
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1); /* the answer moment      */
@@ -108,80 +135,17 @@
   --animate-draw: draw 0.34s var(--ease-out) both;
 }
 
-/* Dark — the same product at 11pm, not a dimmed sheet.
-   Semantic hues are re-derived for a dark ground, never merely darkened.
+/* Dark mode was removed with the move to the lemon world (owner, 2026-08-20).
+   It previously lived here twice — a `@media (prefers-color-scheme: dark)`
+   block so a system-dark phone needed no JavaScript, and a `.dark` class so an
+   explicit choice could beat the OS — with a test asserting the two lists
+   stayed identical.
 
-   Declared TWICE, on purpose, and a test asserts the two lists stay identical
-   (apps/web/components/theme.test.ts):
-
-     1. `@media (prefers-color-scheme: dark)` — a student whose phone is dark
-        gets a dark app with NO JavaScript at all. This matters because React
-        owns `<html>`'s attributes: a class applied by an inline script before
-        paint is STRIPPED during hydration, so a JS-only implementation showed
-        a light page to every system-dark user. Verified before this change.
-     2. `.dark` / `.light` — an explicit choice, which must beat the OS. The
-        media query is scoped `:not(.light)` so choosing light while the phone
-        is dark actually holds.
-
-   CSS custom properties cannot be shared between a media block and a class
-   selector, so the duplication is unavoidable; the test is what makes it safe. */
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    --color-brand: #8b7cff;
-    --color-brand-hover: #9e92ff;
-    --color-brand-soft: #241f4d;
-    --color-on-brand: #101018;
-
-    --color-correct: #4ade9b;
-    --color-correct-soft: #10291f;
-    --color-wrong: #ff8a82;
-    --color-wrong-soft: #331615;
-    --color-pending: #f0b95b;
-    --color-pending-soft: #2b1f0c;
-    --color-reward: #ffd24d;
-    --color-reward-fill: #f5b301;
-
-    --color-bg: #101018;
-    --color-surface: #191926;
-    --color-surface-2: #232333;
-    --color-border: #2e2e42;
-    --color-ink: #ececf5;
-    --color-ink-2: #a0a0bc;
-
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.44);
-    --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.44), 0 12px 28px rgb(0 0 0 / 0.5);
-    --shadow-panel: 0 4px 8px rgb(0 0 0 / 0.48), 0 24px 48px rgb(0 0 0 / 0.6);
-    --shadow-brand: 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 24px rgb(139 124 255 / 0.24);
-  }
-}
-
-.dark {
-  --color-brand: #8b7cff;
-  --color-brand-hover: #9e92ff;
-  --color-brand-soft: #241f4d;
-  --color-on-brand: #101018;
-
-  --color-correct: #4ade9b;
-  --color-correct-soft: #10291f;
-  --color-wrong: #ff8a82;
-  --color-wrong-soft: #331615;
-  --color-pending: #f0b95b;
-  --color-pending-soft: #2b1f0c;
-  --color-reward: #ffd24d;
-  --color-reward-fill: #f5b301;
-
-  --color-bg: #101018;
-  --color-surface: #191926;
-  --color-surface-2: #232333;
-  --color-border: #2e2e42;
-  --color-ink: #ececf5;
-  --color-ink-2: #a0a0bc;
-
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.44);
-  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.44), 0 12px 28px rgb(0 0 0 / 0.5);
-  --shadow-panel: 0 4px 8px rgb(0 0 0 / 0.48), 0 24px 48px rgb(0 0 0 / 0.6);
-  --shadow-brand: 0 2px 4px rgb(0 0 0 / 0.4), 0 10px 24px rgb(139 124 255 / 0.24);
-}
+   Both are gone. This theme is a sheet of cream paper, and a dark sheet is a
+   different object rather than the same one dimmed. Nothing in the app reads a
+   dark token: there were zero `dark:` utilities across all 86 components, so
+   the palette was the only thing that ever changed. Restoring it means
+   re-deriving every semantic hue on a dark ground, not inverting these. */
 
 @keyframes pop {
   0% {
@@ -299,7 +263,7 @@
   /* Emergency retire only. No shadow: a raised danger button reads as the
      recommended action, which is the opposite of what this one is. */
   .btn-danger {
-    @apply w-full min-h-[52px] px-6 rounded-control bg-wrong text-on-brand text-label
+    @apply w-full min-h-[52px] px-6 rounded-control bg-wrong text-on-state text-label
            inline-flex items-center justify-center gap-2
            transition-[background-color,transform] duration-150 active:scale-[.98];
   }

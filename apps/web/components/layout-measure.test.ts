@@ -102,13 +102,21 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
 
   /**
    * "the active item's icon sitting in a Brand Soft pill and its label in brand
-   * colour" — the pill AND the colour. Colour never carries meaning alone, which
-   * is the rule the whole design system rests on.
+   * colour" — the pill AND a second signal. Never one alone, which is the rule
+   * the whole design system rests on.
+   *
+   * DESIGN.md's "label in brand colour" is retired with Lomi v1: the brand is a
+   * lemon at 1.23:1 on cream and cannot set text. The second signal is now the
+   * label's weight and ink strength — ink at 600 against ink-2 at 400, which is
+   * both a 6.72:1 → 13.27:1 contrast step and a weight step, so it survives
+   * greyscale exactly as the colour was meant to.
    */
-  it('marks the active item with a pill and a colour, not colour alone', () => {
+  it('marks the active item with a pill and a second signal, not one alone', () => {
     expect(nav).toContain('bg-brand-soft');
-    expect(nav).toContain('text-brand');
-    // And announces it, which no amount of colour does.
+    expect(nav).toContain('text-ink font-semibold');
+    // The lemon must not have crept back into a label.
+    expect(nav).not.toContain('text-brand');
+    // And announces it, which no amount of styling does.
     expect(nav).toContain("'aria-current'");
   });
 

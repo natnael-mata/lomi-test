@@ -146,7 +146,6 @@ of them right.
 
 - **On a phone.** Resize the window to 390px wide or use your phone on the same network.
   Nothing should scroll sideways. Every button should be big enough to tap.
-- **Dark mode.** Switch your system theme. Text should stay readable everywhere.
 - **Keyboard only.** Tab through a screen. You should always be able to see where you are.
 - **Slow connection.** Throttle to 3G in devtools. Does it tell you it is loading, or does
   it just sit there?
@@ -156,6 +155,8 @@ of them right.
 Do not report these — they are known and scheduled:
 
 - **Amharic** is written but unreviewed, and not reachable in the UI yet. English only.
+- **There is no dark mode**, by decision. Lomi is a cream page under a lemon marker and
+  has one palette. A dark sheet of paper is a different object, not the same one dimmed.
 - **Real Telegram sign-in and real card payment** are held until the rest is done. The
   `/dev-login` door and the manual bank-claim flow are what you are testing instead.
 - **The question bank is 20 demo questions**, not the real content.
