@@ -98,7 +98,7 @@ export function AdminBar({ pathname }: { pathname: string }) {
                   // on a tablet is the same person, and DESIGN.md sets the floor
                   // for controls, not for devices.
                   'text-label inline-flex min-h-11 items-center rounded-full px-3.5',
-                  active ? 'bg-brand-soft text-brand' : 'text-ink-2',
+                  active ? 'bg-brand-soft text-ink' : 'text-ink-2',
                 ].join(' ')}
                 {...(active ? { 'aria-current': 'page' as const } : {})}
               >

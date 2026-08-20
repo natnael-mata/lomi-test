@@ -18,6 +18,19 @@ export interface ServedOption {
 }
 
 export interface ServedQuestion {
+  /**
+   * Whether this student has answered this question before.
+   *
+   * Sent so the screen can *say so* when the free allowance is gone and the
+   * only thing left to offer is a second look. Without it the product silently
+   * loops a free student back through the ten they have already done, the
+   * counter sits at zero, and it reads as a limit that is not being enforced —
+   * which is exactly how QA read it. Re-practice being free is a decision worth
+   * keeping; leaving it unsaid is not.
+   *
+   * Not answer content: it says nothing about whether they got it right.
+   */
+  alreadyAnswered: boolean;
   questionId: string;
   stableId: string;
   qType: string;
@@ -51,6 +64,7 @@ export const SERVED_QUESTION_FIELDS = [
   'topic',
   'options',
   'freeRemaining',
+  'alreadyAnswered',
 ] as const;
 
 /** Keys that would leak the answer. Asserted absent, by name, in the e2e test. */
@@ -90,9 +104,11 @@ export interface ServableQuestion {
 export function toServedQuestion(
   q: ServableQuestion,
   freeRemaining: number | null,
+  alreadyAnswered = false,
 ): ServedQuestion {
   return {
     freeRemaining,
+    alreadyAnswered,
     questionId: q.id,
     stableId: q.stableId,
     qType: q.qType,

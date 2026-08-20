@@ -69,7 +69,7 @@ function markFor(
   if (state === 'wrong' && wasChosen) {
     return { icon: 'cross', word: c.answer.yours, tone: 'text-wrong' };
   }
-  if (state === 'selected') return { icon: null, word: c.answer.selected, tone: 'text-brand' };
+  if (state === 'selected') return { icon: null, word: c.answer.selected, tone: 'text-ink' };
   return null;
 }
 

@@ -232,9 +232,25 @@ describe('points, streaks and the board (Phase 11)', () => {
 
       const theirs = await engagement.leaderboard(b.userId);
       expect(theirs.rows.some((r) => r.isYou)).toBe(false);
-      expect(theirs.you?.rank).toBe(2);
       expect(theirs.you?.points).toBe(50);
       expect(theirs.you?.listed).toBe(false);
+
+      /*
+       * Placed between the two, rather than asserted as literally second.
+       *
+       * `rank === 2` was a claim about the whole database being empty of other
+       * scorers, not about T-194 — the board ranks over everybody, so any other
+       * student with points moves the number while the behaviour under test is
+       * untouched. What the rule actually says is that opting out costs you
+       * your place on the list and not your place in the standings.
+       */
+      const board = await engagement.leaderboard(a.userId);
+      const aboveThem = board.rows.find((r) => r.points === 75)?.rank;
+      const belowThem = board.rows.find((r) => r.points === 25)?.rank;
+      expect(aboveThem).toBeDefined();
+      expect(belowThem).toBeDefined();
+      expect(theirs.you!.rank).toBeGreaterThan(aboveThem!);
+      expect(theirs.you!.rank).toBeLessThan(belowThem!);
 
       // And they are gone from everybody else's view too.
       const others = await engagement.leaderboard(a.userId);

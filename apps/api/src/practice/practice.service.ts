@@ -137,8 +137,33 @@ export class PracticeService {
       throw new NotFoundException('Nothing left to practise in this programme today.');
     }
 
+    /*
+     * What may be offered, which is not the same as what is eligible.
+     *
+     * **A free student is shown something new until there is nothing new left.**
+     * This picked at random over everything eligible, which includes questions
+     * already attempted — so a student with six free questions left was
+     * regularly handed one they had already answered. Re-answering consumes
+     * nothing, so the counter did not move, and from the far side of the screen
+     * that is indistinguishable from a free tier that is not being enforced:
+     * QA answered "an eleventh and a twelfth question" and watched the badge sit
+     * frozen. Both were repeats. The limit was working; the picker was undoing
+     * the evidence of it.
+     *
+     * Once the allowance is gone the rule inverts — only what they have already
+     * seen, because re-practice is free and a new question is not (T-239).
+     *
+     * A subscriber keeps the unfiltered draw. For them a returning question is
+     * revision rather than a wasted turn, and there is no counter to confuse.
+     */
     const seen = new Set(attempted.map((a) => a.questionId));
-    const offerable = remaining === 0 ? eligible.filter((q) => seen.has(q.id)) : eligible;
+    let offerable = eligible;
+    if (remaining === 0) {
+      offerable = eligible.filter((q) => seen.has(q.id));
+    } else if (remaining !== null) {
+      const unseen = eligible.filter((q) => !seen.has(q.id));
+      if (unseen.length > 0) offerable = unseen;
+    }
     if (offerable.length === 0) throw new FreeLimitReached(0);
 
     const pick = offerable[Math.floor(Math.random() * offerable.length)]!;
@@ -159,7 +184,7 @@ export class PracticeService {
       },
     });
 
-    return toServedQuestion(question, remaining);
+    return toServedQuestion(question, remaining, seen.has(question.id));
   }
 
   /**

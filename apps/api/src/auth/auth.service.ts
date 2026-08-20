@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   UnauthorizedException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 
 import type { StaffRole } from '@prisma/client';
@@ -11,7 +12,14 @@ import type { StaffRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
-import { devDisplayName, devTelegramId, isDevLoginEnabled, secretMatches } from './dev-login';
+import {
+  DEV_PERSONAS,
+  devDisplayName,
+  devTelegramId,
+  isDevLoginEnabled,
+  isKnownPersona,
+  secretMatches,
+} from './dev-login';
 import { safeDeviceLabel } from './device-label';
 import { signSessionToken } from './tokens';
 
@@ -157,6 +165,20 @@ export class AuthService {
       // Identical for "not enabled" and "wrong secret". Telling them apart
       // tells somebody probing whether the door exists at all.
       throw new UnauthorizedException('No.');
+    }
+
+    /*
+     * Checked after the secret, never before.
+     *
+     * Order matters: answering "no such persona" to an unauthenticated caller
+     * would confirm the door exists and enumerate what is behind it. Somebody
+     * without the secret gets the same "No." for everything.
+     */
+    if (!isKnownPersona(label)) {
+      throw new UnprocessableEntityException({
+        error: 'UNKNOWN_PERSONA',
+        message: `No testing account is called "${label}". Try one of: ${DEV_PERSONAS.join(', ')}.`,
+      });
     }
 
     const telegramId = String(devTelegramId(label));

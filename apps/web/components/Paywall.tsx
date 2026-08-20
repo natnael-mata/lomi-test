@@ -92,7 +92,7 @@ function PlanRow({ plan }: { plan: PlanOffer }) {
       data-best={best ? 'yes' : 'no'}
       className={[
         'rounded-card bg-surface flex items-center justify-between gap-3 p-4',
-        best ? 'border-brand border-2' : 'shadow-card',
+        best ? 'border-ink border-2' : 'shadow-card',
       ].join(' ')}
     >
       <span className="flex flex-col gap-1">

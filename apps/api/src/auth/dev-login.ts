@@ -80,11 +80,52 @@ export function secretMatches(presented: string, configured: string | undefined)
  * `DEV_LOGIN_SECRET` is set, and the range it hashes into can only ever hold
  * smoke-test accounts.
  */
-export function devTelegramId(label: string): number {
-  const key = label
+/**
+ * The personas this door will open, and nothing else.
+ *
+ * It used to mint an account for whatever arrived. QA typed a few names that
+ * were not on the page, got a silent 201 each time, and left junk accounts —
+ * one called "KindLantern3166" — sitting in the provider activity feed and the
+ * admin user list, indistinguishable from a real signup at a glance.
+ *
+ * Minting on demand was deliberate and is still right for the twelve seeded
+ * states; it is *unbounded* minting that has no defence. An allowlist keeps the
+ * property that matters — every account lands in the reserved negative range,
+ * so a leaked secret is a nuisance rather than a takeover — and adds the one
+ * that was missing: a name nobody put here is a mistake, and gets told so.
+ *
+ * `student` is the generic tester the automated suites use.
+ */
+export const DEV_PERSONAS = [
+  'usera',
+  'userb',
+  'userc',
+  'userd',
+  'usere',
+  'userf',
+  'userg',
+  'userh',
+  'useri',
+  'userj',
+  'admin',
+  'provider',
+  'student',
+] as const;
+
+/** Normalised the way `devTelegramId` normalises, so "User B" matches `userb`. */
+export function personaKey(label: string): string {
+  return label
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
+}
+
+export function isKnownPersona(label: string): boolean {
+  return (DEV_PERSONAS as readonly string[]).includes(personaKey(label));
+}
+
+export function devTelegramId(label: string): number {
+  const key = personaKey(label);
   const digest = createHash('sha256').update(key).digest();
   const span = DEV_TELEGRAM_ID_CEILING - DEV_TELEGRAM_ID_FLOOR;
   return DEV_TELEGRAM_ID_FLOOR + (digest.readUInt32BE(0) % span);

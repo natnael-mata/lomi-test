@@ -23,6 +23,15 @@
  * never was, so without it this would have traded XSS exposure for CSRF.
  */
 
+/** A live session, as the device list shows it. Dates arrive as ISO strings. */
+export interface DeviceEntry {
+  id: string;
+  deviceLabel: string | null;
+  lastSeenAt: string;
+  signedInAt: string;
+  isCurrent: boolean;
+}
+
 /** A programme as `/me/fields` returns it. */
 export interface FieldOption {
   id: string;
@@ -120,6 +129,7 @@ export function refusalMessage(error: unknown): string | null {
 
 /** The pre-answer payload. Deliberately carries no answer content (T-106). */
 export interface ServedQuestion {
+  alreadyAnswered: boolean;
   questionId: string;
   stableId: string;
   qType: string;
@@ -746,6 +756,26 @@ export const api = {
    * the student's programme.
    */
   myFields: (): Promise<FieldOption[]> => call<FieldOption[]>('/me/fields'),
+
+  /** Every session still open on this account, this one marked. */
+  devices: (): Promise<DeviceEntry[]> => call<DeviceEntry[]>('/me/devices'),
+
+  revokeDevice: (id: string): Promise<{ revoked: boolean; alreadyRevoked: boolean }> =>
+    call<{ revoked: boolean; alreadyRevoked: boolean }>(`/me/devices/${id}/revoke`, {
+      method: 'POST',
+    }),
+
+  /**
+   * Ends this session, on the server as well as in the browser.
+   *
+   * The route revokes the row *and* clears the cookie — clearing the cookie
+   * alone would leave a live session that anybody holding the token could keep
+   * using, which is not signing out, it is hiding the key.
+   */
+  signOut: (): Promise<{ ok: boolean }> =>
+    call<{ ok: boolean }>('/auth/sign-out', {
+      method: 'POST',
+    }),
 
   /**
    * Picks the programme every question is scoped to (PLAN.md 4.1).

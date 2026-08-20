@@ -34,6 +34,13 @@ const TESTERS = [
   { label: 'usera', who: c.devLogin.userA, note: c.devLogin.userANote },
   { label: 'userb', who: c.devLogin.userB, note: c.devLogin.userBNote },
   { label: 'userc', who: c.devLogin.userC, note: c.devLogin.userCNote },
+  { label: 'userd', who: c.devLogin.userD, note: c.devLogin.userDNote },
+  { label: 'usere', who: c.devLogin.userE, note: c.devLogin.userENote },
+  { label: 'userf', who: c.devLogin.userF, note: c.devLogin.userFNote },
+  { label: 'userg', who: c.devLogin.userG, note: c.devLogin.userGNote },
+  { label: 'userh', who: c.devLogin.userH, note: c.devLogin.userHNote },
+  { label: 'useri', who: c.devLogin.userI, note: c.devLogin.userINote },
+  { label: 'userj', who: c.devLogin.userJ, note: c.devLogin.userJNote },
   { label: 'admin', who: c.devLogin.admin, note: c.devLogin.adminNote },
   { label: 'provider', who: c.devLogin.provider, note: c.devLogin.providerNote },
 ] as const;
@@ -48,6 +55,22 @@ export function DevLoginScreen() {
   const signIn = async (label: string): Promise<void> => {
     setState({ kind: 'busy', label });
     try {
+      /*
+       * End whoever is already here first.
+       *
+       * QA pressed User C while signed in as User A, landed on the home page as
+       * though it had worked, and was still User A — with nothing on screen
+       * saying so. Whatever left the old cookie in place, signing in on top of
+       * a live session is the wrong shape for a door whose entire job is
+       * switching between twelve accounts: revoke, then mint.
+       *
+       * Failure is ignored on purpose. There may be no session to end, and a
+       * sign-out that fails must not stop somebody signing in.
+       */
+      await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'same-origin' }).catch(
+        () => undefined,
+      );
+
       const res = await fetch('/api/auth/dev-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

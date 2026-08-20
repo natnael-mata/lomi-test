@@ -232,7 +232,7 @@ function Pairing({
         {c.signIn.expiresIn(clock(remaining))}
         <button
           type="button"
-          className="text-brand rounded-control inline-flex min-h-11 items-center px-2 font-semibold"
+          className="text-ink rounded-control inline-flex min-h-11 items-center px-2 font-semibold"
           onClick={onRenew}
         >
           {c.signIn.newCode}

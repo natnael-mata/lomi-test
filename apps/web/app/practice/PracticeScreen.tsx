@@ -197,7 +197,29 @@ export function PracticeScreen() {
         </div>
       </header>
 
+      {/*
+        Said once the allowance is gone, on the question itself.
+        The server keeps offering questions after the tenth — they are ones the
+        student has already answered, and going over them again is free. Unsaid,
+        that reads as a free tier nobody is enforcing: QA answered two more,
+        watched the counter sit still, and filed it as a blocker. So the screen
+        states which of the two situations they are in, and where the new
+        questions are.
+      */}
+      {freeLeft === 0 && question.alreadyAnswered && (
+        <Card as="section" data-out-of-new="" className="flex flex-col gap-2">
+          <h2 className="text-label">{c.practice.outOfNewTitle}</h2>
+          <p className="text-body text-ink-2">{c.practice.outOfNewBody}</p>
+          <a className="btn-ghost self-start" href="/checkout">
+            {c.practice.seePlans}
+          </a>
+        </Card>
+      )}
+
       <Card as="section" className="p-4 sm:p-5">
+        {freeLeft !== null && freeLeft > 0 && question.alreadyAnswered && (
+          <p className="text-caption text-ink-2 mb-2">{c.practice.seenBefore}</p>
+        )}
         <p className="text-stem" data-stem="">
           {question.stem}
         </p>

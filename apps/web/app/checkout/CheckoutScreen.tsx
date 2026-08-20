@@ -514,7 +514,7 @@ function PlanCard({
       data-selected={chosen}
       className={[
         'rounded-card flex flex-1 cursor-pointer flex-col gap-0.5 border-2 p-3',
-        chosen ? 'border-brand bg-brand-soft' : 'border-border bg-surface',
+        chosen ? 'border-ink bg-brand-soft' : 'border-border bg-surface',
       ].join(' ')}
     >
       <span className="flex items-center justify-between gap-2">
@@ -522,7 +522,7 @@ function PlanCard({
         {/* The word, not only the fill — this is the one control on the screen
             whose state decides what the next screen charges. */}
         {chosen ? (
-          <span className="text-caption text-brand uppercase">{c.checkout.chosen}</span>
+          <span className="text-caption text-ink uppercase">{c.checkout.chosen}</span>
         ) : null}
       </span>
       <span className="text-title num font-display">{c.paywall.price(plan.priceEtb)}</span>

@@ -16,7 +16,7 @@ const TONE_CLASS: Record<ChipTone, string> = {
   correct: 'bg-correct-soft text-correct',
   wrong: 'bg-wrong-soft text-wrong',
   pending: 'bg-pending-soft text-pending',
-  brand: 'bg-brand-soft text-brand',
+  brand: 'bg-brand-soft text-ink',
   reward: 'bg-reward-fill text-on-reward',
 };
 

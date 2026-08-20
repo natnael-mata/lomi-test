@@ -99,6 +99,24 @@ export const en = {
     selected: 'Selected',
   },
 
+  account: {
+    title: 'This account',
+    devicesTitle: 'Where you are signed in',
+    devicesIntro: 'Two devices at a time. Signing in on a third ends the oldest.',
+    thisDevice: 'This device',
+    unknownDevice: 'Unknown device',
+    signedInAt: (when: string) => `Signed in ${when}`,
+    lastSeen: (when: string) => `Last used ${when}`,
+    revoke: 'Sign this one out',
+    revoking: 'Signing out…',
+    noDevices: 'Nothing else is signed in.',
+    devicesLoading: 'Loading…',
+    devicesFailed: 'Could not load your devices.',
+    signOut: 'Sign out',
+    signingOut: 'Signing out…',
+    signOutFailed: 'Could not sign out. Try again.',
+  },
+
   devLogin: {
     title: 'Sign in for testing',
     intro: 'Choose who to sign in as. This page is for local testing only.',
@@ -117,6 +135,20 @@ export const en = {
     userBNote: '8 of 10 free questions used, and a bank transfer waiting to be checked.',
     userC: 'User C',
     userCNote: 'Paid for 12 months — receipt, payment history and the mock exam.',
+    userD: 'User D',
+    userDNote: 'All 10 free questions spent, never paid — meets the paywall on arrival.',
+    userE: 'User E',
+    userENote: 'Paid once and lapsed yesterday — the renewal offer, not the first-time one.',
+    userF: 'User F',
+    userFNote: 'A mock exam open and unsubmitted — resuming it, and the practice lock.',
+    userG: 'User G',
+    userGNote: 'A mock exam finished — the result, the review and the trend.',
+    userH: 'User H',
+    userHNote: 'Five days engaged with points banked — the standing and the leaderboard.',
+    userI: 'User I',
+    userINote: 'Answered 15 and got a quarter right — readiness when the news is bad.',
+    userJ: 'User J',
+    userJNote: 'Two live devices, at the limit — the device list, and being evicted.',
     admin: 'Admin',
     adminNote: "Sees the admin pages and can settle User B's payment.",
     provider: 'Provider',
@@ -166,6 +198,11 @@ export const en = {
     // Uppercased in the chip; written here in sentence case so the Amharic,
     // which has no capitals to set, is not asked to imitate them (T-101).
     freeLeft: (count: number) => `${count} free left`,
+    seenBefore: 'You have answered this one before',
+    outOfNewTitle: 'That is your ten free questions',
+    outOfNewBody:
+      'You can keep going over the ones you have already answered as often as you like — ' +
+      'that stays free. New questions are part of a subscription.',
   },
 
   /**
@@ -873,6 +910,24 @@ export const am: Copy = {
     selected: 'ተመርጧል',
   },
 
+  account: {
+    title: 'ይህ መለያ',
+    devicesTitle: 'የገቡባቸው መሣሪያዎች',
+    devicesIntro: 'በአንድ ጊዜ ሁለት መሣሪያ። በሦስተኛው ሲገቡ በጣም የቆየው ይዘጋል።',
+    thisDevice: 'ይህ መሣሪያ',
+    unknownDevice: 'ያልታወቀ መሣሪያ',
+    signedInAt: (when: string) => `የገቡበት ${when}`,
+    lastSeen: (when: string) => `መጨረሻ የተጠቀሙበት ${when}`,
+    revoke: 'ይህንን አውጣ',
+    revoking: 'በማውጣት ላይ…',
+    noDevices: 'ሌላ የገባ የለም።',
+    devicesLoading: 'በመጫን ላይ…',
+    devicesFailed: 'መሣሪያዎችዎን መጫን አልተቻለም።',
+    signOut: 'ውጣ',
+    signingOut: 'በመውጣት ላይ…',
+    signOutFailed: 'መውጣት አልተቻለም። እንደገና ይሞክሩ።',
+  },
+
   devLogin: {
     title: 'ለሙከራ ይግቡ',
     intro: 'በማን ስም እንደሚገቡ ይምረጡ። ይህ ገጽ ለአካባቢያዊ ሙከራ ብቻ ነው።',
@@ -888,6 +943,20 @@ export const am: Copy = {
     userBNote: 'ከ10 ነጻ ጥያቄዎች 8ቱ ተጠቅሟል፣ እና የሚረጋገጥ የባንክ ዝውውር አለው።',
     userC: 'ተጠቃሚ ሐ',
     userCNote: 'ለ12 ወራት ከፍሏል — ደረሰኝ፣ የክፍያ ታሪክ እና የሙከራ ፈተና።',
+    userD: 'ተጠቃሚ መ',
+    userDNote: 'አስሩንም ነጻ ጥያቄዎች ጨርሷል፣ ከፍሎ አያውቅም — ወዲያውኑ የክፍያ ግድግዳውን ያገኛል።',
+    userE: 'ተጠቃሚ ሠ',
+    userENote: 'ከፍሎ ነበር፣ ትናንት አብቅቷል — የማደስ አቅርቦት እንጂ የመጀመሪያ ጊዜ አይደለም።',
+    userF: 'ተጠቃሚ ረ',
+    userFNote: 'ያልተረከበ የተከፈተ የሙከራ ፈተና — መቀጠሉና የልምምድ መቆለፊያው።',
+    userG: 'ተጠቃሚ ሰ',
+    userGNote: 'የጨረሰው የሙከራ ፈተና — ውጤቱ፣ ግምገማውና አዝማሚያው።',
+    userH: 'ተጠቃሚ ሸ',
+    userHNote: 'አምስት ቀን ተሳትፏል፣ ነጥብም አለው — ደረጃውና የደረጃ ሰሌዳው።',
+    userI: 'ተጠቃሚ ቀ',
+    userINote: '15 መልሷል፣ ሩብ ያህሉን አግኝቷል — ዜናው መጥፎ ሲሆን ዝግጁነት።',
+    userJ: 'ተጠቃሚ በ',
+    userJNote: 'ሁለት የነቁ መሣሪያዎች፣ ጣሪያው ላይ — የመሣሪያ ዝርዝሩና መወገዱ።',
     admin: 'አስተዳዳሪ',
     adminNote: 'የአስተዳዳሪ ገጾችን ያያል እና ክፍያዎችን ማረጋገጥ ይችላል።',
     provider: 'አቅራቢ',
@@ -935,6 +1004,11 @@ export const am: Copy = {
     didNotLoad: 'አልተጫነም። የመለሱት ምንም አልጠፋም — እንደገና ይሞክሩ።',
 
     freeLeft: (count: number) => `${count} ነጻ ቀርቷል`,
+    seenBefore: 'ይህንን ከዚህ በፊት መልሰውታል',
+    outOfNewTitle: 'ያ አስሩ ነጻ ጥያቄዎችዎ ናቸው',
+    outOfNewBody:
+      'ቀደም ብለው የመለሷቸውን ጥያቄዎች እንደፈለጉት ደጋግመው መስራት ይችላሉ — ያ ነጻ ሆኖ ይቀጥላል። ' +
+      'አዲስ ጥያቄዎች ግን የደንበኝነት ምዝገባ አካል ናቸው።',
   },
 
   paywall: {

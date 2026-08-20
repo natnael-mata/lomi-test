@@ -149,12 +149,26 @@ describe('the smoke-test door (T-206a)', () => {
 
     try {
       for (const label of ['566000090', 'RealStudent001', real.id]) {
+        /*
+         * Refused outright now, rather than quietly minting a separate account.
+         *
+         * The property under test is unchanged and still the one that makes the
+         * bypass survivable: none of these reaches the real account. What
+         * changed is what happens instead. Answering 201 to any string at all
+         * meant a tester who mistyped a persona name got a working session on a
+         * brand-new account with a generated display name, which then sat in
+         * the admin user list looking like a real signup.
+         */
         const res = await request(app.getHttpServer())
           .post('/auth/dev-login')
           .send({ secret: SECRET, label })
-          .expect(201);
-        expect(res.body.userId, label).not.toBe(real.id);
+          .expect(422);
+        expect(res.body.error, label).toBe('UNKNOWN_PERSONA');
       }
+
+      // The account it was being aimed at is untouched — no session, and it is
+      // still the only user with that telegram id.
+      expect(await prisma.session.count({ where: { userId: real.id } })).toBe(0);
     } finally {
       await prisma.session.deleteMany({ where: { userId: real.id } });
       await prisma.user.delete({ where: { id: real.id } });

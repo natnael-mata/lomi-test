@@ -81,7 +81,7 @@ function Item({ destination, active }: { destination: Destination; active: boole
         // The pill AND the brand-coloured label. Colour never alone. On a phone
         // the pill sits behind the icon only — a filled cell in a 56px bar
         // reads as a button rather than as "you are here".
-        active ? 'text-brand sm:bg-brand-soft' : 'text-ink-2',
+        active ? 'text-ink sm:bg-brand-soft' : 'text-ink-2',
       ].join(' ')}
       {...(active ? { 'aria-current': 'page' as const } : {})}
     >

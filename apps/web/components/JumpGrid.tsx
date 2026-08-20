@@ -37,11 +37,11 @@ export function JumpGrid({ slots, currentPosition, onJump }: JumpGridProps) {
               // current cell is a second, non-colour signal alongside the glyph.
               className={[
                 'num flex size-11 flex-col items-center justify-center rounded-control text-caption',
-                cell.current ? 'border-2 border-brand underline' : 'border border-border',
+                cell.current ? 'border-2 border-ink underline' : 'border border-border',
                 cell.flagged
                   ? 'bg-pending-soft text-pending'
                   : cell.answered
-                    ? 'bg-brand-soft text-brand'
+                    ? 'bg-brand-soft text-ink'
                     : 'bg-surface text-ink-2',
               ].join(' ')}
             >

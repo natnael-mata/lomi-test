@@ -59,7 +59,7 @@ const TONE: Record<TierId, string> = {
   BRONZE: 'text-pending',
   SILVER: 'text-ink-2',
   GOLD: 'text-reward',
-  PLATINUM: 'text-brand',
+  PLATINUM: 'text-ink',
 };
 
 export interface TierBadgeProps extends Omit<SVGProps<SVGSVGElement>, 'children'> {

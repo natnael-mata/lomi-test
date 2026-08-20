@@ -271,11 +271,32 @@ describe('POST /attempts', () => {
       }
     });
 
-    // Getting it wrong is exactly when you need to see it again.
+    /*
+     * Getting it wrong is exactly when you need to see it again — after the
+     * free ten, which is when there is nothing new left to offer.
+     *
+     * This used to answer one question wrong and wait for it to come round.
+     * That passed while the picker drew at random over everything eligible, and
+     * that randomness was itself the bug: a free student with six questions left
+     * kept being handed ones they had already answered, the counter did not
+     * move because re-answering consumes nothing, and QA read the whole free
+     * tier as unenforced. New questions come first now, while there are any.
+     *
+     * The rule under test is unchanged and still T-110's: a question answered
+     * *wrongly* is never excluded, unlike one answered correctly today. So it
+     * comes back — once being new is no longer the tie-breaker.
+     */
     it('does serve a question answered INcorrectly again', async () => {
       const fresh = await signIn(561000003);
       const target = questionIds[7]!;
       await answer(target, 'C', 201, 30, fresh.token);
+
+      // Spend the rest of the allowance, so unseen questions stop being
+      // preferred. `target` is index 7, so it is skipped here.
+      for (let i = 0; i < FREE_ATTEMPTS_PER_FIELD + 1; i++) {
+        if (i === 7) continue;
+        await answer(questionIds[i]!, 'B', 201, 30, fresh.token).catch(() => undefined);
+      }
 
       let reappeared = false;
       for (let i = 0; i < 60 && !reappeared; i++) {

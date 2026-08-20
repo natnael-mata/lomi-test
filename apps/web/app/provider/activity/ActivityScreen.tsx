@@ -143,7 +143,7 @@ export function ActivityScreen() {
                 'text-caption inline-flex min-h-11 items-center rounded-full px-3.5',
                 // The word is already the whole control, so the state is carried
                 // by fill and weight rather than by colour alone.
-                on ? 'bg-brand-soft text-brand font-semibold' : 'bg-surface-2 text-ink-2',
+                on ? 'bg-brand-soft text-ink font-semibold' : 'bg-surface-2 text-ink-2',
               ].join(' ')}
             >
               {label}

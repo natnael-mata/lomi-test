@@ -305,6 +305,18 @@ async function main(): Promise<void> {
   // Deliberately left with no field: the programme chooser is a screen, and the
   // only way to see it is to be somebody who has not chosen.
   const userA = ids.get('usera')!;
+  /*
+   * Brand new means brand new, including the history.
+   *
+   * This cleared the programme and nothing else, so a tester who practised as
+   * User A last week left attempts behind — and the next tester chose a
+   * programme and met "9 free left" on a question they had never seen. They
+   * reported an off-by-one in the counter. The counter was right: the account
+   * was not new, and only the brief said it was.
+   */
+  await prisma.attempt.deleteMany({ where: { userId: userA } });
+  await prisma.pointEntry.deleteMany({ where: { userId: userA } });
+  await clearBilling(userA);
   await prisma.user.update({ where: { id: userA }, data: { fieldId: null } });
 
   // ---- User B: two free questions left, one claim waiting ------------------

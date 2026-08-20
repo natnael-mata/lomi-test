@@ -151,7 +151,7 @@ export function HealthScreen() {
             </span>
             <button
               type="button"
-              className="text-caption text-brand rounded-control inline-flex min-h-11 items-center px-2 font-semibold"
+              className="text-caption text-ink rounded-control inline-flex min-h-11 items-center px-2 font-semibold"
               onClick={() => setPaused((p) => !p)}
             >
               {paused ? c.provider.health.resume : c.provider.health.pause}
@@ -263,7 +263,7 @@ function Sparkline({ samples }: { samples: readonly number[] }) {
         // Decoration: the figure above it is the measurement, and the caption
         // beside it says what the line is. Announcing a polyline helps nobody.
         aria-hidden="true"
-        className="text-brand shrink-0"
+        className="text-ink shrink-0"
       >
         <polyline
           points={points}
