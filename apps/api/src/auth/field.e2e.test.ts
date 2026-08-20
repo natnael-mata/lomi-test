@@ -231,7 +231,9 @@ describe('choosing a programme', () => {
 
   it('tells the chooser how much is behind each programme', async () => {
     const fields = (await auth(request(app.getHttpServer()).get('/me/fields')).expect(200)).body;
-    const byName = new Map(fields.map((f: { name: string; questionCount: number }) => [f.name, f]));
+    const byName = new Map<string, { name: string; questionCount: number }>(
+      (fields as { name: string; questionCount: number }[]).map((f) => [f.name, f]),
+    );
 
     // The two this suite filled, and one it deliberately did not.
     expect(byName.get('Computer Science')?.questionCount).toBeGreaterThan(0);

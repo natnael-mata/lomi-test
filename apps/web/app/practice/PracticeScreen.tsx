@@ -51,6 +51,15 @@ export function PracticeScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [chosen, setChosen] = useState<OptionLabel | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * Whether this student has ever paid, read only once the allowance is gone.
+   *
+   * Deliberately lazy. This route has the tightest budget in the product and
+   * nine students in ten never see the panel it feeds — but the one who does
+   * and *has* paid before must not be told they have used up a trial. QA read
+   * that sentence on an account holding a lapsed twelve-month subscription.
+   */
+  const [everPaid, setEverPaid] = useState(false);
 
   /**
    * When this question was first shown.
@@ -123,6 +132,26 @@ export function PracticeScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const outOfFree =
+    phase.kind === 'asking' && phase.question.freeRemaining === 0 && phase.question.alreadyAnswered;
+
+  useEffect(() => {
+    if (!outOfFree) return;
+    let live = true;
+    void (async () => {
+      try {
+        const status = await api.mySubscription();
+        if (live) setEverPaid(status.hasEverPaid);
+      } catch {
+        // Falls back to the first-timer wording, which is the safer of the two
+        // to be wrong about: it never claims somebody has not paid.
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [outOfFree]);
 
   const submit = async (): Promise<void> => {
     if (phase.kind !== 'asking' || chosen === null || submitting) return;
@@ -233,8 +262,12 @@ export function PracticeScreen() {
       */}
       {freeLeft === 0 && question.alreadyAnswered && (
         <Card as="section" data-out-of-new="" className="flex flex-col gap-2">
-          <h2 className="text-label">{c.practice.outOfNewTitle}</h2>
-          <p className="text-body text-ink-2">{c.practice.outOfNewBody}</p>
+          <h2 className="text-label">
+            {everPaid ? c.practice.lapsedTitle : c.practice.outOfNewTitle}
+          </h2>
+          <p className="text-body text-ink-2">
+            {everPaid ? c.practice.lapsedBody : c.practice.outOfNewBody}
+          </p>
           <a className="btn-ghost self-start" href="/checkout">
             {c.practice.seePlans}
           </a>
@@ -242,7 +275,14 @@ export function PracticeScreen() {
       )}
 
       <Card as="section" className="p-4 sm:p-5">
-        {freeLeft !== null && freeLeft > 0 && question.alreadyAnswered && (
+        {/*
+          On the question, every time, not only while allowance remains.
+          This was gated on `freeLeft > 0`, so the one case where a repeat is
+          hardest to spot — the paywall panel above it and a fresh-looking stem
+          below — was the one case with no label. Both testers read it as a new
+          question being served past the wall.
+        */}
+        {freeLeft !== null && question.alreadyAnswered && (
           <p className="text-caption text-ink-2 mb-2">{c.practice.seenBefore}</p>
         )}
         <p className="text-stem" data-stem="">

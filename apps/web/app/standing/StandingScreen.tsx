@@ -96,119 +96,139 @@ export function StandingScreen() {
     <div className="flex flex-col gap-6">
       <h1 className="text-title">{c.standing.title}</h1>
 
-      <Card as="section" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          {/*
+      {/*
+       * Two columns from `lg`, one below it (DESIGN.md § Layout, the data measure).
+       *
+       * Split by whose figures they are: the left is yours — the points, the
+       * tier, the streak, and the ledger those points came from. The right is
+       * everyone else. Reading your own total and then scanning the board are
+       * two different acts, and stacking them made the second one a scroll.
+       */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+        <div className="flex flex-col gap-6">
+          <Card as="section" className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              {/*
             A STATED figure, not a total bar, and the distinction is not
             cosmetic. DESIGN.md: a row of figures that genuinely sums ends in a
             dark total bar. The ledger below is capped at the most recent
             awards, so those rows do NOT add up to this number — putting them in
             a total bar would be a claim a student could check and find false.
           */}
-          <StatedFigure
-            label={c.standing.points}
-            value={String(standing.totalPoints)}
-            derivation={c.standing.pointsFrom}
-          />
-          <TierBadge tier={standing.tier} />
-        </div>
+              <StatedFigure
+                label={c.standing.points}
+                value={String(standing.totalPoints)}
+                derivation={c.standing.pointsFrom}
+              />
+              <TierBadge tier={standing.tier} />
+            </div>
 
-        <p className="text-caption text-ink-2">
-          {standing.pointsToNextTier === null
-            ? c.standing.topTier
-            : c.standing.toNextTier(standing.pointsToNextTier, TIER_NAMES[standing.tier])}
-        </p>
+            <p className="text-caption text-ink-2">
+              {standing.pointsToNextTier === null
+                ? c.standing.topTier
+                : c.standing.toNextTier(standing.pointsToNextTier, TIER_NAMES[standing.tier])}
+            </p>
 
-        <div className="bg-surface-2 rounded-card p-3">
-          <span className="text-caption text-ink-2 uppercase">{c.standing.streak}</span>
-          {/* No "you lost your streak" branch exists, because the streak has no
+            <div className="bg-surface-2 rounded-card p-3">
+              <span className="text-caption text-ink-2 uppercase">{c.standing.streak}</span>
+              {/* No "you lost your streak" branch exists, because the streak has no
               way down. A student who was away sees the count they earned. */}
-          <p className="text-body">
-            {standing.streakDays === 0
-              ? c.standing.streakNever
-              : c.standing.streakDays(standing.streakDays)}
-          </p>
-        </div>
-      </Card>
+              <p className="text-body">
+                {standing.streakDays === 0
+                  ? c.standing.streakNever
+                  : c.standing.streakDays(standing.streakDays)}
+              </p>
+            </div>
+          </Card>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-caption text-ink-2 uppercase">{c.standing.howEarned}</h2>
-        {/* Said out loud, because a student who tries to add these up and lands
+          <section className="flex flex-col gap-2">
+            <h2 className="text-caption text-ink-2 uppercase">{c.standing.howEarned}</h2>
+            {/* Said out loud, because a student who tries to add these up and lands
             short should not conclude the total is wrong. */}
-        {ledger.length > 0 ? (
-          <p className="text-caption text-ink-2">{c.standing.recentOnly}</p>
-        ) : null}
-        {ledger.length === 0 ? (
-          <p className="text-body text-ink-2">{c.standing.ledgerEmpty}</p>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {ledger.map((row) => (
-              <li
-                key={`${row.at}-${row.ruleId}`}
-                className="bg-surface-2 rounded-card flex items-center justify-between gap-3 p-3"
-              >
-                {/* The reason, always. A number with no sentence beside it is one
+            {ledger.length > 0 ? (
+              <p className="text-caption text-ink-2">{c.standing.recentOnly}</p>
+            ) : null}
+            {ledger.length === 0 ? (
+              <p className="text-body text-ink-2">{c.standing.ledgerEmpty}</p>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {ledger.map((row) => (
+                  <li
+                    key={`${row.at}-${row.ruleId}`}
+                    className="bg-surface-2 rounded-card flex items-center justify-between gap-3 p-3"
+                  >
+                    {/* The reason, always. A number with no sentence beside it is one
                     a student cannot check and cannot argue with (T-190).
 
                     And the day beside it. Two "You came back." rows with nothing
                     to tell them apart read as the same award counted twice —
                     which is exactly what QA reported. The row has carried its
                     day all along; it was simply never shown. */}
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-body">{row.reason}</span>
-                  <span className="text-caption text-ink-2 num">{dayLabel(row.day)}</span>
-                </span>
-                <span className="text-label num shrink-0">
-                  {row.points > 0 ? `+${row.points}` : row.points}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-body">{row.reason}</span>
+                      <span className="text-caption text-ink-2 num">{dayLabel(row.day)}</span>
+                    </span>
+                    <span className="text-label num shrink-0">
+                      {row.points > 0 ? `+${row.points}` : row.points}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-caption text-ink-2 uppercase">{c.standing.board}</h2>
+        <section className="flex flex-col gap-2">
+          <h2 className="text-caption text-ink-2 uppercase">{c.standing.board}</h2>
 
-        {board.rows.length === 0 ? (
-          <p className="text-body text-ink-2">{c.standing.boardEmpty}</p>
-        ) : (
-          <ol className="flex flex-col gap-1.5">
-            {board.rows.map((row) => (
-              <li
-                key={`${row.rank}-${row.displayName}`}
-                className="bg-surface-2 rounded-card flex items-center gap-3 p-3"
-                data-you={row.isYou}
-              >
-                <span className="text-label num w-6 shrink-0">{row.rank}</span>
-                {/* Display name only — the response has nowhere to put anything
+          {board.rows.length === 0 ? (
+            <p className="text-body text-ink-2">{c.standing.boardEmpty}</p>
+          ) : (
+            <>
+              <ol className="flex flex-col gap-1.5">
+                {board.rows.map((row) => (
+                  <li
+                    key={`${row.rank}-${row.displayName}`}
+                    className="bg-surface-2 rounded-card flex items-center gap-3 p-3"
+                    data-you={row.isYou}
+                  >
+                    <span className="text-label num w-6 shrink-0">{row.rank}</span>
+                    {/* Display name only — the response has nowhere to put anything
                     else, which is what makes this safe by construction. */}
-                <span className="text-body grow">{row.displayName}</span>
-                {row.isYou ? <Chip tone="brand">{c.community.yours}</Chip> : null}
-                <TierBadge tier={row.tier} showLabel={false} />
-                <span className="text-label num shrink-0">{row.points}</span>
-              </li>
-            ))}
-          </ol>
-        )}
+                    <span className="text-body grow">{row.displayName}</span>
+                    {row.isYou ? <Chip tone="brand">{c.community.yours}</Chip> : null}
+                    <TierBadge tier={row.tier} showLabel={false} />
+                    <span className="text-label num shrink-0">{row.points}</span>
+                  </li>
+                ))}
+              </ol>
+              {/* Why 2, 3, 3, 6 is not a counting error. Ranks are computed over
+                  everybody and only then filtered, so hiding one student never
+                  promotes the next — and the visible numbers skip. Both QA passes
+                  reported the gaps, correctly by this product's own rule that a
+                  figure nobody can account for should be reported. */}
+              <p className="text-caption text-ink-2">{c.standing.boardWhyGaps}</p>
+            </>
+          )}
 
-        {/* Opting out hides the row, never the rank (T-194). A student who does
+          {/* Opting out hides the row, never the rank (T-194). A student who does
             not want to be seen competing still wants to know where they stand. */}
-        {board.you && !board.you.listed ? (
-          <p className="text-body text-ink-2">
-            {c.standing.notListed} {c.standing.yourRank(board.you.rank)}.
-          </p>
-        ) : null}
+          {board.you && !board.you.listed ? (
+            <p className="text-body text-ink-2">
+              {c.standing.notListed} {c.standing.yourRank(board.you.rank)}.
+            </p>
+          ) : null}
 
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={() => void toggleListed()}
-          disabled={busy}
-        >
-          {board.you?.listed === false ? c.standing.showMe : c.standing.hideMe}
-        </button>
-      </section>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => void toggleListed()}
+            disabled={busy}
+          >
+            {board.you?.listed === false ? c.standing.showMe : c.standing.hideMe}
+          </button>
+        </section>
+      </div>
     </div>
   );
 }

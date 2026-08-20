@@ -41,7 +41,15 @@ export function WeightEditor() {
     void (async () => {
       try {
         const mine = await api.myFields();
-        const first = mine[0]?.id;
+        /*
+         * Open on a programme that has something in it.
+         *
+         * `mine[0]` is alphabetical, which put an operator on Accounting &
+         * Finance — published, empty, and showing weights for a bank with no
+         * questions as the first thing they see. The picker below still reaches
+         * every programme; this only chooses where to land.
+         */
+        const first = (mine.find((f) => f.questionCount > 0) ?? mine[0])?.id;
         if (!first) {
           if (!cancelled) setError(c.admin.noProgramme);
           return;

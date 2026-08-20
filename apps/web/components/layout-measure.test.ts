@@ -50,6 +50,29 @@ describe('the measures come from DESIGN.md (§ Layout)', () => {
   });
 
   /**
+   * A measure governs prose, not figures. Readiness and standing carry a
+   * headline, a weighted table and a trend — no running text — so they take a
+   * wider measure than the reading screens.
+   *
+   * Pinned the same way as the other two: the number lives in DESIGN.md and the
+   * code has to agree with it, so widening a screen means saying so in the
+   * document rather than only in a class name.
+   */
+  it('sets the data screens to the measure DESIGN.md states', () => {
+    const stated = /(\d+)px data measure/i.exec(design)?.[1];
+    expect(stated, 'DESIGN.md § Layout no longer states a data measure').toBe('960');
+    expect(MEASURES.data).toContain(stated!);
+  });
+
+  it('applies the data measure to exactly the screens made of figures', () => {
+    expect(MEASURES.dataRoutes).toEqual(['/progress', '/standing']);
+    // Practice, exam and checkout are prose and must keep the reading measure.
+    for (const prose of ['/practice', '/exam', '/checkout']) {
+      expect(MEASURES.dataRoutes, `${prose} is read, not scanned`).not.toContain(prose);
+    }
+  });
+
+  /**
    * The measure is decided once, in the shell. Pages choosing their own is how
    * the whole product ended up at 448px while the document said 640.
    */

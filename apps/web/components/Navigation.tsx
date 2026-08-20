@@ -164,6 +164,7 @@ export function SideRail({ pathname }: { pathname: string }) {
  */
 function RailFooter() {
   const [until, setUntil] = useState<string | null>(null);
+  const [who, setWho] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -178,6 +179,14 @@ function RailFooter() {
         // report a network fault the student cannot act on.
       }
     })();
+    void (async () => {
+      try {
+        const me = await api.me();
+        if (live) setWho(me.displayName);
+      } catch {
+        // Same reasoning. No name shown is better than an error in the rail.
+      }
+    })();
     return () => {
       live = false;
     };
@@ -185,6 +194,24 @@ function RailFooter() {
 
   return (
     <div className="mt-auto hidden flex-col gap-3 px-3 lg:flex">
+      {/*
+        Who you are, which nothing in the product said (T-251).
+
+        Both QA passes filed this as a blocker. With a door that switches
+        between twelve accounts, a sign-in that silently did not take is
+        invisible — one tester nearly reported several findings against the
+        wrong account and the other did. It matters outside testing too: a
+        student on a shared phone has the same question.
+
+        The generated handle, never a legal name — the same one the leaderboard
+        would show.
+      */}
+      {who === null ? null : (
+        <span className="flex flex-col" data-signed-in-as="">
+          <span className="text-caption text-ink-2 uppercase">{c.nav.signedInAs}</span>
+          <span className="text-label truncate">{who}</span>
+        </span>
+      )}
       {until === null ? null : (
         <span className="text-caption text-ink-2 num uppercase">{c.nav.accessUntil(until)}</span>
       )}

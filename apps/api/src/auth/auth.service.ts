@@ -60,6 +60,13 @@ export interface SignInResult {
   isNew: boolean;
 }
 
+/** Who a session belongs to. Named on both sides so `contracts.test.ts` holds them together. */
+export interface Identity {
+  userId: string;
+  displayName: string;
+  staffRole: StaffRole | null;
+}
+
 /** A programme a student may choose, and whether they already have. */
 export interface FieldOption {
   id: string;
@@ -203,7 +210,18 @@ export class AuthService {
 
     return this.signInWithTelegramId(
       { id: telegramId, firstName: devDisplayName(label) },
-      'smoke-test',
+      /*
+       * A label somebody can tell apart (T-252).
+       *
+       * Every session the door minted was called "smoke-test", so the device
+       * list showed two identical rows differing only by a timestamp and
+       * revoking the right one was guesswork — QA said so on both passes and
+       * declined to try, since revoking the wrong one ends your own run.
+       *
+       * The clock is the only thing that distinguishes two sign-ins to the same
+       * account from the same browser, so it goes in the label.
+       */
+      `smoke-test ${new Date().toISOString().slice(11, 16)}`,
     );
   }
 
@@ -393,6 +411,23 @@ export class AuthService {
       phone: user?.phone ?? null,
       verifiedAt: user?.phoneVerifiedAt?.toISOString() ?? null,
     };
+  }
+
+  /** Who a session belongs to, for the screen that says so (T-251). */
+  async identityOf(userId: string): Promise<Identity> {
+    // Two reads rather than a join: `User` declares no reverse relation to
+    // `StaffMember`, deliberately — see the schema note on why a derived role
+    // and a person are separate models — and `staffRoleOf` is the one place
+    // that lookup lives.
+    const [user, staffRole] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, displayName: true },
+      }),
+      this.staffRoleOf(userId),
+    ]);
+    if (!user) throw new NotFoundException('No such account.');
+    return { userId: user.id, displayName: user.displayName, staffRole };
   }
 
   /** The caller's staff role, or null. See `MeController.staff` for why it exists. */

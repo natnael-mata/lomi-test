@@ -31,8 +31,20 @@ const RAW = readFileSync(
 const THEME = RAW.replace(/\/\*[\s\S]*?\*\//g, '');
 
 describe('the focus ring is stated once and never cancelled', () => {
+  /**
+   * The ring is INK, not the brand.
+   *
+   * DESIGN.md called for a brand outline, and under Deresegn's violet that was
+   * both on-brand and legible. Lomi v1's brand is a lemon at 1.23:1 on cream —
+   * an outline nobody can see is not a focus indicator, it is the absence of
+   * one, and it would have failed silently because a ring that renders is
+   * indistinguishable in a DOM snapshot from a ring that renders invisibly.
+   * Ink is 13.27:1 on the same ground.
+   */
   it('declares the ring on :focus-visible, at 2px and 2px offset', () => {
-    expect(THEME).toMatch(/:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--color-brand\)/);
+    expect(THEME).toMatch(/:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--color-ink\)/);
+    // And never the lemon, which is the one value that would make it invisible.
+    expect(THEME).not.toMatch(/:focus-visible\s*\{[^}]*outline:[^;]*--color-brand/);
     expect(THEME).toMatch(/:focus-visible\s*\{[^}]*outline-offset:\s*2px/);
   });
 

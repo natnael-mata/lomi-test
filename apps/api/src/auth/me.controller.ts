@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import type { StaffRole } from '@prisma/client';
 
-import { AuthService, type DeviceEntry, type RevokeResult } from './auth.service';
+import { AuthService, type DeviceEntry, type Identity, type RevokeResult } from './auth.service';
 import { SessionGuard, type AuthedRequest } from './session.guard';
 
 /** Everything about the signed-in student. Guarded in full — nothing here is public. */
@@ -24,6 +24,27 @@ export class MeController {
    * who granted it, would be a route that tells any signed-in student who the
    * operators are.
    */
+  /**
+   * Who this session belongs to (T-251).
+   *
+   * **Nothing in the product said which account you were signed in as.** Both
+   * QA passes called it a blocker, and for the same reason: with twelve test
+   * personas and a door that switches between them, a sign-in that silently
+   * did not take is invisible — one tester nearly filed several findings
+   * against the wrong account, the other did file some.
+   *
+   * It is not only a testing problem. A student on a shared phone, or one who
+   * has been evicted by a third sign-in, has the same question and the product
+   * had no answer anywhere on any screen.
+   *
+   * The generated display name, never a legal name (T-086), and never the
+   * telegram id — this is the same handle the leaderboard would show.
+   */
+  @Get()
+  async whoami(@Req() req: AuthedRequest): Promise<Identity> {
+    return this.auth.identityOf(req.auth!.userId);
+  }
+
   @Get('staff')
   async staff(@Req() req: AuthedRequest): Promise<{ role: StaffRole | null }> {
     return { role: await this.auth.staffRoleOf(req.auth!.userId) };

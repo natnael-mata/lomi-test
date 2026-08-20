@@ -114,6 +114,7 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'FieldOption', api: 'FieldOption', file: 'auth/auth.service.ts' },
   { web: 'DeviceEntry', api: 'DeviceEntry', file: 'auth/auth.service.ts' },
   { web: 'ExamPreview', api: 'ExamPreview', file: 'exams/exams.service.ts' },
+  { web: 'Identity', api: 'Identity', file: 'auth/auth.service.ts' },
   { web: 'LedgerRow', api: 'LedgerRow', file: 'engagement/engagement.service.ts' },
   { web: 'LeaderboardRow', api: 'LeaderboardRow', file: 'engagement/engagement.service.ts' },
   { web: 'LeaderboardView', api: 'LeaderboardView', file: 'engagement/engagement.service.ts' },

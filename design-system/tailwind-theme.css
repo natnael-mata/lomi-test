@@ -110,9 +110,13 @@
   --text-caption--letter-spacing: 0.04em;
 
   /* ---- shape ------------------------------------------------------------ */
-  --radius-control: 12px; /* buttons, inputs, option rows                  */
-  --radius-card: 16px; /* cards, sheets, wells                          */
-  --radius-panel: 24px; /* bottom sheets, modals                         */
+  /* Paper is cut, not moulded. These were 12/16/24 — a soft, app-like shape
+     that reads as friendly rather than exact. A ledger has square corners; a
+     small radius keeps the touch affordance without the roundness. The 999px
+     pill is untouched: chips and progress tracks are meant to be capsules. */
+  --radius-control: 6px; /* buttons, inputs, option rows                  */
+  --radius-card: 8px; /* cards, sheets, wells                          */
+  --radius-panel: 14px; /* bottom sheets, modals                         */
   --radius-full: 999px; /* chips, badges, avatars, progress tracks       */
 
   /* ---- elevation: every shadow carries an offset AND a blur --------------
@@ -120,7 +124,7 @@
      shadow on cream reads as depth in this world instead of grey fog. Lighter
      than Deresegn's throughout: paper does not float far off the page, and
      restraint here is most of what separates a premium surface from a busy one. */
-  --shadow-card: 0 1px 2px rgb(26 51 0 / 0.05), 0 5px 14px rgb(26 51 0 / 0.06);
+  --shadow-card: 0 1px 2px rgb(26 51 0 / 0.04);
   --shadow-lift: 0 2px 4px rgb(26 51 0 / 0.06), 0 10px 24px rgb(26 51 0 / 0.09);
   --shadow-panel: 0 4px 8px rgb(26 51 0 / 0.07), 0 22px 44px rgb(26 51 0 / 0.14);
   /* The brand shadow is INK, not lemon. A yellow glow under a yellow button is
@@ -217,8 +221,30 @@
   output {
     font-variant-numeric: tabular-nums;
   }
+  /*
+   * The focus ring is INK, not the brand.
+   *
+   * DESIGN.md said "2px brand outline" and that clause is retired with Lomi v1,
+   * for the same reason the brand stopped setting text: the lemon cannot be
+   * seen. Measured against what it actually sits on —
+   *
+   *   ring on the cream page       1.18:1
+   *   ring on a white card         1.23:1
+   *   ring on the active nav pill  1.13:1
+   *   ring on a primary button     1.00:1   (lemon on lemon — invisible)
+   *
+   * — against a WCAG 2.2 non-text minimum of 3:1. A keyboard user had no focus
+   * indicator at all on the yellow controls, which are the primary actions on
+   * every screen.
+   *
+   * Ink clears it everywhere: 13.27:1 on cream, 11.24:1 on the lemon itself.
+   * `focus-ring.mjs` now measures the ring against its backdrop rather than
+   * checking it equals the brand token — the old assertion passed all 55
+   * controls while the ring was invisible, because it was asking the wrong
+   * question.
+   */
   :focus-visible {
-    outline: 2px solid var(--color-brand);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
 }
@@ -298,8 +324,13 @@
   .option:active {
     @apply scale-[.99];
   }
+  /* Ink border, lemon wash. The border used to be the brand, which was a
+     violet you could see; the lemon is 1.23:1 on cream, so a lemon border on a
+     lemon wash is no border at all — and it would have left "selected" the only
+     option state without a visible edge, weaker than correct and wrong beside
+     it. The fill says which one you chose; the edge says you chose it. */
   .option[data-state='selected'] {
-    @apply border-brand bg-brand-soft;
+    @apply border-ink bg-brand-soft;
   }
   .option[data-state='correct'] {
     @apply border-correct bg-correct-soft;
@@ -314,8 +345,12 @@
            inline-flex items-center justify-center num;
   }
 
+  /* A hairline, not a float. A card used to be separated from the ground by a
+     soft blur alone; on cream that reads as fog rather than as an edge, and a
+     page of blurred rectangles is most of what makes a dense screen look
+     unresolved. The border does the separating and the shadow only lifts. */
   .card {
-    @apply bg-surface rounded-card shadow-card p-4;
+    @apply bg-surface rounded-card border border-border shadow-card p-4;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
@@ -326,12 +361,15 @@
      input in the product: `.field:focus` (0,1,1) outranks `:focus-visible`
      (0,1,0), so `outline-style: none` won and DESIGN.md's "2px brand outline on
      every interactive element" was true everywhere except the fields where it
-     matters most. The brand border and the ring are both wanted — DESIGN.md
-     says focus "takes the brand outline AND border". */
+     matters most. The outline and the border are both wanted — DESIGN.md says
+     focus "takes the brand outline AND border".
+
+     The border is INK rather than the brand: a lemon focus border on cream is
+     1.23:1, which is not a focus indicator, it is the absence of one. */
   .field {
     @apply w-full min-h-[52px] px-4 rounded-control bg-surface
                     border border-border text-body
-                    focus:border-brand;
+                    focus:border-ink;
   }
   .field[aria-invalid='true'] {
     @apply border-wrong border-2;

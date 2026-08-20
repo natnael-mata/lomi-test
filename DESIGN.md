@@ -268,6 +268,13 @@ Student content sets to a 640px measure on desktop and fills the viewport on a p
 sets to 1200px and is permitted real tables. Spacing runs 4/8/12/16/20/24/32, with more space
 above a heading than below it.
 
+**A measure governs prose, not figures.** The 640px above exists to hold running text near 65
+characters — the question stem, the concept line, the worked solution. It does not apply to a
+screen whose content is numbers: readiness and standing are a headline figure, a weighted
+table and a trend, and at 640px on a 1512px laptop they used 42% of the width and scrolled
+1254px for content that fits one screen. Those two set to a **960px data measure** instead.
+Practice, exam and checkout keep 640px, because what a student reads there is sentences.
+
 Screens are composed of **cards on a tinted ground** rather than full-bleed sections, which
 gives the surface its modern feel and lets a stressed reader see where one idea ends. Cards
 group things that genuinely belong together; a card is never used merely to put a border round

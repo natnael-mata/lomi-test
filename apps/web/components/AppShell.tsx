@@ -28,6 +28,21 @@ import { BottomBar, SideRail } from './Navigation';
 const ADMIN_MEASURE = 'max-w-[1200px]';
 /** Student reading measure. 640px on desktop; the viewport on a phone. */
 const STUDENT_MEASURE = 'max-w-[640px]';
+/**
+ * Student *data* measure (DESIGN.md § Layout, "a measure governs prose, not
+ * figures").
+ *
+ * A measure holds running text near 65 characters. Readiness and standing carry
+ * a headline figure, a weighted table and a trend — no running text at all — and
+ * at 640px on a 1512px laptop they used 42% of the width and ran 1254px tall for
+ * content that fits one screen. Measured before this change.
+ *
+ * 960 rather than the admin 1200: these still sit beside the 232px rail, and a
+ * student is reading their own single result, not scanning a register.
+ */
+const DATA_MEASURE = 'max-w-[960px]';
+/** The screens whose content is figures rather than sentences. */
+const DATA_ROUTES = ['/progress', '/standing'];
 
 /**
  * Screens that are deliberately outside the frame.
@@ -70,7 +85,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Room for the furniture: 104px of rail from `sm`, 232px from `lg`, and
           bottom clearance on a phone for the 56px bar plus its safe area. */}
       <div className="pb-24 sm:pb-0 sm:pl-26 lg:pl-58">
-        <main className={`mx-auto flex min-h-dvh flex-col p-4 sm:p-6 lg:py-10 ${STUDENT_MEASURE}`}>
+        <main
+          className={`mx-auto flex min-h-dvh flex-col p-4 sm:p-6 lg:py-10 ${
+            DATA_ROUTES.some((p) => pathname.startsWith(p)) ? DATA_MEASURE : STUDENT_MEASURE
+          }`}
+        >
           {children}
         </main>
       </div>
@@ -79,4 +98,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 /** Exported for the test that holds the measures to DESIGN.md. */
-export const MEASURES = { student: STUDENT_MEASURE, admin: ADMIN_MEASURE, unframed: UNFRAMED };
+export const MEASURES = {
+  student: STUDENT_MEASURE,
+  admin: ADMIN_MEASURE,
+  data: DATA_MEASURE,
+  dataRoutes: DATA_ROUTES,
+  unframed: UNFRAMED,
+};

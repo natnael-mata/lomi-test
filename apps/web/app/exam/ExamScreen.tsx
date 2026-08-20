@@ -58,6 +58,8 @@ export function ExamScreen() {
   const [confirming, setConfirming] = useState(false);
   /** The paper on offer and any sitting already open, read before starting. */
   const [preview, setPreview] = useState<ExamPreview | null>(null);
+  /** Set when the preview was refused, so the splash stops saying "preparing". */
+  const [previewFailed, setPreviewFailed] = useState(false);
 
   /**
    * The offline outbox (T-131).
@@ -105,9 +107,23 @@ export function ExamScreen() {
       try {
         const seen = await api.examPreview();
         if (!cancelled) setPreview(seen);
-      } catch {
-        // The splash falls back to its plain wording. A preview that cannot be
-        // fetched is not a reason to block starting a paper.
+      } catch (e) {
+        /*
+         * A refused preview has to reach the screen.
+         *
+         * This swallowed everything, and the splash renders "Preparing your
+         * paper…" until a preview arrives — so a student with no programme sat
+         * on that sentence forever while the server had already answered 409
+         * FIELD_REQUIRED. Nothing was being prepared and nothing ever would be.
+         * The one refusal worth acting on is routed to the screen that fixes
+         * it; anything else falls back to the plain splash, because a preview
+         * that cannot be fetched is still not a reason to block starting.
+         */
+        if (!cancelled && e instanceof ApiError && e.code === 'FIELD_REQUIRED') {
+          window.location.assign('/choose');
+          return;
+        }
+        if (!cancelled) setPreviewFailed(true);
       }
     })();
     return () => {
@@ -337,7 +353,9 @@ export function ExamScreen() {
             ? open
               ? c.exam.resumeBody(open.answeredCount, preview.totalQuestions)
               : c.exam.intro(preview.totalQuestions, Math.round(preview.durationSec / 60))
-            : c.exam.preparing}
+            : previewFailed
+              ? c.exam.title
+              : c.exam.preparing}
         </p>
         <Button className="mt-2" onClick={() => void start()}>
           {open ? c.exam.resume(open.position) : c.exam.start}

@@ -29,6 +29,8 @@ export function ProgressScreen() {
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /** No programme chosen yet — fixable, so it gets a door rather than an error. */
+  const [noProgramme, setNoProgramme] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +43,8 @@ export function ProgressScreen() {
         // answers.
         const fieldId = fields.find((f) => f.chosen)?.id;
         if (!fieldId) {
-          if (!cancelled) setError(c.progress.chooseProgramme);
+          // Flagged as fixable rather than as a failure — this one has a door.
+          if (!cancelled) setNoProgramme(true);
           return;
         }
         const [r, t] = await Promise.all([api.readiness(fieldId), api.trend(fieldId)]);
@@ -60,6 +63,25 @@ export function ProgressScreen() {
       cancelled = true;
     };
   }, []);
+
+  /*
+   * A condition the student can fix, with the control that fixes it.
+   *
+   * This shared the error card, so "Choose a programme to see your progress."
+   * appeared with nothing to press — the same dead end QA found on `/practice`'s
+   * refusal. Telling somebody to do a thing the screen gives them no way to do
+   * is worse than saying nothing.
+   */
+  if (noProgramme) {
+    return (
+      <Card data-state="no-programme" className="flex flex-col gap-4">
+        <p className="text-body">{c.progress.chooseProgramme}</p>
+        <a className="btn-primary" href="/choose">
+          {c.progress.chooseFirst}
+        </a>
+      </Card>
+    );
+  }
 
   if (error) {
     return (
@@ -100,36 +122,49 @@ export function ProgressScreen() {
     <div className="flex flex-col gap-6" data-state="ready">
       <h1 className="text-title">{readiness.fieldName}</h1>
 
-      <ReadinessStatement
-        statement={{
-          rows: scored.map((t) => ({
-            topic: t.topicName,
-            scorePct: t.scorePct!,
-            weightPct: t.weightPct,
-          })),
-          // The unassessed share, stated rather than hidden. A statement whose
-          // weights visibly stop short of 100 is the one thing DESIGN.md forbids
-          // leaving unexplained.
-          elided:
-            readiness.unassessedWeightPct > 0
-              ? {
-                  label: 'other topics',
-                  weightPct: readiness.unassessedWeightPct,
-                  topicCount: readiness.topics.length - scored.length,
-                }
-              : null,
-          headlinePct: readiness.headlinePct,
-          focus: readiness.focus.map((t) => ({
-            topic: t.topicName,
-            scorePct: t.scorePct ?? 0,
-            weightPct: t.weightPct,
-          })),
-        }}
-        derivation={`weighted mean across ${readiness.assessedWeightPct}% of past papers · ${readiness.totalAnswered} questions answered`}
-        practiceNext={readiness.practiceNext}
-      />
+      {/*
+       * Two columns from `lg`, one below it (DESIGN.md § Layout, the data measure).
+       *
+       * The left is the claim and what it rests on — the readiness statement and
+       * the per-topic evidence, which are read together or not at all. The right
+       * is a different measurement: how the mocks have gone over time.
+       *
+       * They used to be four full-width blocks in one stack, which at 640px ran
+       * 1254px tall on a 900px screen. `items-start` so the trend does not
+       * stretch to the height of the statement beside it.
+       */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-start">
+        <div className="flex flex-col gap-6">
+          <ReadinessStatement
+            statement={{
+              rows: scored.map((t) => ({
+                topic: t.topicName,
+                scorePct: t.scorePct!,
+                weightPct: t.weightPct,
+              })),
+              // The unassessed share, stated rather than hidden. A statement whose
+              // weights visibly stop short of 100 is the one thing DESIGN.md forbids
+              // leaving unexplained.
+              elided:
+                readiness.unassessedWeightPct > 0
+                  ? {
+                      label: 'other topics',
+                      weightPct: readiness.unassessedWeightPct,
+                      topicCount: readiness.topics.length - scored.length,
+                    }
+                  : null,
+              headlinePct: readiness.headlinePct,
+              focus: readiness.focus.map((t) => ({
+                topic: t.topicName,
+                scorePct: t.scorePct ?? 0,
+                weightPct: t.weightPct,
+              })),
+            }}
+            derivation={`weighted mean across ${readiness.assessedWeightPct}% of past papers · ${readiness.totalAnswered} questions answered`}
+            practiceNext={readiness.practiceNext}
+          />
 
-      {/* Said out loud rather than folded into a score: a question nobody
+          {/* Said out loud rather than folded into a score: a question nobody
           answered is a pacing fact, not a knowledge one.
 
           It used to say the questions "ran out of time", which is a cause the
@@ -137,13 +172,13 @@ export function ProgressScreen() {
           blanks, and a blank is as easily a paper submitted early as a deadline
           reached. QA submitted with eighteen to spare and was told they had run
           out of time. It reports what it counted. */}
-      {readiness.unansweredInMocks > 0 && (
-        <p className="text-caption text-ink-2" data-unanswered-note="">
-          {c.progress.unansweredInMocks(readiness.unansweredInMocks)}
-        </p>
-      )}
+          {readiness.unansweredInMocks > 0 && (
+            <p className="text-caption text-ink-2" data-unanswered-note="">
+              {c.progress.unansweredInMocks(readiness.unansweredInMocks)}
+            </p>
+          )}
 
-      {/*
+          {/*
         How much each score rests on.
         A topic can read 100% off a single mock question, and one more answer
         can move the headline twenty points — QA watched exactly that and asked,
@@ -151,40 +186,42 @@ export function ProgressScreen() {
         checkable except this one, because the count behind it was never shown.
         It always existed on the row; it was simply not rendered.
       */}
-      {scored.length > 0 && (
-        <section className="flex flex-col gap-2" data-evidence="">
-          <h2 className="text-label">{c.progress.evidenceTitle}</h2>
-          <ul className="flex flex-col gap-1.5">
-            {scored.map((t) => (
-              <li
-                key={t.topicId}
-                data-topic-evidence=""
-                className="text-caption text-ink-2 flex flex-wrap items-baseline justify-between gap-2"
-              >
-                <span className="text-ink">{t.topicName}</span>
-                <span className="num">
-                  {c.progress.fromAnswers(t.scorePct!, t.answered)}
-                  {t.answered < 3 ? ` · ${c.progress.thinEvidence}` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+          {scored.length > 0 && (
+            <section className="flex flex-col gap-2" data-evidence="">
+              <h2 className="text-label">{c.progress.evidenceTitle}</h2>
+              <ul className="flex flex-col gap-1.5">
+                {scored.map((t) => (
+                  <li
+                    key={t.topicId}
+                    data-topic-evidence=""
+                    className="text-caption text-ink-2 flex flex-wrap items-baseline justify-between gap-2"
+                  >
+                    <span className="text-ink">{t.topicName}</span>
+                    <span className="num">
+                      {c.progress.fromAnswers(t.scorePct!, t.answered)}
+                      {t.answered < 3 ? ` · ${c.progress.thinEvidence}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-title">{c.progress.mockScores}</h2>
-        <StatedFigure
-          label={c.progress.mocksSat}
-          value={String(trend.length)}
-          derivation={
-            trend.length === 0
-              ? c.progress.noneYet
-              : c.progress.mostRecent(trend[trend.length - 1]!.scorePct)
-          }
-        />
-        <ScoreTrend points={trend} />
-      </section>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-title">{c.progress.mockScores}</h2>
+          <StatedFigure
+            label={c.progress.mocksSat}
+            value={String(trend.length)}
+            derivation={
+              trend.length === 0
+                ? c.progress.noneYet
+                : c.progress.mostRecent(trend[trend.length - 1]!.scorePct)
+            }
+          />
+          <ScoreTrend points={trend} />
+        </section>
+      </div>
     </div>
   );
 }

@@ -22,9 +22,16 @@
  *
  * - the element matches `:focus-visible` (the ring is actually on)
  * - `outline-style` is solid, `outline-width` is 2px, `outline-offset` is 2px
- * - the outline colour is the brand colour the theme resolves to — read from
- *   the page rather than hard-coded, so a token change moves the expectation
- *   with it instead of failing a correct page
+ * - **the outline can actually be seen**: at least 3:1 against whatever is
+ *   behind it, which is WCAG 2.2's non-text minimum
+ *
+ * That last one used to read "the outline colour is the brand colour", and that
+ * is the assertion this file exists as a warning about. It passed all 55
+ * controls at the moment the brand became a lemon that measures 1.00:1 against
+ * a lemon button — a keyboard user had no focus indicator on the primary action
+ * of every screen, and the check reported every one of them green, because
+ * matching a token is not the same as being visible. Identity is cheap to
+ * assert and says nothing. Contrast is the property anybody actually needs.
  *
  * Exits non-zero and names the element on the first control that is focusable
  * and unringed.
@@ -133,6 +140,34 @@ async function sessionCookie(label) {
  * so the assertion follows the token rather than restating it.
  */
 const PROBE = `(() => {
+  /** sRGB relative luminance, per WCAG. */
+  const lum = (rgb) => {
+    const [r, g, b] = rgb.match(/\\d+(\\.\\d+)?/g).slice(0, 3).map(Number).map((c) => {
+      const v = c / 255;
+      return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => {
+    const [x, y] = [lum(a), lum(b)];
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  /*
+   * What is actually behind the ring.
+   *
+   * The outline sits OUTSIDE the element at a 2px offset, so the relevant
+   * backdrop is usually the ancestor's background — but on a filled control the
+   * ring also runs along its own edge. Both are measured and the worst is kept:
+   * a ring that disappears against either is a ring somebody cannot follow.
+   */
+  const backdropOf = (node) => {
+    for (let n = node; n; n = n.parentElement) {
+      const bg = getComputedStyle(n).backgroundColor;
+      if (bg && bg !== 'transparent' && !/rgba\\(0,\\s*0,\\s*0,\\s*0\\)/.test(bg)) return bg;
+    }
+    return getComputedStyle(document.body).backgroundColor || 'rgb(255, 255, 255)';
+  };
+
   const el = document.activeElement;
   if (!el || el === document.body) return null;
   // The dev-tools overlay Next.js injects. It is a focusable custom element in
@@ -141,12 +176,12 @@ const PROBE = `(() => {
   // nobody is tabbing around.
   if (el.tagName.toLowerCase() === 'nextjs-portal') return null;
   const style = getComputedStyle(el);
-  const brand = getComputedStyle(document.documentElement).getPropertyValue('--color-brand').trim();
-  const swatch = document.createElement('span');
-  swatch.style.color = brand;
-  document.body.appendChild(swatch);
-  const brandRgb = getComputedStyle(swatch).color;
-  swatch.remove();
+  const own = getComputedStyle(el).backgroundColor;
+  const behind = backdropOf(el.parentElement ?? el);
+  const against = [behind];
+  if (own && own !== 'transparent' && !/rgba\\(0,\\s*0,\\s*0,\\s*0\\)/.test(own)) against.push(own);
+  const ratios = against.map((bg) => ({ bg, ratio: ratio(style.outlineColor, bg) }));
+  const worst = ratios.reduce((a, b) => (a.ratio <= b.ratio ? a : b));
   return {
     tag: el.tagName.toLowerCase(),
     label: (el.getAttribute('aria-label') || el.innerText || el.value || '').trim().slice(0, 48),
@@ -155,7 +190,8 @@ const PROBE = `(() => {
     style: style.outlineStyle,
     offset: style.outlineOffset,
     color: style.outlineColor,
-    brand: brandRgb,
+    against: worst.bg,
+    contrast: Math.round(worst.ratio * 100) / 100,
   };
 })()`;
 
@@ -231,8 +267,12 @@ async function main() {
         if (probe.style !== 'solid') wrong.push(`outline-style is ${probe.style}`);
         if (probe.width !== '2px') wrong.push(`outline-width is ${probe.width}`);
         if (probe.offset !== '2px') wrong.push(`outline-offset is ${probe.offset}`);
-        if (probe.color !== probe.brand) {
-          wrong.push(`outline-color is ${probe.color}, brand is ${probe.brand}`);
+        // 3:1 is WCAG 2.2's non-text contrast minimum, and the number that
+        // would have caught a lemon ring on a lemon button.
+        if (probe.contrast < 3) {
+          wrong.push(
+            `outline ${probe.color} on ${probe.against} is ${probe.contrast}:1, needs 3:1`,
+          );
         }
 
         const where = `${route.path} → <${probe.tag}> "${probe.label}"`;

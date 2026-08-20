@@ -50,17 +50,20 @@ export const PROVIDER_DESTINATIONS: readonly { href: string; label: string }[] =
 ];
 
 export function AdminBar({ pathname }: { pathname: string }) {
-  const [provider, setProvider] = useState(false);
+  /** `undefined` while the answer is in flight, `null` for "not staff". */
+  const [role, setRole] = useState<'REVIEWER' | 'ADMIN' | 'PROVIDER' | null | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
     void (async () => {
       try {
-        const { role } = await api.myStaffRole();
-        if (alive) setProvider(role === 'PROVIDER');
+        const held = await api.myStaffRole();
+        if (alive) setRole(held.role);
       } catch {
-        // Signed out, or not staff. The guard on every one of these routes is
-        // the thing that actually decides; this only chooses what to draw.
+        // Signed out, or the call failed. Treated as not staff: the guard on
+        // every one of these routes is what actually decides, and drawing an
+        // operator's navigation on a maybe is the thing being fixed here.
+        if (alive) setRole(null);
       }
     })();
     return () => {
@@ -68,9 +71,23 @@ export function AdminBar({ pathname }: { pathname: string }) {
     };
   }, []);
 
-  const destinations = provider
-    ? [...ADMIN_DESTINATIONS, ...PROVIDER_DESTINATIONS]
-    : ADMIN_DESTINATIONS;
+  /*
+   * Nothing at all for a student.
+   *
+   * The bar used to render for anybody who loaded an `/admin` URL, with only
+   * the data refused — so a student who guessed the path got the full operator
+   * chrome (Dashboard, Payments, Import, Review, Weights, Users) and an error
+   * card under it. The reasoning for hiding the two provider links from admins
+   * is written six lines above and applies with more force here: navigation
+   * that cannot be used is navigation that misleads.
+   *
+   * Nothing while the answer is in flight either. A bar that appears and then
+   * vanishes tells a student exactly what it was going to say.
+   */
+  if (role === undefined || role === null) return null;
+
+  const destinations =
+    role === 'PROVIDER' ? [...ADMIN_DESTINATIONS, ...PROVIDER_DESTINATIONS] : ADMIN_DESTINATIONS;
 
   return (
     <header className="bg-surface border-border sticky top-0 z-10 border-b">

@@ -23,6 +23,13 @@
  * never was, so without it this would have traded XSS exposure for CSRF.
  */
 
+/** Who this session belongs to. */
+export interface Identity {
+  userId: string;
+  displayName: string;
+  staffRole: 'REVIEWER' | 'ADMIN' | 'PROVIDER' | null;
+}
+
 /** The paper on offer, and any sitting already under way. */
 export interface ExamPreview {
   examName: string;
@@ -774,6 +781,9 @@ export const api = {
 
   /** What the mock is, and whether one is already open — asked before starting. */
   examPreview: (): Promise<ExamPreview> => call<ExamPreview>('/exams/preview'),
+
+  /** Who am I. The generated handle, never a legal name. */
+  me: (): Promise<Identity> => call<Identity>('/me'),
 
   /** Every session still open on this account, this one marked. */
   devices: (): Promise<DeviceEntry[]> => call<DeviceEntry[]>('/me/devices'),

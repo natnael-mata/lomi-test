@@ -35,6 +35,7 @@ import { Input } from '../../components/Input';
 import { Receipt } from '../../components/Receipt';
 import { ApiError, api, signInRequired, type PlanCode, type PlanOffer } from '../../lib/api';
 import { copy } from '../../lib/i18n';
+import { day } from '../../lib/dates';
 
 type Method = 'telebirr' | 'cbebirr' | 'chapa' | 'bank';
 
@@ -95,6 +96,8 @@ export function CheckoutScreen() {
    * obvious next move is to pay a second time.
    */
   const [pending, setPending] = useState<{ txRef: string; amountEtb: number } | null>(null);
+  /** Set when they paid before and it has run out — a renewal, not a first sale. */
+  const [lapsedOn, setLapsedOn] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -121,6 +124,11 @@ export function CheckoutScreen() {
         // the same order the picker leads with, so the highlighted card and the
         // selected one agree.
         setPlanCode(offers.find((o) => o.bestValue)?.code ?? offers[0]?.code ?? 'TWELVE_MONTH');
+        // Paid before, and it ran out. Not the same student as one who never
+        // paid, and not the same offer.
+        if (subscription && !subscription.active && subscription.hasEverPaid) {
+          setLapsedOn(subscription.expiresAt);
+        }
         setPhase(subscription?.active ? { kind: 'subscribed' } : { kind: 'choosing' });
       } catch (e) {
         if (signInRequired(e)) {
@@ -394,7 +402,26 @@ export function CheckoutScreen() {
 
   return (
     <div className="flex flex-1 flex-col gap-3">
-      <h1 className="text-title">{c.checkout.heading}</h1>
+      <h1 className="text-title">{lapsedOn ? c.checkout.lapsedBanner : c.checkout.heading}</h1>
+
+      {/*
+        Paid before, and ran out.
+
+        The plans below are the same; the framing is not. A student who bought
+        twelve months and lapsed was shown the identical first-time page — "Get
+        full access", "Counted from today", no end date, no history — and told
+        on `/practice` that they had used up their ten free questions. Both QA
+        passes reported it, and both were right: the product had the fact and
+        never used it.
+      */}
+      {lapsedOn ? (
+        <Card as="section" data-lapsed="" className="flex flex-col gap-2">
+          <Banner tone="pending" icon="clock">
+            {c.checkout.lapsedBanner}
+          </Banner>
+          <p className="text-body">{c.checkout.lapsedBody(day(lapsedOn))}</p>
+        </Card>
+      ) : null}
 
       {/*
         The claim already with the team, above the plans.

@@ -76,6 +76,7 @@ export const en = {
   },
 
   nav: {
+    signedInAs: 'Signed in as',
     practice: 'Practise',
     exam: 'Mock',
     progress: 'Progress',
@@ -168,7 +169,11 @@ export const en = {
     goPractice: 'Practise',
     goPracticeWhy: 'Answer questions and see why each answer is right.',
     goExam: 'Mock exam',
-    goExamWhy: '100 questions in 3 hours, sat once through.',
+    // No counts here: this tile is rendered before anything knows which paper
+    // has been built, and "100 questions in 3 hours" was a promise about the
+    // product's intentions printed over a twenty-question one. `/exam` states
+    // the real shape, having asked.
+    goExamWhy: 'A full paper against the clock, sat once through.',
     goProgress: 'Progress',
     goProgressWhy: 'Where you are strong, and what to work on next.',
     goStanding: 'Where you stand',
@@ -204,6 +209,10 @@ export const en = {
     seenBefore: 'You have answered this one before',
     goToExam: 'Go to your exam',
     outOfNewTitle: 'That is your ten free questions',
+    lapsedTitle: 'Your access has ended',
+    lapsedBody:
+      'You can keep going over the ones you have already answered as often as you like. ' +
+      'New questions come back when you renew.',
     outOfNewBody:
       'You can keep going over the ones you have already answered as often as you like — ' +
       'that stays free. New questions are part of a subscription.',
@@ -349,6 +358,7 @@ export const en = {
     notReached: (count: number) => `${count} not reached`,
     readiness: 'Readiness',
     focus: 'Focus',
+    chooseFirst: 'Choose a programme',
     evidenceTitle: 'What each score rests on',
     fromAnswers: (pct: number, answered: number) =>
       `${pct}% from ${answered} answer${answered === 1 ? '' : 's'}`,
@@ -420,6 +430,21 @@ export const en = {
       'confirmed — you can keep practising your free questions meanwhile.',
 
     verifiedBanner: 'Payment verified',
+
+    /*
+     * The lapsed student, who is not a new one.
+     *
+     * The schema keeps EXPIRED apart from PENDING because the two need
+     * different words, and until now the checkout used the same first-time page
+     * for both: someone who bought twelve months and ran out was shown "Get full
+     * access · Counted from today", with no end date, no history and nothing
+     * acknowledging they had ever paid. Both QA passes filed it.
+     */
+    lapsedBanner: 'Your access has ended',
+    lapsedBody: (ended: string) =>
+      `Your subscription ran until ${ended}. Renew below and it picks up from today — ` +
+      'everything you have answered is still here.',
+    renew: 'Renew',
 
     pay: 'Pay',
     sending: 'Sending…',
@@ -497,6 +522,22 @@ export const en = {
     ledgerEmpty: 'Nothing yet. Points appear here the moment you answer a question.',
 
     board: 'The board',
+    /*
+     * Why the numbers skip.
+     *
+     * T-194 ranks over everybody and then filters, so hiding one student never
+     * promotes the one below them — the board reports the same competition to
+     * every viewer. The consequence is visible gaps (2, 3, 3, 6, 7) and both QA
+     * passes reported them as broken arithmetic, correctly by the rule this
+     * product sets itself: a figure nobody can account for should be reported.
+     *
+     * States the rule rather than the count. "Three students are hidden" would
+     * explain the gaps and quietly publish something about people who asked not
+     * to be published.
+     */
+    boardWhyGaps:
+      'Ranks are counted across everyone. Anyone who has chosen not to appear keeps ' +
+      'their place, so the numbers can skip.',
     boardEmpty: 'Nobody has scored yet. Answer a question and you are first.',
     yourRank: (rank: number) =>
       `You are ${rank}${rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'}`,
@@ -918,6 +959,7 @@ export const am: Copy = {
   },
 
   nav: {
+    signedInAs: 'የገቡት እንደ',
     practice: 'ተለማመድ',
     exam: 'ሙከራ',
     progress: 'እድገት',
@@ -1002,7 +1044,7 @@ export const am: Copy = {
     goPractice: 'ተለማመድ',
     goPracticeWhy: 'ጥያቄዎችን ይመልሱ እና እያንዳንዱ መልስ ለምን ትክክል እንደሆነ ይመልከቱ።',
     goExam: 'ሙከራ ፈተና',
-    goExamWhy: '100 ጥያቄዎች በ3 ሰዓት፣ በአንድ ጊዜ።',
+    goExamWhy: 'ሙሉ ወረቀት ከሰዓት ጋር፣ በአንድ ጊዜ።',
     goProgress: 'እድገት',
     goProgressWhy: 'የት እንደጠነከሩ፣ እና ቀጥሎ ምን መስራት እንዳለብዎ።',
     goStanding: 'ያሉበት ደረጃ',
@@ -1036,6 +1078,8 @@ export const am: Copy = {
     seenBefore: 'ይህንን ከዚህ በፊት መልሰውታል',
     goToExam: 'ወደ ፈተናዎ ይሂዱ',
     outOfNewTitle: 'ያ አስሩ ነጻ ጥያቄዎችዎ ናቸው',
+    lapsedTitle: 'የመዳረሻ ጊዜዎ አብቅቷል',
+    lapsedBody: 'ቀደም ብለው የመለሷቸውን እንደፈለጉት ደጋግመው መስራት ይችላሉ። ' + 'አዲስ ጥያቄዎች ሲያድሱ ይመለሳሉ።',
     outOfNewBody:
       'ቀደም ብለው የመለሷቸውን ጥያቄዎች እንደፈለጉት ደጋግመው መስራት ይችላሉ — ያ ነጻ ሆኖ ይቀጥላል። ' +
       'አዲስ ጥያቄዎች ግን የደንበኝነት ምዝገባ አካል ናቸው።',
@@ -1147,6 +1191,7 @@ export const am: Copy = {
     notReached: (count: number) => `${count} አልተደረሰም`,
     readiness: 'ዝግጁነት',
     focus: 'ትኩረት',
+    chooseFirst: 'ዘርፍ ይምረጡ',
     evidenceTitle: 'እያንዳንዱ ውጤት የተመሠረተበት',
     fromAnswers: (pct: number, answered: number) => `${pct}% ከ${answered} መልስ`,
     thinEvidence: 'ለመወሰን በጣም ጥቂት ነው',
@@ -1206,6 +1251,10 @@ export const am: Copy = {
       `ማመሳከሪያ ${ref} ከቡድናችን ጋር ነው። እንደተረጋገጠ ወዲያውኑ በTelegram እንልክልዎታለን — እስከዚያው ነጻ ጥያቄዎችዎን መለማመድ ይችላሉ።`,
 
     verifiedBanner: 'ክፍያው ተረጋግጧል',
+    lapsedBanner: 'የመዳረሻ ጊዜዎ አብቅቷል',
+    lapsedBody: (ended: string) =>
+      `የደንበኝነት ምዝገባዎ እስከ ${ended} ድረስ ነበር። ከታች ያድሱት፣ ከዛሬ ጀምሮ ይቀጥላል — ` + 'የመለሱት ሁሉ እንዳለ አለ።',
+    renew: 'አድስ',
 
     pay: 'ክፈል',
     sending: 'በመላክ ላይ…',
@@ -1266,6 +1315,7 @@ export const am: Copy = {
     ledgerEmpty: 'ገና ምንም የለም። ጥያቄ እንደመለሱ ነጥቦች እዚህ ይታያሉ።',
 
     board: 'ሰሌዳው',
+    boardWhyGaps: 'ደረጃዎች በሁሉም ላይ ተመሥርተው ይቆጠራሉ። ላለመታየት የመረጠ ሰው ቦታውን ይይዛል፣ ስለዚህ ቁጥሮቹ ሊዘሉ ይችላሉ።',
     boardEmpty: 'እስካሁን ማንም ነጥብ አላገኘም። ጥያቄ ይመልሱና የመጀመሪያው ይሁኑ።',
     yourRank: (rank: number) => `${rank}ኛ ደረጃ ላይ ነዎት`,
     notListed: 'በሰሌዳው ላይ አይታዩም። ደረጃዎ ግን የእርስዎ ነው።',
