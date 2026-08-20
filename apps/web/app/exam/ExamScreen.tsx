@@ -33,6 +33,7 @@ import {
   ApiError,
   api,
   signInRequired,
+  type ExamPreview,
   type SittingItem,
   type SittingManifest,
   type SittingResult,
@@ -55,6 +56,8 @@ export function ExamScreen() {
   const [saving, setSaving] = useState(false);
   /** Whether the submit button has been pressed with questions still blank. */
   const [confirming, setConfirming] = useState(false);
+  /** The paper on offer and any sitting already open, read before starting. */
+  const [preview, setPreview] = useState<ExamPreview | null>(null);
 
   /**
    * The offline outbox (T-131).
@@ -89,6 +92,28 @@ export function ExamScreen() {
    */
   const [remaining, setRemaining] = useState(0);
   const durationRef = useRef(0);
+
+  /*
+   * Asked once, on arrival, and only while nothing is under way.
+   *
+   * A read with no side effects — notably it does not close an expired sitting,
+   * so looking at this screen can never end somebody's paper.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const seen = await api.examPreview();
+        if (!cancelled) setPreview(seen);
+      } catch {
+        // The splash falls back to its plain wording. A preview that cannot be
+        // fetched is not a reason to block starting a paper.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (phase.kind !== 'sitting') return;
@@ -200,7 +225,16 @@ export function ExamScreen() {
       setPending(stored);
       if (stored.length > 0) await flush(started.sittingId);
 
-      await goTo(started.sittingId, 1);
+      /*
+       * Where they stopped, not the beginning.
+       *
+       * `start` rejoins an open sitting, and rejoining used to drop the student
+       * on question one regardless of how far in they were — on a twenty
+       * question paper that is nineteen taps back to where they were. The
+       * preview works out the first question with no answer on it; with no
+       * preview yet, or a genuinely fresh paper, that is one anyway.
+       */
+      await goTo(started.sittingId, started.resumed ? (preview?.open?.position ?? 1) : 1);
     } catch (e) {
       fail(e);
     }
@@ -281,12 +315,32 @@ export function ExamScreen() {
   };
 
   if (phase.kind === 'idle') {
+    /*
+     * The paper described before it is entered, and an open one said out loud.
+     *
+     * QA left a sitting half-finished, came back, and met the same "Start the
+     * mock" splash with nothing indicating their answers still existed — while
+     * `/practice` was refusing them *because* it was open. Two screens
+     * disagreeing about whether a paper is open, and the one that was right was
+     * the one they were not looking at. They assumed the paper was gone.
+     *
+     * `preview` is null only until the first load returns; the numbers come from
+     * the paper that was actually built rather than from a sentence about the
+     * product's intentions.
+     */
+    const open = preview?.open ?? null;
     return (
-      <Card data-state="idle">
-        <h1 className="text-title">{c.exam.title}</h1>
-        <p className="text-body text-ink-2 mt-2">{c.exam.intro}</p>
-        <Button className="mt-4" onClick={() => void start()}>
-          {c.exam.start}
+      <Card data-state="idle" className="flex flex-col gap-2">
+        <h1 className="text-title">{open ? c.exam.resumeTitle : c.exam.title}</h1>
+        <p className="text-body text-ink-2">
+          {preview
+            ? open
+              ? c.exam.resumeBody(open.answeredCount, preview.totalQuestions)
+              : c.exam.intro(preview.totalQuestions, Math.round(preview.durationSec / 60))
+            : c.exam.preparing}
+        </p>
+        <Button className="mt-2" onClick={() => void start()}>
+          {open ? c.exam.resume(open.position) : c.exam.start}
         </Button>
       </Card>
     );

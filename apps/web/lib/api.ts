@@ -23,6 +23,19 @@
  * never was, so without it this would have traded XSS exposure for CSRF.
  */
 
+/** The paper on offer, and any sitting already under way. */
+export interface ExamPreview {
+  examName: string;
+  totalQuestions: number;
+  durationSec: number;
+  open: {
+    sittingId: string;
+    position: number;
+    answeredCount: number;
+    clock: SittingClock;
+  } | null;
+}
+
 /** A live session, as the device list shows it. Dates arrive as ISO strings. */
 export interface DeviceEntry {
   id: string;
@@ -756,6 +769,9 @@ export const api = {
    * the student's programme.
    */
   myFields: (): Promise<FieldOption[]> => call<FieldOption[]>('/me/fields'),
+
+  /** What the mock is, and whether one is already open — asked before starting. */
+  examPreview: (): Promise<ExamPreview> => call<ExamPreview>('/exams/preview'),
 
   /** Every session still open on this account, this one marked. */
   devices: (): Promise<DeviceEntry[]> => call<DeviceEntry[]>('/me/devices'),

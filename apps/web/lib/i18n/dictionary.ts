@@ -199,6 +199,7 @@ export const en = {
     // which has no capitals to set, is not asked to imitate them (T-101).
     freeLeft: (count: number) => `${count} free left`,
     seenBefore: 'You have answered this one before',
+    goToExam: 'Go to your exam',
     outOfNewTitle: 'That is your ten free questions',
     outOfNewBody:
       'You can keep going over the ones you have already answered as often as you like — ' +
@@ -272,8 +273,19 @@ export const en = {
 
   exam: {
     title: 'Mock exam',
-    intro: '100 questions in 3 hours, sat once through. Nothing is marked until you submit.',
+    /*
+     * The paper you are about to sit, not the one the product hopes to ship.
+     * This said "100 questions in 3 hours" over whatever had actually been
+     * built — QA was promised a hundred and given twenty.
+     */
+    intro: (questions: number, minutes: number) =>
+      `${questions} questions in ${minutes} minutes, sat once through. ` +
+      'Nothing is marked until you submit.',
     start: 'Start the mock',
+    resumeTitle: 'You have a paper open',
+    resumeBody: (answered: number, total: number) =>
+      `${answered} of ${total} answered. Your answers are saved and the clock has kept running.`,
+    resume: (position: number) => `Go back to question ${position}`,
     preparing: 'Preparing your paper…',
     chooseProgramme: 'Choose a programme first.',
     seePlans: 'See the plans',
@@ -334,9 +346,13 @@ export const en = {
     notReached: (count: number) => `${count} not reached`,
     readiness: 'Readiness',
     focus: 'Focus',
+    evidenceTitle: 'What each score rests on',
+    fromAnswers: (pct: number, answered: number) =>
+      `${pct}% from ${answered} answer${answered === 1 ? '' : 's'}`,
+    thinEvidence: 'too few to be sure',
     unansweredInMocks: (count: number) =>
-      `${count} mock question${count === 1 ? '' : 's'} ran out of time and ` +
-      `${count === 1 ? 'is' : 'are'} not counted above.`,
+      `${count} mock question${count === 1 ? '' : 's'} ${count === 1 ? 'was' : 'were'} ` +
+      `left unanswered and ${count === 1 ? 'is' : 'are'} not counted above.`,
   },
 
   checkout: {
@@ -1005,6 +1021,7 @@ export const am: Copy = {
 
     freeLeft: (count: number) => `${count} ነጻ ቀርቷል`,
     seenBefore: 'ይህንን ከዚህ በፊት መልሰውታል',
+    goToExam: 'ወደ ፈተናዎ ይሂዱ',
     outOfNewTitle: 'ያ አስሩ ነጻ ጥያቄዎችዎ ናቸው',
     outOfNewBody:
       'ቀደም ብለው የመለሷቸውን ጥያቄዎች እንደፈለጉት ደጋግመው መስራት ይችላሉ — ያ ነጻ ሆኖ ይቀጥላል። ' +
@@ -1054,8 +1071,13 @@ export const am: Copy = {
 
   exam: {
     title: 'ሙከራ ፈተና',
-    intro: '100 ጥያቄዎች በ3 ሰዓት፣ በአንድ ጊዜ። እስኪያስረክቡ ድረስ ምንም አይታረምም።',
+    intro: (questions: number, minutes: number) =>
+      `${questions} ጥያቄዎች በ${minutes} ደቂቃ፣ በአንድ ጊዜ። እስኪያስረክቡ ድረስ ምንም አይታረምም።`,
     start: 'ሙከራውን ጀምር',
+    resumeTitle: 'ያልጨረሱት ወረቀት አለዎት',
+    resumeBody: (answered: number, total: number) =>
+      `ከ${total} ውስጥ ${answered} ተመልሷል። መልሶችዎ ተቀምጠዋል፣ ሰዓቱም ሲሄድ ቆይቷል።`,
+    resume: (position: number) => `ወደ ጥያቄ ${position} ተመለስ`,
     preparing: 'ወረቀትዎ እየተዘጋጀ ነው…',
     chooseProgramme: 'መጀመሪያ የትምህርት ዘርፍ ይምረጡ።',
     seePlans: 'እቅዶቹን ይመልከቱ',
@@ -1112,7 +1134,10 @@ export const am: Copy = {
     notReached: (count: number) => `${count} አልተደረሰም`,
     readiness: 'ዝግጁነት',
     focus: 'ትኩረት',
-    unansweredInMocks: (count: number) => `${count} የሙከራ ጥያቄ ጊዜው አልቆበታል እና ከላይ አልተቆጠረም።`,
+    evidenceTitle: 'እያንዳንዱ ውጤት የተመሠረተበት',
+    fromAnswers: (pct: number, answered: number) => `${pct}% ከ${answered} መልስ`,
+    thinEvidence: 'ለመወሰን በጣም ጥቂት ነው',
+    unansweredInMocks: (count: number) => `${count} የሙከራ ጥያቄ ሳይመለስ ቀርቷል፣ ከላይም አልተቆጠረም።`,
   },
 
   checkout: {

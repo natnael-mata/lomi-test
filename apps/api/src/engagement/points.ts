@@ -55,7 +55,20 @@ export const RULES = {
   DAILY_RETURN: {
     id: 'daily-return',
     points: 5,
-    reason: () => 'You came back today.',
+    /*
+     * Not "today" — the sentence is stored, and outlives the day it was true.
+     *
+     * `reason` is frozen into the row at write time, so every daily-return row
+     * ever written said "You came back today." QA opened Standing, saw that
+     * line twice, and reported the award as firing twice in one day. It had
+     * not: the two rows were 19 and 20 August, each awarded once. The ledger
+     * was right and its own copy was lying about when.
+     *
+     * The day is on the row and is now shown beside it, which is where a date
+     * belongs — a sentence that has to be re-read as "today, whenever that was"
+     * is not the plain language this product promises.
+     */
+    reason: () => 'You came back.',
   },
   MOCK_COMPLETED: {
     id: 'mock-completed',

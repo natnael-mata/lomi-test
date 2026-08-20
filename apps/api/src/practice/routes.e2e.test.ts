@@ -79,8 +79,17 @@ describe('the route table (T-107)', () => {
   it('keeps every admin question route under /admin', () => {
     // Admin routes DO carry answer content — that is their job. What matters is
     // that none of them is reachable from a student-facing path.
+    /*
+     * Whole path segments, not substrings.
+     *
+     * This was `/question|review/`, which matched `/exams/preview` — "preview"
+     * contains "review". A guard that fires on an unrelated route is one that
+     * gets edited to make the build pass, and the edit that makes it pass is
+     * usually widening the allowed list. Matching segments keeps it aimed at
+     * `/questions/...` and `/review/...`, which is what it is for.
+     */
     const answerBearing = routes.filter(
-      (r) => /question|review/.test(r.path) && !r.path.startsWith('/admin'),
+      (r) => /(^|\/)(questions?|review)(\/|$)/.test(r.path) && !r.path.startsWith('/admin'),
     );
     expect(answerBearing.map((r) => `${r.method} ${r.path}`)).toEqual(['GET /questions/next']);
   });

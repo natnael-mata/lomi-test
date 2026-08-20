@@ -130,13 +130,46 @@ export function ProgressScreen() {
       />
 
       {/* Said out loud rather than folded into a score: a question nobody
-          reached is a pacing fact, not a knowledge one. */}
+          answered is a pacing fact, not a knowledge one.
+
+          It used to say the questions "ran out of time", which is a cause the
+          figure does not know. The field is `unansweredInMocks` — it counts
+          blanks, and a blank is as easily a paper submitted early as a deadline
+          reached. QA submitted with eighteen to spare and was told they had run
+          out of time. It reports what it counted. */}
       {readiness.unansweredInMocks > 0 && (
         <p className="text-caption text-ink-2" data-unanswered-note="">
-          {readiness.unansweredInMocks} mock question
-          {readiness.unansweredInMocks === 1 ? '' : 's'} ran out of time and{' '}
-          {readiness.unansweredInMocks === 1 ? 'is' : 'are'} not counted above.
+          {c.progress.unansweredInMocks(readiness.unansweredInMocks)}
         </p>
+      )}
+
+      {/*
+        How much each score rests on.
+        A topic can read 100% off a single mock question, and one more answer
+        can move the headline twenty points — QA watched exactly that and asked,
+        reasonably, where the caveat was. Every figure on this screen is
+        checkable except this one, because the count behind it was never shown.
+        It always existed on the row; it was simply not rendered.
+      */}
+      {scored.length > 0 && (
+        <section className="flex flex-col gap-2" data-evidence="">
+          <h2 className="text-label">{c.progress.evidenceTitle}</h2>
+          <ul className="flex flex-col gap-1.5">
+            {scored.map((t) => (
+              <li
+                key={t.topicId}
+                data-topic-evidence=""
+                className="text-caption text-ink-2 flex flex-wrap items-baseline justify-between gap-2"
+              >
+                <span className="text-ink">{t.topicName}</span>
+                <span className="num">
+                  {c.progress.fromAnswers(t.scorePct!, t.answered)}
+                  {t.answered < 3 ? ` · ${c.progress.thinEvidence}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section className="flex flex-col gap-3">

@@ -66,6 +66,33 @@ export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
  * of a feed that is still being written skips whatever arrived in between, which
  * on an audit surface is the one bug that matters.
  */
+
+/**
+ * What to call an actor with no user behind it.
+ *
+ * Two very different things end up here and the old code showed both raw.
+ *
+ * A **named script** — `dev-publish-script`, `unknown-reviewer`, `reviewer-2` —
+ * is worth printing: it says who did it as precisely as the record knows, and
+ * inventing a person for it would be worse.
+ *
+ * A **bare database key** is not. Audit rows outlive the accounts that wrote
+ * them, deliberately — deleting a staff member must not erase what they did —
+ * so an id whose user is gone is a normal, permanent state rather than a
+ * corruption. QA found two of them on the feed reading
+ * "cmt1pedei0000qaxcxfqee26z · Staff · Published a question", which tells a
+ * provider nothing and puts an internal identifier on a shared surface next to
+ * real display names.
+ *
+ * The test is shape, not a lookup: our own actor strings are hyphenated words,
+ * and cuids are a long unbroken run of lowercase alphanumerics. Anything that
+ * looks like a key is described; anything readable is shown.
+ */
+function unresolvedActor(actorId: string): string {
+  const looksLikeAKey = /^[a-z0-9]{20,}$/.test(actorId);
+  return looksLikeAKey ? 'An account that no longer exists' : actorId;
+}
+
 @Injectable()
 export class ActivityService {
   constructor(private readonly prisma: PrismaService) {}
@@ -265,10 +292,7 @@ export class ActivityService {
     const staffIds = new Set(staff.map((s) => s.userId));
 
     for (const event of page) {
-      // An actor id with no user behind it is a script — `dev-publish-script`,
-      // `dev-fixture-author`. Showing the id is the honest answer; inventing a
-      // person for it would not be.
-      event.who = names.get(event.whoId) ?? event.whoId;
+      event.who = names.get(event.whoId) ?? unresolvedActor(event.whoId);
       event.staff = event.staff || staffIds.has(event.whoId);
     }
 

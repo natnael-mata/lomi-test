@@ -12,9 +12,13 @@ npm run dev:web       # port 3100
 npm run dev:testers -w api   # seeds the twelve accounts
 ```
 
-Open **http://localhost:3100/dev-login** and type the account name — `User A`, `User B`,
-and so on. Spacing and case do not matter. Sign out from **Access** before switching.
+Open **http://localhost:3100/dev-login**. All twelve accounts are buttons on that page —
+press one. Switching signs the previous account out first, so you can move between them
+freely. There is also a **Sign out** control on Access, next to your device list.
 
+> **User F's open paper expires 45 minutes after seeding.** After that `/exam` correctly
+> reports nothing open, because nothing is. Re-seed to get it back.
+>
 > Re-run `npm run dev:testers -w api` whenever you want the accounts back as described.
 > It **resets** the states your own testing moves — spent questions, a settled claim, an
 > open paper — rather than adding to them. User D in particular goes back to re-practice

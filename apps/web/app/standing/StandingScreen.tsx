@@ -30,6 +30,8 @@ import {
   type StandingView,
 } from '../../lib/api';
 import { copy } from '../../lib/i18n';
+// Aliased: `day` is what the ledger row's field is called too.
+import { day as dayLabel } from '../../lib/dates';
 
 type Phase =
   | { kind: 'loading' }
@@ -146,8 +148,16 @@ export function StandingScreen() {
                 className="bg-surface-2 rounded-card flex items-center justify-between gap-3 p-3"
               >
                 {/* The reason, always. A number with no sentence beside it is one
-                    a student cannot check and cannot argue with (T-190). */}
-                <span className="text-body">{row.reason}</span>
+                    a student cannot check and cannot argue with (T-190).
+
+                    And the day beside it. Two "You came back." rows with nothing
+                    to tell them apart read as the same award counted twice —
+                    which is exactly what QA reported. The row has carried its
+                    day all along; it was simply never shown. */}
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-body">{row.reason}</span>
+                  <span className="text-caption text-ink-2 num">{dayLabel(row.day)}</span>
+                </span>
                 <span className="text-label num shrink-0">
                   {row.points > 0 ? `+${row.points}` : row.points}
                 </span>

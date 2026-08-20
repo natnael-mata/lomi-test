@@ -44,7 +44,7 @@ type Phase =
   | { kind: 'answered'; question: ServedQuestion; result: AttemptResult }
   | { kind: 'exhausted'; summary: PracticeSummary | null }
   | { kind: 'paywalled'; plans: PlanOffer[] }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; code: string | null };
 
 export function PracticeScreen() {
   const c = copy();
@@ -112,7 +112,11 @@ export function PracticeScreen() {
       // The server's own words when it refused — the open-mock lock says
       // "Finish or submit your exam before practising", which is the whole
       // answer and used to be thrown away for "try again".
-      setPhase({ kind: 'error', message: refusalMessage(e) ?? c.practice.didNotLoad });
+      setPhase({
+        kind: 'error',
+        message: refusalMessage(e) ?? c.practice.didNotLoad,
+        code: e instanceof ApiError ? e.code : null,
+      });
     }
   }, [c.practice.didNotLoad, paywall]);
 
@@ -137,7 +141,11 @@ export function PracticeScreen() {
         await paywall();
         return;
       }
-      setPhase({ kind: 'error', message: refusalMessage(e) ?? c.practice.didNotLoad });
+      setPhase({
+        kind: 'error',
+        message: refusalMessage(e) ?? c.practice.didNotLoad,
+        code: e instanceof ApiError ? e.code : null,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -152,10 +160,27 @@ export function PracticeScreen() {
   }
 
   if (phase.kind === 'error') {
+    /*
+     * A refusal with somewhere to go.
+     *
+     * The open-mock lock says "Finish or submit your exam before practising",
+     * which is the whole answer — and the only control under it was "Try again",
+     * which tries the same thing and fails the same way. QA called it a dead
+     * end, correctly: the screen states a condition the student can fix and
+     * offers no way to fix it. The guard has always sent the code (and the
+     * sitting id) alongside the sentence; nothing here read it.
+     */
+    const lockedByExam = phase.code === 'SITTING_IN_PROGRESS';
     return (
       <Card data-state="error" className="flex flex-col gap-4">
         <p className="text-body">{phase.message}</p>
-        <Button onClick={() => void load()}>{c.common.tryAgain}</Button>
+        {lockedByExam ? (
+          <a className="btn-primary" href="/exam">
+            {c.practice.goToExam}
+          </a>
+        ) : (
+          <Button onClick={() => void load()}>{c.common.tryAgain}</Button>
+        )}
       </Card>
     );
   }

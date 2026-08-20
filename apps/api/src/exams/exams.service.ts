@@ -37,6 +37,38 @@ export interface StartResult {
   clock: SittingClock;
 }
 
+/**
+ * What a student can be told about the paper *before* they commit to it.
+ *
+ * The start screen used to be a fixed sentence — "100 questions in 3 hours" —
+ * over whatever paper had actually been built, and it said nothing at all about
+ * a sitting already open. QA hit both: they were promised 100 questions and
+ * given 20, and they left a paper half-finished, came back, and were shown the
+ * same "Start the mock" splash with no sign their answers still existed. They
+ * assumed the paper was gone. Meanwhile `/practice` was correctly refusing them
+ * *because* it was open, so the two screens contradicted each other.
+ *
+ * Read-only and cheap, so the screen can ask before it acts rather than
+ * learning what it was in for from the response to starting.
+ */
+export interface ExamPreview {
+  examName: string;
+  totalQuestions: number;
+  durationSec: number;
+  /**
+   * The sitting already under way, if there is one.
+   *
+   * `position` is the first question with no answer on it — where somebody who
+   * walked away actually wants to be put back, rather than at question one.
+   */
+  open: {
+    sittingId: string;
+    position: number;
+    answeredCount: number;
+    clock: SittingClock;
+  } | null;
+}
+
 export interface SittingResultView {
   sittingId: string;
   examName: string;
@@ -90,6 +122,82 @@ export class ExamsService {
    * project, and a `setTimeout` at start is silently dropped by every deploy
    * while staying green in a test process that never restarts.
    */
+  /** The paper on offer, and whether one is already open (T-243, T-244). */
+  async preview(userId: string, now: Date = new Date()): Promise<ExamPreview> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fieldId: true },
+    });
+    if (!user?.fieldId) throw new NotFoundException('No programme chosen.');
+    const fieldId = user.fieldId;
+
+    const exam = await this.prisma.exam.findFirst({
+      where: { fieldId, isActive: true },
+      orderBy: { builtAt: 'desc' },
+      select: { id: true, name: true, durationSec: true },
+    });
+    if (!exam) {
+      throw new UnprocessableEntityException({
+        error: 'NO_EXAM_AVAILABLE',
+        message: 'No mock paper has been built for this programme yet.',
+      });
+    }
+    const totalQuestions = await this.prisma.examQuestion.count({ where: { examId: exam.id } });
+
+    const open = await this.prisma.sitting.findFirst({
+      where: { userId, fieldId, closedAt: null },
+      select: { id: true, examId: true, startedAt: true, endsAt: true, closedAt: true },
+    });
+
+    /*
+     * Deliberately does NOT close a stale sitting.
+     *
+     * A preview is a read. `start` closes an expired sitting because it is
+     * about to open a new one and the old row must not stay open; doing the
+     * same here would mean merely looking at the screen ended a paper. So an
+     * expired sitting reads as "nothing open", which is what it is, and `start`
+     * settles it when the student actually acts.
+     */
+    const live = open && sittingState(open, now) === 'open' ? open : null;
+    if (!live) {
+      return { examName: exam.name, totalQuestions, durationSec: exam.durationSec, open: null };
+    }
+
+    const liveExam = await this.prisma.exam.findUniqueOrThrow({
+      where: { id: live.examId },
+      select: { name: true, durationSec: true },
+    });
+    const liveTotal = await this.prisma.examQuestion.count({ where: { examId: live.examId } });
+
+    const answers = await this.prisma.sittingAnswer.findMany({
+      where: { sittingId: live.id, chosenLabel: { not: null } },
+      select: { questionId: true },
+    });
+    const answered = new Set(answers.map((a) => a.questionId));
+
+    const paper = await this.prisma.examQuestion.findMany({
+      where: { examId: live.examId },
+      orderBy: { position: 'asc' },
+      select: { position: true, questionId: true },
+    });
+    // Where they left off. All answered and they land on the last one, which is
+    // next to the submit button — the only thing left to do.
+    const firstBlank = paper.find((q) => !answered.has(q.questionId));
+    const position = firstBlank?.position ?? paper[paper.length - 1]?.position ?? 1;
+
+    return {
+      examName: liveExam.name,
+      totalQuestions: liveTotal,
+      durationSec: liveExam.durationSec,
+      open: {
+        sittingId: live.id,
+        position,
+        answeredCount: answered.size,
+        clock: clockFor(live, liveExam.durationSec, now),
+      },
+    };
+  }
+
   async start(userId: string, sessionId: string, now: Date = new Date()): Promise<StartResult> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

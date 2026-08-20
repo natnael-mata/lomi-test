@@ -13,7 +13,12 @@ import {
 import { FieldRequiredGuard } from '../auth/field-required.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
 import type { SittingItem, SittingManifest } from './exam-view';
-import { ExamsService, type SittingResultView, type StartResult } from './exams.service';
+import {
+  type ExamPreview,
+  ExamsService,
+  type SittingResultView,
+  type StartResult,
+} from './exams.service';
 
 /**
  * Sitting a mock exam.
@@ -27,6 +32,17 @@ import { ExamsService, type SittingResultView, type StartResult } from './exams.
 @UseGuards(SessionGuard, FieldRequiredGuard)
 export class ExamsController {
   constructor(private readonly exams: ExamsService) {}
+
+  /**
+   * What is on offer, and whether a paper is already open (T-243, T-244).
+   *
+   * Declared before `:fieldId/start` but on a distinct verb and path, so there
+   * is no route-ordering trap: a GET can never be shadowed by the POST.
+   */
+  @Get('preview')
+  preview(@Req() req: AuthedRequest): Promise<ExamPreview> {
+    return this.exams.preview(req.auth!.userId);
+  }
 
   @Post(':fieldId/start')
   start(@Req() req: AuthedRequest): Promise<StartResult> {
