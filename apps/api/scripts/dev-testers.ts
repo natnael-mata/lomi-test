@@ -69,6 +69,9 @@ const PERSONAS = [
   { label: 'userh', name: 'User H' },
   { label: 'useri', name: 'User I' },
   { label: 'userj', name: 'User J' },
+  { label: 'userk', name: 'User K' },
+  { label: 'userl', name: 'User L' },
+  { label: 'userm', name: 'User M' },
   { label: 'admin', name: 'Admin' },
   { label: 'provider', name: 'Provider' },
 ] as const;
@@ -83,6 +86,10 @@ const USER_D_USED = 10;
 const USER_H_DAYS = 5;
 /** How many User I has answered. Enough for readiness to mean something. */
 const USER_I_ANSWERED = 15;
+
+/** Grade 12 Natural, the track with twelve questions across four years. */
+const GRADE_12_SLUG = 'grade-12-natural';
+const GRADE_6_SLUG = 'grade-6';
 
 async function upsertPersona(label: string, name: string): Promise<string> {
   const telegramId = String(devTelegramId(label));
@@ -264,6 +271,55 @@ function daysAgo(n: number): Date {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return d;
+}
+
+/**
+ * Beats `beaten` questions and half-beats `guessed` more (T-261).
+ *
+ * A **beaten** question is correct with the reason named; a **guessed** one is
+ * correct with the reason wrong. Both exist here on purpose, because the
+ * difference between them is the whole claim coverage makes — a persona with
+ * only beaten questions cannot show that a guess does not count.
+ *
+ * Written directly rather than posted through the API: the reason-check ids are
+ * derived per attempt, so replaying the real flow would mean issuing a check and
+ * reading its options back for every question. The state is what matters here,
+ * and `coverage.e2e.test.ts` is what proves the real path produces it.
+ */
+async function seedCoverage(
+  userId: string,
+  fieldId: string,
+  beaten: number,
+  guessed: number,
+): Promise<void> {
+  const questions = await prisma.question.findMany({
+    where: { fieldId, status: 'PUBLISHED' },
+    orderBy: { stableId: 'asc' },
+    select: { id: true, topicId: true },
+  });
+
+  // Reset first, so re-running restores the state the brief describes rather
+  // than adding to whatever the last tester left. Same discipline as
+  // `seedAttempts` — a seed that only ever adds ends up describing an account
+  // that no longer exists.
+  await prisma.attempt.deleteMany({ where: { userId, fieldId } });
+
+  for (const [index, question] of questions.slice(0, beaten + guessed).entries()) {
+    const isBeaten = index < beaten;
+    await prisma.attempt.create({
+      data: {
+        userId,
+        questionId: question.id,
+        fieldId,
+        topicId: question.topicId,
+        chosenLabel: 'A',
+        isCorrect: true,
+        reasonCorrect: isBeaten,
+        reasonChoiceId: isBeaten ? 'seeded-right' : 'seeded-wrong',
+        timeTakenSec: 25,
+      },
+    });
+  }
 }
 
 async function main(): Promise<void> {
@@ -579,6 +635,45 @@ async function main(): Promise<void> {
   await openSession(userJ, 'Chrome on Android');
   await openSession(userJ, 'Safari on iPhone');
 
+  /*
+   * The school tracks (T-261).
+   *
+   * Everything above is on the exit-exam demo bank, which has no `sourceGrade`
+   * and therefore no per-year diagnostic and no junior band. These three make
+   * the restructure reachable: a Grade 12 student with a real coverage figure,
+   * and the two halves of the junior default.
+   */
+  const g12 = await prisma.field.findUnique({ where: { slug: GRADE_12_SLUG } });
+  const g6 = await prisma.field.findUnique({ where: { slug: GRADE_6_SLUG } });
+  let schoolNote = 'not seeded — run: npm run dev:publish:school -w api';
+
+  if (g12 && g6) {
+    // User K: five of twelve beaten and two more guessed. The guessed pair is
+    // the point — coverage must read 5, not 7.
+    const userK = ids.get('userk')!;
+    await prisma.user.update({ where: { id: userK }, data: { fieldId: g12.id } });
+    await seedCoverage(userK, g12.id, 5, 2);
+
+    // User L: a junior who asked to be on the board.
+    const userL = ids.get('userl')!;
+    await prisma.user.update({
+      where: { id: userL },
+      data: { fieldId: g6.id, leaderboardOptOut: false },
+    });
+    await seedCoverage(userL, g6.id, 4, 0);
+
+    // User M: a junior nobody has asked. Must appear on no board at all, and
+    // must still be able to see their own rank.
+    const userM = ids.get('userm')!;
+    await prisma.user.update({
+      where: { id: userM },
+      data: { fieldId: g6.id, leaderboardOptOut: null },
+    });
+    await seedCoverage(userM, g6.id, 6, 0);
+
+    schoolNote = 'seeded';
+  }
+
   const line = (label: string, value: string): string => `  ${label.padEnd(9)} ${value}`;
   console.log('\nTest accounts ready. Sign in at http://localhost:3100/dev-login\n');
   console.log('  Type the name exactly as shown — the door normalises spacing and case.\n');
@@ -603,6 +698,14 @@ async function main(): Promise<void> {
     line('User I', `subscribed · ${USER_I_ANSWERED} answered, 1 in 4 right — readiness under load`),
   );
   console.log(line('User J', 'two live devices — at the limit; a third sign-in evicts one'));
+  console.log(
+    line(
+      'User K',
+      `Grade 12 Natural · 5 of 12 beaten, 2 guessed — coverage reads 5 (${schoolNote})`,
+    ),
+  );
+  console.log(line('User L', 'Grade 6 junior, opted IN to the board — 4 of 6 beaten'));
+  console.log(line('User M', 'Grade 6 junior, never asked — on no board, still sees their rank'));
   console.log(line('Admin', 'ADMIN staff — dashboard, payments, import, weights, students'));
   console.log(line('Provider', 'PROVIDER staff — the activity log and the live health board'));
   console.log(`\n  Mock paper: ${examNote}`);

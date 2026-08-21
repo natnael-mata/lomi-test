@@ -41,6 +41,7 @@
     "dev:publish": "tsx scripts/dev-publish.ts",
     "dev:staff": "tsx scripts/dev-staff.ts",
     "dev:testers": "tsx scripts/dev-testers.ts",
-    "import:csv": "tsx src/import/import.cli.ts"
+    "import:csv": "tsx src/import/import.cli.ts",
+    "dev:publish:school": "tsx scripts/dev-publish-school.ts"
   }
 }

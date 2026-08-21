@@ -185,7 +185,21 @@ describe('the banded board (T-257)', () => {
 
   it('keeps the two bands apart', async () => {
     const junior = await boards.board(ids.juniorIn!);
-    for (const name of names(junior.rows)) expect(name).toContain('Junior');
+    /*
+     * Asserted as an absence, not as a naming convention.
+     *
+     * This required every name on the junior board to contain "Junior", which
+     * held only while this suite's fixtures were the only students in the
+     * database — seeding real Grade 6 personas broke it without touching the
+     * behaviour. What the rule actually says is that a senior never appears on
+     * a junior board, so that is what is checked.
+     */
+    expect(names(junior.rows)).not.toContain(`Senior Half ${SFX}`);
+    expect(names(junior.rows)).not.toContain(`Senior Stale ${SFX}`);
+    expect(names(junior.rows)).toContain(`Junior In ${SFX}`);
+
+    const senior = await boards.board(ids.senior!);
+    expect(names(senior.rows)).not.toContain(`Junior In ${SFX}`);
   });
 
   /*
