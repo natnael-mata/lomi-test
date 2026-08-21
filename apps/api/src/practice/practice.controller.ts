@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 
 import { FieldRequiredGuard } from '../auth/field-required.guard';
 import { RateLimitService } from '../common/rate-limit.service';
@@ -63,6 +63,25 @@ export class AttemptsController {
      */
     this.rateLimit.consume('attempt', req.auth!.userId, req.ip ?? null);
     return this.practice.attempt(req.auth!.userId, body ?? {});
+  }
+
+  /**
+   * Names the reason, which is the half of "beaten" that stops a guess counting
+   * (T-255).
+   *
+   * Rate limited on the same bucket as the attempt it belongs to. It is a
+   * second write per question and a separate allowance would leave a cheaper
+   * door beside a guarded one — the check exists to make guessing expensive, so
+   * the route that grades it must not be the fast path.
+   */
+  @Post(':attemptId/reason')
+  reason(
+    @Req() req: AuthedRequest,
+    @Param('attemptId') attemptId: string,
+    @Body() body: { chosenId?: unknown },
+  ): Promise<{ attemptId: string; reasonCorrect: boolean; beaten: boolean }> {
+    this.rateLimit.consume('attempt', req.auth!.userId, req.ip ?? null);
+    return this.practice.recordReason(req.auth!.userId, attemptId, body?.chosenId);
   }
 }
 

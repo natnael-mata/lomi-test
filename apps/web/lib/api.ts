@@ -164,9 +164,27 @@ export interface ServedQuestion {
   freeRemaining: number | null;
 }
 
+/** One choice in the reason check. The id carries no hint of correctness. */
+export interface ReasonOption {
+  id: string;
+  text: string;
+}
+
+/** The follow-up that decides whether a question counts as beaten (T-255). */
+export interface ReasonCheck {
+  attemptId: string;
+  options: ReasonOption[];
+}
+
 export interface AttemptResult {
   attemptId: string;
   isCorrect: boolean;
+  /**
+   * Present only on a correct answer to a question not yet beaten, and only
+   * where the question's own content can carry one. Null means "not asked",
+   * which is not the same as failed — the question simply stays unbeaten.
+   */
+  reasonCheck: ReasonCheck | null;
   pacing: 'within' | 'over' | 'unknown';
   timeTakenSec: number;
   timeLimitSec: number;

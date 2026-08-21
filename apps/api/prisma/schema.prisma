@@ -596,6 +596,27 @@ model Attempt {
   /// not an attempt, it is a question that was displayed.
   chosenLabel OptionLabel
 
+  /// Whether they named the REASON the answer was right (T-255).
+  ///
+  /// Null means never asked — the check is not put on every correct answer.
+  /// True/false is a real outcome and the difference decides whether the
+  /// question counts as **beaten**.
+  ///
+  /// This exists because the Ethiopian exam is drawn from a question bank, so
+  /// questions repeat — sometimes verbatim, sometimes with the numbers changed.
+  /// A student who memorises the letter passes the app and fails the paper, and
+  /// a coverage figure built on lucky guesses would be the product lying in the
+  /// most damaging way available to it: telling somebody they are ready.
+  ///
+  /// Stored per attempt rather than per question so a later attempt can beat a
+  /// question an earlier one only guessed.
+  reasonCorrect Boolean?
+
+  /// Which option they picked in the reason check, kept for the same reason
+  /// `chosenLabel` is: a verdict with no record of what produced it cannot be
+  /// argued with or supported.
+  reasonChoiceId String?
+
   /// Resolved at write time rather than recomputed on read. If a question is
   /// later corrected, the student's result must stay what it was when they sat
   /// it — recomputing would silently rewrite their history.

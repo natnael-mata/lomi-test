@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   HttpException,
   HttpStatus,
   Inject,
@@ -20,6 +21,7 @@ import {
   type Pacing,
 } from './attempt-rules';
 import { toServedQuestion, type ServedQuestion } from './question-view';
+import { buildReasonCheck, isReasonCorrect, type ReasonCheck } from './reason-check';
 import { SUBSCRIPTION_ACCESS, type SubscriptionAccess } from './subscription-access';
 import { summarise, type PracticeSummary } from './summary';
 
@@ -33,6 +35,16 @@ import { summarise, type PracticeSummary } from './summary';
 export interface AttemptResult {
   attemptId: string;
   isCorrect: boolean;
+  /**
+   * The follow-up that decides whether this question is **beaten** (T-255).
+   *
+   * Present only on a correct answer to a question this student has not beaten
+   * yet, and only where the content can carry one — a question with no concept
+   * line or too few authored why-wrongs returns null rather than a check with
+   * invented alternatives. Null means "not asked", which is not the same as
+   * failed: the question simply stays unbeaten.
+   */
+  reasonCheck: ReasonCheck | null;
   /** Pacing is a separate axis from correctness; see `pacingFor`. */
   pacing: Pacing;
   timeTakenSec: number;
@@ -64,6 +76,30 @@ export class FreeLimitReached extends HttpException {
   constructor(remaining: number) {
     super({ error: 'FREE_LIMIT_REACHED', freeRemaining: remaining }, HttpStatus.PAYMENT_REQUIRED);
   }
+}
+
+/**
+ * The key the reason-check ids are derived from.
+ *
+ * Reuses `JWT_SECRET` deliberately: it is already required to boot, already
+ * rotated as one, and adding a second secret to the deployment checklist for a
+ * value that never leaves one request is a way to end up with a default. The
+ * ids are lookup keys within a request, not claims a client may present.
+ */
+function reasonSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not set.');
+  return secret;
+}
+
+/** Fisher–Yates. Lives here so `reason-check.ts` stays pure and testable. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
 }
 
 @Injectable()
@@ -188,6 +224,81 @@ export class PracticeService {
   }
 
   /**
+   * Records whether they named the reason, and with it whether the question is
+   * beaten (T-255).
+   *
+   * Scoped to the caller's own attempt — the id is in the path, so the
+   * ownership check is the whole security of this route.
+   *
+   * **Answerable once.** Re-posting would let a student walk the options until
+   * one took, which is a worse guess than the letter they already guessed. A
+   * second post is refused rather than ignored, so a client that has lost track
+   * is told rather than left believing the first answer was overwritten.
+   */
+  async recordReason(
+    userId: string,
+    attemptId: string,
+    chosenId: unknown,
+  ): Promise<{ attemptId: string; reasonCorrect: boolean; beaten: boolean }> {
+    const chosen = typeof chosenId === 'string' ? chosenId.trim() : '';
+    if (chosen === '') {
+      throw new UnprocessableEntityException({
+        error: 'INVALID_REASON',
+        reasons: ['chosenId is required.'],
+      });
+    }
+
+    const attempt = await this.prisma.attempt.findFirst({
+      where: { id: attemptId, userId },
+      select: {
+        id: true,
+        isCorrect: true,
+        reasonCorrect: true,
+        question: { select: { conceptLine: true } },
+      },
+    });
+    if (!attempt) throw new NotFoundException('No such attempt.');
+
+    if (attempt.reasonCorrect !== null) {
+      throw new ConflictException({
+        error: 'REASON_ALREADY_ANSWERED',
+        message: 'That question has already been answered.',
+      });
+    }
+
+    /*
+     * A reason on a wrong answer decides nothing.
+     *
+     * Refused rather than recorded: the check is only ever issued after a
+     * correct answer, so a post against a wrong one is a client that has lost
+     * its place or somebody probing. Storing it would put a `reasonCorrect` on
+     * a row that can never be beaten and make the column mean two things.
+     */
+    if (!attempt.isCorrect) {
+      throw new UnprocessableEntityException({
+        error: 'INVALID_REASON',
+        reasons: ['That answer was not correct, so there is no reason to name.'],
+      });
+    }
+
+    const reasonCorrect = isReasonCorrect(
+      reasonSecret(),
+      attempt.id,
+      attempt.question.conceptLine,
+      chosen,
+    );
+
+    await this.prisma.attempt.update({
+      where: { id: attempt.id },
+      data: { reasonCorrect, reasonChoiceId: chosen },
+    });
+
+    // Beaten is exactly these two together, and this is the only place both are
+    // known at once.
+    return { attemptId: attempt.id, reasonCorrect, beaten: reasonCorrect };
+  }
+
+  /**
    * Records an answer and releases the explanation.
    *
    * This is the **only** place answer content reaches a student (T-106), and the
@@ -297,11 +408,32 @@ export class PracticeService {
       );
     }
 
+    /*
+     * Asked once per question, and only while it is still worth asking.
+     *
+     * Not random. A student who has already beaten a question has proved the
+     * reason once and being asked again is friction with nothing behind it; a
+     * student who has not is exactly who the check is for. "Sometimes" in the
+     * design becomes "until you have got it", which is the version a person can
+     * predict and therefore trust.
+     */
+    let reasonCheck: ReasonCheck | null = null;
+    if (isCorrect) {
+      const beaten = await this.prisma.attempt.findFirst({
+        where: { userId, questionId: question.id, isCorrect: true, reasonCorrect: true },
+        select: { id: true },
+      });
+      if (!beaten) {
+        reasonCheck = buildReasonCheck(reasonSecret(), attempt.id, question, shuffle);
+      }
+    }
+
     const consumed = isNewQuestion ? alreadyAttempted.size + 1 : alreadyAttempted.size;
 
     return {
       attemptId: attempt.id,
       isCorrect,
+      reasonCheck,
       pacing: pacingFor(timeTakenSec, question.timeLimitSec, timeNote === null),
       timeTakenSec,
       timeLimitSec: question.timeLimitSec,
