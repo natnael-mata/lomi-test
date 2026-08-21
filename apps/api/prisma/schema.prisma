@@ -31,6 +31,17 @@ model Field {
   /// the countdown and study plan both key off it.
   examDate DateTime?
 
+  /// The school years this track's exam draws on, inclusive. Grade 12 is 9–12,
+  /// Grade 8 is 7–8, Grade 6 is 4–6; **both null for the university exit exam**,
+  /// which draws on a degree rather than a school year.
+  ///
+  /// It lives here rather than being inferred from the field's name because the
+  /// importer validates `Question.sourceGrade` against it and the progress
+  /// diagnostic reads its column count from it — a hard-coded four-column grid
+  /// is wrong on three of the four school tracks.
+  minGrade Int?
+  maxGrade Int?
+
   /// Nothing in an unpublished field is served to students, whatever the state
   /// of its questions.
   isPublished Boolean @default(false)
@@ -194,6 +205,17 @@ model Question {
   /// rather than trusting every future write path.
   fieldId String
   field   Field  @relation(fields: [fieldId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  /// The school year this question came from — 9–12 for Grade 12, 7–8 for
+  /// Grade 8, 4–6 for Grade 6, **null for the university exit exam**.
+  ///
+  /// The highest-value column in the design, and the reason is one word:
+  /// actionability. "Your weakness is Chemistry" is a shrug; "your weakness is
+  /// Grade 10 Chemistry" names the textbook to open. Validated on import
+  /// against the owning `Field`'s `minGrade`/`maxGrade`, because a Grade 8
+  /// question filed under Grade 6 silently corrupts both the coverage figure
+  /// and the diagnostic that depends on it.
+  sourceGrade Int?
 
   qType QType
 

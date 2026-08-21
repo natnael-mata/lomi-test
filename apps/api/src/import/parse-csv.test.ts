@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { IMPORT_COLUMNS } from './csv-schema';
+import { IMPORT_COLUMNS, REQUIRED_COLUMNS } from './csv-schema';
 import { CsvError, parseImportCsv, splitRows } from './parse-csv';
 
 function repoFile(relative: string): string {
@@ -20,7 +20,10 @@ const TEMPLATE = readFileSync(repoFile('docs/question_import_template.csv'), 'ut
 
 /** Most tests care about the cells; the line number has its own block below. */
 const parseRows = (text: string) => parseImportCsv(text).map((p) => p.row);
-const header = IMPORT_COLUMNS.join(',');
+// The legacy sixteen-column header. These tests are about quoting, line
+// endings and BOMs, and their fixtures were written at that width — which
+// makes them the guard that a file written before `source_grade` still parses.
+const header = REQUIRED_COLUMNS.join(',');
 
 describe('parseImportCsv — the real template (T-051)', () => {
   const rows = parseRows(TEMPLATE);

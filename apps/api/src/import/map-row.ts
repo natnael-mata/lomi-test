@@ -52,6 +52,7 @@ export interface MappedRow {
   difficulty: Difficulty | null;
   sourceRef: string | null;
   year: number | null;
+  sourceGrade: number | null;
   options: MappedOption[];
   /** What is still outstanding — the file's claim, corrected by what is actually here. */
   flags: ImportFlag[];
@@ -149,6 +150,29 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
     reasons.push(`correct_option "${row.correct_option}" is not one of a, b, c, d`);
   }
 
+  /*
+   * The school year, parsed here and *validated against the track elsewhere*.
+   *
+   * This file is pure and has no idea which Field the row lands in, so it can
+   * only judge the value on its own: an integer in 1–12, the span of Ethiopian
+   * schooling. Whether 8 is legal for *this* track is a question about the
+   * Field, and `ImportService` asks it — a Grade 8 question filed under Grade 6
+   * is not a malformed cell, it is a correct cell in the wrong file, and the
+   * two deserve different messages.
+   *
+   * Unparseable is a REJECTION, not a dropped note like `year` above. A wrong
+   * year on a question costs a line in a report; a wrong `sourceGrade` silently
+   * corrupts the coverage figure and the "which grade is holding you back"
+   * diagnostic that the whole design rests on, and does it invisibly.
+   */
+  let sourceGrade: number | null = null;
+  const rawGrade = row.source_grade.trim();
+  if (rawGrade !== '') {
+    const n = Number(rawGrade);
+    if (Number.isInteger(n) && n >= 1 && n <= 12) sourceGrade = n;
+    else reasons.push(`source_grade "${rawGrade}" is not a school year between 1 and 12.`);
+  }
+
   if (reasons.length > 0) return { ok: false, stableId: stableId || '(no id)', reasons };
 
   // ---- staging decisions: everything below is recoverable by a human ----
@@ -224,6 +248,7 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
       difficulty,
       sourceRef: row.source.trim() || null,
       year,
+      sourceGrade,
       options,
       // Sorted so the stored array is comparable between runs.
       flags: [...flags].sort(),

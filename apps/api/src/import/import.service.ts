@@ -80,7 +80,12 @@ export class ImportService {
         continue;
       }
       const outcome = await this.writeRow(mapped.row, line);
-      report[outcome.action === 'created' ? 'created' : 'updated']++;
+      // Counted by what actually happened. This read `=== 'created' ? … :
+      // 'updated'`, which was exhaustive over the two outcomes `writeRow` could
+      // return at the time — so the first rejection it learned to return was
+      // silently tallied as an update, and a file of them would have reported
+      // itself as a clean import.
+      report[outcome.action]++;
       report.rows.push(outcome);
     }
 
@@ -102,6 +107,48 @@ export class ImportService {
         // never been reviewed by anyone, and publishing is a decision.
         create: { slug: slugify(row.field), name: row.field, isPublished: false },
       }));
+
+    /*
+     * The grade must belong to the track (T-253).
+     *
+     * A rejection, never a note. A Grade 8 question filed under Grade 6 is not
+     * a malformed cell — it is a correct cell in the wrong file, which is the
+     * mistake a person actually makes when they have four spreadsheets open.
+     * Accepting it would put a question the student will never be asked into
+     * the denominator of their coverage figure, and corrupt the
+     * "which year is holding you back" diagnostic in the same stroke. Both
+     * failures are invisible: nothing downstream can tell a wrong grade from a
+     * right one.
+     *
+     * A field with no span (`minGrade` null) is the university exit exam, which
+     * draws on a degree rather than a school year. There, any `sourceGrade` at
+     * all is the error.
+     */
+    if (row.sourceGrade !== null) {
+      const { minGrade, maxGrade } = field;
+      if (minGrade === null || maxGrade === null) {
+        return {
+          line,
+          stableId: row.stableId,
+          action: 'rejected',
+          messages: [
+            `source_grade ${row.sourceGrade} was given, but ${field.name} does not draw on ` +
+              'school years — leave it blank for an exit exam.',
+          ],
+        };
+      }
+      if (row.sourceGrade < minGrade || row.sourceGrade > maxGrade) {
+        return {
+          line,
+          stableId: row.stableId,
+          action: 'rejected',
+          messages: [
+            `source_grade ${row.sourceGrade} is outside ${field.name}, which draws on ` +
+              `grades ${minGrade}–${maxGrade}.`,
+          ],
+        };
+      }
+    }
 
     const course = await this.prisma.course.upsert({
       where: { fieldId_slug: { fieldId: field.id, slug: slugify(row.course) } },
@@ -125,6 +172,7 @@ export class ImportService {
       difficulty: row.difficulty,
       sourceRef: row.sourceRef,
       year: row.year,
+      sourceGrade: row.sourceGrade,
       importFlags: row.flags,
     };
 

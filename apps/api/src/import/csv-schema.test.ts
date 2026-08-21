@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   IMPORT_COLUMNS,
+  REQUIRED_COLUMNS,
   IMPORT_STATUSES,
   _columnsCoverType,
   _typeCoversColumns,
@@ -36,8 +37,30 @@ function templateHeader(): string[] {
 }
 
 describe('canonical import schema (T-050)', () => {
-  it('declares exactly 16 columns', () => {
-    expect(IMPORT_COLUMNS).toHaveLength(16);
+  it('declares exactly 17 columns, the last of them optional', () => {
+    expect(IMPORT_COLUMNS).toHaveLength(17);
+    // Sixteen were the original schema; `source_grade` was appended (T-253) and
+    // is the only one a file may omit. Asserted as a count *and* as a
+    // difference, so appending a second optional column without deciding it is
+    // optional fails here rather than in a spreadsheet.
+    expect(REQUIRED_COLUMNS).toHaveLength(16);
+    expect(IMPORT_COLUMNS.filter((c) => !REQUIRED_COLUMNS.includes(c))).toEqual(['source_grade']);
+  });
+
+  /*
+   * The optional tail is a TAIL.
+   *
+   * A column that may be absent has to be last, or a file that omits it shifts
+   * every cell to its right — the importer would accept the row and file the
+   * explanation under `difficulty`, silently. This is the assertion that stops
+   * somebody inserting the next optional column in the middle.
+   */
+  it('keeps every optional column at the end of the schema', () => {
+    const firstOptional = IMPORT_COLUMNS.findIndex((c) => !REQUIRED_COLUMNS.includes(c));
+    if (firstOptional === -1) return;
+    expect(IMPORT_COLUMNS.slice(firstOptional).every((c) => !REQUIRED_COLUMNS.includes(c))).toBe(
+      true,
+    );
   });
 
   // The assertion that matters: the declared schema is checked against the
@@ -80,8 +103,9 @@ describe('canonical import schema (T-050)', () => {
       source: 'authored',
       year: '',
       status: 'ready',
+      source_grade: '',
     };
-    expect(Object.keys(row)).toHaveLength(16);
+    expect(Object.keys(row)).toHaveLength(17);
     expect(Object.keys(row).sort()).toEqual([...IMPORT_COLUMNS].sort());
   });
 

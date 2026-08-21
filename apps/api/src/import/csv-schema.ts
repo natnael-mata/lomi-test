@@ -23,9 +23,43 @@ export const IMPORT_COLUMNS = [
   'source',
   'year',
   'status',
+  /*
+   * The school year the question came from (T-253).
+   *
+   * Appended, never inserted. Every spreadsheet already uploaded has sixteen
+   * columns in this order, and a column added in the middle silently shifts
+   * every field to its right — the importer would accept the file and file the
+   * explanation under `difficulty`. Last is the only safe place.
+   *
+   * Blank is legitimate and means "not from a school year": the university exit
+   * exam has no `sourceGrade`, and a school question whose year is not yet known
+   * is better null than guessed.
+   */
+  'source_grade',
 ] as const;
 
 export type ImportColumn = (typeof IMPORT_COLUMNS)[number];
+
+/**
+ * Columns a file may end without, and still be read.
+ *
+ * **Every spreadsheet uploaded before `source_grade` existed has sixteen
+ * columns.** Requiring seventeen would reject all of them at the header, on the
+ * exact week the owner is loading the bank — a schema change that invalidates
+ * the work already done is not a schema change anybody can afford.
+ *
+ * So the header may stop at `status` or carry on to `source_grade`, and a row
+ * is measured against whichever header it arrived under. Trailing and optional
+ * are both load-bearing: a gap in the *middle* would shift every cell to its
+ * right and silently file the explanation under `difficulty`, which is why new
+ * columns are only ever appended.
+ */
+export const OPTIONAL_TRAILING_COLUMNS: readonly ImportColumn[] = ['source_grade'];
+
+/** The shortest header this importer will accept — the schema minus its optional tail. */
+export const REQUIRED_COLUMNS: readonly ImportColumn[] = IMPORT_COLUMNS.filter(
+  (c) => !OPTIONAL_TRAILING_COLUMNS.includes(c),
+);
 
 /**
  * One CSV row, every cell a string — parsing and coercion happen later.
@@ -53,6 +87,7 @@ export interface ImportRow {
   source: string;
   year: string;
   status: string;
+  source_grade: string;
 }
 
 /**

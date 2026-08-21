@@ -38,9 +38,12 @@ const TG_STUDENT = 566000092;
 /** The header the importer expects, taken from the template it ships. */
 const HEADER = IMPORT_COLUMNS.join(',');
 
+// Seventeen cells: this suite carries the full header, so it is the one that
+// exercises `source_grade`. The value is blank because "Route Test" is not a
+// school track — a grade on it would be rejected, which its own test covers.
 const GOOD_ROW =
   `ROUTE-${SFX}-1,Route Test ${SFX},Course,Topic,Two plus two?,,` +
-  'three,four,five,six,B,Because it is four.,2,Test,2016,draft';
+  'three,four,five,six,B,Because it is four.,2,Test,2016,draft,';
 
 describe('POST /admin/questions/import (T-235)', () => {
   let app: INestApplication;

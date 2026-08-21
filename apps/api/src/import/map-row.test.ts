@@ -39,6 +39,7 @@ function row(overrides: Partial<ImportRow> = {}): ImportRow {
     source: 'authored',
     year: '',
     status: 'ready',
+    source_grade: '',
     ...overrides,
   };
 }

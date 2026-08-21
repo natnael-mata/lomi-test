@@ -7,7 +7,7 @@
  * row number — a generic parser's "unexpected token" helps nobody staring at a
  * 500-row export from a ministry paper.
  */
-import { IMPORT_COLUMNS, type ImportRow } from './csv-schema';
+import { IMPORT_COLUMNS, REQUIRED_COLUMNS, type ImportRow } from './csv-schema';
 
 export class CsvError extends Error {
   constructor(
@@ -128,7 +128,20 @@ export function parseImportCsv(text: string): ParsedRow[] {
   const header = rows.shift()?.cells;
   if (!header) throw new CsvError('File is empty.');
 
-  const expected = [...IMPORT_COLUMNS];
+  /*
+   * The header decides the width, within the schema's optional tail.
+   *
+   * A sixteen-column file (everything up to `status`) and a seventeen-column
+   * one are both valid, and every row is then measured against the header it
+   * arrived under. See `OPTIONAL_TRAILING_COLUMNS` for why: the alternative
+   * rejects every spreadsheet uploaded before the column existed.
+   */
+  const trimmed = header.map((h) => h.trim());
+  const expected =
+    trimmed.length >= IMPORT_COLUMNS.length
+      ? [...IMPORT_COLUMNS]
+      : [...REQUIRED_COLUMNS].slice(0, Math.max(trimmed.length, REQUIRED_COLUMNS.length));
+
   if (header.length !== expected.length || header.some((h, i) => h.trim() !== expected[i])) {
     // Name the difference rather than dumping both lists: a reordered or
     // renamed column would otherwise be read as a different field entirely.
@@ -148,7 +161,13 @@ export function parseImportCsv(text: string): ParsedRow[] {
     if (cells.length !== expected.length) {
       throw new CsvError(`Row has ${cells.length} cells, expected ${expected.length}.`, line);
     }
+    // Every schema column is present on the object; the ones the file did not
+    // carry read as empty, which is what `map-row` already treats as "not
+    // stated". A partially-shaped row would push the absence into every caller.
     const row = {} as Record<string, string>;
+    IMPORT_COLUMNS.forEach((col) => {
+      row[col] = '';
+    });
     expected.forEach((col, idx) => {
       row[col] = cells[idx] ?? '';
     });

@@ -15,7 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
-import { IMPORT_COLUMNS } from './csv-schema';
+import { REQUIRED_COLUMNS } from './csv-schema';
 import { formatReport } from './format-report';
 import { ImportService, type ImportReport } from './import.service';
 
@@ -32,7 +32,15 @@ function repoFile(relative: string): string {
 const SUFFIX = 'e2e-import';
 const FIELD = `E2E Import ${SUFFIX}`;
 
-const header = IMPORT_COLUMNS.join(',');
+/*
+ * The sixteen-column header, deliberately.
+ *
+ * Every row literal in this suite predates `source_grade` and carries sixteen
+ * cells, and that is worth keeping rather than mechanically widening: it is
+ * exactly the shape of the spreadsheets already uploaded, so this suite now
+ * doubles as the guard that they still import. `sourceGrade` gets its own file.
+ */
+const header = REQUIRED_COLUMNS.join(',');
 const csv = (...rows: string[]): string => [header, ...rows].join('\n');
 
 /** A complete row, so each test varies exactly one thing. */
