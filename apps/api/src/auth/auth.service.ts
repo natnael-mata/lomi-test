@@ -20,11 +20,30 @@ import {
   isKnownPersona,
   secretMatches,
 } from './dev-login';
+import { bandFor } from '../engagement/bands';
 import { safeDeviceLabel } from './device-label';
 import { signSessionToken } from './tokens';
 
 /** PRODUCT.md: two concurrent sessions; a third login evicts the oldest. */
 export const MAX_CONCURRENT_SESSIONS = 2;
+
+/**
+ * The same limit, relaxed for the school tracks (T-260).
+ *
+ * **Two devices punishes the household it should be courting.** A family with
+ * two children in Grade 6 and Grade 8 sharing one phone, or one phone between a
+ * parent and a child, is the best customer this product has — and under a
+ * two-session cap they evict each other all day and experience the limit as a
+ * fault. The abuse it was written for is a subscription passed around a class,
+ * which is a different shape entirely.
+ *
+ * Four is a household, not a classroom. And the real anti-sharing control is
+ * the velocity cap (T-259), which is better aimed at what it catches: two
+ * friends sharing an account answer forty questions a day between them, a
+ * scraper answers four thousand. A session count cannot tell those apart; a
+ * rate can.
+ */
+export const MAX_CONCURRENT_SESSIONS_JUNIOR = 4;
 
 export const EVICTED_REASON = 'Signed out because another device signed in.';
 
@@ -238,6 +257,28 @@ export class AuthService {
    * because a third device signed in" is still answerable.
    */
   async startSession(userId: string, deviceLabel?: string): Promise<{ id: string }> {
+    /*
+     * The cap depends on the track (T-260).
+     *
+     * Read outside the transaction: it is a property of the student's programme,
+     * not of the sessions being evicted, and holding a second table's row for
+     * the length of the write buys nothing.
+     */
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fieldId: true },
+    });
+    const field = user?.fieldId
+      ? await this.prisma.field.findUnique({
+          where: { id: user.fieldId },
+          select: { maxGrade: true },
+        })
+      : null;
+    const cap =
+      bandFor(field?.maxGrade ?? null) === 'junior'
+        ? MAX_CONCURRENT_SESSIONS_JUNIOR
+        : MAX_CONCURRENT_SESSIONS;
+
     return this.prisma.$transaction(async (tx) => {
       const live = await tx.session.findMany({
         where: { userId, revokedAt: null },
@@ -248,7 +289,7 @@ export class AuthService {
       // `>=`, not `>`: the new session is about to exist, so room has to be made
       // for it before it does — otherwise three live sessions exist briefly, and
       // a concurrent read sees a limit that does not hold.
-      const excess = live.length - (MAX_CONCURRENT_SESSIONS - 1);
+      const excess = live.length - (cap - 1);
       if (excess > 0) {
         await tx.session.updateMany({
           where: { id: { in: live.slice(0, excess).map((s) => s.id) } },

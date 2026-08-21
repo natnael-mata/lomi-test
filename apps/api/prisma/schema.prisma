@@ -484,7 +484,13 @@ model User {
   /// be seen competing still wants to know where they stand — and a product that
   /// answers "you have opted out" when asked "how am I doing" has punished
   /// somebody for a privacy choice.
-  leaderboardOptOut Boolean @default(false)
+  /// **Null means they have never chosen**, and that is not the same as `false`
+  /// (T-257). The default differs by band: a senior student appears unless they
+  /// opt out, a junior one appears only if they opt in, because the safe default
+  /// for an eleven-year-old is not to be published. Three states in one column
+  /// rather than a second `leaderboardOptIn` — two booleans can disagree, and
+  /// the one that says "hide me" must always win.
+  leaderboardOptOut Boolean?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

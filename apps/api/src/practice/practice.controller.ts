@@ -24,10 +24,31 @@ import type { ServedQuestion } from './question-view';
 // why-wrong, the concept line and the worked steps.
 @UseGuards(SessionGuard, FieldRequiredGuard, SittingLockGuard)
 export class PracticeController {
-  constructor(private readonly practice: PracticeService) {}
+  constructor(
+    private readonly practice: PracticeService,
+    private readonly rateLimit: RateLimitService,
+  ) {}
 
   @Get('next')
   next(@Req() req: AuthedRequest): Promise<ServedQuestion> {
+    /*
+     * Rate limited per student (T-259).
+     *
+     * The door that was left open. No bulk endpoint exists, deliberately — and
+     * this one served the same content one row at a time, unlimited, to anybody
+     * holding a subscription. A complete copy of a bank the national exam is
+     * drawn from is the most valuable study artifact in the country.
+     *
+     * Keyed on the user like `attempt`, and for the same reason: this product
+     * runs in computer labs and behind shared mobile NAT, where limiting by
+     * address locks out a room because one student is quick.
+     *
+     * Two windows. Thirty a minute is faster than the shortest question can be
+     * read; six hundred a day is more than a month of good practice and a small
+     * fraction of the bank.
+     */
+    this.rateLimit.consume('serveQuestion', req.auth!.userId, req.ip ?? null);
+    this.rateLimit.consume('serveQuestionDaily', req.auth!.userId, req.ip ?? null);
     return this.practice.next(req.auth!.userId);
   }
 }

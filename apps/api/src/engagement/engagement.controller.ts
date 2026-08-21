@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
+import { BoardService, type BoardView } from './board.service';
 import {
   EngagementService,
   type LeaderboardView,
@@ -19,7 +20,10 @@ import {
 @Controller('me')
 @UseGuards(SessionGuard)
 export class EngagementController {
-  constructor(private readonly engagement: EngagementService) {}
+  constructor(
+    private readonly engagement: EngagementService,
+    private readonly boards: BoardService,
+  ) {}
 
   /** Where this student stands, every figure derived from the ledger. */
   @Get('standing')
@@ -32,6 +36,19 @@ export class EngagementController {
   ledger(@Req() req: AuthedRequest, @Query('limit') limit?: string): Promise<LedgerRow[]> {
     const take = Math.min(Math.max(Number(limit) || 50, 1), 200);
     return this.engagement.ledgerFor(req.auth!.userId, take);
+  }
+
+  /**
+   * The banded board (T-257): junior or senior, ranked by coverage percentage.
+   *
+   * Weekly by default. An all-time board is decided by January — the top places
+   * belong to whoever subscribed first and nobody joining later can reach them —
+   * so `?window=all` is the secondary view a student opts into, not the one they
+   * are shown.
+   */
+  @Get('board')
+  board(@Req() req: AuthedRequest, @Query('window') window?: string): Promise<BoardView> {
+    return this.boards.board(req.auth!.userId, window === 'all' ? 'all' : 'week');
   }
 
   /** The board, with the asker's own rank whether or not they are listed (T-194). */

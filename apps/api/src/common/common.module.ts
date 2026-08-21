@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 
 import { RateLimitService } from './rate-limit.service';
+import { RetryAfterFilter } from './retry-after.filter';
 
 /**
  * Global so the limiter is one instance.
@@ -11,7 +13,13 @@ import { RateLimitService } from './rate-limit.service';
  */
 @Global()
 @Module({
-  providers: [RateLimitService],
+  providers: [
+    RateLimitService,
+    // Registered here rather than in `main.ts` so the header is present in the
+    // e2e tests too — a `Retry-After` that only exists in production is one
+    // nothing verifies.
+    { provide: APP_FILTER, useClass: RetryAfterFilter },
+  ],
   exports: [RateLimitService],
 })
 export class CommonModule {}

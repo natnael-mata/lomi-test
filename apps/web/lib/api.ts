@@ -289,6 +289,16 @@ export interface Readiness {
 
 /** One mock sitting on the trend (T-138). Labelled "Mock 1", never by date. */
 export interface TrendPoint {
+  /** When it settled. Null only if a sitting is somehow still open. */
+  closedAt: string | null;
+  /**
+   * The three that sum to the paper. Knowledge and pacing are opposite
+   * diagnoses: 28% over 62 attempted is 45% of what was tried with 38 blank,
+   * and a bare percentage names neither.
+   */
+  wrong: number;
+  blank: number;
+  minutesUsed: number;
   sittingId: string;
   startedAt: string;
   ordinal: number;

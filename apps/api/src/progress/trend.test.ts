@@ -5,6 +5,7 @@ import { labelSittings, trendDeltaPct, type SittingInput } from './trend';
 const sitting = (over: Partial<SittingInput> = {}): SittingInput => ({
   sittingId: 's1',
   startedAt: '2026-07-12T08:00:00.000Z',
+  closedAt: '2026-07-12T08:45:00.000Z',
   scoreCorrect: 50,
   totalQuestions: 100,
   answeredCount: 100,
@@ -102,5 +103,45 @@ describe('the score trend across sittings (T-138)', () => {
       expect(trendDeltaPct(labelSittings([sitting()]))).toBeNull();
       expect(trendDeltaPct([])).toBeNull();
     });
+  });
+});
+
+/**
+ * The split that turns a score into a diagnosis (T-258).
+ *
+ * A sitting reading 28% where only 62 were attempted is 45% of what was
+ * attempted with 38 blank. Those are opposite problems — one is study, the
+ * other is a watch — and a bare percentage names neither.
+ */
+describe('correct, wrong and blank', () => {
+  it('sums to the paper', () => {
+    const [point] = labelSittings([
+      sitting({ totalQuestions: 100, answeredCount: 62, scoreCorrect: 28 }),
+    ]);
+    expect(point!.wrong).toBe(34);
+    expect(point!.blank).toBe(38);
+    expect(point!.scoreCorrect + point!.wrong + point!.blank).toBe(100);
+  });
+
+  it('calls an unanswered question blank, whatever closed the paper', () => {
+    const early = labelSittings([
+      sitting({ totalQuestions: 100, answeredCount: 40, scoreCorrect: 40, ranOutOfTime: false }),
+    ])[0]!;
+    // Submitted with sixty to spare and sixty blank. The count is the same
+    // either way, which is exactly why the count must not claim a cause.
+    expect(early.blank).toBe(60);
+    expect(early.ranOutOfTime).toBe(false);
+  });
+
+  it('reports whole minutes used, floored', () => {
+    const point = labelSittings([
+      sitting({ startedAt: '2026-07-12T08:00:00.000Z', closedAt: '2026-07-12T08:44:50.000Z' }),
+    ])[0]!;
+    // 44:50 is 44 minutes used, not 45 — rounding up would say they used the lot.
+    expect(point.minutesUsed).toBe(44);
+  });
+
+  it('reports no time rather than negative time for a sitting still open', () => {
+    expect(labelSittings([sitting({ closedAt: null })])[0]!.minutesUsed).toBe(0);
   });
 });

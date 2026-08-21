@@ -137,6 +137,7 @@ export class ProgressService {
       sittings.map((s) => ({
         sittingId: s.id,
         startedAt: s.startedAt.toISOString(),
+        closedAt: s.closedAt?.toISOString() ?? null,
         scoreCorrect: s.scoreCorrect ?? 0,
         totalQuestions: byExam.get(examOf.get(s.id) ?? '') ?? 0,
         answeredCount: s.answeredCount ?? 0,

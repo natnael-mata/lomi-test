@@ -58,6 +58,30 @@ export const RATE_LIMITS = {
    */
   communityPost: { limit: 5, windowSec: 60 },
   communityPostHourly: { limit: 40, windowSec: 3600 },
+
+  /**
+   * Serving a question (T-259).
+   *
+   * **The retail door.** No bulk endpoint was ever built, precisely so the bank
+   * could not be exported — and then `GET /questions/next` was left unlimited,
+   * so one valid subscription could walk the whole thing at any speed: stems,
+   * concept lines, worked solutions and every why-wrong. Since the exam is drawn
+   * from a bank, a complete verified copy of it is the most valuable study
+   * artifact in the country and the thing most worth stealing. Writing was
+   * guarded and reading was not.
+   *
+   * Two windows, like the community limits and for the same reason: one stops a
+   * sprint, the other stops a patient crawl.
+   *
+   * Both sit far above a person. A question's smallest budget is fifteen
+   * seconds, so thirty a minute is faster than any of them can be read, and the
+   * daily target this product sets is between twelve and twenty-four questions —
+   * six hundred is more than a student does in a month of good days and a small
+   * fraction of a bank that holds thousands. It is here for a script, and a
+   * student who never notices it is the measure of it being right.
+   */
+  serveQuestion: { limit: 30, windowSec: 60 },
+  serveQuestionDaily: { limit: 600, windowSec: 86_400 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { PracticeService } from './practice.service';
 import { ANSWER_VIEW_FIELDS } from '../questions/answer-view';
 import { FREE_ATTEMPTS_PER_FIELD } from './attempt-rules';
 
@@ -249,24 +250,25 @@ describe('POST /attempts', () => {
 
   // T-110's own test.
   describe('a question answered correctly is not served again today', () => {
+    /*
+     * Drawn through the service rather than the route.
+     *
+     * What this asserts is a property of question *selection* — fifty draws to
+     * beat the randomness — and fifty draws in a burst is exactly the shape
+     * `serveQuestion` now refuses (T-259): thirty a minute, because no person
+     * reads a question in two seconds. Raising the limit to let a test hammer
+     * would be tuning the product to the test. The route's own guarding is
+     * covered in `rate-limit` and `routes.e2e`; the selection rule belongs here.
+     */
     it('does not reappear across 50 requests', async () => {
       const fresh = await signIn(561000002);
-      const first = (
-        await request(app.getHttpServer())
-          .get('/questions/next')
-          .set('Authorization', `Bearer ${fresh.token}`)
-          .expect(200)
-      ).body;
+      const practice = app.get(PracticeService);
+      const first = await practice.next(fresh.userId);
 
       await answer(first.questionId, 'B', 201, 30, fresh.token);
 
       for (let i = 0; i < 50; i++) {
-        const next = (
-          await request(app.getHttpServer())
-            .get('/questions/next')
-            .set('Authorization', `Bearer ${fresh.token}`)
-            .expect(200)
-        ).body;
+        const next = await practice.next(fresh.userId);
         expect(next.questionId).not.toBe(first.questionId);
       }
     });

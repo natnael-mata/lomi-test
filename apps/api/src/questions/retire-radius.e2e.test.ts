@@ -16,6 +16,7 @@ import { AppModule } from '../app.module';
 import { signInAsStaff, type StaffSession } from '../auth/staff-testkit.test-helper';
 import { SUBSCRIPTION_ACCESS, type SubscriptionAccess } from '../practice/subscription-access';
 import { PrismaService } from '../prisma/prisma.service';
+import { PracticeService } from '../practice/practice.service';
 
 const SFX = 'e2e-radius';
 const TG = 566000008;
@@ -287,16 +288,20 @@ describe('retiring a question (T-070, T-071)', () => {
      * quickly — and asking a hundred times is what makes "never" mean never
      * rather than "not on the first try".
      */
+    /*
+     * Drawn through the service, for the reason in `attempt.e2e.test.ts`: a
+     * hundred requests in a burst is what `serveQuestion` now refuses (T-259),
+     * and the rule under test here is which questions are *eligible*, not how
+     * fast they may be asked for.
+     */
     it('never comes back from /questions/next across a hundred requests', async () => {
       const retired = new Set([questionIds[0], questionIds[1]]);
       const seen = new Set<string>();
 
+      const practice = app.get(PracticeService);
       for (let i = 0; i < 100; i++) {
-        const res = await request(app.getHttpServer())
-          .get('/questions/next')
-          .set(staff.auth)
-          .expect(200);
-        if (res.body?.questionId) seen.add(String(res.body.questionId));
+        const served = await practice.next(staff.userId);
+        if (served.questionId) seen.add(String(served.questionId));
       }
 
       expect(seen.size).toBeGreaterThan(0);
