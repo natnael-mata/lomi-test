@@ -93,7 +93,7 @@ describe('the home screen (T-198)', () => {
 
   it('takes its words from the dictionary rather than the file', () => {
     const sentences = screen.match(/>[A-Z][a-z]+ [a-z]{2,}[^<>{}]*</g) ?? [];
-    // "Lomi-Test" is the product's name, not copy to translate.
-    expect(sentences.filter((s) => !s.includes('Lomi-Test'))).toEqual([]);
+    // "Lomi-Exams" is the product's name, not copy to translate.
+    expect(sentences.filter((s) => !s.includes('Lomi-Exams'))).toEqual([]);
   });
 });

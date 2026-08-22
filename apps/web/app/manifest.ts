@@ -28,8 +28,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Lomi-Test (ሎሚ)',
-    short_name: 'Lomi-Test',
+    name: 'Lomi-Exams',
+    short_name: 'Lomi-Exams',
     description:
       'Exit-exam preparation for Ethiopian university students — every answer fully explained.',
     start_url: '/practice',

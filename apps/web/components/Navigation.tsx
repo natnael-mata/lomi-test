@@ -227,6 +227,7 @@ function RailFooter() {
  * lost.
  */
 export function isActive(pathname: string, href: string): boolean {
-  if (href === '/practice') return pathname === '/' || pathname.startsWith('/practice');
+  // `/` used to mean Practise, back when the root route was the hub. It is the
+  // public landing page now, is unframed, and never renders this navigation.
   return pathname === href || pathname.startsWith(`${href}/`);
 }

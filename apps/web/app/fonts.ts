@@ -75,18 +75,18 @@ export const inter = localFont({
   fallback: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
 });
 
-/**
- * Amharic. Loaded with the Latin faces rather than on demand: the app is
- * bilingual by default (T-101), and a Ge'ez glyph rendered in a fallback face
- * beside Figtree is immediately visible as wrong.
+/*
+ * The Ethiopic face was removed on 2026-08-20 with the move to English only.
+ *
+ * It was 198KB — larger than Archivo and Inter combined — and it was downloaded
+ * by every student on every first load so that one logo glyph could render. The
+ * exam is set in English and so is the product now, so nothing needs Ge'ez
+ * coverage and the mark is Latin.
+ *
+ * The subset note above still matters if it ever returns: the *latin* cut of an
+ * Ethiopic font contains no Ge'ez glyph at all, so it loads successfully and
+ * renders every Amharic string in a fallback.
  */
-export const ethiopic = localFont({
-  src: './fonts/noto-sans-ethiopic-variable.woff2',
-  variable: '--font-ethiopic',
-  weight: '100 900',
-  display: 'swap',
-  fallback: ['system-ui', 'sans-serif'],
-});
 
 /** Every font variable, for the `<html>` element. */
-export const fontVariables = [archivo.variable, inter.variable, ethiopic.variable].join(' ');
+export const fontVariables = [archivo.variable, inter.variable].join(' ');

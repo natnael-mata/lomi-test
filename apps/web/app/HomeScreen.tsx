@@ -60,7 +60,7 @@ export function HomeScreen() {
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1">
-        <h1 className="text-title">Lomi-Test</h1>
+        <h1 className="text-title">Lomi-Exams</h1>
         <p className="text-body text-ink-2">{c.home.tagline}</p>
       </header>
 

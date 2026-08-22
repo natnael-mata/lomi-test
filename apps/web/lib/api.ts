@@ -23,6 +23,51 @@
  * never was, so without it this would have traded XSS exposure for CSRF.
  */
 
+/** One row of a coverage breakdown — a subject, or a school year. */
+export interface CoverageSlice {
+  key: string;
+  label: string;
+  total: number;
+  beaten: number;
+  pct: number;
+}
+
+/** How much of a track has been beaten, and what it would take to reach 80%. */
+export interface CoverageView {
+  fieldId: string;
+  fieldName: string;
+  total: number;
+  beaten: number;
+  pct: number;
+  targetPct: number;
+  targetCount: number;
+  toTarget: number;
+  /** Null when no exam date is set. Rendered as unavailable, never as zero. */
+  daysToExam: number | null;
+  perDay: number | null;
+  /** Null for a university exit exam, which draws on no school year. */
+  years: { min: number; max: number } | null;
+  bySubject: CoverageSlice[];
+  byGrade: CoverageSlice[];
+}
+
+export interface BoardRow {
+  rank: number;
+  displayName: string;
+  pct: number;
+  beaten: number;
+  total: number;
+  isYou: boolean;
+}
+
+export interface BoardView {
+  band: 'junior' | 'senior';
+  window: 'week' | 'all';
+  rows: BoardRow[];
+  you: { rank: number; pct: number; beaten: number; total: number; listed: boolean } | null;
+  rankedOverEveryone: true;
+}
+
 /** Who this session belongs to. */
 export interface Identity {
   userId: string;
@@ -809,6 +854,30 @@ export const api = {
 
   /** What the mock is, and whether one is already open — asked before starting. */
   examPreview: (): Promise<ExamPreview> => call<ExamPreview>('/exams/preview'),
+
+  /** How much of a track has been beaten, and the plan to reach the target. */
+  coverage: (fieldId: string): Promise<CoverageView> =>
+    call<CoverageView>(`/me/coverage/${fieldId}`),
+
+  /**
+   * The banded board. Weekly unless asked otherwise — an all-time board is
+   * decided by January and stops motivating whoever joined after it.
+   */
+  board: (window: 'week' | 'all' = 'week'): Promise<BoardView> =>
+    call<BoardView>(`/me/board?window=${window}`),
+
+  /**
+   * Names the reason an answer was right, which is what turns a correct answer
+   * into a *beaten* question. Answerable once.
+   */
+  answerReason: (
+    attemptId: string,
+    chosenId: string,
+  ): Promise<{ attemptId: string; reasonCorrect: boolean; beaten: boolean }> =>
+    call(`/attempts/${attemptId}/reason`, {
+      method: 'POST',
+      body: JSON.stringify({ chosenId }),
+    }),
 
   /** Who am I. The generated handle, never a legal name. */
   me: (): Promise<Identity> => call<Identity>('/me'),

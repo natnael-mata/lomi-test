@@ -22,14 +22,26 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { am, en, type Copy } from './dictionary';
-import { DEFAULT_LOCALE, LOCALES, copy } from './index';
+import { en, type Copy } from './dictionary';
+import { copy } from './index';
 import { stripComments } from '../strip-comments';
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const ROOTS = [join(WEB, 'components'), join(WEB, 'app')];
 
-const EXEMPT = new Set(['app/design/page.tsx', 'app/global-error.tsx']);
+/**
+ * Files allowed to hold their own strings, and why each one is.
+ *
+ * - `app/design/page.tsx` — a specimen sheet, not a student screen. Its labels
+ *   name the components being shown.
+ * - `app/global-error.tsx` — the boundary that has to render when everything
+ *   else has failed, including whatever it would have imported.
+ * - `app/LandingScreen.tsx` — marketing, not product chrome. `Copy` is a
+ *   contract every screen is type-checked against; prose that is rewritten
+ *   whenever the pitch changes does not belong in it, and there is no second
+ *   language for it to drift out of step with since 2026-08-20.
+ */
+const EXEMPT = new Set(['app/design/page.tsx', 'app/global-error.tsx', 'app/LandingScreen.tsx']);
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -96,14 +108,6 @@ function leaves(node: unknown): string[] {
   return [];
 }
 
-/** Every key path, so two locales can be compared by shape rather than by value. */
-function keys(node: unknown, path = ''): string[] {
-  if (node === null || typeof node !== 'object') return [path];
-  return Object.entries(node as Record<string, unknown>).flatMap(([key, value]) =>
-    keys(value, path ? `${path}.${key}` : key),
-  );
-}
-
 describe('every UI string lives in the dictionary (T-210)', () => {
   it('has components to sweep', () => {
     // Guards the walker: a sweep over zero files passes forever.
@@ -141,53 +145,48 @@ describe('every UI string lives in the dictionary (T-210)', () => {
 });
 
 describe('the dictionary itself', () => {
-  it('gives every English key an Amharic one', () => {
-    // Enforced by the type too — `am: Copy` will not compile otherwise — but
-    // asserted because a future locale might be loaded rather than imported.
-    expect(keys(am)).toEqual(keys(en));
-  });
-
-  it('leaves no Amharic string identical to its English one', () => {
-    const enLeaves = leaves(en);
-    const amLeaves = leaves(am);
-    const untranslated = enLeaves.filter((text, i) => amLeaves[i] === text);
-    expect(untranslated, `still in English: ${untranslated.join(' | ')}`).toEqual([]);
-  });
-
-  it('writes Amharic in Ethiopic, not transliterated', () => {
-    const ethiopic = /[ሀ-፿]/;
-    const notEthiopic = leaves(am).filter((text) => !ethiopic.test(text));
-    expect(notEthiopic, `not in Ethiopic: ${notEthiopic.join(' | ')}`).toEqual([]);
-  });
-
-  /**
-   * English until the Amharic has been reviewed. Getting this wrong shows a
-   * student an unreviewed draft of their own language, which reads worse than
-   * the language they did not ask for.
-   */
-  it('defaults to English while the Amharic is a draft', () => {
-    expect(DEFAULT_LOCALE).toBe('en');
+  it('resolves the copy', () => {
     expect(copy()).toBe(en);
   });
 
-  it('resolves each locale, and falls back rather than throwing', () => {
-    expect(copy('am')).toBe(am);
-    expect(copy('en')).toBe(en);
-    expect(copy(undefined)).toBe(en);
-    expect(copy('zz' as keyof typeof LOCALES)).toBe(en);
+  /**
+   * English only, since 2026-08-20 — the exam is set in English, so the product
+   * is too. This asserts the *absence* of a second locale rather than the
+   * presence of one, because the failure it guards against is a half-translated
+   * app: a dictionary added without a reviewer, defaulting on for some students
+   * and showing them an unreviewed draft of their own language.
+   *
+   * Adding a locale means deleting this test deliberately, which is the point.
+   */
+  it('ships exactly one language', () => {
+    // Read the source rather than the module: a dictionary that is declared but
+    // not yet imported anywhere is exactly the half-finished state this guards
+    // against, and importing would not see it.
+    const src = readFileSync(resolve(WEB, 'lib/i18n/dictionary.ts'), 'utf8');
+    const exported = [...src.matchAll(/^export const (\w+)/gm)].map((m) => m[1]!);
+    expect(exported, `unexpected dictionary export: ${exported.join(', ')}`).toEqual(['en']);
+  });
+
+  it('carries no Ethiopic text, so no Ethiopic font is needed', () => {
+    const ethiopic = /[\u1200-\u137F]/;
+    const offenders = leaves(en).filter((text) => ethiopic.test(text));
+    expect(offenders, `Ethiopic in English copy: ${offenders.join(' | ')}`).toEqual([]);
   });
 
   /**
-   * Interpolation is a function, not a `{0}` placeholder: Ethiopic word order is
-   * not English word order, and a translator who cannot move the number relative
-   * to the words around it cannot write a correct sentence.
+   * Interpolation stays a function rather than a `{0}` placeholder, even now
+   * that there is one language.
+   *
+   * The original reason was translation — word order differs between languages,
+   * and a translator who cannot move a number relative to the words around it
+   * cannot write a correct sentence. That reason is dormant, not gone: a
+   * placeholder format would have to be unpicked string by string if a second
+   * language ever arrives, and the function costs nothing meanwhile.
    */
-  it('interpolates through functions, so word order is the translator’s', () => {
+  it('interpolates through functions rather than placeholders', () => {
     expect(en.exam.questionOf(3, 100)).toBe('Question 3 of 100');
-    expect(am.exam.questionOf(3, 100)).toContain('3');
-    expect(am.exam.questionOf(3, 100)).toContain('100');
-    // The Amharic puts the numbers where Amharic puts them, not where English does.
-    expect(am.exam.questionOf(3, 100)).not.toBe(en.exam.questionOf(3, 100));
+    // No `{0}`-style token survives into the rendered string.
+    expect(en.exam.questionOf(3, 100)).not.toMatch(/\{\d\}|%s/);
   });
 
   it('gets the plural right in English', () => {

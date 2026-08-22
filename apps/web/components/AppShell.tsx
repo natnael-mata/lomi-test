@@ -56,8 +56,26 @@ const DATA_ROUTES = ['/progress', '/standing'];
  */
 const UNFRAMED = ['/design', '/dev-login', '/signin'];
 
+/**
+ * Routes that are unframed by EXACT match.
+ *
+ * `/` cannot go in the list above: that one is a prefix test, and every path in
+ * the product starts with a slash — adding it there would strip the navigation
+ * from every screen. The landing page is the only member and probably always
+ * will be, which is why this is a set rather than a second prefix list.
+ */
+const UNFRAMED_EXACT = new Set(['/']);
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
+
+  /* The public landing page: no rail, no bottom bar, and a wider measure than a
+     student screen because it is read like a page rather than worked through
+     like a task. Showing a stranger five destinations they cannot open is the
+     same mistake the sign-in screen is unframed to avoid. */
+  if (UNFRAMED_EXACT.has(pathname)) {
+    return <main className="mx-auto flex min-h-dvh max-w-[1080px] flex-col px-5">{children}</main>;
+  }
 
   if (UNFRAMED.some((p) => pathname.startsWith(p))) {
     return <main className="mx-auto flex min-h-dvh max-w-[640px] flex-col p-4">{children}</main>;
@@ -99,6 +117,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 /** Exported for the test that holds the measures to DESIGN.md. */
 export const MEASURES = {
+  landing: 'max-w-[1080px]',
+  unframedExact: [...UNFRAMED_EXACT],
   student: STUDENT_MEASURE,
   admin: ADMIN_MEASURE,
   data: DATA_MEASURE,

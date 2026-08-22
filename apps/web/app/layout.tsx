@@ -15,17 +15,17 @@ export const metadata: Metadata = {
    *
    * `ሎሚ` is how students say it out loud, so it belongs where somebody meets the
    * product — a shared link, a browser tab on the home screen. Page titles use
-   * the template instead, because "Practice · Lomi-Test (ሎሚ)" truncates to
+   * the template instead, because "Practice · Lomi-Exams" truncates to
    * nothing useful in a tab strip, and a name that only ever appears cut in half
    * is not a name.
    */
   title: {
-    default: 'Lomi-Test (ሎሚ)',
-    template: '%s · Lomi-Test',
+    default: 'Lomi-Exams',
+    template: '%s · Lomi-Exams',
   },
-  applicationName: 'Lomi-Test',
+  applicationName: 'Lomi-Exams',
   // iOS reads these rather than the manifest.
-  appleWebApp: { capable: true, title: 'Lomi-Test', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'Lomi-Exams', statusBarStyle: 'default' },
   icons: {
     icon: [{ url: '/brand/lomi-test-192.png', sizes: '192x192', type: 'image/png' }],
     apple: [{ url: '/brand/lomi-test-apple-180.png', sizes: '180x180', type: 'image/png' }],

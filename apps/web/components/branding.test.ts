@@ -1,5 +1,5 @@
 /**
- * The product is Lomi-Test (ሎሚ), everywhere (T-201, D1).
+ * The product is Lomi-Exams, everywhere (T-201, D1).
  *
  * A rename is only finished when the old name cannot come back, and the two
  * places it survives here are the rename *documenting itself* — PRODUCT.md
@@ -87,11 +87,11 @@ describe('branding (T-201)', () => {
   it('carries the Amharic name in the default title', () => {
     const layout = readFileSync(join(REPO, 'apps/web/app/layout.tsx'), 'utf8');
     expect(layout).toContain('ሎሚ');
-    expect(layout).toContain("applicationName: 'Lomi-Test'");
+    expect(layout).toContain("applicationName: 'Lomi-Exams'");
   });
 
   it('names the product in the README and the root package', () => {
-    expect(readFileSync(join(REPO, 'README.md'), 'utf8')).toContain('Lomi-Test (ሎሚ)');
+    expect(readFileSync(join(REPO, 'README.md'), 'utf8')).toContain('Lomi-Exams');
     expect(readFileSync(join(REPO, 'package.json'), 'utf8')).toContain('"name": "lomi-test"');
   });
 });

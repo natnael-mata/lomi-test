@@ -16,12 +16,15 @@ import { ReadinessStatement } from '../../components/ReadinessStatement';
 import { ScoreTrend } from '../../components/ScoreTrend';
 import { StatedFigure } from '../../components/StatedFigure';
 import {
+  type CoverageView,
   api,
   refusalMessage,
   signInRequired,
   type Readiness,
   type TrendPoint,
 } from '../../lib/api';
+import { CoveragePanel } from '../../components/CoveragePanel';
+import { SittingHistory } from '../../components/SittingHistory';
 import { copy } from '../../lib/i18n';
 
 export function ProgressScreen() {
@@ -31,6 +34,16 @@ export function ProgressScreen() {
   const [error, setError] = useState<string | null>(null);
   /** No programme chosen yet — fixable, so it gets a door rather than an error. */
   const [noProgramme, setNoProgramme] = useState(false);
+  /**
+   * Coverage, the headline (T-256).
+   *
+   * Fetched beside readiness rather than replacing it: readiness answers "how
+   * am I doing on what I have tried" and coverage answers "how much of the exam
+   * have I got", and a student wants both. Null while it loads, and null for
+   * good if the programme cannot report it — the panel is then simply absent,
+   * which is the honest rendering of a figure that does not exist.
+   */
+  const [coverage, setCoverage] = useState<CoverageView | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,10 +60,17 @@ export function ProgressScreen() {
           if (!cancelled) setNoProgramme(true);
           return;
         }
-        const [r, t] = await Promise.all([api.readiness(fieldId), api.trend(fieldId)]);
+        const [r, t, cov] = await Promise.all([
+          api.readiness(fieldId),
+          api.trend(fieldId),
+          // Never fatal: progress that refuses to render because one panel could
+          // not load is worse than progress with one panel missing.
+          api.coverage(fieldId).catch(() => null),
+        ]);
         if (cancelled) return;
         setReadiness(r);
         setTrend(t);
+        setCoverage(cov);
       } catch (e) {
         if (signInRequired(e)) {
           window.location.assign('/signin');
@@ -122,6 +142,10 @@ export function ProgressScreen() {
     <div className="flex flex-col gap-6" data-state="ready">
       <h1 className="text-title">{readiness.fieldName}</h1>
 
+      {/* Above readiness, because it is the headline. Of the exam you are
+          sitting, how much have you actually got. */}
+      {coverage && <CoveragePanel coverage={coverage} />}
+
       {/*
        * Two columns from `lg`, one below it (DESIGN.md § Layout, the data measure).
        *
@@ -163,6 +187,18 @@ export function ProgressScreen() {
             derivation={`weighted mean across ${readiness.assessedWeightPct}% of past papers · ${readiness.totalAnswered} questions answered`}
             practiceNext={readiness.practiceNext}
           />
+
+          {/*
+            The two big percentages, told apart.
+
+            Coverage and readiness answer different questions and can differ
+            wildly — a student who has tried seven questions and got them all
+            right reads 41% coverage and 100% readiness on one screen. Both are
+            true, and side by side with nothing between them they look like a
+            product that cannot count. Only shown where coverage is on screen to
+            be confused with.
+          */}
+          {coverage && <p className="text-caption text-ink-2">{c.progress.readinessVsCoverage}</p>}
 
           {/* Said out loud rather than folded into a score: a question nobody
           answered is a pacing fact, not a knowledge one.
@@ -222,6 +258,11 @@ export function ProgressScreen() {
           <ScoreTrend points={trend} />
         </section>
       </div>
+
+      {/* Every paper kept and readable, below the trend that summarises them
+          (T-258). The trend says whether it is going up; this says what
+          happened in each one, which is the part you can act on. */}
+      {trend.length > 0 && <SittingHistory points={trend} />}
     </div>
   );
 }

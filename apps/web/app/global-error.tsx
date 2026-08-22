@@ -24,7 +24,7 @@ export default function GlobalError({
     <html lang="en">
       <body style={{ fontFamily: 'system-ui, sans-serif', padding: '24px', lineHeight: 1.5 }}>
         <main data-error-boundary="global">
-          <h1 style={{ fontSize: '20px', margin: '0 0 8px' }}>Lomi-Test could not start</h1>
+          <h1 style={{ fontSize: '20px', margin: '0 0 8px' }}>Lomi-Exams could not start</h1>
           <p style={{ margin: '0 0 16px' }}>
             Nothing you have answered is lost. Reload the page, and if it keeps happening, tell
             support{error.digest ? ` and quote ${error.digest}` : ''}.

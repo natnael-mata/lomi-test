@@ -151,96 +151,110 @@ export function WeightEditor() {
           programme generates. */}
       {current && <p className="text-caption text-ink-2">{c.admin.weightsScope(current.name)}</p>}
 
-      {/* The live sum, above the rows: it is the thing a reviewer is watching
-          while they edit, not a summary of what they have finished. */}
-      <Card>
-        <WeightSumIndicator
-          rows={rows.map((r) => ({
-            topicId: r.topicId,
-            topicName: r.topicName,
-            weightPct: r.weightPct,
-          }))}
-        />
-      </Card>
+      {/*
+       * The rows beside the sum, from `lg`.
+       *
+       * The sum was above the rows, and the comment below says why it exists:
+       * it is what a reviewer watches *while* editing. Stacked at the 1200px
+       * admin measure it scrolled out of view as soon as the topic list was
+       * longer than a screen — visible only when it had nothing left to tell
+       * them. `lg:sticky` keeps it in the corner of the eye instead, which is
+       * what the original intention asked for and the original layout denied.
+       */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <ul className="flex flex-col gap-2 lg:order-1">
+          {rows.map((row) => (
+            <li key={row.topicId} data-topic={row.topicId} className="bg-surface rounded-card p-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-label">{row.topicName}</span>
+                <span className="text-label num">{row.weightPct}%</span>
+              </div>
 
-      {error && (
-        <p className="text-caption text-wrong" data-error="">
-          {error}
-        </p>
-      )}
-
-      <ul className="flex flex-col gap-2">
-        {rows.map((row) => (
-          <li key={row.topicId} data-topic={row.topicId} className="bg-surface rounded-card p-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-label">{row.topicName}</span>
-              <span className="text-label num">{row.weightPct}%</span>
-            </div>
-
-            <p className="text-caption text-ink-2 mt-1">
-              {/* Both numbers, always. The size of a correction is only legible
+              <p className="text-caption text-ink-2 mt-1">
+                {/* Both numbers, always. The size of a correction is only legible
                   next to what it corrected. */}
-              {c.admin.publishedBankSays(row.publishedCount, row.derivedPct)}
-            </p>
+                {c.admin.publishedBankSays(row.publishedCount, row.derivedPct)}
+              </p>
 
-            {row.weightSource === 'override' && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Chip tone="pending" data-override="">
-                  {c.admin.setByReviewer}
-                </Chip>
-                <span className="text-caption text-ink-2">{row.overrideReason}</span>
-              </div>
-            )}
-
-            {editing === row.topicId ? (
-              <div className="mt-3 flex flex-col gap-2">
-                <input
-                  className="field num"
-                  inputMode="numeric"
-                  value={draft.weightPct}
-                  onChange={(e) => setDraft({ ...draft, weightPct: e.target.value })}
-                  aria-label={c.admin.weightLabel(row.topicName)}
-                />
-                <input
-                  className="field"
-                  value={draft.reason}
-                  onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
-                  aria-label={c.admin.reasonLabel(row.topicName)}
-                  placeholder={c.admin.reasonPlaceholder}
-                />
-                <div className="flex items-center gap-2">
-                  <Button onClick={() => void save(row.topicId)}>{c.common.save}</Button>
-                  <Button variant="ghost" onClick={() => setEditing(null)}>
-                    {c.common.cancel}
-                  </Button>
+              {row.weightSource === 'override' && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Chip tone="pending" data-override="">
+                    {c.admin.setByReviewer}
+                  </Chip>
+                  <span className="text-caption text-ink-2">{row.overrideReason}</span>
                 </div>
-              </div>
-            ) : (
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setEditing(row.topicId);
-                    setDraft({ weightPct: String(row.weightPct), reason: '' });
-                  }}
-                >
-                  {c.admin.override}
-                </Button>
-                {row.weightSource === 'override' && fieldId && (
+              )}
+
+              {editing === row.topicId ? (
+                <div className="mt-3 flex flex-col gap-2">
+                  <input
+                    className="field num"
+                    inputMode="numeric"
+                    value={draft.weightPct}
+                    onChange={(e) => setDraft({ ...draft, weightPct: e.target.value })}
+                    aria-label={c.admin.weightLabel(row.topicName)}
+                  />
+                  <input
+                    className="field"
+                    value={draft.reason}
+                    onChange={(e) => setDraft({ ...draft, reason: e.target.value })}
+                    aria-label={c.admin.reasonLabel(row.topicName)}
+                    placeholder={c.admin.reasonPlaceholder}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button onClick={() => void save(row.topicId)}>{c.common.save}</Button>
+                    <Button variant="ghost" onClick={() => setEditing(null)}>
+                      {c.common.cancel}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    onClick={() =>
-                      void run(() => api.adminClearWeightOverride(fieldId, row.topicId))
-                    }
+                    onClick={() => {
+                      setEditing(row.topicId);
+                      setDraft({ weightPct: String(row.weightPct), reason: '' });
+                    }}
                   >
-                    {c.admin.backToBank}
+                    {c.admin.override}
                   </Button>
-                )}
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+                  {row.weightSource === 'override' && fieldId && (
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        void run(() => api.adminClearWeightOverride(fieldId, row.topicId))
+                      }
+                    >
+                      {c.admin.backToBank}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        {/* The live sum, and the error beside it. Sticky from `lg` so it stays
+            in view while the rows below it are edited. */}
+        <div className="flex flex-col gap-3 lg:sticky lg:top-6 lg:order-2">
+          <Card>
+            <WeightSumIndicator
+              rows={rows.map((r) => ({
+                topicId: r.topicId,
+                topicName: r.topicName,
+                weightPct: r.weightPct,
+              }))}
+            />
+          </Card>
+
+          {error && (
+            <p className="text-caption text-wrong" data-error="">
+              {error}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

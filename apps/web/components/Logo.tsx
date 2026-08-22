@@ -1,18 +1,18 @@
 /**
  * The mark (design handoff, § Assets).
  *
- * *"Logo: 34px rounded square, brand fill, 'ሎሚ' glyph in Noto Sans Ethiopic."*
+ * A rounded square in brand fill carrying a single letter, with the wordmark
+ * beside it wherever there is room and the square alone where there is not.
  *
- * The Amharic glyph is the mark and the Latin name is the wordmark beside it —
- * which is D1's decision made visible: `ሎሚ` is how students say the product out
- * loud, and `Lomi-Test` is how they type it into a browser. Neither one is a
- * translation of the other, so both are present wherever there is room and the
- * glyph alone stands where there is not.
+ * **It was a Ge'ez glyph until 2026-08-20.** The handoff read *"34px rounded
+ * square, brand fill, 'ሎሚ' glyph in Noto Sans Ethiopic"*, and that glyph was the
+ * only thing in the product requiring Ge'ez coverage — it cost every student a
+ * 198KB font download on first load. With the move to English only the mark is
+ * Latin and the font is gone.
  *
- * `font-mark` explicitly rather than inheriting: the body face is Figtree,
- * which has no Ge'ez coverage at all, so an inherited stack renders the mark in
- * whatever the operating system happens to substitute — a different shape on
- * every phone, for the one element that must look the same on all of them.
+ * `font-mark` explicitly rather than inheriting, which still matters: the mark
+ * is the one element that must look identical on every device, and an inherited
+ * stack is how it ends up substituted differently on each of them.
  */
 export interface LogoProps {
   /** 34px in the rail and the admin bar; 44–56px on the sign-in screen. */
@@ -33,7 +33,7 @@ export function Logo({ size = 34, wordmark = false, className }: LogoProps) {
         // names the product.
         aria-hidden="true"
       >
-        ሎሚ
+        L
       </span>
       {wordmark ? (
         <span className="font-display text-[18px] font-bold -tracking-[0.02em]">{NAME}</span>
@@ -47,4 +47,4 @@ export function Logo({ size = 34, wordmark = false, className }: LogoProps) {
  * must read identically in every locale (T-201, D1). Translating it would give
  * the product two names.
  */
-const NAME = 'Lomi-Test';
+const NAME = 'Lomi-Exams';

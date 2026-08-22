@@ -163,7 +163,7 @@ export const en = {
     tagline: 'Practise for your exit exam, one question at a time.',
     working: 'Loading…',
 
-    signedOut: 'Open Lomi-Test from the Telegram bot to sign in.',
+    signedOut: 'Open Lomi-Exams from the Telegram bot to sign in.',
     signedOutWhy: 'Signing in through Telegram means no password to remember and none to lose.',
 
     goPractice: 'Practise',
@@ -207,6 +207,22 @@ export const en = {
     // which has no capitals to set, is not asked to imitate them (T-101).
     freeLeft: (count: number) => `${count} free left`,
     seenBefore: 'You have answered this one before',
+
+    /*
+     * The reason check (T-255).
+     *
+     * Framed as the second half of getting it right, never as a re-test. The
+     * student has already answered correctly; this asks what made it right, and
+     * a wrong pick costs them nothing they had — the question stays unbeaten and
+     * comes round again. The copy is careful never to call it a failure.
+     */
+    reasonTitle: 'Why is that the right answer?',
+    reasonWhy: 'Getting this too is what marks the question as done.',
+    reasonSkip: 'Skip for now',
+    reasonChecking: 'Checking…',
+    reasonRight: 'That is the reason. This question is done.',
+    reasonWrong: 'Not quite the reason — this is what makes the answer work.',
+    reasonNext: 'Next question',
     goToExam: 'Go to your exam',
     outOfNewTitle: 'That is your ten free questions',
     lapsedTitle: 'Your access has ended',
@@ -278,7 +294,7 @@ export const en = {
     // the student reading this can do nothing about it — so it says who can.
     notConfigured:
       'Telegram sign-in is not switched on for this server yet. Nothing is wrong with your ' +
-      'account — tell whoever runs this copy of Lomi-Test.',
+      'account — tell whoever runs this copy of Lomi-Exams.',
     couldNotStart:
       'The sign-in code could not be fetched. Nothing is lost — try again in a moment.',
   },
@@ -360,6 +376,58 @@ export const en = {
     focus: 'Focus',
     chooseFirst: 'Choose a programme',
     evidenceTitle: 'What each score rests on',
+
+    /*
+     * Coverage (T-256), the headline that replaces the weighted mean.
+     *
+     * "Beaten" is said plainly wherever it appears, because it is not the
+     * obvious meaning of a count: it is answered right *and* the reason named.
+     * A student who thinks it means "answered" will find the number lower than
+     * they expect and conclude the product is broken.
+     */
+    coverageTitle: 'Your coverage',
+    coverageOf: (beaten: number, total: number) => `${beaten} of ${total} questions beaten`,
+    coverageWhatBeaten: 'Beaten means you answered it right and named the reason.',
+    coverageTarget: (pct: number) => `Target ${pct}%`,
+    coverageToTarget: (n: number) => `${n} more question${n === 1 ? '' : 's'} to reach the target.`,
+    coverageDone: 'You are past the target. Everything from here is margin.',
+    coverageDaily: (n: number) => `${n} a day`,
+    coverageDailyWhy: (toTarget: number, days: number) =>
+      `${toTarget} to go, ${days} day${days === 1 ? '' : 's'} left.`,
+    coverageNoDate: 'No exam date is set yet, so there is no daily target to work out.',
+    coverageByGrade: 'Which year is holding you back',
+    coverageBySubject: 'By subject',
+    coverageRow: (beaten: number, total: number, pct: number) => `${beaten}/${total} · ${pct}%`,
+    coverageUnavailable: 'Coverage is not available for this programme yet.',
+    /*
+     * The two big percentages, told apart.
+     *
+     * Coverage and readiness answer different questions and can differ wildly —
+     * a student who has tried seven questions and got them all right reads 41%
+     * coverage and 100% readiness on one screen. Both are true. Side by side and
+     * unexplained they look like a bug, and the student's reasonable conclusion
+     * is that the product cannot count.
+     */
+    readinessVsCoverage:
+      'This is how you are doing on the questions you have tried. Coverage above is how ' +
+      'much of the whole exam you have beaten.',
+
+    /*
+     * Mock history (T-258, handoff § 11).
+     *
+     * "Left blank" and never "ran out of time": the figure counts blanks and
+     * knows nothing about why — a paper submitted early leaves them too.
+     */
+    sittingsTitle: 'Your mock papers',
+    sittingCorrect: 'Correct',
+    sittingWrong: 'Wrong',
+    sittingBlank: 'Left blank',
+    sittingLegend: (correct: number, wrong: number, blank: number, total: number) =>
+      `${correct} correct · ${wrong} wrong · ${blank} left blank — of ${total}`,
+    sittingMinutes: (minutes: number) => `${minutes} min used`,
+    sittingOfAttempted: (pct: number, attempted: number) =>
+      `${pct}% of the ${attempted} you attempted`,
+    sittingsEmpty: 'No mock papers sat yet.',
     fromAnswers: (pct: number, answered: number) =>
       `${pct}% from ${answered} answer${answered === 1 ? '' : 's'}`,
     thinEvidence: 'too few to be sure',
@@ -535,6 +603,21 @@ export const en = {
      * explain the gaps and quietly publish something about people who asked not
      * to be published.
      */
+    /*
+     * The banded board (T-257).
+     *
+     * The band is named on screen because "why am I not competing with my
+     * cousin" is a question a student will ask, and the answer — you are not in
+     * the same exam — is a good one. Ranked by share of your own bank, which is
+     * the only figure comparable across tracks of different sizes.
+     */
+    bandJunior: 'Grade 6 and Grade 8',
+    bandSenior: 'Grade 12 and exit exams',
+    boardThisWeek: 'This week',
+    boardAllTime: 'All time',
+    boardWhyWeekly: 'A new board every Monday, so it stays winnable.',
+    boardCoverageRow: (pct: number, beaten: number, total: number) =>
+      `${pct}% · ${beaten} of ${total}`,
     boardWhyGaps:
       'Ranks are counted across everyone. Anyone who has chosen not to appear keeps ' +
       'their place, so the numbers can skip.',
@@ -617,7 +700,7 @@ export const en = {
 
   admin: {
     nav: {
-      title: 'Lomi-Test Admin',
+      title: 'Lomi-Exams Admin',
       label: 'Admin sections',
       dashboard: 'Dashboard',
       payments: 'Payments',
@@ -900,727 +983,14 @@ export const en = {
 export type Copy = typeof en;
 
 /**
- * Amharic — **first draft, pending review**.
+ * Amharic was removed on 2026-08-20 (owner decision: English only).
  *
- * Typed as `Copy`, so this file will not compile until every key exists. That is
- * deliberate: a missing key falling back to English is how an app ends up half
- * translated in a way nobody notices until a student mentions it.
+ * It was ~718 lines of first-draft translation that no student could ever
+ * reach — there was no locale switcher and `DEFAULT_LOCALE` was English, so it
+ * was waiting on a native review that is no longer coming. Deleting it also
+ * drops a 198KB Ethiopic font from every first load, which on a metered
+ * connection is the largest single saving available anywhere in this app.
+ *
+ * The exam is in English, so the product is too. Restoring a second locale
+ * means re-translating from `en`, not un-deleting this.
  */
-export const am: Copy = {
-  common: {
-    tryAgain: 'እንደገና ይሞክሩ',
-    cancel: 'ይቅር',
-    save: 'አስቀምጥ',
-    back: 'ተመለስ',
-    next: 'ቀጣይ',
-    somethingSaved: 'የመለሱት ምንም አልጠፋም — ስራዎ በሂደት ላይ ይቀመጣል።',
-  },
-
-  importer: {
-    title: 'ጥያቄዎችን ይጫኑ',
-    intro: 'ጥያቄዎች እንደ ረቂቅ ይገባሉ። ገምጋሚ እስኪያትም ድረስ የጫኑት ምንም ወደ ተማሪ አይደርስም።',
-    pickFile: 'የCSV ፋይል ይምረጡ',
-    orPaste: 'ወይም የፋይሉን ይዘት ይለጥፉ',
-    upload: 'ጫን',
-    uploading: 'ፋይሉ እየተነበበ ነው…',
-    formatHint: 'docs/question_import_template.csv ውስጥ ያሉትን 16 አምዶች ይጠቀሙ።',
-
-    read: 'የተነበቡ ረድፎች',
-    created: 'የተጨመሩ',
-    updated: 'የተሻሻሉ',
-    rejected: 'ያልተወሰዱ',
-    nothingRead: 'ያ ፋይል ምንም ረድፍ አልነበረውም። ትክክለኛው ፋይል መሆኑን አረጋግጠው እንደገና ይሞክሩ።',
-    couldNotUpload: 'መጫኑ አልተሳካም። ምንም አልተቀየረም — እንደገና ይሞክሩ።',
-    allTaken: 'ሁሉም ረድፎች ተወስደዋል። ገምጋሚ እስኪያትማቸው ድረስ ረቂቅ ናቸው።',
-    someRejected: (count: number) => `${count} ረድፍ ሊወሰድ አልቻለም። እያንዳንዱ ምክንያቱን ከታች ይናገራል።`,
-    line: (n: number) => `መስመር ${n}`,
-  },
-
-  choose: {
-    notReady: 'በመዘጋጀት ላይ',
-    notReadyWhy: 'በዚህ ዘርፍ ገና ጥያቄዎች የሉም። ለጊዜው ሌላ ይምረጡ።',
-    questionsAvailable: (count: number) => `${count} ጥያቄ ተዘጋጅቷል`,
-    title: 'የትኛውን ዘርፍ ነው የሚፈተኑት?',
-    intro: 'ይህ የሚለማመዷቸውን ጥያቄዎች በሙሉ ይወስናል። በኋላ መቀየር ይችላሉ።',
-    working: 'ዘርፎቹ እየተጫኑ ነው…',
-    couldNotLoad: 'ዘርፎቹ ሊጫኑ አልቻሉም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
-    none: 'እስካሁን የቀረበ ዘርፍ የለም። ቆይተው ይመልከቱ።',
-
-    retakerQuestion: 'የመውጫ ፈተናውን ከዚህ በፊት ተፈትነዋል?',
-    retakerYes: 'አዎ፣ እንደገና እየተፈተንኩ ነው',
-    retakerNo: 'አይ፣ ይህ የመጀመሪያዬ ነው',
-    retakerWhy: 'ዛሬ በሚያገኙት ጥያቄ ላይ ምንም አይለውጥም። ወደፊት እንደገና ለሚፈተኑ በተሻለ ለመርዳት ነው የምንጠይቀው።',
-
-    confirm: 'ልምምድ ጀምር',
-    saving: 'በማስቀመጥ ላይ…',
-    couldNotSave: 'አልተቀመጠም። እንደገና ይምረጡ — ሌላ ምንም አልተነካም።',
-    chosen: (name: string) => `${name} እየተለማመዱ ነው።`,
-    change: 'ዘርፍ ቀይር',
-  },
-
-  nav: {
-    signedInAs: 'የገቡት እንደ',
-    practice: 'ተለማመድ',
-    exam: 'ሙከራ',
-    progress: 'እድገት',
-    standing: 'ደረጃ',
-    checkout: 'መዳረሻ',
-
-    main: 'ዋና',
-    accessUntil: (date: string) => `መዳረሻ እስከ ${date}`,
-  },
-
-  theme: {
-    lightSwitchToDark: 'ብሩህ · ወደ ጨለማ ቀይር',
-    darkSwitchToLight: 'ጨለማ · ወደ ብሩህ ቀይር',
-  },
-
-  answer: {
-    correct: 'ትክክል',
-    yours: 'የእርስዎ',
-    selected: 'ተመርጧል',
-  },
-
-  account: {
-    title: 'ይህ መለያ',
-    devicesTitle: 'የገቡባቸው መሣሪያዎች',
-    devicesIntro: 'በአንድ ጊዜ ሁለት መሣሪያ። በሦስተኛው ሲገቡ በጣም የቆየው ይዘጋል።',
-    thisDevice: 'ይህ መሣሪያ',
-    unknownDevice: 'ያልታወቀ መሣሪያ',
-    signedInAt: (when: string) => `የገቡበት ${when}`,
-    lastSeen: (when: string) => `መጨረሻ የተጠቀሙበት ${when}`,
-    revoke: 'ይህንን አውጣ',
-    revoking: 'በማውጣት ላይ…',
-    noDevices: 'ሌላ የገባ የለም።',
-    devicesLoading: 'በመጫን ላይ…',
-    devicesFailed: 'መሣሪያዎችዎን መጫን አልተቻለም።',
-    signOut: 'ውጣ',
-    signingOut: 'በመውጣት ላይ…',
-    signOutFailed: 'መውጣት አልተቻለም። እንደገና ይሞክሩ።',
-  },
-
-  devLogin: {
-    title: 'ለሙከራ ይግቡ',
-    intro: 'በማን ስም እንደሚገቡ ይምረጡ። ይህ ገጽ ለአካባቢያዊ ሙከራ ብቻ ነው።',
-    password: 'የይለፍ ቃል',
-    passwordHint: 'አስቀድሞ ተሞልቷል። እንዳለ ይተውት።',
-    signingIn: 'በመግባት ላይ…',
-    wrongPassword: 'የይለፍ ቃሉ ትክክል አይደለም፣ ወይም የሙከራ መግቢያ በዚህ ሰርቨር ላይ ጠፍቷል።',
-    failed: (status: number) => `መግባት አልተቻለም (${status})። ኤፒአይው እየሄደ መሆኑን ያረጋግጡ።`,
-    noServer: 'ሰርቨሩ ሊደረስ አልቻለም። ኤፒአይው እየሄደ ነው?',
-    userA: 'ተጠቃሚ ሀ',
-    userANote: 'አዲስ — ገና ፕሮግራም አልመረጠም። ከዚህ ይጀምሩ።',
-    userB: 'ተጠቃሚ ለ',
-    userBNote: 'ከ10 ነጻ ጥያቄዎች 8ቱ ተጠቅሟል፣ እና የሚረጋገጥ የባንክ ዝውውር አለው።',
-    userC: 'ተጠቃሚ ሐ',
-    userCNote: 'ለ12 ወራት ከፍሏል — ደረሰኝ፣ የክፍያ ታሪክ እና የሙከራ ፈተና።',
-    userD: 'ተጠቃሚ መ',
-    userDNote: 'አስሩንም ነጻ ጥያቄዎች ጨርሷል፣ ከፍሎ አያውቅም — ወዲያውኑ የክፍያ ግድግዳውን ያገኛል።',
-    userE: 'ተጠቃሚ ሠ',
-    userENote: 'ከፍሎ ነበር፣ ትናንት አብቅቷል — የማደስ አቅርቦት እንጂ የመጀመሪያ ጊዜ አይደለም።',
-    userF: 'ተጠቃሚ ረ',
-    userFNote: 'ያልተረከበ የተከፈተ የሙከራ ፈተና — መቀጠሉና የልምምድ መቆለፊያው።',
-    userG: 'ተጠቃሚ ሰ',
-    userGNote: 'የጨረሰው የሙከራ ፈተና — ውጤቱ፣ ግምገማውና አዝማሚያው።',
-    userH: 'ተጠቃሚ ሸ',
-    userHNote: 'አምስት ቀን ተሳትፏል፣ ነጥብም አለው — ደረጃውና የደረጃ ሰሌዳው።',
-    userI: 'ተጠቃሚ ቀ',
-    userINote: '15 መልሷል፣ ሩብ ያህሉን አግኝቷል — ዜናው መጥፎ ሲሆን ዝግጁነት።',
-    userJ: 'ተጠቃሚ በ',
-    userJNote: 'ሁለት የነቁ መሣሪያዎች፣ ጣሪያው ላይ — የመሣሪያ ዝርዝሩና መወገዱ።',
-    admin: 'አስተዳዳሪ',
-    adminNote: 'የአስተዳዳሪ ገጾችን ያያል እና ክፍያዎችን ማረጋገጥ ይችላል።',
-    provider: 'አቅራቢ',
-    providerNote: 'ከአስተዳዳሪ በላይ — የእንቅስቃሴ መዝገብ እና የቀጥታ ጤንነት ሰሌዳ።',
-  },
-
-  home: {
-    tagline: 'ለመውጫ ፈተናዎ ይዘጋጁ፣ በአንድ ጥያቄ በአንድ ጊዜ።',
-    working: 'በመጫን ላይ…',
-
-    signedOut: 'ለመግባት ሎሚ-ቴስትን ከቴሌግራም ቦቱ ይክፈቱ።',
-    signedOutWhy: 'በቴሌግራም መግባት ማለት የሚያስታውሱት የይለፍ ቃል የለም፣ የሚጠፋም የለም።',
-
-    goPractice: 'ተለማመድ',
-    goPracticeWhy: 'ጥያቄዎችን ይመልሱ እና እያንዳንዱ መልስ ለምን ትክክል እንደሆነ ይመልከቱ።',
-    goExam: 'ሙከራ ፈተና',
-    goExamWhy: 'ሙሉ ወረቀት ከሰዓት ጋር፣ በአንድ ጊዜ።',
-    goProgress: 'እድገት',
-    goProgressWhy: 'የት እንደጠነከሩ፣ እና ቀጥሎ ምን መስራት እንዳለብዎ።',
-    goStanding: 'ያሉበት ደረጃ',
-    goStandingWhy: 'ነጥቦችዎ፣ ተከታታይ ቀናትዎ እና ሰሌዳው።',
-    goCheckout: 'ሙሉ መዳረሻ ያግኙ',
-    goCheckoutWhy: 'ስድስት ወይም አስራ ሁለት ወራት፣ ከከፈሉበት ቀን ጀምሮ።',
-
-    accessUntil: (date: string) => `ሙሉ መዳረሻ እስከ ${date} ድረስ።`,
-    freeTier: 'በነጻ ጥያቄዎች ላይ ነዎት።',
-  },
-
-  practice: {
-    title: 'ተለማመድ',
-    startPractising: 'ልምምድ ጀምር',
-    doneForToday: 'ለዛሬ ተጠናቋል',
-    freeLimit: 'ያ አስሩ ነጻ ጥያቄዎችዎ ናቸው',
-    seePlans: 'እቅዶቹን ይመልከቱ',
-    nextQuestion: 'ቀጣይ ጥያቄ',
-    practiseTopic: (topic: string) => `${topic}ን ተለማመድ`,
-    whyRanked:
-      'የተመደበው እያንዳንዱ ርዕስ ባስከተለው ውጤት መጠን ነው — ባለፉት ፈተናዎች ያለው ድርሻ ከስንቱ እንዳመለጠዎት ጋር ተያይዞ፣ በስህተት ብዛት አይደለም።',
-
-    loading: 'ጥያቄ በመጫን ላይ…',
-    checkAnswer: 'መልሱን ይመልከቱ',
-    checking: 'በመመልከት ላይ…',
-    chooseFirst: 'መጀመሪያ መልስ ይምረጡ',
-    nothingLeftToday: 'በዚህ ፕሮግራም ውስጥ ዛሬ የሚለማመዱት ነገር የለም።',
-    didNotLoad: 'አልተጫነም። የመለሱት ምንም አልጠፋም — እንደገና ይሞክሩ።',
-
-    freeLeft: (count: number) => `${count} ነጻ ቀርቷል`,
-    seenBefore: 'ይህንን ከዚህ በፊት መልሰውታል',
-    goToExam: 'ወደ ፈተናዎ ይሂዱ',
-    outOfNewTitle: 'ያ አስሩ ነጻ ጥያቄዎችዎ ናቸው',
-    lapsedTitle: 'የመዳረሻ ጊዜዎ አብቅቷል',
-    lapsedBody: 'ቀደም ብለው የመለሷቸውን እንደፈለጉት ደጋግመው መስራት ይችላሉ። ' + 'አዲስ ጥያቄዎች ሲያድሱ ይመለሳሉ።',
-    outOfNewBody:
-      'ቀደም ብለው የመለሷቸውን ጥያቄዎች እንደፈለጉት ደጋግመው መስራት ይችላሉ — ያ ነጻ ሆኖ ይቀጥላል። ' +
-      'አዲስ ጥያቄዎች ግን የደንበኝነት ምዝገባ አካል ናቸው።',
-  },
-
-  paywall: {
-    title: 'አስሩንም ነጻ ጥያቄዎችዎን ተጠቅመዋል',
-    intro:
-      'በባንኩ ውስጥ ያለ እያንዳንዱ ጥያቄ ሙሉ ማብራሪያ አለው። የቀሩትን ለስድስት ወይም ለአስራ ሁለት ወራት ይክፈቱ — አንድ እቅድ ሁሉንም ፕሮግራሞች ይሸፍናል።',
-    months: (count: number) => `${count} ወራት`,
-    perMonth: (etb: number) => `ብር ${etb} / ወር`,
-    price: (etb: number) => `ብር ${etb}`,
-    bestValue: 'የተሻለ ዋጋ',
-    footnote: 'ከከፈሉበት ቀን ጀምሮ ይቆጠራል። telebirr፣ CBE Birr፣ ካርድ ወይም የባንክ ዝውውር።',
-    cta: 'እቅዶቹን ይመልከቱ እና ይክፈሉ',
-  },
-
-  signIn: {
-    title: 'በTelegram ይግቡ',
-    intro: 'የይለፍ ቃል የለም፣ ቅጽ የለም። Telegram ይክፈቱ፣ Start ይጫኑ፣ ይህ ገጽ በራሱ ያስገባዎታል።',
-    open: 'Telegram ክፈት',
-    beforeYouApprove: 'ከማጽደቅዎ በፊት',
-    checkCode: (bot: string) =>
-      `${bot} ይህን መግቢያ እንዲያረጋግጡ ይጠይቅዎታል። ከማጽደቅዎ በፊት ይህን ኮድ እንደሚያሳይ ያረጋግጡ — ቁጥሮቹ ከተለያዩ ሌላ ሰው ጠይቋል፣ ` +
-      'እርስዎም መከልከል አለብዎት።',
-    waiting: 'Telegramን በመጠበቅ ላይ — ይህ ገጽ በራሱ ይመለከታል',
-    expiresIn: (clock: string) => `ኮዱ በ${clock} ውስጥ ያበቃል`,
-    newCode: 'አዲስ ኮድ ያግኙ',
-    starting: 'ኮድዎን በማምጣት ላይ…',
-
-    valueTitle: 'ለመውጫ ፈተና ዝግጁ',
-    valueBody:
-      'እውነተኛ ጥያቄዎችን ከሙሉ ማብራሪያ ጋር ይለማመዱ፣ በሰዓት የተገደቡ ሙከራዎችን ይቀመጡ፣ እና ቀጥሎ የትኞቹን ርዕሶች ማጥናት እንዳለብዎት በትክክል ይመልከቱ።',
-    step1: 'Telegram ይክፈቱ እና Start ይጫኑ — ምዝገባው ያ ብቻ ነው።',
-    step2: 'ወዲያውኑ ወደዚህ ተመልሰው ገብተዋል። የይለፍ ቃል፣ በፍጹም።',
-    step3: 'የመጀመሪያዎቹ 10 ጥያቄዎችዎ ነጻ ናቸው — ማብራሪያዎቹን ጨምሮ።',
-    continue: 'በTelegram ይቀጥሉ',
-    coverage: 'አንድ እቅድ ኮምፒውተር ሳይንስን፣ የሕዝብ ጤናን እና አካውንቲንግ እና ፋይናንስን ይሸፍናል።',
-
-    signedIn: 'ገብተዋል።',
-    goPractise: 'ልምምድ ጀምር',
-    notConfigured:
-      'የTelegram መግቢያ በዚህ አገልጋይ ላይ ገና አልተከፈተም። በመለያዎ ላይ ምንም ችግር የለም — ይህን የLomi-Test ቅጂ ለሚያስተዳድረው ሰው ይንገሩ።',
-    couldNotStart: 'የመግቢያ ኮዱን ማምጣት አልተቻለም። ምንም አልጠፋም — ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።',
-  },
-
-  exam: {
-    title: 'ሙከራ ፈተና',
-    intro: (questions: number, minutes: number) =>
-      `${questions} ጥያቄዎች በ${minutes} ደቂቃ፣ በአንድ ጊዜ። እስኪያስረክቡ ድረስ ምንም አይታረምም።`,
-    start: 'ሙከራውን ጀምር',
-    resumeTitle: 'ያልጨረሱት ወረቀት አለዎት',
-    resumeBody: (answered: number, total: number) =>
-      `ከ${total} ውስጥ ${answered} ተመልሷል። መልሶችዎ ተቀምጠዋል፣ ሰዓቱም ሲሄድ ቆይቷል።`,
-    resume: (position: number) => `ወደ ጥያቄ ${position} ተመለስ`,
-    preparing: 'ወረቀትዎ እየተዘጋጀ ነው…',
-    chooseProgramme: 'መጀመሪያ የትምህርት ዘርፍ ይምረጡ።',
-    seePlans: 'እቅዶቹን ይመልከቱ',
-    finished: 'ፈተናው ተጠናቋል',
-    answersRecorded: 'መልሶችዎ ተመዝግበዋል። ግምገማው በመምጣት ላይ ነው።',
-    questionOf: (position: number, total: number) => `ጥያቄ ${position} ከ${total}`,
-    flag: 'ለግምገማ ምልክት አድርግ',
-    unflag: 'ምልክቱን አንሳ',
-    firstQuestion: 'ይህ የመጀመሪያው ጥያቄ ነው',
-    lastQuestion: 'ይህ የመጨረሻው ጥያቄ ነው',
-    submit: (answered: number, total: number) => `አስረክብ — ${answered} ከ${total} ተመልሷል`,
-    confirmTitle: 'ያልተመለሱ ጥያቄዎች እያሉ ያስረክባሉ?',
-    confirmBody: (left: number) =>
-      `${left} ጥያቄ መልስ የለውም። ` + 'ያልተመለሱ ጥያቄዎች እንደ ስህተት ይቆጠራሉ፣ የተረከበ ወረቀትም እንደገና አይከፈትም።',
-    confirmBack: 'ወደ እነሱ ተመለስ',
-    confirmSubmit: 'ለማንኛውም አስረክብ',
-    pendingSync: (count: number) =>
-      `${count} መልስ በዚህ ስልክ ተቀምጧል፣ ለመላክ በመጠባበቅ ላይ። ` + 'ይቀጥሉ — ግንኙነቱ ሲመለስ ይላካሉ።',
-    questionNavigator: 'የጥያቄ መዳሰሻ',
-    everyQuestion: 'እያንዳንዱ ጥያቄ',
-    questionNumber: (position: number) => `ጥያቄ ${position}`,
-    showMore: (count: number) => `ተጨማሪ ${count} አሳይ`,
-    ranOutOfTime: 'ከማስረከብዎ በፊት ጊዜው አልቋል። የመለሱት ሁሉ ተይዟል።',
-  },
-
-  summary: {
-    thisMock: 'ይህ ሙከራ',
-    ofThePaper: (pct: number) => `ከወረቀቱ ${pct}%`,
-    ofThePaperWithUnanswered: (pct: number, unanswered: number) =>
-      `ከወረቀቱ ${pct}% · ${unanswered} ሳይመለሱ ቀርተዋል`,
-    nothingToSummarise: 'የሚጠቃለል ነገር የለም',
-    noQuestions: 'በዚህ ወረቀት ላይ ጥያቄዎች አልነበሩም።',
-    reviseNext: 'ቀጥሎ ይከልሱ',
-    practiseNext: 'ቀጥሎ ይለማመዱ',
-    today: 'ዛሬ',
-    nothingAnswered: 'እስካሁን ምንም አልተመለሰም',
-    answerToStart: 'አንድ ጥያቄ ይመልሱ፣ ማጠቃለያው ከዚህ ይጀምራል።',
-    shareOfPastPapers: (pct: number) => `ባለፉት ፈተናዎች ${pct}% ድርሻ`,
-    shareNotWorkedOut: 'ባለፉት ፈተናዎች ያለው ድርሻ ገና አልተሰላም',
-    acrossTopics: (pct: number, topics: number) => `${pct}% በ${topics} ርዕስ`,
-  },
-
-  progress: {
-    title: 'እድገት',
-    working: 'የት እንዳሉ እየተሰላ ነው…',
-    couldNotLoad: 'እድገትዎ አልተጫነም። የመለሱት ምንም አልጠፋም — እንደገና ይሞክሩ።',
-    nothingYet: 'እስካሁን ምንም አልተመለሰም፣ ስለዚህ የሚታይ የዝግጁነት አኃዝ የለም። ጥቂት ጥያቄዎችን ይመልሱ፣ ከዚህ ይጀምራል።',
-    chooseProgramme: 'እድገትዎን ለማየት የትምህርት ዘርፍ ይምረጡ።',
-    mockScores: 'የሙከራ ውጤቶች',
-    mocksSat: 'የተቀመጡ ሙከራዎች',
-    noneYet: 'ገና የለም',
-    mostRecent: (pct: number) => `የቅርብ ጊዜ: ${pct}%`,
-    trendEmpty: 'አንድ ሙከራ ከተቀመጡ በኋላ የሙከራ ውጤቶችዎ እዚህ ይታያሉ።',
-    notReached: (count: number) => `${count} አልተደረሰም`,
-    readiness: 'ዝግጁነት',
-    focus: 'ትኩረት',
-    chooseFirst: 'ዘርፍ ይምረጡ',
-    evidenceTitle: 'እያንዳንዱ ውጤት የተመሠረተበት',
-    fromAnswers: (pct: number, answered: number) => `${pct}% ከ${answered} መልስ`,
-    thinEvidence: 'ለመወሰን በጣም ጥቂት ነው',
-    unansweredInMocks: (count: number) => `${count} የሙከራ ጥያቄ ሳይመለስ ቀርቷል፣ ከላይም አልተቆጠረም።`,
-  },
-
-  checkout: {
-    title: 'ሙሉ መዳረሻ ያግኙ',
-    working: 'እቅዶቹ እየተጫኑ ነው…',
-    perMonth: (etb: number) => `በወር ብር ${etb}`,
-    forMonths: (etb: number, months: number) => `ብር ${etb} ለ${months} ወራት`,
-    bestValue: 'የተሻለ ዋጋ',
-    savingVs: (pct: number) => `በወር ${pct}% ያንሳል`,
-    howToPay: 'እንዴት መክፈል ይፈልጋሉ?',
-
-    telebirr: 'ቴሌብር',
-    telebirrHow: 'ወደ ስልክዎ ጥያቄ እንልካለን — እዚያው ላይ ያጸድቁታል።',
-    cbebirr: 'ሲቢኢ ብር',
-    cbebirrHow: 'ወደ ስልክዎ ጥያቄ እንልካለን — እዚያው ላይ ያጸድቁታል።',
-    chapa: 'ካርድ ወይም ሌላ ዋሌት',
-    chapaHow: 'የቻፓን ደህንነቱ የተጠበቀ የክፍያ ገጽ ይከፍታል።',
-    bank: 'የባንክ ዝውውር',
-    bankHow: 'ከማንኛውም ባንክ ይክፈሉ፣ ከዚያ ማመሳከሪያውን ይለጥፉ — አንድ ሰው ያረጋግጠዋል።',
-
-    mobileLabel: 'የሚከፍሉበት ስልክ ቁጥር',
-    mobileHint: 'ለምሳሌ 0911223344።',
-    mobileFromTelegram: 'በTelegram ካጋሩት ቁጥር። በሌላ ቁጥር የሚከፍሉ ከሆነ ይቀይሩት።',
-    mobileInvalid: 'ይህ የኢትዮጵያ የሞባይል ቁጥር አይመስልም። አረጋግጠው እንደገና ይሞክሩ።',
-    txRefLabel: 'የዝውውር ማመሳከሪያ',
-    txRefHint:
-      'ማመሳከሪያው በባንክዎ የማረጋገጫ ኤስኤምኤስ ላይ ነው። እያንዳንዱን ጥያቄ አንድ ሰው ይመለከተዋል — መዳረሻ የሚሰጠው ከተረጋገጠ በኋላ ነው፣ ' +
-      'አብዛኛውን ጊዜ በጥቂት ሰዓታት ውስጥ።',
-    txRefRequired: 'ከዝውውር ደረሰኝዎ ላይ ያለውን የግብይት ቁጥር ያስገቡ።',
-    txRefTaken: 'ይህ የግብይት ቁጥር ቀድሞ ደርሶናል። ድጋፍ ሰጪው ሊፈትሽልዎ ይችላል።',
-
-    heading: 'መዳረሻ',
-    chosen: 'ተመርጧል',
-    countedFromToday: 'ከዛሬ ጀምሮ ይቆጠራል። አንድ እቅድ ሁሉንም ፕሮግራሞች ይሸፍናል።',
-
-    waitingBanner: 'ስልክዎን ይመልከቱ',
-    requestSentTo: (method: string, mobile: string) =>
-      `የ${method} ጥያቄ ወደ ${mobile} ልከናል። እዚያው ላይ ያጽድቁት — ይህ ገጽ በራሱ ይዘምናል።`,
-    waitingFor: (clock: string) => `${clock} ተጠብቋል — ጥያቄዎች አብዛኛውን ጊዜ በአንድ ደቂቃ ውስጥ ይደርሳሉ።`,
-    slowBanner: 'ከወትሮው በላይ እየዘገየ ነው',
-    slowBody:
-      'በዝግተኛ ኔትወርክ ላይ ጥያቄው እስከ ሁለት ደቂቃ ሊወስድ ይችላል። እስካሁን ምንም አልተከፈለም — መጠበቅ ወይም አዲስ ጥያቄ መላክ ይችላሉ።',
-    sendAgain: 'ጥያቄውን እንደገና ላክ',
-    payDifferently: 'በሌላ መንገድ ይክፈሉ',
-
-    transferTo: (amount: string) => `${amount} ከማንኛውም ባንክ ወደዚህ ያዛውሩ፦`,
-    accountLabel: 'ሂሳብ',
-    accountNotPublished:
-      'የሚከፈልበት ሂሳብ በዚህ አገልጋይ ላይ አልታተመም። ከማዛወርዎ በፊት ከድጋፍ ሰጪው ይጠይቁ — ተመሳሳይ ዝውውር የሌለው ጥያቄ ሊረጋገጥ አይችልም።',
-    submitForVerification: 'ለማረጋገጫ አስገባ',
-    submittedBanner: 'ገብቷል — በማረጋገጥ ላይ',
-    submittedBody: (ref: string) =>
-      `ማመሳከሪያ ${ref} ከቡድናችን ጋር ነው። እንደተረጋገጠ ወዲያውኑ በTelegram እንልክልዎታለን — እስከዚያው ነጻ ጥያቄዎችዎን መለማመድ ይችላሉ።`,
-
-    verifiedBanner: 'ክፍያው ተረጋግጧል',
-    lapsedBanner: 'የመዳረሻ ጊዜዎ አብቅቷል',
-    lapsedBody: (ended: string) =>
-      `የደንበኝነት ምዝገባዎ እስከ ${ended} ድረስ ነበር። ከታች ያድሱት፣ ከዛሬ ጀምሮ ይቀጥላል — ` + 'የመለሱት ሁሉ እንዳለ አለ።',
-    renew: 'አድስ',
-
-    pay: 'ክፈል',
-    sending: 'በመላክ ላይ…',
-    checkYourPhone: (mobile: string) =>
-      `የክፍያ ጥያቄ ወደ ${mobile} ተልኳል። በስልክዎ ላይ ያጽድቁት፣ ይህ ገጽ በራሱ ይዘምናል።`,
-    stillWaiting: 'አሁንም ክፍያውን በመጠባበቅ ላይ ነን። ካጸደቁት ጥቂት ጊዜ ይስጡት — ይህን ገጽ ቢዘጉትም ምንም አይጠፋም።',
-    openingChapa: 'ቻፓ እየተከፈተ ነው…',
-    confirmed: 'ሙሉ መዳረሻ አለዎት።',
-    accessUntil: (date: string) => `መዳረሻዎ እስከ ${date} ይቆያል።`,
-    yourReference: (ref: string) => `የእርስዎ ማመሳከሪያ ${ref} ነው። ይያዙት — ድጋፍ ሰጪው ሊፈትሸው ይችላል።`,
-    keepReference: 'ይያዙት — ድጋፍ ሰጪው ሊፈትሸው ይችላል።',
-    manualPending:
-      'እናመሰግናለን። ዝውውሩን ከባንክ ሪፖርት ጋር የሚያመሳክር ሰው አለ፣ አብዛኛውን ጊዜ በዚያው ቀን፣ ' +
-      'እንደተገኘም መዳረሻዎ ወዲያውኑ ይጀምራል።',
-    couldNotStart: 'ክፍያው ሊጀመር አልቻለም። ምንም አልተከፈለም — እንደገና ይሞክሩ።',
-    unavailable: 'ይህ የመክፈያ መንገድ አሁን አይሰራም። ከታች ያለው የባንክ ዝውውር አሁንም ይሰራል።',
-  },
-
-  receipt: {
-    working: 'ክፍያዎችዎ እየተጫኑ ነው…',
-    couldNotLoad: 'ክፍያዎችዎ ሊጫኑ አልቻሉም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
-
-    plan: 'እቅድ',
-    planValue: (months: number) => `${months} ወራት · ሁሉም ፕሮግራሞች`,
-    amount: 'መጠን',
-    method: 'መንገድ',
-    reference: 'ማመሳከሪያ',
-    paid: 'የተከፈለበት',
-    accessUntil: 'መዳረሻ እስከ',
-
-    history: 'የክፍያ ታሪክ',
-    historyRow: (amount: string, months: number) => `${amount} · ${months} ወራት`,
-    historyMeta: (method: string, date: string) => `${method} · ${date}`,
-    noHistory: 'እስካሁን ምንም የለም። የከፈሉት ሁሉ ከማመሳከሪያው ጋር እዚህ ይታያል።',
-
-    verified: 'ተረጋግጧል',
-    pending: 'በመጠባበቅ ላይ',
-    notAccepted: 'አልተቀበልንም',
-
-    backToPractising: 'ወደ ልምምድ ተመለስ',
-  },
-
-  standing: {
-    title: 'ያሉበት ደረጃ',
-    working: 'በመቁጠር ላይ…',
-    couldNotLoad: 'ደረጃዎ ሊጫን አልቻለም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
-
-    points: 'ነጥቦች',
-    pointsFrom: 'ካገኙት ከእያንዳንዱ ሽልማት',
-    streak: 'የተለማመዱባቸው ቀናት',
-    streakNever: 'ገና ምንም ቀን የለም። የመጀመሪያው ከዛሬ ይጀምራል።',
-    streakDays: (days: number) => `${days} ቀን`,
-    toNextTier: (points: number, tier: string) => `ወደ ${tier} ${points} ነጥብ ይቀራል`,
-    topTier: 'በከፍተኛው ደረጃ ላይ ነዎት።',
-
-    howEarned: 'እንዴት እንዳገኙዋቸው',
-    recentOnly: 'የቅርብ ጊዜ ሽልማቶችዎ። የቀድሞዎቹ ከላይ ባለው ጠቅላላ ውስጥ ተቆጥረዋል።',
-    ledgerEmpty: 'ገና ምንም የለም። ጥያቄ እንደመለሱ ነጥቦች እዚህ ይታያሉ።',
-
-    board: 'ሰሌዳው',
-    boardWhyGaps: 'ደረጃዎች በሁሉም ላይ ተመሥርተው ይቆጠራሉ። ላለመታየት የመረጠ ሰው ቦታውን ይይዛል፣ ስለዚህ ቁጥሮቹ ሊዘሉ ይችላሉ።',
-    boardEmpty: 'እስካሁን ማንም ነጥብ አላገኘም። ጥያቄ ይመልሱና የመጀመሪያው ይሁኑ።',
-    yourRank: (rank: number) => `${rank}ኛ ደረጃ ላይ ነዎት`,
-    notListed: 'በሰሌዳው ላይ አይታዩም። ደረጃዎ ግን የእርስዎ ነው።',
-    hideMe: 'ከሰሌዳው ደብቀኝ',
-    showMe: 'በሰሌዳው ላይ አሳየኝ',
-  },
-
-  community: {
-    title: 'ስለዚህ ርዕስ ጠይቅ',
-    working: 'በመጫን ላይ…',
-    couldNotLoad: 'ውይይቱ ሊጫን አልቻለም። እንደገና ይሞክሩ።',
-    empty: 'በዚህ ርዕስ ላይ ገና ጥያቄ የለም። የመጀመሪያውን ይጠይቁ።',
-
-    askTitle: 'ጥያቄዎ፣ በጥቂት ቃላት',
-    askBody: 'ምን ግራ አጋባዎት?',
-    ask: 'ጠይቅ',
-    asking: 'በመላክ ላይ…',
-    titleRequired: 'ሰዎች እንዲያገኙት ለጥያቄዎ ርዕስ ይስጡት።',
-    bodyRequired: 'ከመላክዎ በፊት ጥያቄዎን ይጻፉ።',
-
-    replies: (count: number) => `${count} መልስ`,
-    reply: 'መልስ',
-    replyPlaceholder: 'መልስ ይስጡ ወይም ያክሉ',
-    verified: 'ገምጋሚ',
-    verifiedMeans: 'ጥያቄዎቹን በሚገመግሙት ሰዎች የተረጋገጠ።',
-    yours: 'እርስዎ',
-    hidden: 'በአወያይ ተደብቋል። ይህን ማየት የሚችሉት እርስዎ ብቻ ነዎት።',
-
-    report: 'ሪፖርት አድርግ',
-    reported: 'ሪፖርት ተደርጓል። አንድ ሰው ይመለከተዋል።',
-    reportWhy: 'ለምን ሪፖርት እያደረጉ ነው?',
-    reportWrong: 'መልሱ ስህተት ነው',
-    reportAbusive: 'ስድብ',
-    reportSpam: 'አላስፈላጊ መልእክት',
-    reportOffTopic: 'ከርዕስ ውጪ',
-
-    tooFast: 'በፍጥነት እየለጠፉ ነው። ትንሽ ቆይተው እንደገና ይሞክሩ።',
-    chooseProgramme: 'ውይይቱን ከመቀላቀልዎ በፊት የትምህርት ዘርፍ ይምረጡ።',
-  },
-
-  dashboard: {
-    title: 'አጠቃላይ እይታ',
-    working: 'በመቁጠር ላይ…',
-    couldNotLoad: 'አኃዞቹ ሊጫኑ አልቻሉም። በመረጃው ላይ ችግር የለም — እንደገና ይሞክሩ።',
-
-    signups: 'ተመዝጋቢዎች',
-    paying: 'እየከፈሉ ያሉ',
-    lapsed: 'ጊዜያቸው ያለፈ',
-    trialling: 'እየሞከሩ ያሉ',
-    dormant: 'ያልጀመሩ',
-    awaitingSettlement: 'ማረጋገጫ በመጠባበቅ ላይ',
-    awaitingHow: (count: number) =>
-      count === 1
-        ? '1 የተጠየቀ ዝውውር የባንክ ሪፖርቱን የሚያረጋግጥ ሰው በመጠባበቅ ላይ ነው።'
-        : `${count} የተጠየቁ ዝውውሮች የባንክ ሪፖርቱን የሚያረጋግጥ ሰው በመጠባበቅ ላይ ናቸው።`,
-    nothingWaiting: 'ማረጋገጫ የሚጠብቅ ምንም የለም።',
-
-    revenue: 'የተሰበሰበ',
-    revenueTotal: 'ጠቅላላ',
-    paymentsCounted: (count: number) => `${count} የተረጋገጠ ክፍያ`,
-    methodTelebirr: 'ቴሌብር',
-    methodCbebirr: 'ሲቢኢ ብር',
-    methodChapa: 'የቻፓ ገጽ',
-    methodBank: 'የባንክ ዝውውር',
-
-    findStudent: 'ተማሪ ፈልግ',
-    searchLabel: 'ስልክ፣ ስም ወይም የግብይት ቁጥር',
-    searchHint: 'የግብይት ቁጥር ትክክለኛ መሆን አለበት። ሦስት ፊደል ወይም ከዚያ በላይ።',
-    searching: 'በመፈለግ ላይ…',
-    noHits: 'ማንም አልተገኘም።',
-    matchedOnTxRef: 'በግብይት ቁጥር ተገኘ',
-    matchedOnPhone: 'በስልክ ቁጥር ተገኘ',
-    matchedOnName: 'በስም ተገኘ',
-    deactivated: 'የተዘጋ',
-  },
-
-  admin: {
-    nav: {
-      title: 'Lomi-Test አስተዳደር',
-      label: 'የአስተዳደር ክፍሎች',
-      dashboard: 'ማጠቃለያ',
-      payments: 'ክፍያዎች',
-      import: 'ማስገባት',
-      review: 'ግምገማ',
-      weights: 'ክብደቶች',
-      users: 'ተማሪዎች',
-    },
-
-    payments: {
-      title: 'የተጠየቁ የባንክ ዝውውሮች',
-      working: 'ጥያቄዎች እየተጫኑ ነው…',
-      couldNotLoad: 'ጥያቄዎቹ ሊጫኑ አልቻሉም። ምንም አልተወሰነም — እንደገና ይሞክሩ።',
-      waiting: (count: number) => `${count} በመጠባበቅ ላይ`,
-      nothingWaiting: 'የሚመረመር ምንም ነገር የለም።',
-
-      colClaimed: 'የተጠየቀበት',
-      colStudent: 'ተማሪ',
-      colPhone: 'ስልክ',
-      colReference: 'ማመሳከሪያ',
-      colAmount: 'መጠን',
-      colStatus: 'ሁኔታ',
-
-      open: 'ይህን ጥያቄ ክፈት',
-      close: 'ይህን ጥያቄ ዝጋ',
-
-      checkAgainst: 'ከባንክ ሪፖርቱ ጋር ያመሳክሩ',
-      expected: (reference: string, amount: string, account: string) =>
-        `ማመሳከሪያ ${reference} · ${amount} ወደ ${account} ይጠበቃል።`,
-      expectedNoAccount: (reference: string, amount: string) =>
-        `ማመሳከሪያ ${reference} · ${amount} ይጠበቃል።`,
-      claimedBy: (student: string, joined: string) => `በ${student} የተጠየቀ፣ የተመዘገበው ${joined}።`,
-      priorPayments: (verified: number, total: number) =>
-        `${total} ቀደም ያሉ ክፍያዎች፣ ${verified} የተረጋገጡ።`,
-      noPriorPayments: 'በዚህ መለያ ላይ ቀደም ያለ ክፍያ የለም።',
-
-      reasonLabel: 'ምክንያት — ለመከልከል ያስፈልጋል፣ በሁለቱም ሁኔታ በመዝገብ ላይ ይቀመጣል',
-      reasonPlaceholder: 'የገባው መጠን ይመሳሰላል፣ ማመሳከሪያው በሪፖርቱ ላይ ተገኝቷል።',
-      approve: 'አጽድቅ — መዳረሻ ስጥ',
-      approving: 'መዳረሻ በመስጠት ላይ…',
-      reject: 'በምክንያት ከልክል',
-      rejecting: 'መከልከሉ በመመዝገብ ላይ…',
-      approveNote: 'ማጽደቅ ወዲያውኑ መዳረሻ ይሰጣል እና ለተማሪው በTelegram ይነግረዋል።',
-      rejectNeedsReason: 'ከመከልከልዎ በፊት ምክንያቱን ይጻፉ — ይህ ምክንያት ለተማሪው ይነገራል።',
-      settled: 'ተወስኗል። ከታች ያለው ዝርዝር እንደሚጠባበቅ አያሳየውም።',
-      couldNotSettle: 'አልተሳካም። ምንም አልተሰጠም አልተከለከለም — እንደገና ይሞክሩ።',
-    },
-
-    users: {
-      title: 'ተማሪዎች',
-      intro:
-        'መለያን በስልክ፣ በስም ወይም በግብይት ቁጥር ያግኙ፣ ከዚያ መሣሪያዎቹን ዳግም ያስጀምሩ ወይም መለያውን ይዝጉ። ሁለቱም በስምዎ ይመዘገባሉ።',
-      resetDevices: 'መሣሪያዎችን ዳግም አስጀምር',
-      resetDevicesWhy:
-        'ይህን ተማሪ ከሁሉም ቦታ ያስወጣል እና በሁለት መሣሪያዎች ላይ እንደገና እንዲገባ ይፈቅዳል። ስልክ የቀየረ ሰው ሲኖር ይጠቀሙበት።',
-      resetting: 'በማስወጣት ላይ…',
-      deactivate: 'መለያውን ዝጋ',
-      deactivateWhy: 'ይህ መለያ እንዳይገባ ያግዳል። መልሶቻቸውና ክፍያዎቻቸው ይቀመጣሉ — ምንም አይሰረዝም።',
-      deactivating: 'በመዝጋት ላይ…',
-      reasonLabel: 'ለመዝገብ፣ ለምን',
-      reasonPlaceholder: 'ተማሪው ስልኩን ስላጣ የመሣሪያ ዳግም ማስጀመር ጠየቀ።',
-      needsReason: 'መጀመሪያ ምክንያቱን ይጻፉ — ይህ ከስምዎ ጋር በመዝገብ ላይ ይጻፋል።',
-      devicesReset: 'መሣሪያዎቹ ዳግም ተጀምረዋል። በአዲስ ስልክ እንደገና መግባት ይችላሉ።',
-      accountClosed: 'መለያው ተዘግቷል። አገልጋዩን በሚያስተዳድረው ሰው እንደገና ሊከፈት ይችላል።',
-      alreadyClosed: 'አስቀድሞ ተዘግቷል',
-      couldNotDo: 'አልተሳካም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
-    },
-
-    review: {
-      title: 'ግምገማ',
-      intro: 'የተጫነው ሁሉ እዚህ እንደ ረቂቅ ይደርሳል። አንድ ሰው አንብቦ እስኪያትመው ድረስ ምንም ወደ ተማሪ አይደርስም።',
-      working: 'ወረፋው በመነበብ ላይ…',
-      couldNotLoad: 'ወረፋው ሊነበብ አልቻለም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
-
-      draft: 'ረቂቆች',
-      inReview: 'ገምጋሚ በመጠበቅ ላይ',
-      published: 'የታተሙ',
-      retired: 'የተነሱ',
-      countsFrom: 'በባንኩ ውስጥ ባሉ ሁሉም ፕሮግራሞች ተቆጥሯል',
-
-      ready: 'ለማተም ዝግጁ',
-      notReady: (count: number) => `${count} መስተካከል ያለባቸው ነገሮች`,
-      andMore: (count: number) => `${count} ተጨማሪ ረቂቆች አልታዩም`,
-      noDrafts: 'ረቂቅ የለም። የተጫነው ሁሉ ተይዟል።',
-
-      sendToReview: 'ወደ ግምገማ ላክ',
-      sending: 'በመላክ ላይ…',
-      sentToReview: 'ተልኳል። አሁን ገምጋሚ በመጠበቅ ላይ ነው።',
-
-      nothingWaiting: 'ገምጋሚ የሚጠብቅ ምንም የለም።',
-      reviewing: 'እርስዎን በመጠበቅ ላይ',
-      author: 'የጻፈው',
-      bounced: 'ቀደም ብሎ ተመልሷል',
-      publish: 'አትመው',
-      publishing: 'በማተም ላይ…',
-      published2: 'ታትሟል። ተማሪዎች አሁን ማየት ይችላሉ።',
-      bounce: 'መልሰው ላኩት',
-      bouncing: 'በመመለስ ላይ…',
-      bounceLabel: 'ምን መስተካከል አለበት — ጸሐፊው ይህን ያነባል',
-      bouncePlaceholder: 'አማራጭ ሐም ትክክል ነው፣ እና የሐሳብ መስመሩ ጥያቄውን ይደግማል።',
-      bounceTooShort: 'ምን መስተካከል እንዳለበት ይጻፉ — በጣም አጭር ማስታወሻ ጸሐፊውን ግራ ያጋባል።',
-      bounced2: 'ወደ ጸሐፊው ተመልሷል።',
-      cannotPublish: 'ይህ ገና ሊታተም አይችልም፦',
-      topicUnweighted: 'ርዕሱ ክብደት የለውም',
-
-      whichCorrect: 'የትኛው መልስ ትክክል ነው፣ እና ሌሎቹ ለምን አይደሉም',
-      whyWrongPlaceholder: 'ይህን ለምን እንደሚመርጡት፣ እና ምን እንደሚስተው።',
-      whyWrongFor: (label: string) => `አማራጭ ${label} ለምን ስህተት እንደሆነ`,
-      conceptLine: 'ማስታወስ ያለበት አንድ ነገር',
-      conceptPlaceholder: 'በጠቅላላ መጠን ውስጥ ያለው ተጨማሪ እሴት ታክስ በ×15/115 ይወጣል።',
-      conceptHint: 'አንድ ዓረፍተ ነገር። ሁለት ሁለተኛ ማብራሪያ ነው፣ የመጀመሪያውም መነበብ ያቆማል።',
-      explanation: 'ማብራሪያው',
-      explanationPlaceholder: 'ትክክለኛውን መልስ ትክክል የሚያደርገው ምንድን ነው፣ በጥቂት ዓረፍተ ነገሮች።',
-      stepsLabel: 'አሠራሩ፣ በደረጃ',
-      stepPlaceholder: 'የሚቀንስ መሠረት = ወጪ − ቀሪ ዋጋ',
-      stepNumber: (n: number) => `ደረጃ ${n}`,
-      formulaPlaceholder: 'ለምሳሌ 620,000 − 20,000 = 600,000',
-      formulaFor: (n: number) => `የደረጃ ${n} ቀመር`,
-      addStep: 'ደረጃ ጨምር',
-      removeStep: 'አስወግድ',
-      lastStepHint: (label: string) => `የመጨረሻው ደረጃ መልሱን መጥቀስ አለበት — "… → መልስ ${label}"።`,
-      timeLimit: 'የጊዜ ገደብ፣ በሰከንድ',
-      timeLimitHint: 'ከ15 እስከ 600። ተማሪው ከመለሰ በኋላ የሚያየውን የፍጥነት መስመር ይወስናል።',
-      save: 'ለውጦችን አስቀምጥ',
-      saving: 'በማስቀመጥ ላይ…',
-      savedChanges: 'ተቀምጧል።',
-      nothingChanged: 'እስካሁን ምንም አልተለወጠም።',
-      couldNotSave: 'አልተቀመጠም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
-      couldNotAct: 'አልተሳካም። ምንም አልተለወጠም — እንደገና ይሞክሩ።',
-    },
-
-    topicWeights: 'የርዕስ ክብደቶች',
-    recompute: 'ከመጠባበቂያው እንደገና አስላ',
-    override: 'ሻር',
-    backToBank: 'ወደ መጠባበቂያው ተመለስ',
-    setByReviewer: 'በገምጋሚ የተቀመጠ',
-    noProgramme: 'ገና የታተመ የትምህርት ዘርፍ የለም።',
-    weightingProgramme: 'ክብደት እየተሰጠው ያለው',
-    switchProgramme: 'ክብደት የሚሰጠው የትምህርት ዘርፍ',
-    weightsScope: (name: string) =>
-      `እነዚህ ክብደቶች ለ${name} የሚዘጋጀውን እያንዳንዱን የሙከራ ወረቀት ይቀርጻሉ፣ ከዚያ ውጪ ምንም አይነኩም።`,
-    publishedBankSays: (published: number, derived: number) =>
-      `${published} ታትሟል · መጠባበቂያው ${derived}% ይላል`,
-    weightLabel: (topic: string) => `የ${topic} ክብደት፣ ሙሉ በመቶ`,
-    reasonLabel: (topic: string) => `${topic} ለምን እንደተሻረ`,
-    reasonPlaceholder: 'ባለፉት ፈተናዎች ከመጠባበቂያው በላይ ይሰጡታል።',
-    balanced: 'ተመጣጥኗል',
-    withdrawTitle: (stableId: string) => `${stableId}ን ያውጡ?`,
-    withdrawIntro:
-      'ጥያቄው መቅረብ ያቆማል እና ወደ አዲስ ወረቀቶች መመረጥ ያቆማል። አይሰረዝም — የተማሪዎች ታሪክ አሁንም ወደ እውነተኛ ነገር ይጠቁማል።',
-    withdrawIt: 'አውጣው',
-    sayWhyFirst: 'መጀመሪያ ምክንያቱን ይግለጹ',
-    withdrawReasonLabel: 'ለምን እየወጣ ነው?',
-    withdrawReasonPlaceholder: 'ምርጫ ለ ደግሞ ትክክል ነው።',
-    notKnown: 'አይታወቅም',
-    attemptsRecorded: 'የተመዘገቡ ሙከራዎች',
-    attemptsNote: 'እንዳሉ ይቀመጣሉ። ያለፈ መልስ እንደነበረ ይቆያል።',
-    sittingsInProgress: 'በሂደት ላይ ያሉ ፈተናዎች',
-    sittingsNote: 'አሁን በሰዓት በተወሰነ ፈተና ላይ ያሉ ተማሪዎች፣ ይህ ጥያቄ በወረቀታቸው ላይ ነው።',
-    readinessFigures: 'የተማሪዎች የዝግጁነት አኃዞች',
-    readinessNote: 'ዝግጁነታቸው በከፊል በዚህ ጥያቄ ላይ ይመሰረታል።',
-  },
-
-  provider: {
-    nav: { activity: 'እንቅስቃሴ', health: 'ጤንነት' },
-
-    activity: {
-      title: 'እንቅስቃሴ',
-      intro: 'የተከሰተው ሁሉ፣ አዲሱ መጀመሪያ — የሠራተኞች እርምጃዎች፣ መግቢያዎች፣ ክፍያዎች፣ ልምምድ እና የሙከራ ፈተናዎች፣ በአንድ ዝርዝር።',
-      working: 'መዝገቡ በመነበብ ላይ…',
-      couldNotLoad: 'እንቅስቃሴው ሊነበብ አልቻለም። ምንም አልጠፋም — እንደገና ይሞክሩ።',
-      empty: 'በዚህ አገልጋይ ላይ እስካሁን ምንም አልተከሰተም።',
-      more: 'የቀደሙትን አሳይ',
-      loadingMore: 'በማንበብ ላይ…',
-      end: 'መዝገቡ ይህ ብቻ ነው።',
-
-      all: 'ሁሉም',
-      kindStaff: 'የሠራተኛ እርምጃዎች',
-      kindSignin: 'መግቢያዎች',
-      kindSignout: 'መውጫዎች',
-      kindPayment: 'ክፍያዎች',
-      kindPractice: 'ልምምድ',
-      kindExam: 'የሙከራ ፈተናዎች',
-
-      staffTag: 'ሠራተኛ',
-      counted: (shown: number) => `${shown} ክስተቶች ታይተዋል`,
-      scanned: (staff: number, signins: number, payments: number, attempts: number) =>
-        `ከ${staff} የሠራተኛ እርምጃዎች፣ ${signins} ክፍለ ጊዜዎች፣ ${payments} ክፍያዎች እና ${attempts} ሙከራዎች የተነበበ`,
-    },
-
-    health: {
-      title: 'ጤንነት',
-      intro: 'ይህ ገጽ በሚጠይቅበት ጊዜ ሁሉ አሁን ይለካል። እዚህ ምንም አልተከማቸም።',
-      working: 'በመመልከት ላይ…',
-      couldNotLoad: 'የጤንነት ምርመራው አልመለሰም። ያ ራሱ የሚታወቅ ነገር ነው — እንደገና ይሞክሩ።',
-
-      live: 'ቀጥታ',
-      lastChecked: (clock: string) => `የተመለከተው ${clock}`,
-      nextIn: (seconds: number) => `ቀጣይ በ${seconds}ሰ`,
-      pause: 'አቁም',
-      resume: 'ቀጥል',
-      recent: (count: number) => `የመጨረሻዎቹ ${count} ምርመራዎች`,
-
-      database: 'ዳታቤዝ',
-      api: 'ኤፒአይ',
-      web: 'የፊት ገጽ',
-      security: 'ደህንነት',
-      vps: 'አገልጋይ',
-      sms: 'ኤስኤምኤስ',
-
-      ok: 'እየሠራ ነው',
-      degraded: 'መታየት አለበት',
-      down: 'አይመልስም',
-      notConfigured: 'አልተዘጋጀም',
-
-      allWell: 'ሁሉም እየመለሰ ነው።',
-      somethingUp: 'የሚታይ ነገር አለ።',
-      somethingDown: 'የማይመልስ ነገር አለ።',
-    },
-  },
-
-  error: {
-    didNotLoad: 'አልተጫነም',
-    routeBody: (digest: string) =>
-      `የመለሱት ምንም አልጠፋም — ስራዎ በሂደት ላይ ይቀመጣል። እንደገና ይሞክሩ፣ ` +
-      `ከቀጠለም ለድጋፍ ይንገሩ${digest ? ` እና ${digest} ይጥቀሱ` : ''}።`,
-    generic: 'ያልጠበቅነው ነገር ተከሰተ። እንደገና ይሞክሩ።',
-  },
-};

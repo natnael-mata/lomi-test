@@ -83,7 +83,18 @@ export function ImportScreen() {
           // A native file input renders at whatever height the browser's own
           // button is — 26px here, well under the 44px floor. The rule is about
           // controls, and the browser drawing this one does not exempt it.
-          className="min-h-11 py-2"
+          //
+          // `w-fit` because the reverse was also true: as a stretched flex child
+          // it rendered 1102px wide on the admin measure, and everything past
+          // the button and the filename was empty box. Its content is the whole
+          // control, so its content is the whole width.
+          //
+          // `max-w-full` bounds it the other way. A long filename makes the
+          // control's own content wider than the phone, and `w-fit` will happily
+          // grow past the viewport — the layout sweep caught 377px inside 377px
+          // on a 2px overflow. The two together mean: as wide as your content,
+          // and never wider than the screen.
+          className="min-h-11 w-fit max-w-full py-2"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void readFile(file);
@@ -93,9 +104,15 @@ export function ImportScreen() {
         <label className="text-caption text-ink-2 mt-2 uppercase" htmlFor="csv-text">
           {c.importer.orPaste}
         </label>
+        {/* `max-w-none` on purpose. `.field` caps single-line inputs at 34rem
+            because a caret that far from the eye stops reading as one thing to
+            fill in — but this takes pasted CSV, and the import schema is 16
+            columns wide. Wrapping a row here costs an operator the ability to
+            see which column they are looking at. The escape hatch is stated
+            rather than inherited, so the next reader knows it was a decision. */}
         <textarea
           id="csv-text"
-          className="field min-h-32 font-mono text-sm"
+          className="field min-h-32 max-w-none font-mono text-sm"
           value={csv}
           onChange={(e) => setCsv(e.target.value)}
         />

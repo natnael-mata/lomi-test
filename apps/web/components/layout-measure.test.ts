@@ -147,7 +147,11 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
     expect(isActive('/standing', '/standing')).toBe(true);
     expect(isActive('/checkout/return', '/checkout')).toBe(true);
     expect(isActive('/community/abc', '/practice')).toBe(false);
-    expect(isActive('/', '/practice')).toBe(true);
+    // `/` is the public landing page since 2026-08-20, not the hub, and it is
+    // unframed — this navigation never renders there, so nothing should light.
+    expect(isActive('/', '/practice')).toBe(false);
+    // The hub moved to /home and is not a destination either.
+    expect(isActive('/home', '/practice')).toBe(false);
     expect(isActive('/progress', '/standing')).toBe(false);
   });
 });

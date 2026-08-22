@@ -19,7 +19,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { Card } from '../../components/Card';
-import { Chip } from '../../components/Chip';
 import { TierBadge } from '../../components/TierBadge';
 import { StatedFigure } from '../../components/StatedFigure';
 import {
@@ -29,6 +28,7 @@ import {
   type LedgerRow,
   type StandingView,
 } from '../../lib/api';
+import { BandedBoard } from '../../components/BandedBoard';
 import { copy } from '../../lib/i18n';
 // Aliased: `day` is what the ledger row's field is called too.
 import { day as dayLabel } from '../../lib/dates';
@@ -178,47 +178,27 @@ export function StandingScreen() {
           </section>
         </div>
 
+        {/*
+          The board is the banded one, and the only one (T-257).
+
+          The points board that used to sit here is gone, not moved. It ranked by
+          points and was never banded, so a Grade 6 student saw Grade 12 and
+          exit-exam students listed directly beneath the board that had just
+          carefully separated them — which undoes the separation and is worse
+          than never having made it. A points board also ranks the *package*: a
+          Grade 12 bank is roughly three times a Grade 6 one, so the bigger
+          purchase wins.
+
+          Points themselves are untouched, above: they measure showing up, which
+          is what the streak and the ledger are for. They are simply not a
+          competition.
+        */}
+        <BandedBoard />
+
+        {/* Opting out hides the row, never the rank (T-194), and the control
+            stays here because it is a setting on the account rather than part of
+            any one board. */}
         <section className="flex flex-col gap-2">
-          <h2 className="text-caption text-ink-2 uppercase">{c.standing.board}</h2>
-
-          {board.rows.length === 0 ? (
-            <p className="text-body text-ink-2">{c.standing.boardEmpty}</p>
-          ) : (
-            <>
-              <ol className="flex flex-col gap-1.5">
-                {board.rows.map((row) => (
-                  <li
-                    key={`${row.rank}-${row.displayName}`}
-                    className="bg-surface-2 rounded-card flex items-center gap-3 p-3"
-                    data-you={row.isYou}
-                  >
-                    <span className="text-label num w-6 shrink-0">{row.rank}</span>
-                    {/* Display name only — the response has nowhere to put anything
-                    else, which is what makes this safe by construction. */}
-                    <span className="text-body grow">{row.displayName}</span>
-                    {row.isYou ? <Chip tone="brand">{c.community.yours}</Chip> : null}
-                    <TierBadge tier={row.tier} showLabel={false} />
-                    <span className="text-label num shrink-0">{row.points}</span>
-                  </li>
-                ))}
-              </ol>
-              {/* Why 2, 3, 3, 6 is not a counting error. Ranks are computed over
-                  everybody and only then filtered, so hiding one student never
-                  promotes the next — and the visible numbers skip. Both QA passes
-                  reported the gaps, correctly by this product's own rule that a
-                  figure nobody can account for should be reported. */}
-              <p className="text-caption text-ink-2">{c.standing.boardWhyGaps}</p>
-            </>
-          )}
-
-          {/* Opting out hides the row, never the rank (T-194). A student who does
-            not want to be seen competing still wants to know where they stand. */}
-          {board.you && !board.you.listed ? (
-            <p className="text-body text-ink-2">
-              {c.standing.notListed} {c.standing.yourRank(board.you.rank)}.
-            </p>
-          ) : null}
-
           <button
             type="button"
             className="btn-ghost"

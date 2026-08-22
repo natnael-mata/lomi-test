@@ -16,13 +16,26 @@ import { en } from '../../lib/i18n/dictionary';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const standing = stripComments(readFileSync(resolve(here, 'StandingScreen.tsx'), 'utf8'));
+/*
+ * The board moved out of the screen and into its own component (T-257).
+ *
+ * The rules these tests protect — no legal name on a public surface, an
+ * opted-out student still told their rank — did not move with it by accident:
+ * they are properties of *the board*, wherever the board lives. So the scans
+ * read both files, and a rule that gets lost in a future refactor still fails
+ * here rather than passing because the code it guarded went somewhere else.
+ */
+const bandedBoard = stripComments(
+  readFileSync(resolve(here, '../../components/BandedBoard.tsx'), 'utf8'),
+);
+const boardSurfaces = `${standing}\n${bandedBoard}`;
 const community = stripComments(
   readFileSync(resolve(here, '../community/[topicId]/CommunityScreen.tsx'), 'utf8'),
 );
 
 describe('the standing screen (T-190…T-194)', () => {
   it('still has code left after the comments are stripped', () => {
-    expect(standing).toContain('c.standing.board');
+    expect(boardSurfaces).toContain('c.standing.board');
     expect(standing.length).toBeGreaterThan(2000);
     expect(community).toContain('c.community.ask');
     expect(community.length).toBeGreaterThan(2000);
@@ -71,8 +84,8 @@ describe('the standing screen (T-190…T-194)', () => {
    * privacy choice.
    */
   it('still shows an opted-out student their own rank', () => {
-    expect(standing).toContain('c.standing.yourRank');
-    expect(standing).toContain('c.standing.notListed');
+    expect(boardSurfaces).toContain('c.standing.yourRank');
+    expect(boardSurfaces).toContain('c.standing.notListed');
     expect(en.standing.notListed.toLowerCase()).toContain('still');
   });
 
@@ -83,9 +96,9 @@ describe('the standing screen (T-190…T-194)', () => {
 
   it('never renders a legal name on the board (T-193)', () => {
     for (const forbidden of ['verifiedName', 'legalName', 'fullName', 'userId']) {
-      expect(standing, forbidden).not.toContain(forbidden);
+      expect(boardSurfaces, forbidden).not.toContain(forbidden);
     }
-    expect(standing).toContain('row.displayName');
+    expect(boardSurfaces).toContain('row.displayName');
   });
 });
 

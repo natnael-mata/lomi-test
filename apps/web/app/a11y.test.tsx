@@ -79,7 +79,7 @@ async function scan(element: ReactElement): Promise<Violation[]> {
      * would report one document-title violation on every surface and drown the
      * findings that are actually about the components.
      */
-    `<!doctype html><html lang="en"><head><title>Lomi-Test</title></head>` +
+    `<!doctype html><html lang="en"><head><title>Lomi-Exams</title></head>` +
       `<body><main>${renderToStaticMarkup(element)}</main></body></html>`,
     // `runScripts` is required: jsdom does not execute injected scripts by
     // default, so `window.axe` is simply never defined and every scan reports a

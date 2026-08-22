@@ -195,78 +195,103 @@ export function ReviewScreen() {
         />
       </div>
 
-      {item ? (
-        <Waiting item={item} busy={busy} note={note} onNote={setNote} onAct={act} onSaved={load} />
-      ) : (
-        <p className="text-body text-ink-2">{c.admin.review.nothingWaiting}</p>
-      )}
+      {/*
+       * The work beside the queue, from `lg`.
+       *
+       * These were stacked, so at the 1200px admin measure a reviewer read one
+       * question down a full-width column and then scrolled past it to see what
+       * was next. The two are read together — deciding on this question and
+       * knowing what follows it are the same act — and neither needs 1136px.
+       *
+       * `items-start` so the drafts column does not stretch to the height of a
+       * long question, and `minmax(0,…)` so a long stem cannot push the grid
+       * wider than the measure.
+       */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:items-start">
+        <div className="flex flex-col gap-4">
+          {item ? (
+            <Waiting
+              item={item}
+              busy={busy}
+              note={note}
+              onNote={setNote}
+              onAct={act}
+              onSaved={load}
+            />
+          ) : (
+            <p className="text-body text-ink-2">{c.admin.review.nothingWaiting}</p>
+          )}
+        </div>
 
-      <h2 className="text-title mt-2">{c.admin.review.draft}</h2>
+        <div className="flex flex-col gap-3">
+          <h2 className="text-title">{c.admin.review.draft}</h2>
 
-      {queue.drafts.length === 0 ? (
-        <p className="text-body text-ink-2">{c.admin.review.noDrafts}</p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {queue.drafts.map((draft) => (
-            <Card key={draft.id} as="section" className="flex flex-col gap-2">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-caption text-ink-2 num">{draft.stableId}</span>
-                <Chip>{draft.field}</Chip>
-                <Chip>{draft.topic}</Chip>
-                {draft.importFlags.map((flag) => (
-                  <Chip key={flag} tone="pending">
-                    {flag}
-                  </Chip>
-                ))}
-              </span>
+          {queue.drafts.length === 0 ? (
+            <p className="text-body text-ink-2">{c.admin.review.noDrafts}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {queue.drafts.map((draft) => (
+                <Card key={draft.id} as="section" className="flex flex-col gap-2">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-caption text-ink-2 num">{draft.stableId}</span>
+                    <Chip>{draft.field}</Chip>
+                    <Chip>{draft.topic}</Chip>
+                    {draft.importFlags.map((flag) => (
+                      <Chip key={flag} tone="pending">
+                        {flag}
+                      </Chip>
+                    ))}
+                  </span>
 
-              <p className="text-body">{draft.stem}</p>
+                  <p className="text-body">{draft.stem}</p>
 
-              {/*
+                  {/*
                 The gate's own words, not a summary of them. "3 things to fix"
                 sends somebody looking; the list tells them where.
               */}
-              {draft.blockers.length === 0 ? (
-                <span className="text-correct text-caption inline-flex items-center gap-1.5">
-                  <Icon name="check" size={14} strokeWidth={2.5} />
-                  {c.admin.review.ready}
-                </span>
-              ) : (
-                <span className="flex flex-col gap-1">
-                  <span className="text-pending text-caption inline-flex items-center gap-1.5">
-                    <Icon name="clock" size={14} />
-                    {c.admin.review.notReady(draft.blockers.length)}
-                  </span>
-                  <ul className="flex flex-col gap-0.5">
-                    {draft.blockers.map((blocker) => (
-                      <li key={blocker} className="text-caption text-ink-2">
-                        {blocker}
-                      </li>
-                    ))}
-                  </ul>
-                </span>
-              )}
+                  {draft.blockers.length === 0 ? (
+                    <span className="text-correct text-caption inline-flex items-center gap-1.5">
+                      <Icon name="check" size={14} strokeWidth={2.5} />
+                      {c.admin.review.ready}
+                    </span>
+                  ) : (
+                    <span className="flex flex-col gap-1">
+                      <span className="text-pending text-caption inline-flex items-center gap-1.5">
+                        <Icon name="clock" size={14} />
+                        {c.admin.review.notReady(draft.blockers.length)}
+                      </span>
+                      <ul className="flex flex-col gap-0.5">
+                        {draft.blockers.map((blocker) => (
+                          <li key={blocker} className="text-caption text-ink-2">
+                            {blocker}
+                          </li>
+                        ))}
+                      </ul>
+                    </span>
+                  )}
 
-              <button
-                type="button"
-                className="btn-ghost"
-                disabled={busy === draft.id}
-                onClick={() => void act('submit', draft.id)}
-              >
-                {busy === draft.id ? c.admin.review.sending : c.admin.review.sendToReview}
-              </button>
-            </Card>
-          ))}
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    disabled={busy === draft.id}
+                    onClick={() => void act('submit', draft.id)}
+                  >
+                    {busy === draft.id ? c.admin.review.sending : c.admin.review.sendToReview}
+                  </button>
+                </Card>
+              ))}
 
-          {/* Never implies it showed everything. A capped list that does not say
+              {/* Never implies it showed everything. A capped list that does not say
               so is a list somebody reads as a total. */}
-          {queue.more > 0 ? (
-            <p className="text-caption text-ink-2 num text-center">
-              {c.admin.review.andMore(queue.more)}
-            </p>
-          ) : null}
+              {queue.more > 0 ? (
+                <p className="text-caption text-ink-2 num text-center">
+                  {c.admin.review.andMore(queue.more)}
+                </p>
+              ) : null}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

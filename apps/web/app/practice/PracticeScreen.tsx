@@ -52,6 +52,16 @@ export function PracticeScreen() {
   const [chosen, setChosen] = useState<OptionLabel | null>(null);
   const [submitting, setSubmitting] = useState(false);
   /**
+   * The reason check, once it has been answered (T-255).
+   *
+   * Held separately from the phase because the answer view stays on screen
+   * throughout: the check is a step *within* the explanation, not a screen that
+   * replaces it. A student who picks the wrong reason must still be able to read
+   * why their answer was right — that is the whole remedy.
+   */
+  const [reason, setReason] = useState<{ correct: boolean } | null>(null);
+  const [naming, setNaming] = useState(false);
+  /**
    * Whether this student has ever paid, read only once the allowance is gone.
    *
    * Deliberately lazy. This route has the tightest budget in the product and
@@ -86,6 +96,7 @@ export function PracticeScreen() {
   const load = useCallback(async () => {
     setPhase({ kind: 'loading' });
     setChosen(null);
+    setReason(null);
     try {
       const question = await api.nextQuestion();
       shownAt.current = Date.now();
@@ -177,6 +188,23 @@ export function PracticeScreen() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  /** Records the reason, then shows the verdict beside the explanation. */
+  const nameReason = async (attemptId: string, chosenId: string): Promise<void> => {
+    if (naming) return;
+    setNaming(true);
+    try {
+      const graded = await api.answerReason(attemptId, chosenId);
+      setReason({ correct: graded.reasonCorrect });
+    } catch {
+      // Never a blocker. The answer and its explanation are already on screen,
+      // and a failed bookkeeping write must not take them away — the question
+      // stays unbeaten, which is the same outcome as skipping.
+      setReason({ correct: false });
+    } finally {
+      setNaming(false);
     }
   };
 
@@ -345,7 +373,69 @@ export function PracticeScreen() {
             pacing={phase.result.pacing}
             timeTakenSec={phase.result.timeTakenSec}
           />
-          <Button onClick={() => void load()}>{c.practice.nextQuestion}</Button>
+
+          {/*
+            The second half of getting it right (T-255).
+
+            A question counts as *beaten* only when the student names the reason
+            as well as the letter — the exam is drawn from a bank, so questions
+            repeat, and somebody who memorises the letter passes this app and
+            fails the paper. The check is only offered on a correct answer to a
+            question not yet beaten, and only where the question's own content
+            can carry one.
+
+            It sits under the explanation rather than replacing it, so a student
+            who picks the wrong reason can read straight on to why the answer was
+            right. Skipping is allowed and costs nothing they had: the question
+            stays unbeaten and comes round again.
+          */}
+          {phase.result.reasonCheck && reason === null ? (
+            <Card as="section" data-reason-check="" className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-label">{c.practice.reasonTitle}</h2>
+                <p className="text-caption text-ink-2">{c.practice.reasonWhy}</p>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {phase.result.reasonCheck.options.map((option) => (
+                  <li key={option.id}>
+                    <button
+                      type="button"
+                      disabled={naming}
+                      data-reason-option=""
+                      onClick={() =>
+                        void nameReason(phase.result.reasonCheck!.attemptId, option.id)
+                      }
+                      className="bg-surface-2 rounded-card text-body min-h-11 w-full p-3 text-left"
+                    >
+                      {option.text}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="ghost"
+                className="self-start"
+                disabled={naming}
+                onClick={() => void load()}
+              >
+                {naming ? c.practice.reasonChecking : c.practice.reasonSkip}
+              </Button>
+            </Card>
+          ) : null}
+
+          {reason ? (
+            <Card as="section" data-reason-verdict={reason.correct} className="flex flex-col gap-1">
+              <p className="text-body">
+                {reason.correct ? c.practice.reasonRight : c.practice.reasonWrong}
+              </p>
+            </Card>
+          ) : null}
+
+          <Button onClick={() => void load()}>
+            {phase.result.reasonCheck && reason === null
+              ? c.practice.nextQuestion
+              : c.practice.reasonNext}
+          </Button>
         </>
       )}
     </div>

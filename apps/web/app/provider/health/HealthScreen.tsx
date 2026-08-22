@@ -170,7 +170,11 @@ export function HealthScreen() {
         <p className="text-caption text-ink-2">{c.provider.health.intro}</p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Three across from `lg`. A health board is read at a glance and two
+          columns at the 1200px admin measure made six components three rows
+          tall — so the bottom of the board sat below the fold on a laptop,
+          which is the half most likely to be the one that is broken. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {report.components.map((component) => (
           <Card key={component.key} as="section" className="flex flex-col gap-2">
             <span className="flex items-start justify-between gap-3">

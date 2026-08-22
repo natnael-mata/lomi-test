@@ -167,7 +167,7 @@ describe('the voice a student reads (T-209)', () => {
       'That did not load',
       'Nothing you have answered is lost — your work is saved as you go.',
       'Your answers are recorded.',
-      'Open Lomi-Test to answer it and see why.',
+      'Open Lomi-Exams to answer it and see why.',
     ]) {
       expect(
         BANNED.filter(([pattern]) => pattern.test(text)).map(([p]) => String(p)),
