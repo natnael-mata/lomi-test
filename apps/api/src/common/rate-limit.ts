@@ -45,6 +45,29 @@ export interface RateDecision {
  */
 export const RATE_LIMITS = {
   signIn: { limit: 5, windowSec: 600 },
+
+  /**
+   * Password sign-in, keyed on the NUMBER being tried (T-263).
+   *
+   * Five in ten minutes against one account, which is generous for somebody
+   * mistyping their own password and useless for guessing.
+   *
+   * Keyed on the phone rather than the address, and that is the whole point.
+   * This product runs in school computer labs and behind shared mobile NAT,
+   * where an address is a room — an IP-keyed sign-in limit means the first
+   * student to fat-finger their password locks out everyone around them, which
+   * is the failure `attempt` already documented and avoided.
+   */
+  passwordSignIn: { limit: 5, windowSec: 600 },
+
+  /**
+   * And a looser one on the address, to catch the other shape.
+   *
+   * Per-phone alone would let somebody walk a block of numbers, one attempt
+   * each, forever. Thirty in ten minutes is more than a full room of students
+   * failing to remember their passwords and far less than a scan.
+   */
+  passwordSignInAddress: { limit: 30, windowSec: 600 },
   attempt: { limit: 60, windowSec: 60 },
   payment: { limit: 5, windowSec: 300 },
 

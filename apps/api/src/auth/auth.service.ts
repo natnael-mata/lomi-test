@@ -21,6 +21,8 @@ import {
   secretMatches,
 } from './dev-login';
 import { bandFor } from '../engagement/bands';
+import { normaliseEthiopianMobile } from '../common/phone';
+import { checkPassword, hashPassword, verifyPassword } from './password';
 import { safeDeviceLabel } from './device-label';
 import { signSessionToken } from './tokens';
 
@@ -85,6 +87,16 @@ export interface Identity {
   displayName: string;
   staffRole: StaffRole | null;
 }
+
+/**
+ * A hash to verify against when there is no account.
+ *
+ * The point is spending the same time on a miss as on a hit — a sign-in that
+ * returns instantly for an unknown number and slowly for a known one publishes
+ * which numbers hold accounts through the clock, however careful the message is.
+ * The password it encodes is unguessable and never used.
+ */
+const DECOY_HASH = 'scrypt$32768$8$1$00000000000000000000000000000000$' + '0'.repeat(128);
 
 /** A programme a student may choose, and whether they already have. */
 export interface FieldOption {
@@ -386,6 +398,92 @@ export class AuthService {
    * **left alone when not supplied**, so a student updating their programme does
    * not silently overwrite an answer they gave months ago with "unknown".
    */
+  /**
+   * Signs in with a phone number and a password (T-263).
+   *
+   * **The phone number is the username.** It is the one identifier an Ethiopian
+   * student already has, cannot forget, and that a reset can be sent to — and it
+   * is normalised first, because `0911223344`, `+251911223344` and
+   * `251 91 122 33 44` are the same handset and refusing four of the five would
+   * be a sign-in that fails for reasons nobody can see.
+   *
+   * **One message for every failure.** Unknown number, no password set, wrong
+   * password — all answer the same way. Telling them apart is an oracle: an
+   * attacker learns which numbers hold accounts by reading the error, and in a
+   * country where numbers are guessable in blocks that is a list worth having.
+   *
+   * The password is verified even when there is no account, against a throwaway
+   * hash, so the two paths take the same time. A sign-in that returns instantly
+   * for an unknown number and slowly for a known one has published the same list
+   * through the clock instead of the message.
+   */
+  async signInWithPassword(rawPhone: unknown, password: unknown): Promise<SignInResult> {
+    const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
+    const supplied = typeof password === 'string' ? password : '';
+
+    const user = phone
+      ? await this.prisma.user.findUnique({
+          where: { phone },
+          select: { id: true, passwordHash: true, deactivatedAt: true },
+        })
+      : null;
+
+    /*
+     * The decoy.
+     *
+     * Hashed once at module load would be faster, but the point is to spend the
+     * same wall-clock time as a real verification, and a real verification runs
+     * scrypt. This is the cheapest honest way to make the two indistinguishable.
+     */
+    const stored = user?.passwordHash ?? DECOY_HASH;
+    const matched = await verifyPassword(supplied, stored);
+
+    if (!user || !user.passwordHash || !matched || user.deactivatedAt !== null) {
+      throw new UnauthorizedException({
+        error: 'SIGN_IN_FAILED',
+        message: 'That phone number and password do not match an account.',
+      });
+    }
+
+    /*
+     * Opened the same way a Telegram sign-in opens one, including the device
+     * eviction (T-260). Two sign-in doors that manage sessions differently is
+     * how one of them ends up not counting against the limit.
+     */
+    const session = await this.startSession(user.id, 'password');
+    const account = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { displayName: true, fieldId: true },
+    });
+    return {
+      token: signSessionToken({ sub: user.id, sid: session.id }, this.jwtSecret),
+      userId: user.id,
+      sessionId: session.id,
+      displayName: account.displayName,
+      fieldId: account.fieldId,
+      isNew: false,
+    };
+  }
+
+  /**
+   * Sets or replaces a password on an account.
+   *
+   * Separate from sign-in because the two have different guards: this one needs
+   * the caller to already be who they say they are, by session or by a verified
+   * one-time code.
+   */
+  async setPassword(userId: string, password: unknown): Promise<{ ok: true }> {
+    const check = checkPassword(password);
+    if (!check.ok) {
+      throw new UnprocessableEntityException({ error: 'WEAK_PASSWORD', reasons: check.reasons });
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: await hashPassword(password as string) },
+    });
+    return { ok: true };
+  }
+
   async chooseField(
     userId: string,
     fieldId: string,

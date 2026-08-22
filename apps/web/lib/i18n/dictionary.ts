@@ -264,6 +264,26 @@ export const en = {
    * secret and why the code can sit in 34px type on a laptop in a lab.
    */
   signIn: {
+    /*
+     * Phone-and-password sign-in (T-263).
+     *
+     * "Phone number", never "username": the field is a thing the student
+     * already has in their hand, and calling it a username invites them to
+     * invent one they will forget.
+     */
+    phoneLabel: 'Phone number',
+    phoneHint: 'The number you signed up with — 09… or 07…',
+    passwordLabel: 'Password',
+    signInAction: 'Sign in',
+    signingIn: 'Signing in…',
+    /*
+     * One message for every failure, matching the server byte for byte. Telling
+     * a wrong password apart from an unknown number would publish which numbers
+     * hold accounts, and mobile numbers are issued in guessable blocks.
+     */
+    signInFailed: 'That phone number and password do not match an account.',
+    tooMany: 'Too many attempts on this number. Wait a few minutes and try again.',
+    orTelegram: 'Or sign in with Telegram',
     title: 'Sign in with Telegram',
     intro:
       'No passwords, no forms. Open Telegram, press Start, and this page signs you in by itself.',
@@ -282,11 +302,27 @@ export const en = {
     valueBody:
       'Practise real questions with full explanations, sit timed mocks, and see exactly which ' +
       'topics to study next.',
-    step1: 'Open Telegram and press Start — that is the whole sign-up.',
-    step2: 'You come straight back here, signed in. No password, ever.',
+    /*
+     * Rewritten for the phone-first door (T-263).
+     *
+     * These said "Open Telegram and press Start — that is the whole sign-up"
+     * and "No password, ever", and they now sit directly beneath a password
+     * field. A screen that contradicts itself in two lines is worse than one
+     * that explains nothing.
+     *
+     * They describe what is true *today*: sign-in is phone and password, and
+     * accounts are still created through the bot because SMS registration is
+     * not built. When it is, step 2 changes and not before — promising a code
+     * that never arrives is the worse half of this trade.
+     */
+    step1: 'Sign in with your phone number and the password you chose.',
+    step2: 'New here? Open Telegram and press Start — that creates your account.',
     step3: 'Your first 10 questions are free — explanations included.',
     continue: 'Continue with Telegram',
-    coverage: 'One plan covers Computer Science, Public Health, and Accounting & Finance.',
+    // Named tracks went stale the moment there were seven of them. One plan
+    // covering everything is the durable half of the claim, and the one
+    // PRODUCT.md T-141b actually commits to.
+    coverage: 'One plan covers every programme — school tracks and exit exams alike.',
 
     signedIn: 'You are signed in.',
     goPractise: 'Start practising',

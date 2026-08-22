@@ -31,6 +31,7 @@ import { Card } from '../../components/Card';
 import { Icon } from '../../components/icons';
 import { Logo } from '../../components/Logo';
 import { ApiError, api, type LoginLink } from '../../lib/api';
+import { PasswordSignIn } from '../../components/PasswordSignIn';
 import { copy } from '../../lib/i18n';
 
 /** How often the page asks whether the student has confirmed. */
@@ -120,6 +121,17 @@ export function SignInScreen() {
         <h1 className="text-title text-center">{c.signIn.valueTitle}</h1>
         <p className="text-body text-ink-2 text-center">{c.signIn.valueBody}</p>
       </div>
+
+      {/*
+        Phone and password, first (T-263).
+
+        The door reversed: sign-in is the number a student already has and a
+        password they chose, and Telegram is a linked channel rather than the
+        way in. It is first on the screen because it is now the ordinary path —
+        the Telegram flow below is for accounts that predate it and for students
+        who came from the bot.
+      */}
+      <PasswordSignIn />
 
       {/* The whole onboarding story, in three lines. Registration, email
           verification and password reset do not exist in this product, so the

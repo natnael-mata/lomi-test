@@ -1,13 +1,18 @@
 import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request as ExpressRequest, Response } from 'express';
 
+import { normaliseEthiopianMobile } from '../common/phone';
+import { RateLimitService } from '../common/rate-limit.service';
 import { AuthService, type LinkResult, type SignInResult } from './auth.service';
 import { clearedSessionCookie, cookieOptionsFor, sessionCookie } from './session-cookie';
 import { SessionGuard, type AuthedRequest } from './session.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly rateLimit: RateLimitService,
+  ) {}
 
   /**
    * Signs in from inside Telegram.
@@ -44,6 +49,43 @@ export class AuthController {
    *
    * Delete before launch: T-206a.
    */
+  /**
+   * Signs in with a phone number and a password (T-263).
+   *
+   * Rate limited on the same `signIn` bucket as the Telegram door — five in ten
+   * minutes. A password door is the one worth guessing at, and a second door
+   * with its own allowance would be a cheaper way in beside a guarded one.
+   *
+   * Keyed on the *address* here rather than the user, deliberately and unlike
+   * the practice limits: the whole point is somebody trying many accounts, so
+   * there is no user to key on until they succeed.
+   */
+  @Post('sign-in')
+  async signIn(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown; password?: unknown },
+  ): Promise<SignInResult> {
+    /*
+     * Two buckets, and the tight one is keyed on the number (T-263).
+     *
+     * An address is a room in this product — school labs and shared mobile NAT
+     * — so limiting sign-in by address means one student's typo locks out
+     * everybody near them. The per-phone bucket protects the account; the looser
+     * per-address one catches somebody walking a block of numbers.
+     *
+     * Normalised before it is keyed, or `0911…` and `+251911…` would each get
+     * their own five attempts against the same account.
+     */
+    const attempted = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    this.rateLimit.consume('passwordSignInAddress', null, req.ip ?? null);
+    if (attempted) this.rateLimit.consume('passwordSignIn', attempted, null);
+
+    const result = await this.auth.signInWithPassword(body?.phone, body?.password);
+    res.setHeader('Set-Cookie', sessionCookie(result.token, cookieOptionsFor(process.env)));
+    return result;
+  }
+
   @Post('dev-login')
   async devLogin(
     @Res({ passthrough: true }) res: Response,

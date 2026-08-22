@@ -879,6 +879,19 @@ export const api = {
       body: JSON.stringify({ chosenId }),
     }),
 
+  /**
+   * Signs in with a phone number and a password (T-263).
+   *
+   * The phone number is the username. Sent as typed — the server normalises,
+   * so `0911…`, `+251911…` and `251 91 1…` all reach the same account and the
+   * client never has to know the rules.
+   */
+  signInWithPassword: (
+    phone: string,
+    password: string,
+  ): Promise<{ token: string; userId: string; displayName: string; fieldId: string | null }> =>
+    call('/auth/sign-in', { method: 'POST', body: JSON.stringify({ phone, password }) }),
+
   /** Who am I. The generated handle, never a legal name. */
   me: (): Promise<Identity> => call<Identity>('/me'),
 

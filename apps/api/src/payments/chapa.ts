@@ -1,3 +1,11 @@
+/*
+ * Re-exported, so the move is invisible to every caller.
+ *
+ * The function belongs to identity now (see `common/phone.ts`); the payments
+ * code that has always used it should not have to care that it moved.
+ */
+export { normaliseEthiopianMobile } from '../common/phone';
+
 /**
  * Chapa's wire protocol (T-142, T-143, T-144), with no network and no secrets.
  *
@@ -44,30 +52,6 @@ export function buildTxRef(subscriptionId: string, nonce: string): string {
 export function subscriptionFromTxRef(txRef: string): string | null {
   const match = /^lomi-([a-z0-9]+)-[A-Za-z0-9]+$/.exec(txRef);
   return match?.[1] ?? null;
-}
-
-/**
- * An Ethiopian mobile number in the form Chapa's direct charge expects.
- *
- * People write their number every way there is: `0911223344`, `+251911223344`,
- * `251 91 122 33 44`, with hyphens, with a leading `00`. All of those are the
- * same handset, and refusing four of the five would be a checkout that fails for
- * reasons nobody can see. Normalised to the local ten-digit form (`09…`/`07…`)
- * because that is what Chapa's examples use.
- *
- * Returns `null` rather than a best guess when it is not a mobile number at all
- * — a landline or a mistyped digit should stop the purchase here, not produce a
- * USSD push to a stranger.
- */
-export function normaliseEthiopianMobile(input: string): string | null {
-  const digits = input.replace(/[^\d]/g, '').replace(/^00/, '');
-  const local = digits.startsWith('251')
-    ? `0${digits.slice(3)}`
-    : digits.startsWith('9') || digits.startsWith('7')
-      ? `0${digits}`
-      : digits;
-
-  return /^0[97]\d{8}$/.test(local) ? local : null;
 }
 
 export interface ChapaWebhookEvent {

@@ -39,6 +39,7 @@ import { PrismaClient, type PrismaClient as Client } from '@prisma/client';
 import { AuditService } from '../src/audit/audit.service';
 import { SubscriptionsService } from '../src/payments/subscriptions.service';
 import { devTelegramId, isDevTelegramId } from '../src/auth/dev-login';
+import { hashPassword } from '../src/auth/password';
 import { EngagementService } from '../src/engagement/engagement.service';
 import { ExamBuildService } from '../src/exams/exam-build.service';
 import { ExamsService } from '../src/exams/exams.service';
@@ -91,7 +92,29 @@ const USER_I_ANSWERED = 15;
 const GRADE_12_SLUG = 'grade-12-natural';
 const GRADE_6_SLUG = 'grade-6';
 
-async function upsertPersona(label: string, name: string): Promise<string> {
+/**
+ * The password every seeded account signs in with (T-263).
+ *
+ * One password for all of them, printed in the summary. These are smoke-test
+ * accounts in the reserved negative telegram range — the value of a distinct
+ * password each would be a tester keeping a list, and the value of a secret one
+ * is nil on a local database that ships its own seed script.
+ */
+const TEST_PASSWORD = 'lomi-test-2026';
+
+/**
+ * A phone number per persona, in the reserved 09 range.
+ *
+ * `0900000001` upward: real Ethiopian mobiles begin `09` or `07` followed by a
+ * carrier digit, and `0900…` is not an allocated prefix — so these are valid in
+ * shape, unique, obviously fake, and cannot collide with a real handset if this
+ * script is ever pointed at the wrong database.
+ */
+function phoneFor(index: number): string {
+  return `09${String(index + 1).padStart(8, '0')}`;
+}
+
+async function upsertPersona(label: string, name: string, index: number): Promise<string> {
   const telegramId = String(devTelegramId(label));
 
   /*
@@ -105,10 +128,21 @@ async function upsertPersona(label: string, name: string): Promise<string> {
    * smoke-test by their negative Telegram id — so naming them is safe, and the
    * rule that matters (never a legal name on a shared surface) is untouched.
    */
+  /*
+   * A phone and a password on every persona (T-263).
+   *
+   * Sign-in is moving from Telegram to phone-and-password, and a test account
+   * that can only be reached through the smoke-test door cannot exercise the
+   * door that is replacing it. Both identities are set, because the design keeps
+   * Telegram as a *linked channel* rather than replacing it — an account that
+   * loses its history when a student changes SIM is the failure this avoids.
+   */
+  const phone = phoneFor(index);
+  const passwordHash = await hashPassword(TEST_PASSWORD);
   const user = await prisma.user.upsert({
     where: { telegramId },
-    update: { displayName: name, deactivatedAt: null },
-    create: { telegramId, displayName: name },
+    update: { displayName: name, deactivatedAt: null, phone, passwordHash },
+    create: { telegramId, displayName: name, phone, passwordHash },
     select: { id: true, telegramId: true },
   });
 
@@ -335,7 +369,10 @@ async function main(): Promise<void> {
 
   const ids = new Map<string, string>();
   for (const persona of PERSONAS) {
-    ids.set(persona.label, await upsertPersona(persona.label, persona.name));
+    ids.set(
+      persona.label,
+      await upsertPersona(persona.label, persona.name, PERSONAS.indexOf(persona)),
+    );
   }
 
   const audit = new AuditService(prisma as PrismaService);
@@ -676,7 +713,11 @@ async function main(): Promise<void> {
 
   const line = (label: string, value: string): string => `  ${label.padEnd(9)} ${value}`;
   console.log('\nTest accounts ready. Sign in at http://localhost:3100/dev-login\n');
-  console.log('  Type the name exactly as shown — the door normalises spacing and case.\n');
+  console.log('  Type the name exactly as shown — the door normalises spacing and case.');
+  console.log(
+    `  Or sign in with a phone number and the password "${TEST_PASSWORD}" ` +
+      `— 0900000001 is User A, 0900000002 is User B, and so on in this order.\n`,
+  );
   console.log(line('User A', 'no programme chosen — starts at the programme chooser'));
   console.log(
     line(

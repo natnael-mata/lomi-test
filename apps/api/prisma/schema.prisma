@@ -443,8 +443,23 @@ model User {
   id String @id @default(cuid())
 
   /// E.164, unique when present. Null for a Telegram-only account.
+  /// The student's phone number, normalised to `09…`/`07…` (T-262).
+  ///
+  /// **This is the username.** It is the one identifier an Ethiopian student
+  /// already has, cannot forget, and that a password reset can be sent to.
+  /// Unique, so two accounts can never claim the same handset — which is what
+  /// makes "sign in with your number" mean something.
   phone           String?   @unique
   phoneVerifiedAt DateTime?
+
+  /// `scrypt$N$r$p$salt$hash` — see `auth/password.ts`. Null for an account
+  /// that has never set one, which today is every Telegram-first account.
+  ///
+  /// **Nullable rather than backfilled.** A placeholder hash would be a
+  /// password somebody could theoretically guess; null cannot be signed in
+  /// with at all, which is the honest state for an account that has no
+  /// password rather than one whose password is unknown.
+  passwordHash    String?
 
   /// Telegram's numeric id, held as a STRING: it is an identifier, not a
   /// quantity, and ids past 2^53 must not round through a JS number.
