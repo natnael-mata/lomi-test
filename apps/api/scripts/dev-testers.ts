@@ -703,6 +703,35 @@ async function main(): Promise<void> {
     }
   }
 
+  /*
+   * However G's paper got there, it took a believable amount of time.
+   *
+   * Outside the branch above on purpose. Twenty questions answered by a script
+   * take about a sixth of a second, so the trend reported "0 min used" beside a
+   * completed twenty-question paper — and because the branch only runs when
+   * there is no paper yet, re-seeding could never repair one already written.
+   * That is the "only ever adds" failure this file is supposed to be free of:
+   * the state described in the summary has to be the state on the account, not
+   * the state the first run happened to leave.
+   *
+   * Thirty-one minutes of a forty-five minute paper is a student who finished
+   * with time in hand.
+   */
+  const G_USED_MIN = 31;
+  const gPaper = await prisma.sitting.findFirst({
+    where: { userId: userG, closedAt: { not: null } },
+    orderBy: { startedAt: 'desc' },
+    select: { id: true, closedAt: true },
+  });
+  if (gPaper?.closedAt) {
+    const opened = new Date(gPaper.closedAt.getTime() - G_USED_MIN * 60_000);
+    await prisma.sitting.update({
+      where: { id: gPaper.id },
+      data: { startedAt: opened, endsAt: new Date(opened.getTime() + FIXTURE_EXAM_SEC * 1000) },
+    });
+    gNote = `${gNote} · took ${G_USED_MIN} min`;
+  }
+
   // ---- User H: five days engaged -------------------------------------------
   /*
    * The streak counts **days engaged, and nothing takes it away** — so this is

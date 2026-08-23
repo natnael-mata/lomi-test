@@ -26,6 +26,17 @@ export interface SittingInput {
   totalQuestions: number;
   answeredCount: number;
   ranOutOfTime: boolean;
+  /**
+   * The deadline the paper actually had.
+   *
+   * Needed because `closedAt` is not when the student stopped. A paper that runs
+   * out of time stays open in the database until something sweeps it, and the
+   * sweeper is the student's *next* action — so a paper abandoned on a Tuesday
+   * and swept on a Wednesday reported nineteen hours of work. QA read "1132 min
+   * used" on a 45-minute paper and filed it as a timing bug; it was, and this is
+   * the missing number.
+   */
+  endsAt: string;
 }
 
 export interface SittingPoint extends SittingInput {
@@ -71,9 +82,19 @@ const round1 = (n: number): number => Math.round(n * 10) / 10;
  * a paper that ran 44:50, and rounding it to 45 would say they used the lot.
  * Zero when a sitting is somehow still open — absent time is not negative time.
  */
-function minutesBetween(startedAt: string, closedAt: string | null): number {
+/**
+ * How long the student actually had the paper.
+ *
+ * Bounded by the deadline, never by when the row was settled. Closing is a
+ * bookkeeping event that can happen arbitrarily later — the sweeper runs on the
+ * student's next visit — and a figure that includes the wait says the student
+ * sat there for it. Nobody spends more time on a paper than the paper allows.
+ */
+function minutesUsedOn(startedAt: string, closedAt: string | null, endsAt: string): number {
   if (closedAt === null) return 0;
-  const ms = new Date(closedAt).getTime() - new Date(startedAt).getTime();
+  const started = new Date(startedAt).getTime();
+  const stopped = Math.min(new Date(closedAt).getTime(), new Date(endsAt).getTime());
+  const ms = stopped - started;
   return Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 60_000) : 0;
 }
 
@@ -91,7 +112,7 @@ export function labelSittings(sittings: readonly SittingInput[]): SittingPoint[]
     // student can add them up against the total printed beside it.
     wrong: Math.max(0, sitting.answeredCount - sitting.scoreCorrect),
     blank: Math.max(0, sitting.totalQuestions - sitting.answeredCount),
-    minutesUsed: minutesBetween(sitting.startedAt, sitting.closedAt),
+    minutesUsed: minutesUsedOn(sitting.startedAt, sitting.closedAt, sitting.endsAt),
   }));
 }
 

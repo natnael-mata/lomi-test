@@ -131,6 +131,21 @@ export const en = {
     signOutFailed: 'Could not sign out. Try again.',
   },
 
+  /*
+   * The refusal in front of every staff screen.
+   *
+   * Says what happened without accusing anybody: most people who land here did
+   * so by following a link or typing a URL they half-remembered, not by trying
+   * to break in. It names no roles and confirms nothing about who does have
+   * access.
+   */
+  staff: {
+    refusedTitle: 'This part is for staff',
+    refusedBody:
+      'Your account does not have access to this page. If you think it should, ask whoever set it up.',
+    refusedHome: 'Back to your home page',
+  },
+
   devLogin: {
     title: 'Sign in for testing',
     intro: 'Choose who to sign in as. This page is for local testing only.',

@@ -354,6 +354,14 @@ export interface TrendPoint {
   answeredCount: number;
   unanswered: number;
   ranOutOfTime: boolean;
+  /**
+   * The deadline the paper had.
+   *
+   * Carried because `minutesUsed` is bounded by it: a paper that runs out of
+   * time is settled whenever something next sweeps it, which can be a day
+   * later, and the raw close time reported that whole gap as work.
+   */
+  endsAt: string;
 }
 
 export interface SittingClock {

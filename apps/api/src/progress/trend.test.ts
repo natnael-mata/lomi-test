@@ -6,6 +6,9 @@ const sitting = (over: Partial<SittingInput> = {}): SittingInput => ({
   sittingId: 's1',
   startedAt: '2026-07-12T08:00:00.000Z',
   closedAt: '2026-07-12T08:45:00.000Z',
+  // The deadline the paper had. `minutesUsed` is bounded by it, never by when
+  // the row happened to be swept.
+  endsAt: '2026-07-12T11:00:00.000Z',
   scoreCorrect: 50,
   totalQuestions: 100,
   answeredCount: 100,
@@ -113,6 +116,39 @@ describe('the score trend across sittings (T-138)', () => {
  * attempted with 38 blank. Those are opposite problems — one is study, the
  * other is a watch — and a bare percentage names neither.
  */
+/*
+ * Time used, and why it is not `closedAt - startedAt`.
+ *
+ * A paper that runs out of time stays open in the database until something
+ * sweeps it, and the sweeper is the student's next visit. QA read "1132 min
+ * used" beside a 45-minute paper — a sitting abandoned on the Wednesday and
+ * settled when the student came back the following afternoon. The student did
+ * not sit there for nineteen hours.
+ */
+describe('minutes used', () => {
+  it('counts start to close for a paper handed in', () => {
+    const [point] = labelSittings([sitting()]);
+    expect(point!.minutesUsed).toBe(45);
+  });
+
+  it('stops at the deadline for a paper that ran out', () => {
+    const [point] = labelSittings([
+      sitting({
+        // Started 08:00, deadline 11:00, swept the following morning.
+        closedAt: '2026-07-13T09:12:00.000Z',
+        ranOutOfTime: true,
+      }),
+    ]);
+    // Three hours, not twenty-five.
+    expect(point!.minutesUsed).toBe(180);
+  });
+
+  it('is never negative, whatever the timestamps say', () => {
+    const [point] = labelSittings([sitting({ closedAt: '2026-07-12T07:00:00.000Z' })]);
+    expect(point!.minutesUsed).toBe(0);
+  });
+});
+
 describe('correct, wrong and blank', () => {
   it('sums to the paper', () => {
     const [point] = labelSittings([
