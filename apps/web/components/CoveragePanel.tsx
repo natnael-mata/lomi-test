@@ -96,6 +96,15 @@ function Ring({ pct, targetPct }: { pct: number; targetPct: number }) {
   );
 }
 
+/**
+ * Below this, a topic is drawn as weak (handoff frame 5a).
+ *
+ * Not a pass mark and never presented as one: it is the line where the design
+ * changes the bar's colour so a student can find the topics worth an hour
+ * without reading eleven numbers.
+ */
+const WEAK_BELOW_PCT = 60;
+
 /** One breakdown row, with its own share drawn as a bar. */
 function SliceRow({ slice }: { slice: CoverageSlice }) {
   const c = copy();
@@ -108,8 +117,26 @@ function SliceRow({ slice }: { slice: CoverageSlice }) {
         </span>
       </span>
       <span className="bg-surface-2 h-2 w-full overflow-hidden rounded-full">
+        {/*
+          Terracotta below 60, forest above (handoff frame 5a).
+
+          The bar was the lemon, which made every topic look the same amount of
+          fine — the marker says "look here", not "this is healthy". Two fills
+          split the list into the topics that need an hour and the ones that do
+          not, at a glance and before reading a single number.
+
+          Sixty because that is where the design draws it, and it is a threshold
+          rather than a gradient on purpose: a continuous ramp asks a student to
+          judge a hue, and the number is already printed beside the bar for
+          anyone who wants precision.
+
+          The width carries the same fact, so this is never colour alone.
+        */}
         <span
-          className="bg-brand block h-full rounded-full"
+          className={[
+            'block h-full rounded-full',
+            slice.pct < WEAK_BELOW_PCT ? 'bg-wrong' : 'bg-ink',
+          ].join(' ')}
           style={{ width: `${Math.min(100, slice.pct)}%` }}
         />
       </span>
