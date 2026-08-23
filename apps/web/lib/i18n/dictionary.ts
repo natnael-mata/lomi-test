@@ -316,7 +316,7 @@ export const en = {
      * that never arrives is the worse half of this trade.
      */
     step1: 'Sign in with your phone number and the password you chose.',
-    step2: 'New here? Open Telegram and press Start — that creates your account.',
+    step2: 'New here? Sign up with your number — we send a code to confirm it.',
     step3: 'Your first 10 questions are free — explanations included.',
     continue: 'Continue with Telegram',
     // Named tracks went stale the moment there were seven of them. One plan

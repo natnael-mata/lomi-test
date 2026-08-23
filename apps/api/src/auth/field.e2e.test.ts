@@ -11,7 +11,6 @@
  *
  * Needs Postgres (`npm run db:dev`). CI provides it as a service container.
  */
-import { createHmac } from 'node:crypto';
 
 import { Controller, Get, type INestApplication, UseGuards } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -19,6 +18,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
+import { signInByPhone } from '../auth/staff-testkit.test-helper';
 import { PrismaService } from '../prisma/prisma.service';
 import { FieldRequiredGuard } from './field-required.guard';
 import { SessionGuard } from './session.guard';
@@ -36,20 +36,6 @@ class GatedStubController {
   get(): { ok: true } {
     return { ok: true };
   }
-}
-
-function initData(): string {
-  const user = JSON.stringify({ id: TG, first_name: 'Test', username: `user${TG}` });
-  const fields: Record<string, string> = {
-    auth_date: String(Math.floor(Date.now() / 1000)),
-    user,
-  };
-  const pairs = Object.entries(fields)
-    .map(([k, v]) => `${k}=${v}`)
-    .sort();
-  const secret = createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-  const hash = createHmac('sha256', secret).update(pairs.join('\n')).digest('hex');
-  return new URLSearchParams({ ...fields, hash }).toString();
 }
 
 describe('choosing a programme', () => {
@@ -135,12 +121,7 @@ describe('choosing a programme', () => {
     prisma = app.get(PrismaService);
     await cleanup();
 
-    const body = (
-      await request(app.getHttpServer())
-        .post('/auth/telegram')
-        .send({ initData: initData() })
-        .expect(201)
-    ).body;
+    const body = await signInByPhone(app, prisma, TG);
     token = body.token;
     userId = body.userId;
 

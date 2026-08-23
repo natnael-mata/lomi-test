@@ -15,20 +15,50 @@ export class AuthController {
   ) {}
 
   /**
-   * Signs in from inside Telegram.
+   * Starts registration: a one-time code to a phone number (T-264).
    *
-   * Sets the session cookie **and** returns the token. The cookie is what the
-   * web uses (T-112a); the token stays in the body for callers with nowhere to
-   * put a cookie — a webview with cookies blocked, a script — and dropping it
-   * would break them for no gain, since an httpOnly cookie is unreadable to a
-   * script either way.
+   * Two rate limits, for two different abuses. The per-number one stops a
+   * resend button spending a telecom balance; the per-address one stops
+   * somebody walking a block of numbers to make us pay for the SMS. **Every
+   * send costs money**, which is why this endpoint is the most heavily guarded
+   * in the product.
+   *
+   * The cooldown itself lives in the service, because it is a fact about the
+   * last code sent to that number rather than about this caller.
    */
-  @Post('telegram')
-  async telegram(
+  @Post('register/start')
+  register(
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown },
+  ): Promise<{ sent: true; expiresInSec: number }> {
+    this.rateLimit.consume('otpSendAddress', null, req.ip ?? null);
+    const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    if (phone) this.rateLimit.consume('otpSend', phone, null);
+    return this.auth.startPhoneRegistration(body?.phone);
+  }
+
+  /**
+   * Finishes registration: the code, a password, and a session.
+   *
+   * Rate limited on the number being verified. Six digits is a million
+   * possibilities only if the guesses are counted — the per-code attempt cap in
+   * `otp.ts` handles one code, and this handles somebody burning through codes.
+   */
+  @Post('register/verify')
+  async verify(
     @Res({ passthrough: true }) res: Response,
-    @Body() body: { initData?: string; deviceLabel?: string },
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown; code?: unknown; password?: unknown },
   ): Promise<SignInResult> {
-    const result = await this.auth.signInWithTelegram(body?.initData ?? '', body?.deviceLabel);
+    this.rateLimit.consume('otpVerifyAddress', null, req.ip ?? null);
+    const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    if (phone) this.rateLimit.consume('otpVerify', phone, null);
+
+    const result = await this.auth.completePhoneRegistration(
+      body?.phone,
+      body?.code,
+      body?.password,
+    );
     res.setHeader('Set-Cookie', sessionCookie(result.token, cookieOptionsFor(process.env)));
     return result;
   }
@@ -64,7 +94,7 @@ export class AuthController {
   async signIn(
     @Res({ passthrough: true }) res: Response,
     @Req() req: ExpressRequest,
-    @Body() body: { phone?: unknown; password?: unknown },
+    @Body() body: { phone?: unknown; password?: unknown; deviceLabel?: string },
   ): Promise<SignInResult> {
     /*
      * Two buckets, and the tight one is keyed on the number (T-263).
@@ -81,7 +111,11 @@ export class AuthController {
     this.rateLimit.consume('passwordSignInAddress', null, req.ip ?? null);
     if (attempted) this.rateLimit.consume('passwordSignIn', attempted, null);
 
-    const result = await this.auth.signInWithPassword(body?.phone, body?.password);
+    const result = await this.auth.signInWithPassword(
+      body?.phone,
+      body?.password,
+      body?.deviceLabel,
+    );
     res.setHeader('Set-Cookie', sessionCookie(result.token, cookieOptionsFor(process.env)));
     return result;
   }

@@ -517,18 +517,6 @@ export interface RowOutcome {
   messages: string[];
 }
 
-/** A login request in flight (T-075–T-078). See `app/signin/SignInScreen.tsx`. */
-export interface LoginLink {
-  /** Goes in the deep link. Safe to be seen; on its own it produces nothing. */
-  nonce: string;
-  /** Stays in this browser. Never shown, never sent to Telegram. */
-  pollSecret: string;
-  deepLink: string;
-  /** Six digits the student sends TO the bot. The OTP, in the safe direction. */
-  pairingCode: string;
-  expiresAt: string;
-}
-
 export interface PaymentHistoryRow {
   id: string;
   method: string;
@@ -665,29 +653,6 @@ export interface ImportReport {
 
 export const api = {
   nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
-
-  /**
-   * Starts a sign-in. Returns the deep link, the pairing code and the secret
-   * this browser keeps.
-   */
-  createLoginLink: (deviceLabel: string): Promise<LoginLink> =>
-    call('/auth/login-link', { method: 'POST', body: JSON.stringify({ deviceLabel }) }),
-
-  /**
-   * Asks whether the student has confirmed yet, and takes the session if so.
-   *
-   * `{ pending: true }` is the ordinary answer, not a failure — the page polls
-   * this every couple of seconds while the student is in Telegram.
-   */
-  claimLoginLink: (
-    nonce: string,
-    pollSecret: string,
-    deviceLabel: string,
-  ): Promise<{ pending: true } | { userId: string }> =>
-    call('/auth/login-link/claim', {
-      method: 'POST',
-      body: JSON.stringify({ nonce, pollSecret, deviceLabel }),
-    }),
 
   /** The receipt and the payments behind it. Their own, from the session. */
   paymentHistory: (): Promise<{ payments: PaymentHistoryRow[] }> =>

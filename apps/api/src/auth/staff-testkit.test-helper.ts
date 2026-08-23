@@ -15,6 +15,8 @@ import type { INestApplication } from '@nestjs/common';
 import type { StaffRole } from '@prisma/client';
 import request from 'supertest';
 
+import { RateLimitService } from '../common/rate-limit.service';
+import { hashPassword } from './password';
 import type { PrismaService } from '../prisma/prisma.service';
 
 export const TEST_BOT_TOKEN = '7000000000:AAF-lomi-test-fixture-bot-token-not-real';
@@ -43,6 +45,79 @@ export interface StaffSession {
 }
 
 /**
+ * The password every fixture account is created with (T-264).
+ *
+ * A constant rather than a per-suite value: these accounts exist for the length
+ * of one test file and the password is never a secret, only a way through the
+ * door that replaced Telegram.
+ */
+export const TEST_ACCOUNT_PASSWORD = 'fixture-password-2026';
+
+/**
+ * A phone number derived from the fixture's telegram id.
+ *
+ * Suites already allocate unique telegram ids to avoid colliding with each
+ * other; deriving the number from that id inherits the uniqueness rather than
+ * asking every suite to invent a second scheme. `09` plus eight digits is the
+ * shape a real Ethiopian mobile has, and these are in an unallocated prefix.
+ */
+export function testPhone(telegramId: number): string {
+  return `09${String(Math.abs(telegramId) % 100_000_000).padStart(8, '0')}`;
+}
+
+/**
+ * Creates the account and signs in with a phone number and a password.
+ *
+ * **Telegram sign-in was removed (T-265)**, so the fixtures use the door that
+ * replaced it. The account is written directly rather than registered through
+ * the OTP flow: a test that wanted a signed-in user should not have to read a
+ * one-time code out of a log, and `register.e2e.test.ts` is what proves the
+ * real registration path works.
+ *
+ * The telegram id is still set, because Telegram remains a *linked channel* and
+ * several suites clean up by it.
+ */
+export async function signInByPhone(
+  app: INestApplication,
+  prisma: PrismaService,
+  telegramId: number,
+  deviceLabel?: string,
+): Promise<{ token: string; userId: string; sessionId: string }> {
+  const phone = testPhone(telegramId);
+  const passwordHash = await hashPassword(TEST_ACCOUNT_PASSWORD);
+
+  await prisma.user.upsert({
+    where: { telegramId: String(telegramId) },
+    update: { phone, passwordHash, deactivatedAt: null },
+    create: {
+      telegramId: String(telegramId),
+      phone,
+      passwordHash,
+      displayName: `Fixture ${telegramId}`,
+    },
+  });
+
+  /*
+   * A clean allowance for every fixture sign-in.
+   *
+   * The per-number limit is five in ten minutes, which is right for a person
+   * and wrong for a suite that signs the same account in four times to prove
+   * device eviction. Reset here rather than in each test, so no suite has to
+   * know the limit exists — `password-sign-in.e2e.test.ts` is where it is
+   * tested on purpose.
+   */
+  app.get(RateLimitService).reset();
+
+  const body = (
+    await request(app.getHttpServer())
+      .post('/auth/sign-in')
+      .send({ phone, password: TEST_ACCOUNT_PASSWORD, deviceLabel })
+      .expect(201)
+  ).body as { token: string; userId: string; sessionId: string };
+  return body;
+}
+
+/**
  * Signs in and grants the role.
  *
  * `grantedBy` is tagged with the caller's suffix so a suite can delete exactly
@@ -59,12 +134,7 @@ export async function signInAsStaff(
   process.env.TELEGRAM_BOT_TOKEN = TEST_BOT_TOKEN;
   process.env.JWT_SECRET = TEST_JWT_SECRET;
 
-  const body = (
-    await request(app.getHttpServer())
-      .post('/auth/telegram')
-      .send({ initData: testInitData(telegramId) })
-      .expect(201)
-  ).body as { token: string; userId: string };
+  const body = await signInByPhone(app, prisma, telegramId);
 
   await prisma.staffMember.upsert({
     where: { userId: body.userId },

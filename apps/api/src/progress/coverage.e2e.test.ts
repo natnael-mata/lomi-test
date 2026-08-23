@@ -29,10 +29,10 @@ import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { COVERAGE_TARGET_PCT } from './coverage';
 import {
+  signInByPhone,
   TEST_BOT_TOKEN,
   TEST_JWT_SECRET,
   cleanupStaff,
-  testInitData,
 } from '../auth/staff-testkit.test-helper';
 
 const SFX = 'e2e-coverage';
@@ -184,10 +184,7 @@ describe('coverage (T-256)', () => {
       await makeQuestion(sid, socialTopic.id, `COV-S${n}-${SFX}`, 11);
     }
 
-    const signIn = await request(app.getHttpServer())
-      .post('/auth/telegram')
-      .send({ initData: testInitData(TG) })
-      .expect(201);
+    const signIn = { body: await signInByPhone(app, prisma, TG) };
     token = signIn.body.token;
     userId = signIn.body.userId;
     await prisma.user.update({ where: { id: userId }, data: { fieldId: nid } });

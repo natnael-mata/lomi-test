@@ -96,7 +96,7 @@ describe('signing in with a phone and a password (T-263)', () => {
     const res = await signIn(PHONE, PASSWORD).expect(201);
     expect(res.body.displayName).toBe(`Signer ${SFX}`);
     expect(res.body.token).toBeTruthy();
-    expect(res.headers['set-cookie']?.join(' ')).toContain('lomi_session');
+    expect(String(res.headers['set-cookie'])).toContain('lomi_session');
   });
 
   /*

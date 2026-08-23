@@ -61,6 +61,26 @@ export const RATE_LIMITS = {
   passwordSignIn: { limit: 5, windowSec: 600 },
 
   /**
+   * Sending a one-time code (T-264).
+   *
+   * **Every send costs money**, and an unthrottled send endpoint is how a
+   * telecom balance disappears overnight — a documented failure of products
+   * doing exactly this, not a hypothesis.
+   *
+   * Three a day per number sits above any honest need: a student who did not
+   * get the first SMS asks once more, and the third is already generous. The
+   * per-address cap catches the other shape, somebody walking a block of
+   * numbers one send each to make us pay for all of them.
+   */
+  otpSend: { limit: 3, windowSec: 86_400 },
+  otpSendAddress: { limit: 20, windowSec: 3600 },
+
+  /** Verifying one. The per-code attempt cap handles a single code; this one
+   * handles somebody burning through codes on the same number. */
+  otpVerify: { limit: 10, windowSec: 600 },
+  otpVerifyAddress: { limit: 60, windowSec: 600 },
+
+  /**
    * And a looser one on the address, to catch the other shape.
    *
    * Per-phone alone would let somebody walk a block of numbers, one attempt

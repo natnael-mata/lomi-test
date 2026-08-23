@@ -11,6 +11,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
+import { signInByPhone } from '../auth/staff-testkit.test-helper';
 import { PrismaService } from '../prisma/prisma.service';
 import { MAX_CONCURRENT_SESSIONS } from './auth.service';
 
@@ -59,13 +60,7 @@ describe('the device limit', () => {
     delete process.env.JWT_SECRET;
   });
 
-  const login = async (deviceLabel: string) =>
-    (
-      await request(app.getHttpServer())
-        .post('/auth/telegram')
-        .send({ initData: initData(), deviceLabel })
-        .expect(201)
-    ).body;
+  const login = async (deviceLabel: string) => await signInByPhone(app, prisma, TG, deviceLabel);
 
   const liveSessions = async (userId: string) =>
     prisma.session.findMany({
@@ -127,9 +122,23 @@ describe('the device limit', () => {
   });
 
   it('does not evict another user’s sessions', async () => {
-    const other = await prisma.user.create({
-      data: { telegramId: '557999999', displayName: 'CalmDelta1111' },
+    // Upserted, not created: `signInByPhone` may already have made this row on
+    // a previous run of the suite, and a bare create collides on `telegramId`.
+    const other = await prisma.user.upsert({
+      where: { telegramId: '557999999' },
+      update: {},
+      create: { telegramId: '557999999', displayName: 'CalmDelta1111' },
     });
+    /*
+     * Exactly one session, not "at least one".
+     *
+     * The row survives between runs, so creating a session without clearing the
+     * old ones left this account with three and the assertion counted them all.
+     * The suite asserts a state, so it has to produce that state rather than add
+     * to whatever the last run left — the same discipline the seed script learnt
+     * the hard way.
+     */
+    await prisma.session.deleteMany({ where: { userId: other.id } });
     await prisma.session.create({ data: { userId: other.id } });
 
     await login('Yet another device');
@@ -159,19 +168,6 @@ describe('GET /me/devices and revoke (T-083, T-084)', () => {
   let prisma: PrismaService;
 
   const TG2 = 558000001;
-  const initDataB = (): string => {
-    const user = JSON.stringify({ id: TG2, first_name: 'Test', username: `user${TG2}` });
-    const fields: Record<string, string> = {
-      auth_date: String(Math.floor(Date.now() / 1000)),
-      user,
-    };
-    const pairs = Object.entries(fields)
-      .map(([k, v]) => `${k}=${v}`)
-      .sort();
-    const secret = createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-    const hash = createHmac('sha256', secret).update(pairs.join('\n')).digest('hex');
-    return new URLSearchParams({ ...fields, hash }).toString();
-  };
 
   const cleanup = async (): Promise<void> => {
     await prisma.session.deleteMany({ where: { user: { telegramId: String(TG2) } } });
@@ -191,13 +187,7 @@ describe('GET /me/devices and revoke (T-083, T-084)', () => {
     prisma = app.get(PrismaService);
     await cleanup();
 
-    const login = async (deviceLabel: string) =>
-      (
-        await request(app.getHttpServer())
-          .post('/auth/telegram')
-          .send({ initData: initDataB(), deviceLabel })
-          .expect(201)
-      ).body;
+    const login = async (deviceLabel: string) => await signInByPhone(app, prisma, TG, deviceLabel);
 
     phone = await login('Phone');
     laptop = await login('Laptop');

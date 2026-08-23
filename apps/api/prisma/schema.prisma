@@ -565,6 +565,41 @@ model PointEntry {
 /// two things a stateless token cannot do: list a student's devices, and revoke
 /// one immediately (T-083, T-084). A token whose session row is gone or revoked
 /// is refused however valid its signature.
+/// A one-time code sent to a phone, for registration and password reset (T-264).
+///
+/// **The code is hashed, never stored.** A leaked database must not be a list of
+/// live codes, and the same reasoning that keeps passwords out of the table
+/// applies to a credential that is briefly as powerful as one.
+model OtpCode {
+  id String @id @default(cuid())
+
+  /// Normalised to `09…`/`07…` — see `common/phone.ts`. Not a foreign key,
+  /// deliberately: the whole point is a code sent to a number that has no
+  /// account yet.
+  phone String
+
+  /// SHA-256 of the code. Sent once, to the handset, and never recoverable.
+  codeHash String
+
+  /// Short. A code that lives for an hour is an hour of someone else's guesses.
+  expiresAt DateTime
+
+  /// How many wrong guesses have been made against this code. Capped, because
+  /// six digits is a million possibilities and unlimited attempts is none.
+  attempts Int @default(0)
+
+  /// Set when it has been spent. Kept rather than deleted, so "that code was
+  /// already used" is answerable and a replay is refused rather than ignored.
+  consumedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  /// The resend cooldown reads the newest row for a phone; the sweep reads the
+  /// expired ones.
+  @@index([phone, createdAt])
+  @@index([expiresAt])
+}
+
 model Session {
   id     String @id @default(cuid())
   userId String

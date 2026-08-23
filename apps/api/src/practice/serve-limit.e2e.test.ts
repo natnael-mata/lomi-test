@@ -26,10 +26,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RATE_LIMITS } from '../common/rate-limit';
 import { MAX_CONCURRENT_SESSIONS, MAX_CONCURRENT_SESSIONS_JUNIOR } from '../auth/auth.service';
 import {
+  signInByPhone,
   TEST_BOT_TOKEN,
   TEST_JWT_SECRET,
   cleanupStaff,
-  testInitData,
 } from '../auth/staff-testkit.test-helper';
 
 const SFX = 'e2e-serve-limit';
@@ -116,17 +116,11 @@ describe('the question bank cannot be walked (T-259)', () => {
     const seniorField = await track(`Grade 12 Natural ${SFX}`, 12);
     const juniorField = await track(`Grade 6 ${SFX}`, 6);
 
-    const senior = await request(app.getHttpServer())
-      .post('/auth/telegram')
-      .send({ initData: testInitData(TG_SENIOR) })
-      .expect(201);
+    const senior = { body: await signInByPhone(app, prisma, TG_SENIOR) };
     token = senior.body.token;
     await prisma.user.update({ where: { id: senior.body.userId }, data: { fieldId: seniorField } });
 
-    const junior = await request(app.getHttpServer())
-      .post('/auth/telegram')
-      .send({ initData: testInitData(TG_JUNIOR) })
-      .expect(201);
+    const junior = { body: await signInByPhone(app, prisma, TG_JUNIOR) };
     juniorId = junior.body.userId;
     await prisma.user.update({ where: { id: juniorId }, data: { fieldId: juniorField } });
   });

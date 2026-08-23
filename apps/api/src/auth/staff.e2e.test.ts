@@ -13,7 +13,6 @@
  *
  * Needs Postgres (`npm run db:dev`). CI provides it as a service container.
  */
-import { createHmac } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -21,25 +20,12 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
+import { signInByPhone } from '../auth/staff-testkit.test-helper';
 import { PrismaService } from '../prisma/prisma.service';
 
 const BOT_TOKEN = '7000000000:AAF-lomi-test-fixture-bot-token-not-real';
 const JWT_SECRET = 'test-secret-not-a-real-one';
 const SFX = 'e2e-staff';
-
-function initDataFor(id: number): string {
-  const user = JSON.stringify({ id, first_name: 'Test', username: `user${id}` });
-  const fields: Record<string, string> = {
-    auth_date: String(Math.floor(Date.now() / 1000)),
-    user,
-  };
-  const pairs = Object.entries(fields)
-    .map(([k, v]) => `${k}=${v}`)
-    .sort();
-  const secret = createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-  const hash = createHmac('sha256', secret).update(pairs.join('\n')).digest('hex');
-  return new URLSearchParams({ ...fields, hash }).toString();
-}
 
 describe('/admin is staff-only', () => {
   let app: INestApplication;
@@ -68,12 +54,7 @@ describe('/admin is staff-only', () => {
   };
 
   const signIn = async (tg: number): Promise<{ token: string; userId: string }> =>
-    (
-      await request(app.getHttpServer())
-        .post('/auth/telegram')
-        .send({ initData: initDataFor(tg) })
-        .expect(201)
-    ).body;
+    await signInByPhone(app, prisma, tg);
 
   beforeAll(async () => {
     process.env.TELEGRAM_BOT_TOKEN = BOT_TOKEN;

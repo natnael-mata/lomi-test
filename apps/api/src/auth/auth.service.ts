@@ -23,6 +23,16 @@ import {
 import { bandFor } from '../engagement/bands';
 import { normaliseEthiopianMobile } from '../common/phone';
 import { checkPassword, hashPassword, verifyPassword } from './password';
+import {
+  CODE_TTL_SEC,
+  checkCode,
+  cooldownRemainingSec,
+  expiryFrom,
+  generateCode,
+  hashCode,
+} from './otp';
+import { TooManyRequests } from '../common/rate-limit.service';
+import { SmsService } from './sms.service';
 import { safeDeviceLabel } from './device-label';
 import { signSessionToken } from './tokens';
 
@@ -122,7 +132,10 @@ export interface FieldOption {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sms: SmsService,
+  ) {}
 
   private get botToken(): string {
     return process.env.TELEGRAM_BOT_TOKEN ?? '';
@@ -132,32 +145,17 @@ export class AuthService {
     return process.env.JWT_SECRET ?? '';
   }
 
-  /**
-   * Signs in from inside Telegram.
+  /*
+   * `signInWithTelegram` was here (T-265).
    *
-   * The signature is checked first and the result is refused outright if it does
-   * not verify — `initData` is the only proof of who this is, so an unverified
-   * one is not a degraded credential, it is no credential.
-   */
-  async signInWithTelegram(initData: string, deviceLabel?: string): Promise<SignInResult> {
-    const verified = verifyInitData(initData, this.botToken);
-    if (!verified.ok) throw new UnauthorizedException(verified.reason);
-    return this.signInWithTelegramId(verified.user, deviceLabel);
-  }
-
-  /**
-   * Signs in from a Telegram identity that has **already been proved**.
+   * Telegram is no longer a way *in*. Sign-in is a phone number and a password,
+   * and accounts are created by verifying a number — see `startPhoneRegistration`
+   * and `completePhoneRegistration` above.
    *
-   * Split out for the deep-link login (T-077), where the proof arrives at the
-   * bot rather than at this process: Telegram delivered the update to the bot,
-   * so there is no `initData` to check here and nothing would be gained by
-   * inventing one.
-   *
-   * **This method trusts its argument completely**, which is why it is not
-   * reachable from any student-facing route. Everything that calls it must have
-   * established the identity first — `signInWithTelegram` by checking the HMAC,
-   * `LoginLinkService.claim` by reading it off a row only the bot can write.
-   * Handing it a caller-supplied id would be an account-takeover endpoint.
+   * `signInWithTelegramId` below stays, because linking is not logging in: an
+   * account that loses its history when a student changes SIM is the failure the
+   * design is most explicit about avoiding, and the bot still needs to resolve a
+   * chat to an account it is already linked to.
    */
   async signInWithTelegramId(
     profile: {
@@ -417,7 +415,11 @@ export class AuthService {
    * for an unknown number and slowly for a known one has published the same list
    * through the clock instead of the message.
    */
-  async signInWithPassword(rawPhone: unknown, password: unknown): Promise<SignInResult> {
+  async signInWithPassword(
+    rawPhone: unknown,
+    password: unknown,
+    deviceLabel?: string,
+  ): Promise<SignInResult> {
     const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
     const supplied = typeof password === 'string' ? password : '';
 
@@ -450,7 +452,10 @@ export class AuthService {
      * eviction (T-260). Two sign-in doors that manage sessions differently is
      * how one of them ends up not counting against the limit.
      */
-    const session = await this.startSession(user.id, 'password');
+    // The client's own label — "Chrome on Android" — constrained at the write by
+    // `safeDeviceLabel`. Falling back to a constant would make every row in the
+    // device list identical, which is the bug QA filed against the seeder.
+    const session = await this.startSession(user.id, deviceLabel);
     const account = await this.prisma.user.findUniqueOrThrow({
       where: { id: user.id },
       select: { displayName: true, fieldId: true },
@@ -482,6 +487,162 @@ export class AuthService {
       data: { passwordHash: await hashPassword(password as string) },
     });
     return { ok: true };
+  }
+
+  /**
+   * Starts registration: sends a one-time code to a phone number (T-264).
+   *
+   * **Answers the same way whether or not the number already has an account.**
+   * "That number is already registered" is a membership oracle, and mobile
+   * numbers are issued in guessable blocks — so an existing account is quietly
+   * sent a *sign-in* code instead of a registration one, and the caller cannot
+   * tell the two apart. The student who really owns the number is unaffected
+   * either way; the person enumerating numbers learns nothing.
+   */
+  async startPhoneRegistration(
+    rawPhone: unknown,
+    now: Date = new Date(),
+  ): Promise<{ sent: true; expiresInSec: number }> {
+    const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
+    if (!phone) {
+      throw new UnprocessableEntityException({
+        error: 'INVALID_PHONE',
+        message: 'That is not an Ethiopian mobile number.',
+      });
+    }
+
+    const newest = await this.prisma.otpCode.findFirst({
+      where: { phone },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    const wait = cooldownRemainingSec(newest, now);
+    if (wait > 0) {
+      // Its own status, because "wait 40 seconds" is a different instruction
+      // from "you have tried too many times today".
+      throw new TooManyRequests(wait);
+    }
+
+    const code = generateCode();
+    await this.prisma.otpCode.create({
+      data: { phone, codeHash: hashCode(code), expiresAt: expiryFrom(now) },
+    });
+
+    await this.sms.send(phone, `Your Lomi code is ${code}. It expires in 10 minutes.`);
+    return { sent: true, expiresInSec: CODE_TTL_SEC };
+  }
+
+  /**
+   * Finishes registration: checks the code, sets the password, opens a session.
+   *
+   * The code is spent whether or not the password is acceptable — a code that
+   * survives a rejected password is a code somebody can keep trying passwords
+   * against, and the student can ask for another in a minute.
+   */
+  async completePhoneRegistration(
+    rawPhone: unknown,
+    code: unknown,
+    password: unknown,
+    now: Date = new Date(),
+  ): Promise<SignInResult> {
+    const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
+    const supplied = typeof code === 'string' ? code.trim() : '';
+    if (!phone || supplied === '') {
+      throw new UnauthorizedException({
+        error: 'CODE_REJECTED',
+        message: 'That code is not right, or it has expired. Ask for a new one.',
+      });
+    }
+
+    const stored = await this.prisma.otpCode.findFirst({
+      where: { phone },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!stored) {
+      throw new UnauthorizedException({
+        error: 'CODE_REJECTED',
+        message: 'That code is not right, or it has expired. Ask for a new one.',
+      });
+    }
+
+    const verdict = checkCode(supplied, stored, now);
+    if (!verdict.ok) {
+      // Counted before the refusal is returned, so a guess costs an attempt
+      // even when the answer is "wrong" — otherwise the cap counts nothing.
+      if (verdict.reason === 'wrong') {
+        await this.prisma.otpCode.update({
+          where: { id: stored.id },
+          data: { attempts: { increment: 1 } },
+        });
+      }
+      throw new UnauthorizedException({
+        error: 'CODE_REJECTED',
+        message: 'That code is not right, or it has expired. Ask for a new one.',
+      });
+    }
+
+    // Spent first. See the note above: a code that outlives a rejected password
+    // is a code somebody can hold open while they try passwords.
+    await this.prisma.otpCode.update({
+      where: { id: stored.id },
+      data: { consumedAt: now },
+    });
+
+    const check = checkPassword(password);
+    if (!check.ok) {
+      throw new UnprocessableEntityException({ error: 'WEAK_PASSWORD', reasons: check.reasons });
+    }
+    const passwordHash = await hashPassword(password as string);
+
+    /*
+     * Created or updated, and the difference is invisible to the caller.
+     *
+     * A number that already had an account has just proved it owns the handset,
+     * so this doubles as password recovery — which is the reason phone is the
+     * username in the first place. Telling the two paths apart in the response
+     * would reintroduce the membership oracle the send step was careful to
+     * close.
+     */
+    const existing = await this.prisma.user.findUnique({
+      where: { phone },
+      select: { id: true, deactivatedAt: true },
+    });
+    if (existing?.deactivatedAt) {
+      throw new UnauthorizedException({
+        error: 'CODE_REJECTED',
+        message: 'That code is not right, or it has expired. Ask for a new one.',
+      });
+    }
+
+    const user = existing
+      ? await this.prisma.user.update({
+          where: { id: existing.id },
+          data: { passwordHash, phoneVerifiedAt: now },
+          select: { id: true, displayName: true, fieldId: true },
+        })
+      : await this.prisma.user.create({
+          data: {
+            phone,
+            phoneVerifiedAt: now,
+            passwordHash,
+            // The product generates its own handle and takes one from nobody
+            // (T-086). Registration asks for a number and a password, and
+            // nothing else — the profile comes later, and only where it buys
+            // the student something.
+            displayName: generateDisplayName(),
+          },
+          select: { id: true, displayName: true, fieldId: true },
+        });
+
+    const session = await this.startSession(user.id, 'phone');
+    return {
+      token: signSessionToken({ sub: user.id, sid: session.id }, this.jwtSecret),
+      userId: user.id,
+      sessionId: session.id,
+      displayName: user.displayName,
+      fieldId: user.fieldId,
+      isNew: existing === null,
+    };
   }
 
   async chooseField(

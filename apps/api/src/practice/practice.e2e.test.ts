@@ -8,7 +8,6 @@
  *
  * Needs Postgres (`npm run db:dev`). CI provides it as a service container.
  */
-import { createHmac } from 'node:crypto';
 
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -16,6 +15,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
+import { signInByPhone } from '../auth/staff-testkit.test-helper';
 import { PrismaService } from '../prisma/prisma.service';
 import { ANSWER_ONLY_FIELDS, SERVED_QUESTION_FIELDS } from './question-view';
 
@@ -23,20 +23,6 @@ const BOT_TOKEN = '7000000000:AAF-lomi-test-fixture-bot-token-not-real';
 const JWT_SECRET = 'test-secret-not-a-real-one';
 const SFX = 'e2e-practice';
 const TG = 560000001;
-
-function initData(): string {
-  const user = JSON.stringify({ id: TG, first_name: 'Test', username: `user${TG}` });
-  const fields: Record<string, string> = {
-    auth_date: String(Math.floor(Date.now() / 1000)),
-    user,
-  };
-  const pairs = Object.entries(fields)
-    .map(([k, v]) => `${k}=${v}`)
-    .sort();
-  const secret = createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-  const hash = createHmac('sha256', secret).update(pairs.join('\n')).digest('hex');
-  return new URLSearchParams({ ...fields, hash }).toString();
-}
 
 describe('GET /questions/next', () => {
   let app: INestApplication;
@@ -140,12 +126,7 @@ describe('GET /questions/next', () => {
       },
     });
 
-    const signIn = (
-      await request(app.getHttpServer())
-        .post('/auth/telegram')
-        .send({ initData: initData() })
-        .expect(201)
-    ).body;
+    const signIn = await signInByPhone(app, prisma, TG);
     token = signIn.token;
     userId = signIn.userId;
     await prisma.user.update({ where: { id: userId }, data: { fieldId } });
@@ -213,20 +194,6 @@ describe('the served payload carries no answer content (T-106)', () => {
   const SFX2 = 'e2e-leak';
   const TG2 = 560000002;
 
-  const initData2 = (): string => {
-    const user = JSON.stringify({ id: TG2, first_name: 'Test', username: `user${TG2}` });
-    const fields: Record<string, string> = {
-      auth_date: String(Math.floor(Date.now() / 1000)),
-      user,
-    };
-    const pairs = Object.entries(fields)
-      .map(([k, v]) => `${k}=${v}`)
-      .sort();
-    const secret = createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-    const hash = createHmac('sha256', secret).update(pairs.join('\n')).digest('hex');
-    return new URLSearchParams({ ...fields, hash }).toString();
-  };
-
   const cleanup = async (): Promise<void> => {
     await prisma.session.deleteMany({ where: { user: { telegramId: String(TG2) } } });
     await prisma.user.deleteMany({ where: { telegramId: String(TG2) } });
@@ -280,12 +247,7 @@ describe('the served payload carries no answer content (T-106)', () => {
       },
     });
 
-    const signIn = (
-      await request(app.getHttpServer())
-        .post('/auth/telegram')
-        .send({ initData: initData2() })
-        .expect(201)
-    ).body;
+    const signIn = await signInByPhone(app, prisma, TG);
     token = signIn.token;
     await prisma.user.update({ where: { id: signIn.userId }, data: { fieldId: field.id } });
   });

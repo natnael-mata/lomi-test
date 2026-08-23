@@ -23,11 +23,11 @@ import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { IMPORT_COLUMNS } from './csv-schema';
 import {
+  signInByPhone,
   TEST_BOT_TOKEN,
   TEST_JWT_SECRET,
   cleanupStaff,
   signInAsStaff,
-  testInitData,
   type StaffSession,
 } from '../auth/staff-testkit.test-helper';
 
@@ -73,10 +73,7 @@ describe('POST /admin/questions/import (T-235)', () => {
     await wipe();
 
     admin = await signInAsStaff(app, prisma, TG_ADMIN, 'ADMIN', SFX);
-    const student = await request(app.getHttpServer())
-      .post('/auth/telegram')
-      .send({ initData: testInitData(TG_STUDENT) })
-      .expect(201);
+    const student = { body: await signInByPhone(app, prisma, TG_STUDENT) };
     studentToken = student.body.token;
   });
 
