@@ -329,4 +329,148 @@ export const GRADE_6: SchoolTrack = {
   ],
 };
 
-export const SCHOOL_TRACKS: SchoolTrack[] = [GRADE_12_NATURAL, GRADE_6];
+export const GRADE_8: SchoolTrack = {
+  fieldSlug: 'grade-8',
+  fieldName: 'Grade 8',
+  minGrade: 7,
+  maxGrade: 8,
+  topics: [
+    { slug: 'g8-integers', name: 'Integers', course: 'Mathematics', weightPct: 50 },
+    { slug: 'g8-matter', name: 'Matter', course: 'General Science', weightPct: 50 },
+  ],
+  fixtures: [
+    {
+      stableId: 'DEV-G8-MATH-1',
+      topic: 'g8-integers',
+      sourceGrade: 7,
+      qType: 'CONCEPT',
+      stem: 'What is (−5) + 8?',
+      conceptLine: 'Adding a positive moves you to the right on the number line.',
+      explanation: 'Starting at −5 and moving 8 to the right lands on 3.',
+      timeLimitSec: 60,
+      options: mcq('3', [
+        ['−3', 'That is the answer if you subtract instead of adding.'],
+        ['13', 'That adds the sizes and ignores the minus sign entirely.'],
+      ]),
+    },
+    {
+      stableId: 'DEV-G8-MATH-2',
+      topic: 'g8-integers',
+      sourceGrade: 8,
+      qType: 'CONCEPT',
+      stem: 'What is (−4) × (−6)?',
+      conceptLine: 'A negative times a negative gives a positive.',
+      explanation: 'The signs cancel, so the answer is 24.',
+      timeLimitSec: 60,
+      options: mcq('24', [
+        ['−24', 'That keeps one minus sign; two negatives cancel each other.'],
+        ['−10', 'That adds the numbers rather than multiplying them.'],
+      ]),
+    },
+    {
+      stableId: 'DEV-G8-SCI-1',
+      topic: 'g8-matter',
+      sourceGrade: 7,
+      qType: 'CONCEPT',
+      stem: 'Which state of matter has a fixed volume but takes the shape of its container?',
+      conceptLine: 'A liquid keeps its volume and takes the shape of what holds it.',
+      explanation: 'Its particles stay close together but can slide past each other.',
+      timeLimitSec: 60,
+      options: mcq('Liquid', [
+        ['Solid', 'A solid keeps its own shape as well as its volume.'],
+        ['Gas', 'A gas spreads out to fill whatever it is in, so it has no fixed volume.'],
+      ]),
+    },
+    {
+      stableId: 'DEV-G8-SCI-2',
+      topic: 'g8-matter',
+      sourceGrade: 8,
+      qType: 'CONCEPT',
+      stem: 'What happens to the mass of a substance when it melts?',
+      conceptLine: 'Melting changes the state, not the amount of matter.',
+      explanation: 'The particles rearrange, but none are added or lost.',
+      timeLimitSec: 60,
+      options: mcq('It stays the same', [
+        ['It increases', 'Nothing is added during melting, so there is nothing to increase it.'],
+        ['It decreases', 'Nothing escapes in a closed container; only the state changes.'],
+      ]),
+    },
+  ],
+};
+
+export const GRADE_12_SOCIAL: SchoolTrack = {
+  fieldSlug: 'grade-12-social',
+  fieldName: 'Grade 12 Social',
+  minGrade: 9,
+  maxGrade: 12,
+  topics: [
+    { slug: 'g12s-landforms', name: 'Landforms', course: 'Geography', weightPct: 50 },
+    { slug: 'g12s-trade', name: 'Trade', course: 'Economics', weightPct: 50 },
+  ],
+  fixtures: [
+    {
+      stableId: 'DEV-G12S-GEO-1',
+      topic: 'g12s-landforms',
+      sourceGrade: 9,
+      qType: 'CONCEPT',
+      stem: 'Which process formed the Great Rift Valley?',
+      conceptLine: 'The Rift Valley formed where the crust pulled apart and the floor dropped.',
+      explanation: 'Two plates moving away from each other let the block between them sink.',
+      timeLimitSec: 60,
+      options: mcq('Plates moving apart', [
+        ['Plates colliding', 'A collision pushes crust up into mountains rather than dropping it.'],
+        ['River erosion', 'A river carves a V-shaped valley, not a flat-floored rift.'],
+      ]),
+    },
+    {
+      stableId: 'DEV-G12S-GEO-2',
+      topic: 'g12s-landforms',
+      sourceGrade: 11,
+      qType: 'CONCEPT',
+      stem: 'What is the main agent shaping a delta?',
+      conceptLine: 'A delta is built by deposition where a river slows at its mouth.',
+      explanation: 'Losing speed, the river drops the sediment it was carrying.',
+      timeLimitSec: 60,
+      options: mcq('Deposition by a river', [
+        ['Wind erosion', 'Wind shapes dunes in dry places, not the mouth of a river.'],
+        ['Glacial scouring', 'A glacier carves valleys inland; a delta forms where water slows.'],
+      ]),
+    },
+    {
+      stableId: 'DEV-G12S-ECON-1',
+      topic: 'g12s-trade',
+      sourceGrade: 10,
+      qType: 'CONCEPT',
+      stem: 'What does a country have when it can produce a good at a lower opportunity cost?',
+      conceptLine: 'Comparative advantage is about opportunity cost, not raw output.',
+      explanation: 'It gives up less of something else to make the good.',
+      timeLimitSec: 60,
+      options: mcq('Comparative advantage', [
+        ['Absolute advantage', 'That is producing more of it, which is a different comparison.'],
+        ['A trade surplus', 'A surplus is about what it sells abroad, not what it gives up.'],
+      ]),
+    },
+    {
+      stableId: 'DEV-G12S-ECON-2',
+      topic: 'g12s-trade',
+      sourceGrade: 12,
+      qType: 'CONCEPT',
+      stem: 'What is a tariff?',
+      conceptLine: 'A tariff is a tax on imported goods.',
+      explanation: 'It raises the price of what comes in from abroad.',
+      timeLimitSec: 60,
+      options: mcq('A tax on imports', [
+        [
+          'A limit on import quantity',
+          'That is a quota, which caps volume rather than adding cost.',
+        ],
+        [
+          'A payment to exporters',
+          'That is a subsidy, which lowers a price rather than raising one.',
+        ],
+      ]),
+    },
+  ],
+};
+
+export const SCHOOL_TRACKS: SchoolTrack[] = [GRADE_12_NATURAL, GRADE_12_SOCIAL, GRADE_8, GRADE_6];

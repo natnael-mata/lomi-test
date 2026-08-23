@@ -252,9 +252,21 @@ describe('points, streaks and the board (Phase 11)', () => {
       expect(theirs.you!.rank).toBeGreaterThan(aboveThem!);
       expect(theirs.you!.rank).toBeLessThan(belowThem!);
 
-      // And they are gone from everybody else's view too.
+      /*
+       * Gone from everybody else's view too — asserted by WHO, not by how much.
+       *
+       * This checked that no row scored 50, which held only while this suite's
+       * fixtures were the only students in the database. Seeding fifteen
+       * personas put another account on 50 points and the test failed without
+       * the behaviour changing. Opting out hides a person, so a person is what
+       * the assertion should look for.
+       */
       const others = await engagement.leaderboard(a.userId);
-      expect(others.rows.map((r) => r.points)).not.toContain(50);
+      const hidden = await prisma.user.findUniqueOrThrow({
+        where: { id: b.userId },
+        select: { displayName: true },
+      });
+      expect(others.rows.map((r) => r.displayName)).not.toContain(hidden.displayName);
     });
 
     /**

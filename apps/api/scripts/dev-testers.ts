@@ -73,6 +73,8 @@ const PERSONAS = [
   { label: 'userk', name: 'User K' },
   { label: 'userl', name: 'User L' },
   { label: 'userm', name: 'User M' },
+  { label: 'usern', name: 'User N' },
+  { label: 'usero', name: 'User O' },
   { label: 'admin', name: 'Admin' },
   { label: 'provider', name: 'Provider' },
 ] as const;
@@ -91,6 +93,8 @@ const USER_I_ANSWERED = 15;
 /** Grade 12 Natural, the track with twelve questions across four years. */
 const GRADE_12_SLUG = 'grade-12-natural';
 const GRADE_6_SLUG = 'grade-6';
+const GRADE_8_SLUG = 'grade-8';
+const GRADE_12_SOCIAL_SLUG = 'grade-12-social';
 
 /**
  * The password every seeded account signs in with (T-263).
@@ -110,11 +114,23 @@ const TEST_PASSWORD = 'lomi-test-2026';
  * shape, unique, obviously fake, and cannot collide with a real handset if this
  * script is ever pointed at the wrong database.
  */
-function phoneFor(index: number): string {
-  return `09${String(index + 1).padStart(8, '0')}`;
+function phoneFor(label: string): string {
+  /*
+   * Derived from the persona's own id, never from its position.
+   *
+   * This used to be `index + 1`, so inserting User N and User O in the middle
+   * renumbered every persona after them — and the upsert matches on telegram
+   * id, so the old rows kept the numbers the new ones were being handed. The
+   * whole seed failed on a unique constraint.
+   *
+   * The telegram id is already a stable hash of the label, so the phone
+   * inherits that stability: a persona's number depends on nothing but its own
+   * name, and the list can be reordered freely.
+   */
+  return `09${String(Math.abs(devTelegramId(label)) % 100_000_000).padStart(8, '0')}`;
 }
 
-async function upsertPersona(label: string, name: string, index: number): Promise<string> {
+async function upsertPersona(label: string, name: string): Promise<string> {
   const telegramId = String(devTelegramId(label));
 
   /*
@@ -137,7 +153,7 @@ async function upsertPersona(label: string, name: string, index: number): Promis
    * Telegram as a *linked channel* rather than replacing it — an account that
    * loses its history when a student changes SIM is the failure this avoids.
    */
-  const phone = phoneFor(index);
+  const phone = phoneFor(label);
   const passwordHash = await hashPassword(TEST_PASSWORD);
   const user = await prisma.user.upsert({
     where: { telegramId },
@@ -369,10 +385,7 @@ async function main(): Promise<void> {
 
   const ids = new Map<string, string>();
   for (const persona of PERSONAS) {
-    ids.set(
-      persona.label,
-      await upsertPersona(persona.label, persona.name, PERSONAS.indexOf(persona)),
-    );
+    ids.set(persona.label, await upsertPersona(persona.label, persona.name));
   }
 
   const audit = new AuditService(prisma as PrismaService);
@@ -708,6 +721,37 @@ async function main(): Promise<void> {
     });
     await seedCoverage(userM, g6.id, 6, 0);
 
+    /*
+     * Two more tracks, so the ten students span every programme the product
+     * offers rather than three of them.
+     *
+     * A Grade 8 and a Grade 12 Social student are the two cases nothing else
+     * covers: Grade 8 is the *other* junior band member, and Social is the half
+     * of Grade 12 that must never appear in a Natural candidate's denominator.
+     * Without them the band rule and the two-Fields decision are both untested
+     * by hand.
+     */
+    const g8 = await prisma.field.findUnique({ where: { slug: GRADE_8_SLUG } });
+    const g12s = await prisma.field.findUnique({ where: { slug: GRADE_12_SOCIAL_SLUG } });
+
+    if (g8) {
+      const userN = ids.get('usern');
+      if (userN) {
+        await prisma.user.update({
+          where: { id: userN },
+          data: { fieldId: g8.id, leaderboardOptOut: false },
+        });
+        await seedCoverage(userN, g8.id, 2, 1);
+      }
+    }
+    if (g12s) {
+      const userO = ids.get('usero');
+      if (userO) {
+        await prisma.user.update({ where: { id: userO }, data: { fieldId: g12s.id } });
+        await seedCoverage(userO, g12s.id, 3, 0);
+      }
+    }
+
     schoolNote = 'seeded';
   }
 
@@ -716,7 +760,7 @@ async function main(): Promise<void> {
   console.log('  Type the name exactly as shown — the door normalises spacing and case.');
   console.log(
     `  Or sign in with a phone number and the password "${TEST_PASSWORD}" ` +
-      `— 0900000001 is User A, 0900000002 is User B, and so on in this order.\n`,
+      "— each persona's number is printed beside it below.\n",
   );
   console.log(line('User A', 'no programme chosen — starts at the programme chooser'));
   console.log(
@@ -747,6 +791,8 @@ async function main(): Promise<void> {
   );
   console.log(line('User L', 'Grade 6 junior, opted IN to the board — 4 of 6 beaten'));
   console.log(line('User M', 'Grade 6 junior, never asked — on no board, still sees their rank'));
+  console.log(line('User N', 'Grade 8 junior, opted IN — the other junior track'));
+  console.log(line('User O', 'Grade 12 Social — never measured on Natural questions'));
   console.log(line('Admin', 'ADMIN staff — dashboard, payments, import, weights, students'));
   console.log(line('Provider', 'PROVIDER staff — the activity log and the live health board'));
   console.log(`\n  Mock paper: ${examNote}`);

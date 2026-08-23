@@ -110,6 +110,8 @@ export const DEV_PERSONAS = [
   'userk',
   'userl',
   'userm',
+  'usern',
+  'usero',
   'admin',
   'provider',
   'student',
