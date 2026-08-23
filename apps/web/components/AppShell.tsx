@@ -102,7 +102,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Room for the furniture: 104px of rail from `sm`, 232px from `lg`, and
           bottom clearance on a phone for the 56px bar plus its safe area. */}
-      <div className="pb-24 sm:pb-0 sm:pl-26 lg:pl-58">
+      {/* The nav moved from the left edge to the top, so the offset it
+          reserves moves with it (handoff 3a). */}
+      <div className="pb-24 sm:pt-24 sm:pb-0">
         <main
           className={`mx-auto flex min-h-dvh flex-col p-4 sm:p-6 lg:py-10 ${
             DATA_ROUTES.some((p) => pathname.startsWith(p)) ? DATA_MEASURE : STUDENT_MEASURE

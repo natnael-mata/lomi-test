@@ -75,10 +75,9 @@ function Item({ destination, active }: { destination: Destination; active: boole
       className={[
         // Phone: a fifth of the bar, stacked, 56px.
         'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-px px-1',
-        // Tablet: still stacked, but a fixed-width block in the rail.
-        'sm:w-22 sm:flex-none sm:gap-0.5 sm:self-center sm:rounded-card sm:py-2.5',
-        // Desktop: a row with the label beside the icon.
-        'lg:w-full lg:flex-row lg:justify-start lg:gap-3 lg:rounded-full lg:px-3.5 lg:py-3',
+        // Tablet and desktop: a row in the horizontal pill, sized to its own
+        // content rather than to a rail's width (handoff frame 3a).
+        'sm:min-h-11 sm:w-auto sm:flex-none sm:flex-row sm:gap-2 sm:rounded-full sm:px-3.5 sm:py-2',
         // The pill AND weight. This used to lean on a brand-coloured label, but
         // the lemon cannot set text (1.23:1 on cream), so active is now carried
         // by full-strength ink at 600 against ink-2 at 400 — a contrast step
@@ -141,7 +140,20 @@ export function SideRail({ pathname }: { pathname: string }) {
         lemon glow rather than a grey drop, because grey next to cream reads
         as dirt.
       */
-      className="bg-surface border-border rounded-panel shadow-nav fixed inset-y-4 left-4 z-10 hidden w-26 flex-col gap-2 border px-2 py-6 sm:flex lg:w-58 lg:gap-1 lg:px-4"
+      /*
+        A floating pill across the top, not a rail down the side (handoff 3a:
+        "the left rail is gone").
+
+        The rail cost 232px of every desktop screen for five links, on a product
+        whose content measure is 680px — a quarter of the window spent on
+        navigation that never changes. Across the top it costs 72px of height
+        once, and the measure gets the width back.
+
+        16px radius, one pencil-gray hairline, and the only shadow in the system
+        — a long soft lemon glow, because a grey drop next to cream reads as
+        dirt.
+      */
+      className="bg-surface border-border rounded-panel shadow-nav fixed inset-x-4 top-4 z-10 hidden items-center gap-2 border px-3 py-2 sm:flex lg:mx-auto lg:max-w-[1100px]"
     >
       <span className="mb-4 flex justify-center lg:mb-6 lg:justify-start lg:px-3">
         {/* The glyph alone where there is no room for the wordmark beside it. */}
