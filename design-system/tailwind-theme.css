@@ -357,27 +357,38 @@
   }
 
   /* The answer option. Whole row is the target; 56px tall, always. */
+  /* 12px, not 6: an option row is a card you can press, not an input. The
+     handoff puts option rows on the card radius and buttons on the control
+     one. */
   .option {
     @apply w-full min-h-[56px] flex items-center gap-3 p-3 text-left
-           rounded-control border-2 border-border bg-surface text-body
+           rounded-card border border-border bg-surface text-body
            transition-[background-color,border-color,transform] duration-200;
   }
   .option:active {
     @apply scale-[.99];
   }
-  /* Ink border, lemon wash. The border used to be the brand, which was a
-     violet you could see; the lemon is 1.23:1 on cream, so a lemon border on a
-     lemon wash is no border at all — and it would have left "selected" the only
-     option state without a visible edge, weaker than correct and wrong beside
-     it. The fill says which one you chose; the edge says you chose it. */
+  /*
+   * The sticky note (handoff frame 3a): MINT fill, forest border, and the mono
+   * SELECTED tag the component already renders.
+   *
+   * The fill moved from the lemon wash to mint so that "the one I chose" and
+   * "the one that was right" belong to the same family — a student picking an
+   * answer and then seeing it confirmed watches one colour stay put rather than
+   * one colour replace another.
+   *
+   * The border is ink and stays 2px while every other row is 1px. That weight
+   * step is the second signal: the fill says which one you chose, the edge says
+   * you chose it, and either alone would be colour doing the work by itself.
+   */
   .option[data-state='selected'] {
-    @apply border-ink bg-brand-soft;
+    @apply border-2 border-ink bg-correct-soft;
   }
   .option[data-state='correct'] {
-    @apply border-correct bg-correct-soft;
+    @apply border-2 border-correct bg-correct-soft;
   }
   .option[data-state='wrong'] {
-    @apply border-wrong bg-wrong-soft;
+    @apply border-2 border-wrong bg-wrong-soft;
   }
 
   /* Letter badge inside an option. */
