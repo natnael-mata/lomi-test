@@ -194,6 +194,20 @@ async function seedAttempts(
    */
   isCorrectAt: (index: number) => boolean = (index) => index % 3 !== 2,
 ): Promise<void> {
+  const engagement = new EngagementService(prisma as PrismaService);
+
+  /*
+   * The ledger is rebuilt from scratch, like the attempts below it.
+   *
+   * Points are what the *answers* earned, so they are part of the state this
+   * function claims rather than a running total beside it. Adding to whatever
+   * was there would make a persona's points depend on how many times the seed
+   * had been run, which is the drift this file exists to refuse.
+   *
+   * Only ever a smoke-test account, and only its own rows.
+   */
+  await prisma.pointEntry.deleteMany({ where: { userId } });
+
   const questions = await prisma.question.findMany({
     where: { fieldId, status: 'PUBLISHED' },
     orderBy: { stableId: 'asc' },
@@ -233,12 +247,6 @@ async function seedAttempts(
   const wanted = questions.slice(0, count);
 
   for (const [index, question] of wanted.entries()) {
-    const already = await prisma.attempt.findFirst({
-      where: { userId, questionId: question.id },
-      select: { id: true },
-    });
-    if (already) continue;
-
     // Every third one wrong. A history that is all correct makes the focus list
     // empty and the readiness figure 100%, which is the one state that proves
     // nothing about the screens being tested.
@@ -247,6 +255,25 @@ async function seedAttempts(
       ? question.options.find((o) => o.isCorrect)
       : question.options.find((o) => !o.isCorrect);
     if (!chosen) continue;
+
+    /*
+     * The ledger is written for every wanted answer, not only the new ones.
+     *
+     * It was cleared above, so skipping the ones whose attempt row already
+     * existed would leave a re-run with all its answers and none of its points
+     * — which is the state QA found: User I showed 15 answered on `/progress`
+     * and 0 points on `/standing`, and reported, correctly, that one of the two
+     * screens had to be lying. Both were faithful; the fixture had written
+     * attempts and no ledger at all.
+     */
+    await engagement.record(userId, RULES.ANSWERED);
+    if (correct) await engagement.record(userId, RULES.CORRECT);
+
+    const already = await prisma.attempt.findFirst({
+      where: { userId, questionId: question.id },
+      select: { id: true },
+    });
+    if (already) continue;
 
     await prisma.attempt.create({
       data: {
@@ -263,6 +290,11 @@ async function seedAttempts(
       },
     });
   }
+
+  // Active today, so the streak has a day to stand on. Idempotent per day, and
+  // the personas that need a longer streak add their own earlier days after
+  // this returns.
+  await engagement.touch(userId);
 }
 
 /**
@@ -603,7 +635,32 @@ async function main(): Promise<void> {
     for (let position = 1; position <= 3; position++) {
       await exams.answer(userF, started.sittingId, position, { chosenLabel: 'A' }, sessionF);
     }
-    fNote = 'sitting open, 3 of 20 answered';
+
+    /*
+     * The deadline is pushed out, because a 45-minute fixture is wrong for all
+     * but the first 45 minutes of the day it was seeded.
+     *
+     * QA opened `/exam` as User F some hours after this ran, was offered "Start
+     * the mock" with no mention of an open paper, pressed it, and got a fresh
+     * one — then filed the lost answers as a blocker. Every part of that was
+     * the product working: the sitting had genuinely expired, `preview`
+     * correctly reported nothing open, and `start` correctly closed the dead row
+     * before opening a new one. The fixture had quietly stopped being what the
+     * brief said it was, which is the third time a seed has cost a QA round by
+     * describing a state that had aged out from under it.
+     *
+     * Eight hours outlives a testing session without pretending the clock does
+     * not exist. `startedAt` moves with it so the elapsed time still matches the
+     * time remaining — a paper claiming 8 hours left and 3 hours gone would be
+     * its own bug report.
+     */
+    const HOLD_OPEN_SEC = 8 * 60 * 60;
+    const now = new Date();
+    await prisma.sitting.update({
+      where: { id: started.sittingId },
+      data: { startedAt: now, endsAt: new Date(now.getTime() + HOLD_OPEN_SEC * 1000) },
+    });
+    fNote = 'sitting open, 3 of 20 answered, held open for 8 hours';
   }
 
   // ---- User G: a paper finished --------------------------------------------

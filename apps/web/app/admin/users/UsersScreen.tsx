@@ -34,6 +34,8 @@ export function UsersScreen() {
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<UserSearchHit[] | null>(null);
   const [searching, setSearching] = useState(false);
+  /** A search that could not run, kept apart from one that found nobody. */
+  const [failed, setFailed] = useState(false);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -49,8 +51,20 @@ export function UsersScreen() {
       void (async () => {
         try {
           setHits(await api.adminSearchUsers(term));
+          setFailed(false);
         } catch {
-          setHits([]);
+          /*
+           * A failed search is not an empty one.
+           *
+           * This used to `setHits([])`, so a 403, a dropped connection and a
+           * server that was not running all rendered as "Nobody matched that."
+           * QA hit it while checking that a student is refused the admin tools
+           * and was told, in effect, that the student database was empty —
+           * an authorization failure reported as a fact about the data. Anyone
+           * reading that message believes the search ran.
+           */
+          setHits(null);
+          setFailed(true);
         } finally {
           setSearching(false);
         }
@@ -121,6 +135,10 @@ export function UsersScreen() {
       ) : null}
 
       {searching ? <p className="text-body text-ink-2">{c.dashboard.searching}</p> : null}
+
+      {failed && !searching ? (
+        <p className="text-body text-wrong">{c.admin.users.searchFailed}</p>
+      ) : null}
 
       {hits !== null && hits.length === 0 && !searching ? (
         <p className="text-body text-ink-2">{c.dashboard.noHits}</p>

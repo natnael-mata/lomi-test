@@ -47,6 +47,16 @@ export const en = {
     nothingRead: 'That file had no rows in it. Check it is the right file and try again.',
     couldNotUpload: 'The upload did not go through. Nothing was changed — try again.',
     allTaken: 'Every row was taken. They are drafts until a reviewer publishes them.',
+    /*
+     * What the ADDED figure means, said without claiming anything about the
+     * rows that were not added.
+     *
+     * The tile used `allTaken`, so a file with one good row and one bad one
+     * showed "ADDED 0 — Every row was taken", contradicting the number directly
+     * above it. Whether every row was taken is the *paragraph's* job, and the
+     * paragraph already gets it right.
+     */
+    addedAreDrafts: 'Added as drafts. A reviewer publishes them.',
     someRejected: (count: number) =>
       `${count} row${count === 1 ? '' : 's'} could not be taken. Each one says why below.`,
     line: (n: number) => `line ${n}`,
@@ -153,6 +163,20 @@ export const en = {
     userINote: 'Answered 15 and got a quarter right — readiness when the news is bad.',
     userJ: 'User J',
     userJNote: 'Two live devices, at the limit — the device list, and being evicted.',
+    // The five school-track accounts. Between them they are the only way to
+    // reach the junior band, the Grade 12 split and a coverage figure that is
+    // not zero, which is why their absence from this list cost a whole QA pass.
+    userK: 'User K',
+    userKNote:
+      'Grade 12 Natural, 5 of 12 beaten — and two right answers whose reason was wrong, which do not count.',
+    userL: 'User L',
+    userLNote: 'Grade 6, 4 of 6, chose to appear — the junior board, with somebody on it.',
+    userM: 'User M',
+    userMNote: 'Grade 6, all 6 beaten, never asked about the board — on no board, and still ranked.',
+    userN: 'User N',
+    userNNote: 'Grade 8, 2 of 4, chose to appear — the other half of the junior band.',
+    userO: 'User O',
+    userONote: 'Grade 12 Social, 3 of 4 — the half of Grade 12 that Natural must never be measured on.',
     admin: 'Admin',
     adminNote: "Sees the admin pages and can settle User B's payment.",
     provider: 'Provider',
@@ -183,6 +207,10 @@ export const en = {
 
     accessUntil: (date: string) => `Full access until ${date}.`,
     freeTier: 'You are on the free questions.',
+    // Says what happened and what is still true. Everything they answered is
+    // kept, which is the fact a lapsed student most wants and least expects.
+    lapsedOn: (date: string) =>
+      `Your access ended on ${date}. Everything you have answered is still here.`,
   },
 
   practice: {
@@ -661,6 +689,10 @@ export const en = {
     yourRank: (rank: number) =>
       `You are ${rank}${rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'}`,
     notListed: 'You are not shown on the board. Your rank is still yours to see.',
+    // For a student who IS listed but sits below the last visible row. It says
+    // where they are without dressing up the distance, and without implying
+    // they were left off.
+    belowTheCut: 'The board shows the top few. This is your place on it.',
     hideMe: 'Hide me from the board',
     showMe: 'Show me on the board',
   },
@@ -820,6 +852,9 @@ export const en = {
       reasonLabel: 'Why, for the record',
       reasonPlaceholder: 'Student asked for a device reset after losing their phone.',
       needsReason: 'Say why first — this is written to the record with your name.',
+      // Never "nobody matched". A search that could not run has found nothing
+      // out about the data, and saying otherwise hides the real problem.
+      searchFailed: 'That search could not run. You may not have permission, or the server is down.',
       devicesReset: 'Devices reset. They can sign in again on a new phone.',
       accountClosed: 'Account closed. It can be reopened by whoever runs the server.',
       alreadyClosed: 'Already closed',

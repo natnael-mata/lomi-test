@@ -25,7 +25,23 @@ import { day } from '../lib/dates';
 import { copy } from '../lib/i18n';
 
 type Session =
-  { kind: 'checking' } | { kind: 'signedOut' } | { kind: 'signedIn'; activeUntil: string | null };
+  | { kind: 'checking' }
+  | { kind: 'signedOut' }
+  | {
+      kind: 'signedIn';
+      activeUntil: string | null;
+      /**
+       * When a plan has run out, the day it ran out on.
+       *
+       * Null for somebody who has never paid. The two are different sentences
+       * and this screen used to say the same one to both: a student whose
+       * access had lapsed the previous day was told "You are on the free
+       * questions", which is technically what they are now and says nothing
+       * about what just happened to them. `/checkout` had the good version all
+       * along — QA found the two screens disagreeing about the same account.
+       */
+      lapsedOn: string | null;
+    };
 
 export function HomeScreen() {
   const c = copy();
@@ -36,7 +52,13 @@ export function HomeScreen() {
     void (async () => {
       try {
         const me = await api.mySubscription();
-        if (live) setSession({ kind: 'signedIn', activeUntil: me.active ? me.expiresAt : null });
+        if (live) {
+          setSession({
+            kind: 'signedIn',
+            activeUntil: me.active ? me.expiresAt : null,
+            lapsedOn: !me.active && me.hasEverPaid ? me.expiresAt : null,
+          });
+        }
       } catch {
         // Any failure here means "not signed in as far as this screen is
         // concerned". It only decides which sentence to show — nothing is
@@ -81,7 +103,11 @@ export function HomeScreen() {
 
       {session.kind === 'signedIn' ? (
         <p className="text-caption text-ink-2">
-          {session.activeUntil ? c.home.accessUntil(day(session.activeUntil)) : c.home.freeTier}
+          {session.activeUntil
+            ? c.home.accessUntil(day(session.activeUntil))
+            : session.lapsedOn
+              ? c.home.lapsedOn(day(session.lapsedOn))
+              : c.home.freeTier}
         </p>
       ) : null}
 

@@ -119,19 +119,30 @@ export function BandedBoard() {
       )}
 
       {/*
-        Opting out hides the row and never the rank. A student who does not want
-        to be seen competing still wants to know where they stand, and a product
-        that answers "you opted out" when asked "how am I doing" has punished
-        somebody for a privacy choice. For a junior this is the ordinary case:
-        the default is not to appear.
+        Your own rank, whenever the board is not already showing it.
+
+        This used to render only for a student who had opted out, on the
+        reasoning that everybody else could read their rank off the board. That
+        holds only for the top few. The board is capped, so a student outside the
+        cap was listed, absent from the visible rows, and told nothing — and the
+        further down you are the more certain that is, which points the silence
+        at exactly the students who most want an answer. QA found three accounts
+        in that state and reported "nobody sees their own rank"; they were right,
+        and opting out was a red herring.
+
+        So the condition is now about visibility rather than the privacy choice:
+        show it unless your row is already on screen. `notListed` still explains
+        the absence, but only when absence is what it is.
       */}
-      {board.you && !board.you.listed ? (
+      {board.you && !board.rows.some((row) => row.isYou) ? (
         <Card as="section" className="flex flex-col gap-1">
           <p className="text-body num">
             {c.standing.yourRank(board.you.rank)} ·{' '}
             {c.standing.boardCoverageRow(board.you.pct, board.you.beaten, board.you.total)}
           </p>
-          <p className="text-caption text-ink-2">{c.standing.notListed}</p>
+          <p className="text-caption text-ink-2">
+            {board.you.listed ? c.standing.belowTheCut : c.standing.notListed}
+          </p>
         </Card>
       ) : null}
 

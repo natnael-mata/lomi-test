@@ -160,7 +160,7 @@ function Report({ report }: { report: ImportReport }) {
         <StatedFigure
           label={c.importer.created}
           value={String(report.created)}
-          derivation={c.importer.allTaken}
+          derivation={c.importer.addedAreDrafts}
         />
       </div>
 

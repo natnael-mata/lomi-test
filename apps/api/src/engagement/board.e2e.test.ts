@@ -238,4 +238,57 @@ describe('the banded board (T-257)', () => {
     expect(all.window).toBe('all');
     expect(names(all.rows)).toContain(`Senior Stale ${SFX}`);
   });
+
+  /*
+   * Where you stand when you have beaten nothing.
+   *
+   * `you` was null for anybody absent from the ranking, and the ranking only
+   * ever held students with at least one question beaten — so the screen had no
+   * answer for a student who was answering questions and getting them wrong.
+   * QA read three accounts in that state and reported that nobody sees their
+   * own rank; they were right, and the students it silenced are the ones just
+   * starting and the ones struggling.
+   *
+   * The claim being made is narrow and exactly true: everyone on the board has
+   * beaten more than you have. It says nothing about the other students on
+   * nothing, who share the place.
+   */
+  describe('a student who has beaten nothing', () => {
+    let novice = '';
+
+    beforeAll(async () => {
+      novice = await student(`Senior Novice ${SFX}`, fields.senior!, 0, null);
+    });
+
+    it('is still told where they stand', async () => {
+      const view = await boards.board(novice);
+      expect(view.you).not.toBeNull();
+      expect(view.you?.beaten).toBe(0);
+      expect(view.you?.pct).toBe(0);
+      // The denominator is real even when the numerator is not — it is what
+      // makes 0 a position rather than an absence.
+      expect(view.you?.total).toBe(20);
+    });
+
+    it('is placed after everyone who has beaten something', async () => {
+      const view = await boards.board(novice, 'all');
+      const last = Math.max(...view.rows.map((r) => r.rank));
+      expect(view.you!.rank).toBeGreaterThan(last);
+    });
+
+    /*
+     * THE guard on the fix. Adding the viewer to their own board would report a
+     * different competition to each person looking at it, so the rows must not
+     * move — a student who has beaten nothing has done nothing to be listed for.
+     */
+    it('does not appear on the board, or change it for anybody else', async () => {
+      const mine = await boards.board(novice, 'all');
+      expect(names(mine.rows)).not.toContain(`Senior Novice ${SFX}`);
+
+      const theirs = await boards.board(ids.senior!, 'all');
+      expect(names(theirs.rows)).not.toContain(`Senior Novice ${SFX}`);
+      // And every other rank is exactly where it was.
+      expect(theirs.rows.map((r) => r.rank)).toEqual(mine.rows.map((r) => r.rank));
+    });
+  });
 });

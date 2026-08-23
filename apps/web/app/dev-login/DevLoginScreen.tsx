@@ -6,7 +6,7 @@
  * **This product has no username and password.** Sign-in is the Telegram deep
  * link, and that needs a bot, a token and a phone — none of which exist while
  * somebody is clicking through the app on a laptop. This screen stands in for
- * that: four fixed testers, one tap each, no typing.
+ * that: every prepared tester, one tap each, no typing.
  *
  * It is the same door as `POST /auth/dev-login`, which is shut unless
  * `DEV_LOGIN_SECRET` is set. Production does not set it, so this page renders
@@ -29,8 +29,16 @@ const c = copy();
  * The label is hashed into the account's Telegram id, so it *is* the identity:
  * change one here without changing it there and this button signs in to a fresh
  * empty account while the prepared one sits unreachable.
+ *
+ * **And a persona missing from this list is unreachable.** Five were: the seed
+ * and the API knew User K through User O, this array did not, and a whole QA
+ * pass came back with four of its seven runs unrunnable — the leaderboard's
+ * junior band, the Grade 12 Natural/Social split, and coverage all sit behind
+ * exactly those five accounts. Nothing failed; there was simply no button. The
+ * guard in `dev-login.contract.test.ts` holds this list against `DEV_PERSONAS`
+ * so the next persona cannot be added on one side only.
  */
-const TESTERS = [
+export const TESTERS = [
   { label: 'usera', who: c.devLogin.userA, note: c.devLogin.userANote },
   { label: 'userb', who: c.devLogin.userB, note: c.devLogin.userBNote },
   { label: 'userc', who: c.devLogin.userC, note: c.devLogin.userCNote },
@@ -41,6 +49,11 @@ const TESTERS = [
   { label: 'userh', who: c.devLogin.userH, note: c.devLogin.userHNote },
   { label: 'useri', who: c.devLogin.userI, note: c.devLogin.userINote },
   { label: 'userj', who: c.devLogin.userJ, note: c.devLogin.userJNote },
+  { label: 'userk', who: c.devLogin.userK, note: c.devLogin.userKNote },
+  { label: 'userl', who: c.devLogin.userL, note: c.devLogin.userLNote },
+  { label: 'userm', who: c.devLogin.userM, note: c.devLogin.userMNote },
+  { label: 'usern', who: c.devLogin.userN, note: c.devLogin.userNNote },
+  { label: 'usero', who: c.devLogin.userO, note: c.devLogin.userONote },
   { label: 'admin', who: c.devLogin.admin, note: c.devLogin.adminNote },
   { label: 'provider', who: c.devLogin.provider, note: c.devLogin.providerNote },
 ] as const;
@@ -86,7 +99,16 @@ export function DevLoginScreen() {
         });
         return;
       }
-      window.location.assign('/');
+      /*
+       * `/home`, not `/`.
+       *
+       * `/` is the marketing page and greets a signed-in student with "Start
+       * with your phone number", so a sign-in that had just worked looked like
+       * one that had not. QA read that as the button failing and pressed again
+       * — which is also why the network log appeared to show only the sign-out:
+       * the navigation cut the recording before the dev-login call landed.
+       */
+      window.location.assign('/home');
     } catch {
       setState({ kind: 'error', message: c.devLogin.noServer });
     }

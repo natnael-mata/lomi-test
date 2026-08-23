@@ -68,7 +68,9 @@ export class BoardService {
   ): Promise<BoardView> {
     const viewer = await this.prisma.user.findUnique({
       where: { id: viewerId },
-      select: { fieldId: true },
+      // `leaderboardOptOut` so a viewer who has beaten nothing can still be told
+      // where they stand, and whether they are shown. See `mine` below.
+      select: { fieldId: true, leaderboardOptOut: true },
     });
 
     /*
@@ -118,6 +120,15 @@ export class BoardService {
       beatenByUser.set(row.userId, held);
     }
 
+    /*
+     * The rows are the students who have beaten something in this window.
+     *
+     * Deliberately not everybody in the band. On the weekly board that would
+     * list every dormant student at 0% — present as though they had turned up,
+     * which is the opposite of what a weekly board is for. Being *listed* is
+     * about having done something; knowing *where you stand* is not, and the
+     * two are separated below rather than here.
+     */
     const users = await this.prisma.user.findMany({
       where: { id: { in: [...beatenByUser.keys()] } },
       select: {
@@ -164,7 +175,38 @@ export class BoardService {
       return { ...s, rank };
     });
 
-    const mine = ranked.find((r) => r.id === viewerId) ?? null;
+    /*
+     * Where the viewer stands, even on nothing beaten.
+     *
+     * `ranked` holds only students with at least one question beaten, so this
+     * used to be null for everybody else and the screen had no answer to "where
+     * am I?" — QA read three accounts in that state and reported that nobody
+     * sees their own rank. They were right, and the students it silences are
+     * the ones just starting and the ones struggling: precisely where being
+     * erased is worse than being told a low number.
+     *
+     * So a viewer who is not in `ranked` is placed after everyone who is. That
+     * claim is exactly true — every student on this board has beaten more than
+     * they have — and it is honest about the tie: everyone else on nothing
+     * shares the same place. The rows are untouched, so no other student's view
+     * of the board changes.
+     */
+    const ranked_ = ranked.find((r) => r.id === viewerId) ?? null;
+    const viewerTotal = viewer?.fieldId ? (totalByField.get(viewer.fieldId) ?? 0) : 0;
+    const mine =
+      ranked_ ??
+      // Only where there is a bank to be measured against. With no published
+      // questions there is no percentage to report, and "rank last of nobody"
+      // is worse than saying nothing.
+      (viewerTotal > 0
+        ? {
+            rank: ranked.length + 1,
+            pct: 0,
+            beaten: 0,
+            total: viewerTotal,
+            listed: isListed(band, viewer?.leaderboardOptOut ?? null),
+          }
+        : null);
 
     return {
       band,
