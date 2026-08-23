@@ -98,6 +98,58 @@ describe('what the provider’s reply means', () => {
     }
   });
 
+  /*
+   * The provider's real replies, captured from the live endpoint on
+   * 2026-08-23 rather than guessed.
+   *
+   * The first pass guessed `message`/`error`/`description` and this provider
+   * uses none of them — a rejected send would have been logged as "SMS not
+   * delivered" with the reason dropped, which is the difference between a
+   * one-line fix and an afternoon.
+   */
+  describe('smsethiopia.com, as it actually answers', () => {
+    it('repeats the reason from a real rejection', () => {
+      const outcome = readResponse(400, {
+        error_message:
+          'Invalid MSISDN (phone number). It should start with 2519 and be 12 digits long. Error code :: 10000',
+      });
+      expect(outcome.ok).toBe(false);
+      // Never worth retrying: the number will not change on its own.
+      if (!outcome.ok) expect(outcome.retryable).toBe(false);
+    });
+
+    it('reads error_message as a failure even on a 2xx', () => {
+      const outcome = readResponse(200, { error_message: 'Insufficient balance' });
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok) expect(outcome.because).toContain('Insufficient balance');
+    });
+
+    it('treats a refused key as unrecoverable', () => {
+      // The exact 401 body the endpoint returns for a missing or wrong key.
+      const outcome = readResponse(401, {
+        timestamp: '2026-08-23T22:33:27.346+00:00',
+        path: '/api/sms/send',
+        status: 401,
+        error: 'Unauthorized',
+      });
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok) expect(outcome.retryable).toBe(false);
+    });
+
+    /*
+     * The provider states 2519 — Ethio Telecom. Safaricom Ethiopia numbers are
+     * 07…, which `normaliseEthiopianMobile` accepts and this turns into 2517…,
+     * a well-formed msisdn this gateway says it will not take. The conversion
+     * stays correct on purpose: the send then fails loudly with the provider's
+     * own words rather than being silently dropped here, which is the only way
+     * anybody finds out whether the account covers Safaricom.
+     */
+    it('still builds a 2517 msisdn for a Safaricom number', () => {
+      expect(toMsisdn('0712345678')).toBe('251712345678');
+      expect(toMsisdn('0712345678')).toHaveLength(12);
+    });
+  });
+
   it('bounds what it will repeat from another service', () => {
     const outcome = readResponse(200, { status: 'failed', message: 'x'.repeat(5000) });
     expect(outcome.ok).toBe(false);

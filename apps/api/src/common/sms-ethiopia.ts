@@ -107,8 +107,21 @@ function statedFailure(body: unknown): string | null {
   }
   // Some gateways answer `{"success": false}` and nothing else.
   if (record.success === false) return `provider replied not successful${messageIn(record)}`;
-  if (record.error !== undefined && record.error !== null && record.error !== '') {
-    return `provider reported an error${messageIn(record)}`;
+
+  /*
+   * `error_message` is smsethiopia.com's own field, confirmed against the live
+   * endpoint rather than guessed.
+   *
+   * A first pass looked for `error`, `message` and `description` — none of
+   * which this provider uses. A rejected send would have been reported with its
+   * reason silently dropped, which is the difference between "SMS not
+   * delivered" and "SMS not delivered — number must start with 2519".
+   */
+  for (const key of ['error', 'error_message'] as const) {
+    const value = record[key];
+    if (value !== undefined && value !== null && value !== '') {
+      return `provider reported an error${messageIn(record)}`;
+    }
   }
   return null;
 }
@@ -122,7 +135,8 @@ function statedFailure(body: unknown): string | null {
  * would put the message text, and therefore a live code, into the log.
  */
 function messageIn(record: Record<string, unknown>): string {
-  const raw = record.message ?? record.error ?? record.description;
+  // `error_message` first: it is the field this provider actually populates.
+  const raw = record.error_message ?? record.message ?? record.error ?? record.description;
   if (typeof raw !== 'string' || raw.trim() === '') return '';
   return `: ${raw.trim().slice(0, 200)}`;
 }
