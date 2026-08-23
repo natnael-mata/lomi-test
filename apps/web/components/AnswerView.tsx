@@ -133,9 +133,21 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
           {isCalculation && answer.steps.length > 0 ? (
             <ol className="flex flex-col gap-2" data-steps="">
               {answer.steps.map((step, index) => {
-                // T-114: the last step states the answer choice, and the publish
-                // gate refuses to publish a calculation whose last step does not.
-                // Highlighting it is what makes that rule visible to a student.
+                /*
+                 * T-114: the last step states the answer choice, and the publish
+                 * gate refuses a calculation whose last step does not.
+                 * Highlighting it is what makes that rule visible to a student.
+                 *
+                 * The MARKER highlights it (handoff frame 3b), not the mint.
+                 * The lemon is the highlighter in this system — the pen you run
+                 * over the line that matters — and mint had quietly taken on a
+                 * fourth job here after picking up selected, correct and the
+                 * active nav. A highlighter over the final line is also just
+                 * what a student does to their own working on paper.
+                 *
+                 * Ink on lemon is 11.24:1, against 6.23:1 for the teal-on-mint
+                 * it replaces.
+                 */
                 const isLast = index === answer.steps.length - 1;
                 return (
                   <li
@@ -144,8 +156,8 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
                     data-final={isLast ? 'yes' : 'no'}
                     className={
                       isLast
-                        ? 'bg-correct-soft text-correct rounded-control p-3'
-                        : 'bg-surface-2 rounded-control p-3'
+                        ? 'bg-brand text-on-brand rounded-card p-3 font-semibold'
+                        : 'bg-surface-2 rounded-card p-3'
                     }
                   >
                     {step.formula && (
