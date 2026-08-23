@@ -25,6 +25,17 @@ export interface ElidedRow {
   label: string;
   weightPct: number;
   topicCount: number;
+  /**
+   * The topics themselves, so they can be named rather than merely counted.
+   *
+   * These are topics with no answers on them — untested, not failed — which is
+   * why they carry no percentage and sit outside the weighted mean. That part
+   * is right and stays. Hiding *which* they are is a separate decision, and a
+   * bad one: QA pointed out that a page this candid should not tuck the topic
+   * a student has never touched behind the words "1 other topic". Not knowing
+   * what you have not started is worse than a low score on it.
+   */
+  topics?: readonly string[];
 }
 
 export interface ReadinessStatement {
@@ -97,7 +108,23 @@ export function buildReadiness(
  * wrongness that makes a reader stop trusting the figures beside it, and this
  * row exists precisely so the weights visibly add up.
  */
+/** How many are named before the label falls back to a count. */
+const NAME_UP_TO = 3;
+
 export function elidedLabel(elided: ElidedRow): string {
   if (elided.topicCount <= 0) return 'all other topics';
-  return `${elided.topicCount} other topic${elided.topicCount === 1 ? '' : 's'}`;
+
+  /*
+   * Named while naming them is still readable.
+   *
+   * Past three, a list is worse than a count — it stops being something to act
+   * on and becomes a paragraph in a table cell. Below it, the names are the
+   * whole point: "Value Added Tax — not started" is a next step, "1 other
+   * topic" is a shrug.
+   */
+  const named = elided.topics ?? [];
+  if (named.length > 0 && named.length <= NAME_UP_TO) {
+    return `${named.join(', ')} — not started`;
+  }
+  return `${elided.topicCount} other topic${elided.topicCount === 1 ? '' : 's'}, not started`;
 }

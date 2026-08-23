@@ -45,7 +45,44 @@ describe('buildReadiness — the elided row (T-097)', () => {
   it('labels the row without inventing a count it does not have', () => {
     const s = buildReadiness([topic('a', 50, 20)]);
     expect(elidedLabel(s.elided!)).toBe('all other topics');
-    expect(elidedLabel({ ...s.elided!, topicCount: 12 })).toBe('12 other topics');
+    expect(elidedLabel({ ...s.elided!, topicCount: 12 })).toBe('12 other topics, not started');
+  });
+
+  /*
+   * Naming what has not been started.
+   *
+   * The row exists because these topics have no answers on them — untested,
+   * not failed, which is why they carry no percentage and stay out of the
+   * weighted mean. That is right. Hiding *which* they are was a separate
+   * decision and a bad one: QA pointed out that a page this candid should not
+   * tuck the topic a student has never touched behind "1 other topic". Not
+   * knowing what you have not started is worse news than a low score on it.
+   */
+  it('names them while naming them is still readable', () => {
+    const base = buildReadiness([topic('a', 50, 20)]).elided!;
+    expect(elidedLabel({ ...base, topicCount: 1, topics: ['Value Added Tax'] })).toBe(
+      'Value Added Tax — not started',
+    );
+    expect(elidedLabel({ ...base, topicCount: 2, topics: ['Trade', 'Landforms'] })).toBe(
+      'Trade, Landforms — not started',
+    );
+  });
+
+  it('falls back to a count once a list would be a paragraph', () => {
+    const base = buildReadiness([topic('a', 50, 20)]).elided!;
+    const many = ['One', 'Two', 'Three', 'Four', 'Five'];
+    // Past three, a list stops being something to act on.
+    expect(elidedLabel({ ...base, topicCount: many.length, topics: many })).toBe(
+      '5 other topics, not started',
+    );
+  });
+
+  it('still labels the row when no names were supplied', () => {
+    // The names are optional, so an older caller must not produce "undefined".
+    const base = buildReadiness([topic('a', 50, 20)]).elided!;
+    const label = elidedLabel({ ...base, topicCount: 3 });
+    expect(label).not.toContain('undefined');
+    expect(label).toContain('3 other topics');
   });
 });
 

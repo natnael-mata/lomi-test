@@ -503,6 +503,10 @@ export const en = {
      */
     coverageTitle: 'Your coverage',
     coverageOf: (beaten: number, total: number) => `${beaten} of ${total} questions beaten`,
+    // Appended to the line above. Reads as "0 of 20 questions beaten · 15
+    // answered so far" — the work sits beside the score instead of the score
+    // standing alone looking like a verdict on it.
+    coverageAlsoAnswered: (answered: number) => ` · ${answered} answered so far`,
     coverageWhatBeaten: 'Beaten means you answered it right and named the reason.',
     coverageTarget: (pct: number) => `Target ${pct}%`,
     coverageToTarget: (n: number) => `${n} more question${n === 1 ? '' : 's'} to reach the target.`,

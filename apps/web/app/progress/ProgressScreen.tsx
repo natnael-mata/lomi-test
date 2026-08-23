@@ -144,7 +144,9 @@ export function ProgressScreen() {
 
       {/* Above readiness, because it is the headline. Of the exam you are
           sitting, how much have you actually got. */}
-      {coverage && <CoveragePanel coverage={coverage} />}
+      {coverage && (
+        <CoveragePanel coverage={coverage} answered={readiness?.totalAnswered ?? null} />
+      )}
 
       {/*
        * Two columns from `lg`, one below it (DESIGN.md § Layout, the data measure).
@@ -175,6 +177,11 @@ export function ProgressScreen() {
                       label: 'other topics',
                       weightPct: readiness.unassessedWeightPct,
                       topicCount: readiness.topics.length - scored.length,
+                      // Named, not just counted. These are the topics with no
+                      // answers on them — see `ElidedRow.topics`.
+                      topics: readiness.topics
+                        .filter((t) => t.scorePct === null)
+                        .map((t) => t.topicName),
                     }
                   : null,
               headlinePct: readiness.headlinePct,

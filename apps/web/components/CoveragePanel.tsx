@@ -144,7 +144,25 @@ function SliceRow({ slice }: { slice: CoverageSlice }) {
   );
 }
 
-export function CoveragePanel({ coverage }: { coverage: CoverageView }) {
+export function CoveragePanel({
+  coverage,
+  answered,
+}: {
+  coverage: CoverageView;
+  /**
+   * Questions answered, beaten or not. Null when it is not known.
+   *
+   * Here because of what the panel looks like without it. A student fifteen
+   * questions in with nothing beaten reads a very large 0% beside "0 of 20
+   * questions beaten", and for a moment it says none of that counted. The
+   * sentence that explains it is on the screen — small, grey, and standing next
+   * to a zero, which is not a fair fight. QA read exactly that and described
+   * feeling "wounded in the wrong place".
+   *
+   * The dial still measures the mountain. This stops it denying the walking.
+   */
+  answered?: number | null;
+}) {
   const c = copy();
 
   return (
@@ -155,7 +173,14 @@ export function CoveragePanel({ coverage }: { coverage: CoverageView }) {
         <Ring pct={coverage.pct} targetPct={coverage.targetPct} />
 
         <div className="flex min-w-[14rem] flex-1 flex-col gap-2">
-          <p className="text-label num">{c.progress.coverageOf(coverage.beaten, coverage.total)}</p>
+          <p className="text-label num">
+            {c.progress.coverageOf(coverage.beaten, coverage.total)}
+            {/* The effort, beside the score. Only where there is effort to
+                report and it is not already the same number. */}
+            {answered !== null && answered !== undefined && answered > coverage.beaten
+              ? c.progress.coverageAlsoAnswered(answered)
+              : ''}
+          </p>
           {/* Said plainly, because "beaten" is not the obvious meaning of a
               count. A student who reads it as "answered" finds the number lower
               than they expect and concludes the product is broken. */}
