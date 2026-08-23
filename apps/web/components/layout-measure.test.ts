@@ -135,7 +135,15 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
    * greyscale exactly as the colour was meant to.
    */
   it('marks the active item with a pill and a second signal, not one alone', () => {
-    expect(nav).toContain('bg-brand-soft');
+    /*
+     * The pill is MINT now (handoff bundle, 2026-08-23), not lemon-soft.
+     *
+     * Mint carries selected, correct and the active nav across the whole
+     * system, so "where I am" and "what I chose" read as one family. The rule
+     * being asserted is unchanged — a fill AND a second signal — and the fill
+     * is the only part that moved.
+     */
+    expect(nav).toContain('bg-correct-soft');
     expect(nav).toContain('text-ink font-semibold');
     // The lemon must not have crept back into a label.
     expect(nav).not.toContain('text-brand');

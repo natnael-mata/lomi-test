@@ -85,14 +85,14 @@ function Item({ destination, active }: { destination: Destination; active: boole
         // from 6.72:1 to 13.27:1 plus a weight step, with the wash behind it.
         // On a phone the pill sits behind the icon only: a filled cell in a
         // 56px bar reads as a button rather than as "you are here".
-        active ? 'text-ink font-semibold sm:bg-brand-soft' : 'text-ink-2',
+        active ? 'text-ink font-semibold sm:bg-correct-soft' : 'text-ink-2',
       ].join(' ')}
       {...(active ? { 'aria-current': 'page' as const } : {})}
     >
       <span
         className={
           active
-            ? 'bg-brand-soft inline-flex rounded-full px-3 py-0.5 sm:bg-transparent sm:p-0'
+            ? 'bg-correct-soft inline-flex rounded-full px-3 py-0.5 sm:bg-transparent sm:p-0'
             : ''
         }
       >
@@ -116,6 +116,9 @@ export function BottomBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label={c.nav.main}
+      // The phone bar stays edge-to-edge: a floating card at the bottom of a
+      // 390px screen costs 32px of width the question stem needs, and the
+      // safe-area inset already keeps it clear of the home indicator.
       className="bg-surface border-border fixed inset-x-0 bottom-0 z-10 flex border-t pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       {DESTINATIONS.map((d) => (
@@ -130,7 +133,15 @@ export function SideRail({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label={c.nav.main}
-      className="bg-surface border-border fixed inset-y-0 left-0 z-10 hidden w-26 flex-col gap-2 border-r px-2 py-6 sm:flex lg:w-58 lg:gap-1 lg:px-4"
+      /*
+        A floating card, not a wall (handoff bundle, 2026-08-23).
+        It was a full-height rail glued to the left edge with a border. The
+        design lifts it off the paper: a rounded card inset from the edge,
+        one hairline, and the only shadow in the whole system — a long soft
+        lemon glow rather than a grey drop, because grey next to cream reads
+        as dirt.
+      */
+      className="bg-surface border-border rounded-panel shadow-nav fixed inset-y-4 left-4 z-10 hidden w-26 flex-col gap-2 border px-2 py-6 sm:flex lg:w-58 lg:gap-1 lg:px-4"
     >
       <span className="mb-4 flex justify-center lg:mb-6 lg:justify-start lg:px-3">
         {/* The glyph alone where there is no room for the wordmark beside it. */}

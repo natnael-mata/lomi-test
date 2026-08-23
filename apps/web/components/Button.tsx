@@ -90,6 +90,18 @@ export function Button({
       title={showingReason ? blockingReason : undefined}
       {...rest}
     >
+      {/*
+        The handoff's "→ " prefix on the primary action.
+
+        Only when the button is actually offering the action: a disabled button
+        showing why it is disabled ("Choose an answer first") is a statement,
+        not an invitation, and an arrow on it points at nothing.
+
+        `aria-hidden`, because a screen reader announcing "right arrow, Check
+        answer" adds a word and no meaning — the label already says what
+        pressing it does.
+      */}
+      {variant === 'primary' && !showingReason ? <span aria-hidden="true">→</span> : null}
       {buttonLabel(children, disabled, blockingReason)}
     </button>
   );

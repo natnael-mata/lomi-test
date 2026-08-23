@@ -131,9 +131,15 @@
      that reads as friendly rather than exact. A ledger has square corners; a
      small radius keeps the touch affordance without the roundness. The 999px
      pill is untouched: chips and progress tracks are meant to be capsules. */
-  --radius-control: 6px; /* buttons, inputs, option rows                  */
-  --radius-card: 8px; /* cards, sheets, wells                          */
-  --radius-panel: 14px; /* bottom sheets, modals                         */
+  /* The handoff bundle's scale (2026-08-23): 6 / 12 / 16, and it is a
+     hierarchy rather than a set of preferences. A button is the tightest
+     because it is a control you press; a card is rounder because it is an
+     object on the page; an outer frame and the floating nav are rounder still
+     because they hold the objects. Cards moved 8 → 12 and panels 14 → 16 so
+     the three steps are actually distinguishable at arm's length. */
+  --radius-control: 6px; /* buttons, inputs                               */
+  --radius-card: 12px; /* cards, option rows, sheets, wells             */
+  --radius-panel: 16px; /* outer frames, the floating nav, modals        */
   --radius-full: 999px; /* chips, badges, avatars, progress tracks       */
 
   /* ---- elevation: every shadow carries an offset AND a blur --------------
@@ -141,7 +147,12 @@
      shadow on cream reads as depth in this world instead of grey fog. Lighter
      than Deresegn's throughout: paper does not float far off the page, and
      restraint here is most of what separates a premium surface from a busy one. */
-  --shadow-card: 0 1px 2px rgb(26 51 0 / 0.04);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.05);
+
+  /* The one shadow in the design, and it is on the floating nav. A long, very
+     soft lemon glow rather than a grey drop — the nav lifts off the paper
+     without a grey edge anywhere near the cream. */
+  --shadow-nav: 0 33px 72px rgb(255 235 90 / 0.1);
   --shadow-lift: 0 2px 4px rgb(26 51 0 / 0.06), 0 10px 24px rgb(26 51 0 / 0.09);
   --shadow-panel: 0 4px 8px rgb(26 51 0 / 0.07), 0 22px 44px rgb(26 51 0 / 0.14);
   /* The brand shadow is INK, not lemon. A yellow glow under a yellow button is
