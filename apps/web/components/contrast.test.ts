@@ -105,6 +105,15 @@ const PAIRS: [fg: string, bg: string, where: string][] = [
   // `on-brand` is ink, and ink on a solid state fill is 1.5–2.0:1. `on-state`
   // is now the explicit token for text on ANY solid state fill, and every one
   // of them is audited here rather than left to whichever is used first.
+  /*
+   * The primary button, which is now an ink fill (handoff, 2026-08-23).
+   *
+   * The lemon moved to being the marker only — pending pills, flags, the
+   * free-question count — because a marker that is also the primary button
+   * competes with itself on every screen. Ink is the one fill with nothing
+   * else to do.
+   */
+  ['on-state', 'ink', 'primary button label'],
   ['on-state', 'correct', 'label on a solid correct fill'],
   ['on-state', 'wrong', 'danger button label'],
   ['on-state', 'pending', 'label on a solid pending fill'],

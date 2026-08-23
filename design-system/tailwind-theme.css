@@ -37,10 +37,22 @@
   /* ---- semantic state — never remapped, not even inside Telegram ---------
      Each state clears 4.5:1 on bg, on surface AND on its own soft fill, and
      sits at least 60 deg of hue from the ink and from every other state. */
+  /* MINT is the redesign's fill for correct, selected and the active nav pill
+     — one colour doing all three, so "chosen" and "right" look like the same
+     family. It is a FILL: ink sits on it at 11.64:1 and it never sets text.
+     `--color-correct` stays a readable teal for the places a verdict is a WORD
+     rather than a fill (a chip label, "Correct, over time"), because mint as
+     text is 1.14:1 on the ground. */
   --color-correct: #0f5f63; /* TEAL, not green: the ink IS green.      */
-  --color-correct-soft: #ddf0f0; /* 7.10 on bg · 6.27 on its own fill       */
+  --color-correct-soft: #d5f5c2; /* mint — selected, correct, active nav    */
+  /* The handoff specifies #cb5521 and this stays darkened, deliberately.
+     Measured against the new ground it is 3.79:1, on a card 4.14:1 and on its
+     own wash 3.54:1 — all under the 4.5 this product holds itself to, and this
+     is the colour that carries "you got it wrong" to a fifteen-year-old reading
+     on a cheap phone in daylight. The hue is the design's; the lightness is the
+     one that can be read. */
   --color-wrong: #a3300f; /* terracotta, darkened from #cb5521       */
-  --color-wrong-soft: #fbe0d6; /* 6.74 on bg · 5.60 on its own fill       */
+  --color-wrong-soft: #f8e5db; /* terracotta wash, from the handoff       */
   --color-pending: #4a4a46; /* pencil. Pending is not failure, so it   */
   --color-pending-soft: #edebe4; /* gets no alarm colour: 8.53 on bg        */
   --color-reward: #6b2d78; /* plum — the lemon is spoken for          */
@@ -57,10 +69,16 @@
      Not grey. Pencil Gray (#b6b6b6) and Whisper Gray (#f1f1f1) from the source
      style are 1.94:1 and 1.08:1 on cream, so they exist here as hairlines
      only and must never set text. */
-  --color-bg: #fcfaf5; /* the page — cream paper                  */
-  --color-surface: #ffffff; /* a sheet laid on it                      */
-  --color-surface-2: #f1efe8; /* wells, chips, code, skeletons           */
-  --color-border: #dfdbd0; /* hairline. Never text.                   */
+  /* The redesign separates GROUND from SURFACE (handoff bundle, 2026-08-23).
+     The page is a slightly deeper cream and a card is the pale sheet laid on
+     it, so a card reads as an object without a shadow — the design has exactly
+     one shadow in it and it is on the floating nav. Previously the page was the
+     paler of the two and cards were pure white, which made every card edge
+     depend on the hairline alone. */
+  --color-bg: #f3f0e8; /* the ground — cream paper                */
+  --color-surface: #fcfaf5; /* a paler sheet laid on it                */
+  --color-surface-2: #efece2; /* wells, chips, code, skeletons           */
+  --color-border: #b6b6b6; /* hairline, 1px. Never text.              */
   --color-ink: #1a3300; /* forest, 13.27:1 on bg                   */
   --color-ink-2: #46603a; /* captions, 6.72:1 on bg                  */
 
@@ -272,15 +290,28 @@
    --------------------------------------------------------------------------- */
 @layer components {
   /* Primary action. 52px is the floor — this is a one-handed product. */
+  /*
+   * INK fill, cream text (handoff bundle, 2026-08-23).
+   *
+   * The primary action was a lemon fill. The redesign makes it ink, and the
+   * reason is hierarchy: the lemon is the *marker* — pending pills, flags, the
+   * free-question count, the logo tile — and a marker that is also the primary
+   * button competes with itself on every screen. Ink is the only fill in the
+   * palette with nothing else to do.
+   *
+   * One primary CTA per screen, which is the design's rule and is why this is
+   * the loudest thing the stylesheet can produce.
+   */
   .btn-primary {
-    @apply w-full min-h-[52px] px-6 rounded-control bg-brand text-on-brand
+    @apply w-full min-h-[52px] px-6 rounded-control bg-ink text-on-state
            text-label inline-flex items-center justify-center gap-2
            transition-[background-color,box-shadow,transform] duration-150
-           shadow-brand active:scale-[.98];
+           shadow-card active:scale-[.98];
   }
   .btn-primary:hover {
-    @apply bg-brand-hover;
+    @apply bg-ink-2;
   }
+
   .btn-primary:disabled {
     @apply bg-surface-2 text-ink-2 shadow-none cursor-not-allowed active:scale-100;
   }

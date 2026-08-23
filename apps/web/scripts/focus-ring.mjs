@@ -160,6 +160,17 @@ const PROBE = `(() => {
    * ring also runs along its own edge. Both are measured and the worst is kept:
    * a ring that disappears against either is a ring somebody cannot follow.
    */
+  /*
+   * An OFFSET outline is drawn outside the element, on whatever is behind it —
+   * so the element's own fill is not what it has to contrast against.
+   *
+   * This measured both and kept the worst, which was harmless while the primary
+   * button was a pale lemon and became a false failure the moment it turned
+   * ink: a correct ink ring, sitting on cream two pixels clear of the button,
+   * was scored against the button fill it never touches. The element's own
+   * background is only relevant when the offset is zero or negative, which is
+   * the case where the ring really does sit on the control.
+   */
   const backdropOf = (node) => {
     for (let n = node; n; n = n.parentElement) {
       const bg = getComputedStyle(n).backgroundColor;
@@ -178,8 +189,22 @@ const PROBE = `(() => {
   const style = getComputedStyle(el);
   const own = getComputedStyle(el).backgroundColor;
   const behind = backdropOf(el.parentElement ?? el);
+  /*
+   * An OFFSET outline is drawn outside the element, on whatever is behind it,
+   * so the control's own fill is not what it contrasts against.
+   *
+   * Measuring both and keeping the worst was harmless while the primary button
+   * was a pale lemon, and became a false failure the moment the redesign made
+   * it ink: a correct ink ring sitting on cream two pixels clear of the button
+   * was scored against a fill it never touches. The element's own background
+   * matters only at zero or negative offset, where the ring really does lie on
+   * the control.
+   */
+  const offset = parseFloat(style.outlineOffset) || 0;
   const against = [behind];
-  if (own && own !== 'transparent' && !/rgba\\(0,\\s*0,\\s*0,\\s*0\\)/.test(own)) against.push(own);
+  if (offset <= 0 && own && own !== 'transparent' && !/rgba\\(0,\\s*0,\\s*0,\\s*0\\)/.test(own)) {
+    against.push(own);
+  }
   const ratios = against.map((bg) => ({ bg, ratio: ratio(style.outlineColor, bg) }));
   const worst = ratios.reduce((a, b) => (a.ratio <= b.ratio ? a : b));
   return {
