@@ -211,6 +211,19 @@ export const en = {
     // kept, which is the fact a lapsed student most wants and least expects.
     lapsedOn: (date: string) =>
       `Your access ended on ${date}. Everything you have answered is still here.`,
+    /*
+     * The free counter, said the same way the practice badge says it.
+     *
+     * Zero gets its own sentence: "0 questions left" is a number to decode,
+     * and the thing a student in that state needs is what is still free.
+     */
+    freeLeft: (left: number) =>
+      left === 0
+        ? 'Your free questions are used up. Anything you have already answered is still free to redo.'
+        : `${left} free question${left === 1 ? '' : 's'} left.`,
+    // Named by its reference, because that is what somebody quotes when they
+    // ask where their money went.
+    claimWaiting: (txRef: string) => `Your transfer ${txRef} is with our team to be checked.`,
   },
 
   practice: {
@@ -244,6 +257,10 @@ export const en = {
      * a wrong pick costs them nothing they had — the question stays unbeaten and
      * comes round again. The copy is careful never to call it a failure.
      */
+    // Stands where the concept line will be while the reason check is still
+    // being asked. Says the explanation is coming, so its absence does not read
+    // as this question simply not having one.
+    conceptAfterReason: 'The concept behind this answer appears once you have named the reason.',
     reasonTitle: 'Why is that the right answer?',
     reasonWhy: 'Getting this too is what marks the question as done.',
     reasonSkip: 'Skip for now',
@@ -374,7 +391,27 @@ export const en = {
       `${questions} questions in ${minutes} minutes, sat once through. ` +
       'Nothing is marked until you submit.',
     start: 'Start the mock',
+    reviewLoading: 'Opening your paper…',
+    /*
+     * One message for "not yours" and "no such paper".
+     *
+     * Sitting ids are opaque, but answering "that belongs to somebody else"
+     * confirms a real paper on a real account, which nobody trying ids is
+     * entitled to learn.
+     */
+    reviewNotFound: 'That paper is not here. It may have been sat on another account.',
+    reviewFailed: 'Your paper could not be opened just now. Try again in a moment.',
+    reviewBackToProgress: 'Back to your progress',
     resumeTitle: 'You have a paper open',
+    /*
+     * Said when starting had to close an expired paper first.
+     *
+     * "Marked", not "lost" — because it was marked, and that is the fact the
+     * student is missing. It names where the result went, so the sentence ends
+     * somewhere they can act rather than in an apology.
+     */
+    previousExpired:
+      'Your last paper ran out of time, so it was marked as it stood. The result is on your progress page. This is a new one.',
     resumeBody: (answered: number, total: number) =>
       `${answered} of ${total} answered. Your answers are saved and the clock has kept running.`,
     resume: (position: number) => `Go back to question ${position}`,
@@ -491,6 +528,9 @@ export const en = {
     sittingMinutes: (minutes: number) => `${minutes} min used`,
     sittingOfAttempted: (pct: number, attempted: number) =>
       `${pct}% of the ${attempted} you attempted`,
+    // The way back into a paper already sat. "Read", not "review" — reviewing
+    // is what a marker does; this is the student reading their own answers.
+    readThisPaper: 'Read this paper',
     sittingsEmpty: 'No mock papers sat yet.',
     fromAnswers: (pct: number, answered: number) =>
       `${pct}% from ${answered} answer${answered === 1 ? '' : 's'}`,

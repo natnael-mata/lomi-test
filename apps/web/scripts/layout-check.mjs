@@ -40,8 +40,37 @@ const SECRET = process.env.DEV_LOGIN_SECRET ?? 'lomi-local-testing-secret-000000
 /** Every screen, and who has to be signed in to see it. */
 const ROUTES = [
   { path: '/', as: 'userc' },
+  // The signed-in hub, which is a different page from `/` and was not measured
+  // at all until it started carrying per-student state.
+  { path: '/home', as: 'userc' },
   { path: '/practice', as: 'userc' },
   { path: '/exam', as: 'userc' },
+  /*
+   * A paper read back after the fact.
+   *
+   * The id is resolved at run time from User G's own finished sitting, because
+   * hard-coding one would pass until the next re-seed and then quietly measure
+   * an error page instead of the screen. `resolve` returning null skips the
+   * route rather than failing the sweep — a machine with no seeded data should
+   * not report a layout fault.
+   */
+  {
+    path: null,
+    as: 'userg',
+    resolve: async (token) => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const fields = await fetch(`${API}/me/fields`, { headers: auth });
+      if (!fields.ok) return null;
+      const chosen = (await fields.json()).find((f) => f.chosen);
+      if (!chosen) return null;
+
+      const trend = await fetch(`${API}/me/trend/${chosen.id}`, { headers: auth });
+      if (!trend.ok) return null;
+      const points = await trend.json();
+      const sitting = points[points.length - 1]?.sittingId ?? null;
+      return sitting ? `/exam/review/${sitting}` : null;
+    },
+  },
   { path: '/progress', as: 'userc' },
   { path: '/standing', as: 'userc' },
   { path: '/checkout', as: 'userc' },
@@ -368,14 +397,26 @@ async function main() {
     });
 
     {
+      /** Routes whose URL could not be resolved from seeded data. */
+      const skipped = [];
       for (const route of ROUTES) {
+        let token = null;
         if (route.as) {
+          token = await sessionToken(route.as);
           await cdp.send('Network.setCookie', {
             name: 'lomi_session',
-            value: await sessionToken(route.as),
+            value: token,
             url: BASE,
             path: '/',
           });
+        }
+
+        // Routes whose URL depends on seeded data work it out now, with a
+        // session in hand. A null means "nothing to measure here", not a fault.
+        const path = route.path ?? (route.resolve ? await route.resolve(token) : null);
+        if (path === null) {
+          skipped.push(route.as ?? 'anonymous');
+          continue;
         }
 
         for (const size of WIDTHS) {
@@ -385,14 +426,14 @@ async function main() {
             deviceScaleFactor: 1,
             mobile: size.name === 'phone',
           });
-          await cdp.send('Page.navigate', { url: `${BASE}${route.path}` });
+          await cdp.send('Page.navigate', { url: `${BASE}${path}` });
           await sleep(2200);
 
           const problems = await cdp.evaluate(
             `(() => { window.__lomiViewport = ${size.width}; return ${AUDIT}; })()`,
           );
           screens++;
-          const where = `${route.path} · ${size.name}`;
+          const where = `${path} · ${size.name}`;
           if (problems.length === 0) continue;
           for (const problem of problems) failures.push(`${where}: ${problem}`);
         }

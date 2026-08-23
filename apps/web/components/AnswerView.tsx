@@ -43,6 +43,21 @@ export interface AnswerViewProps {
    */
   pacing?: string;
   timeTakenSec?: number;
+  /**
+   * Hold back the concept line, because it is the answer to a question still
+   * being asked.
+   *
+   * The reason check offers the question's own concept line among distractors
+   * drawn from other questions' why-wrongs — and this component was printing
+   * that exact sentence, verbatim, in a highlighted box a few centimetres above
+   * the options. QA spotted it immediately: shuffling the options does nothing
+   * when the answer is on the same screen.
+   *
+   * Held rather than removed. It arrives the moment the check is answered or
+   * skipped, and the space says so, because a student who does not know the
+   * explanation is coming will assume this question simply has none.
+   */
+  withholdConcept?: boolean;
 }
 
 /**
@@ -85,7 +100,13 @@ function clock(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerViewProps) {
+export function AnswerView({
+  answer,
+  isCorrect,
+  pacing,
+  timeTakenSec,
+  withholdConcept = false,
+}: AnswerViewProps) {
   const timed = pacing !== undefined && timeTakenSec !== undefined;
   // A blank is not a wrong answer — the review of a paper somebody ran short on
   // must not caption eighteen untouched questions "Not quite".
@@ -115,12 +136,22 @@ export function AnswerView({ answer, isCorrect, pacing, timeTakenSec }: AnswerVi
         )}
       </section>
 
-      {/* 2 — concept line: the one thing to remember */}
-      {answer.conceptLine && (
-        <section data-section="concept" className="bg-brand-soft text-ink rounded-card p-4">
-          <p className="text-stem">{answer.conceptLine}</p>
-        </section>
-      )}
+      {/* 2 — concept line: the one thing to remember, unless it is currently
+             the answer to the reason check below. See `withholdConcept`. */}
+      {answer.conceptLine &&
+        (withholdConcept ? (
+          <section
+            data-section="concept"
+            data-withheld=""
+            className="border-border text-ink-2 rounded-card border border-dashed p-4"
+          >
+            <p className="text-caption">{copy().practice.conceptAfterReason}</p>
+          </section>
+        ) : (
+          <section data-section="concept" className="bg-brand-soft text-ink rounded-card p-4">
+            <p className="text-stem">{answer.conceptLine}</p>
+          </section>
+        ))}
 
       {/* 3 — solution: prose for CONCEPT, numbered working for CALCULATION */}
       <section data-section="solution">

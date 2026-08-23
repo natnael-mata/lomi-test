@@ -8,7 +8,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import type { OptionLabel, Prisma } from '@prisma/client';
+import type { OptionLabel, Prisma, SittingCloseReason } from '@prisma/client';
 
 import { EngagementService } from '../engagement/engagement.service';
 import { RULES } from '../engagement/points';
@@ -34,6 +34,16 @@ export interface StartResult {
   totalQuestions: number;
   /** True when an open sitting was rejoined rather than a new one begun. */
   resumed: boolean;
+  /**
+   * What happened to the paper this one replaced, or null if there was none.
+   *
+   * `'EXPIRED'` is the one that needs saying out loud. A student who left three
+   * answers in a paper and came back after the clock ran out gets a fresh one,
+   * correctly — but in silence it reads as the answers having been thrown away.
+   * They were marked, and the student is entitled to know that before they
+   * start again. QA filed exactly this as lost work.
+   */
+  settledPrevious: SittingCloseReason | null;
   clock: SittingClock;
 }
 
@@ -211,6 +221,9 @@ export class ExamsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      /** A paper this call had to settle before it could open a new one. */
+      let settled: SittingCloseReason | null = null;
+
       const open = await tx.sitting.findFirst({
         where: { userId, fieldId, closedAt: null },
         select: { id: true, examId: true, startedAt: true, endsAt: true, closedAt: true },
@@ -228,10 +241,17 @@ export class ExamsService {
             examName: exam.name,
             totalQuestions: total,
             resumed: true,
+            settledPrevious: null,
             clock: clockFor(open, exam.durationSec, now),
           };
         }
         await this.closeSitting(tx, open.id, closeReasonFor(open, now), now);
+        // Remembered so the student can be told. Closing a paper they had
+        // answers in and opening a fresh one is correct; doing it in silence is
+        // not — QA left three answers in a paper, came back to "Question 1 of
+        // 20" on a full clock, and reported the answers as lost. They were not
+        // lost, they were marked, and nothing on the screen said so.
+        settled = closeReasonFor(open, now);
       }
 
       const exam = await tx.exam.findFirst({
@@ -266,6 +286,8 @@ export class ExamsService {
         examName: exam.name,
         totalQuestions: total,
         resumed: false,
+        // What happened to the paper this one replaced, if there was one.
+        settledPrevious: settled,
         clock: clockFor(sitting, exam.durationSec, now),
       };
     });

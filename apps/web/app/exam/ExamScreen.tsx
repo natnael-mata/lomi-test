@@ -60,6 +60,8 @@ export function ExamScreen() {
   const [preview, setPreview] = useState<ExamPreview | null>(null);
   /** Set when the preview was refused, so the splash stops saying "preparing". */
   const [previewFailed, setPreviewFailed] = useState(false);
+  /** Set when starting had to settle an expired paper first. See `startExam`. */
+  const [settledNotice, setSettledNotice] = useState<string | null>(null);
 
   /**
    * The offline outbox (T-131).
@@ -225,6 +227,17 @@ export function ExamScreen() {
       const started = await api.startExam(fieldId);
       setSittingId(started.sittingId);
       applyClock(started.clock);
+
+      /*
+       * Say so when a previous paper had to be settled first.
+       *
+       * A student who walked away from a paper and came back after the clock ran
+       * out gets a new one, which is right — but landing on "Question 1 of 20"
+       * with a full clock and no explanation reads as their answers having been
+       * thrown away. QA filed exactly that as lost work. They were marked, and
+       * the result is on `/progress` where every other sat paper is.
+       */
+      setSettledNotice(started.settledPrevious === 'EXPIRED' ? c.exam.previousExpired : null);
 
       // A reload mid-sitting rejoins, so anything queued before it is still this
       // student's unsent work. `parseQueue` refuses a queue from another sitting.
@@ -409,6 +422,14 @@ export function ExamScreen() {
         <Chip>{c.exam.questionOf(item.position, item.totalQuestions)}</Chip>
         <ExamTimer remainingSec={remaining} durationSec={durationRef.current} />
       </header>
+
+      {/* The paper this one replaced, and what became of it. Without this a
+          fresh "Question 1 of 20" on a full clock reads as work thrown away. */}
+      {settledNotice !== null && (
+        <p className="text-caption text-ink-2" data-settled-previous>
+          {settledNotice}
+        </p>
+      )}
 
       {/* Says the work is safe, because the alternative is a student who thinks
           it is not and answers everything twice. It does not say "offline" —

@@ -41,6 +41,10 @@ type Session =
        * along — QA found the two screens disagreeing about the same account.
        */
       lapsedOn: string | null;
+      /** A bank transfer waiting to be checked, so `/home` can say so. */
+      pendingClaim: { txRef: string; amountEtb: number } | null;
+      /** Free questions left. Null with no programme chosen. */
+      freeRemaining: number | null;
     };
 
 export function HomeScreen() {
@@ -57,6 +61,8 @@ export function HomeScreen() {
             kind: 'signedIn',
             activeUntil: me.active ? me.expiresAt : null,
             lapsedOn: !me.active && me.hasEverPaid ? me.expiresAt : null,
+            pendingClaim: me.pendingClaim,
+            freeRemaining: me.freeRemaining,
           });
         }
       } catch {
@@ -101,14 +107,37 @@ export function HomeScreen() {
         </Card>
       ) : null}
 
+      {/*
+        What is true of THIS student, rather than of students in general.
+
+        This was one line for everybody — "You are on the free questions" —
+        shown identically to somebody two questions from the wall, somebody
+        whose access lapsed yesterday, and somebody whose bank transfer was
+        sitting unchecked in the admin queue. Every one of those facts existed
+        and was already on `/checkout`; the page a student actually lands on
+        knew none of them. QA read the same sentence on three different accounts
+        and reported the home page as blind to who was looking at it.
+      */}
       {session.kind === 'signedIn' ? (
-        <p className="text-caption text-ink-2">
-          {session.activeUntil
-            ? c.home.accessUntil(day(session.activeUntil))
-            : session.lapsedOn
-              ? c.home.lapsedOn(day(session.lapsedOn))
-              : c.home.freeTier}
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="text-caption text-ink-2">
+            {session.activeUntil
+              ? c.home.accessUntil(day(session.activeUntil))
+              : session.lapsedOn
+                ? c.home.lapsedOn(day(session.lapsedOn))
+                : session.freeRemaining !== null
+                  ? c.home.freeLeft(session.freeRemaining)
+                  : c.home.freeTier}
+          </p>
+
+          {/* The money they have already sent. Named by its reference, because
+              that is what somebody quotes when they ask where it went. */}
+          {session.pendingClaim !== null && (
+            <p className="text-caption text-ink-2" data-pending-claim>
+              {c.home.claimWaiting(session.pendingClaim.txRef)}
+            </p>
+          )}
+        </div>
       ) : null}
 
       <nav className="flex flex-col gap-2">

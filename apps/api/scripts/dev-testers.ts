@@ -179,6 +179,16 @@ async function upsertPersona(label: string, name: string): Promise<string> {
  * across the topics in bank order, so the readiness screen has something with
  * shape in it rather than four identical bars.
  */
+/**
+ * How long the dev mock paper runs.
+ *
+ * One place, because User F's open sitting is stamped with it too — a fixture
+ * whose paper length and whose deadline are set independently is one that can
+ * disagree with itself, which is how it ends up claiming eight hours remain on
+ * a forty-five minute exam.
+ */
+const FIXTURE_EXAM_SEC = 45 * 60;
+
 async function seedAttempts(
   userId: string,
   fieldId: string,
@@ -588,7 +598,7 @@ async function main(): Promise<void> {
           // and 8 calculation. Asking for one more calculation than exists is
           // how the first version of this failed, with a 422 that named the
           // shortfall nobody was reading.
-          blueprint: { conceptCount: 12, calculationCount: 8, durationSec: 45 * 60 },
+          blueprint: { conceptCount: 12, calculationCount: 8, durationSec: FIXTURE_EXAM_SEC },
         },
         adminId,
       );
@@ -637,30 +647,27 @@ async function main(): Promise<void> {
     }
 
     /*
-     * The deadline is pushed out, because a 45-minute fixture is wrong for all
-     * but the first 45 minutes of the day it was seeded.
+     * The clock is restarted, and it is a real one.
      *
-     * QA opened `/exam` as User F some hours after this ran, was offered "Start
-     * the mock" with no mention of an open paper, pressed it, and got a fresh
-     * one — then filed the lost answers as a blocker. Every part of that was
-     * the product working: the sitting had genuinely expired, `preview`
-     * correctly reported nothing open, and `start` correctly closed the dead row
-     * before opening a new one. The fixture had quietly stopped being what the
-     * brief said it was, which is the third time a seed has cost a QA round by
-     * describing a state that had aged out from under it.
+     * A first pass held this open for eight hours so the resume path would
+     * survive a testing session. That produced a paper reading "8:00:00 left"
+     * beside "45 minutes" — a fixture lying in a new direction to cover for the
+     * old lie, and a bug report waiting to be filed.
      *
-     * Eight hours outlives a testing session without pretending the clock does
-     * not exist. `startedAt` moves with it so the elapsed time still matches the
-     * time remaining — a paper claiming 8 hours left and 3 hours gone would be
-     * its own bug report.
+     * The honest version: a genuine 45-minute window, restarted from this run,
+     * plus a product that says what happened when the window closes. `start`
+     * now reports `settledPrevious: 'EXPIRED'` and the screen explains that the
+     * old paper was marked rather than lost — which was the real defect QA
+     * found. A tester arriving late gets a correct, self-explaining screen
+     * instead of a silent restart, and re-running this script puts the open
+     * paper back.
      */
-    const HOLD_OPEN_SEC = 8 * 60 * 60;
     const now = new Date();
     await prisma.sitting.update({
       where: { id: started.sittingId },
-      data: { startedAt: now, endsAt: new Date(now.getTime() + HOLD_OPEN_SEC * 1000) },
+      data: { startedAt: now, endsAt: new Date(now.getTime() + FIXTURE_EXAM_SEC * 1000) },
     });
-    fNote = 'sitting open, 3 of 20 answered, held open for 8 hours';
+    fNote = `sitting open, 3 of 20 answered — open for ${FIXTURE_EXAM_SEC / 60} more minutes`;
   }
 
   // ---- User G: a paper finished --------------------------------------------

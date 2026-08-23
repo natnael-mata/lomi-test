@@ -369,6 +369,13 @@ export interface SittingStart {
   examName: string;
   totalQuestions: number;
   resumed: boolean;
+  /**
+   * What happened to a paper this one replaced, or null if there was none.
+   *
+   * 'EXPIRED' is the one worth saying out loud: the answers were marked, not
+   * thrown away, and in silence a fresh "Question 1 of 20" reads as lost work.
+   */
+  settledPrevious: 'EXPIRED' | 'SUBMITTED' | null;
   clock: SittingClock;
 }
 
@@ -797,6 +804,10 @@ export const api = {
     active: boolean;
     expiresAt: string | null;
     planCode: PlanCode | null;
+    /** A bank transfer submitted and not yet settled. Null when there is none. */
+    pendingClaim: { txRef: string; amountEtb: number } | null;
+    /** Free questions left in the chosen programme. Null with none chosen. */
+    freeRemaining: number | null;
   }> => call('/payments/me'),
 
   submitAttempt: (input: {

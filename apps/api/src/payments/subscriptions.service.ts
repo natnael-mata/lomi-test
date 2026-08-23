@@ -2,6 +2,7 @@ import { ConflictException, Injectable, UnprocessableEntityException } from '@ne
 
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { freeRemaining } from '../practice/attempt-rules';
 import type { SubscriptionAccess } from '../practice/subscription-access';
 import { expiresAtFrom, isLive, offersFrom, renewalStartsAt, type PlanOffer } from './plan';
 
@@ -241,7 +242,18 @@ export class SubscriptionsService implements SubscriptionAccess {
         orderBy: { createdAt: 'desc' },
         include: { plan: { select: { code: true, months: true } } },
       }));
-    if (!latest) return { hasEverPaid: false, active: false, expiresAt: null, planCode: null };
+    const waiting = await this.pendingClaimFor(userId);
+    const free = await this.freeLeftFor(userId);
+    if (!latest) {
+      return {
+        hasEverPaid: false,
+        active: false,
+        expiresAt: null,
+        planCode: null,
+        pendingClaim: waiting,
+        freeRemaining: free,
+      };
+    }
 
     /*
      * "Has ever paid" is about the account, not about one row.
@@ -263,7 +275,55 @@ export class SubscriptionsService implements SubscriptionAccess {
       active: latest.status === 'ACTIVE' && isLive(latest.expiresAt, now),
       expiresAt: latest.expiresAt?.toISOString() ?? null,
       planCode: latest.plan.code,
+      pendingClaim: waiting,
+      freeRemaining: free,
     };
+  }
+
+  /**
+   * A bank transfer the student has submitted and nobody has settled yet.
+   *
+   * On `/home` this is the difference between a student who thinks their money
+   * vanished and one who knows it is in a queue. `/checkout` had the sentence
+   * all along — "Reference … is with our team" — and the home page, which is
+   * where somebody actually lands, said only "You are on the free questions".
+   *
+   * The reference is included because it is what a worried student quotes when
+   * they ask about it, and it is theirs already.
+   */
+  private async pendingClaimFor(
+    userId: string,
+  ): Promise<{ txRef: string; amountEtb: number } | null> {
+    const claim = await this.prisma.payment.findFirst({
+      where: { userId, status: 'PENDING', method: 'BANK' },
+      orderBy: { createdAt: 'desc' },
+      select: { txRef: true, amountEtb: true },
+    });
+    return claim ? { txRef: claim.txRef, amountEtb: claim.amountEtb } : null;
+  }
+
+  /**
+   * Free questions left in the student's own programme, or null with no
+   * programme chosen.
+   *
+   * Counted in distinct questions, by `freeRemaining` — the same rule the
+   * practice path enforces, called rather than restated, because a home page
+   * that computes the allowance separately is a home page that will eventually
+   * disagree with the paywall about how many are left.
+   */
+  private async freeLeftFor(userId: string): Promise<number | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fieldId: true },
+    });
+    if (!user?.fieldId) return null;
+
+    const distinct = await this.prisma.attempt.findMany({
+      where: { userId, fieldId: user.fieldId },
+      distinct: ['questionId'],
+      select: { questionId: true },
+    });
+    return freeRemaining(distinct.length);
   }
 
   /**

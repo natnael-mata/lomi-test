@@ -128,6 +128,25 @@ export function SittingHistory({ points }: { points: TrendPoint[] }) {
                     {c.progress.notReached(point.blank)}
                   </Chip>
                 ) : null}
+
+                {/*
+                  Through to the paper itself.
+
+                  This card said "9 correct · 11 wrong" and stopped there, so a
+                  student could see how many they had got wrong and never which
+                  — the review was reachable only in the moments after
+                  submitting. For a product whose pitch is that the explanation
+                  is the thing being bought, that was the one screen it could
+                  least afford to lose. QA found it; the review had existed all
+                  along with no way back to it.
+                */}
+                <a
+                  href={`/exam/review/${point.sittingId}`}
+                  className="btn-ghost self-start"
+                  data-review-link={point.sittingId}
+                >
+                  {c.progress.readThisPaper}
+                </a>
               </Card>
             </li>
           ))}

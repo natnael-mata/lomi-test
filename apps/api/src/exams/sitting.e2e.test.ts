@@ -613,6 +613,47 @@ describe('the deadline (T-123)', () => {
     expect(swept.closedAt).not.toBeNull();
     expect(swept.closeReason).toBe('EXPIRED');
   });
+
+  /*
+   * And it says so.
+   *
+   * The sweep above is correct and used to be silent, so a student who left
+   * three answers in a paper and came back after the clock ran out landed on
+   * "Question 1 of 20" with a full timer and no explanation. QA read that as
+   * their work having been thrown away and filed it as a blocker; the answers
+   * had in fact been marked. Being right is not the same as being clear.
+   */
+  it('says the swept paper was marked, rather than starting over in silence', async () => {
+    await sittingEndingAgo(3600);
+    const body = (
+      await request(app.getHttpServer())
+        .post(`/exams/${fieldId}/start`)
+        .set(student.auth)
+        .send({})
+        .expect(201)
+    ).body;
+
+    expect(body.settledPrevious).toBe('EXPIRED');
+  });
+
+  it('says nothing when there was no previous paper to settle', async () => {
+    // The notice has to be absent in the ordinary case, or every first-time
+    // student is told about a paper they never sat.
+    await prisma.sitting.updateMany({
+      where: { userId: student.userId, closedAt: null },
+      data: { closedAt: new Date(), closeReason: 'SUBMITTED' },
+    });
+    const body = (
+      await request(app.getHttpServer())
+        .post(`/exams/${fieldId}/start`)
+        .set(student.auth)
+        .send({})
+        .expect(201)
+    ).body;
+
+    expect(body.resumed).toBe(false);
+    expect(body.settledPrevious).toBeNull();
+  });
 });
 
 describe('a mock is behind the paywall', () => {

@@ -372,6 +372,9 @@ export function PracticeScreen() {
             isCorrect={phase.result.isCorrect}
             pacing={phase.result.pacing}
             timeTakenSec={phase.result.timeTakenSec}
+            /* The concept line IS one of the options below. Held until the
+               check is answered or skipped — see `withholdConcept`. */
+            withholdConcept={phase.result.reasonCheck !== null && reason === null}
           />
 
           {/*
