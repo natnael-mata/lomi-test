@@ -1,4 +1,4 @@
-# Lomi-Test (ሎሚ)
+# Lomi-Exams
 
 Exit-exam preparation for Ethiopian university students. Practice questions where **every
 answer is fully explained**, timed mock exams that mirror the real sitting, per-topic readiness,
@@ -36,7 +36,7 @@ Do not batch tasks, and never tick a box you have not actually tested.
 
 ## Confirmed decisions
 
-- **Name:** Lomi-Test (ሎሚ). Assets: `apps/web/public/brand/lomi-test-*`.
+- **Name:** Lomi-Exams. Assets: `apps/web/public/brand/lomi-test-*`.
 - **Launch fields:** Computer Science, Public Health, Accounting & Finance — the only three
   source files that arrived with usable answer keys.
 - **Plans:** 6 months Br 500 · 12 months Br 800, measured from activation.

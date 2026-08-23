@@ -1,5 +1,5 @@
 /* ============================================================================
-   Lomi v1 (ሎሚ) — Tailwind v4 theme.  Replaces Deresegn v3.
+   Lomi v1 — Tailwind v4 theme.  Replaces Deresegn v3.
    Paste into apps/web/app/globals.css. Tailwind v4 is CSS-first: this @theme
    block IS the config, so tailwind.config.ts is not needed for tokens.
 
@@ -11,7 +11,7 @@
      --ease-spring      -> ease-spring
 
    The world is a cream page under a lemon marker: paper ground, forest ink,
-   and the lemon spent sparingly. ሎሚ means lemon, so the palette is the name.
+   and the lemon spent sparingly. Lomi means lemon, so the palette is the name.
 
    SINGLE THEME, by decision (owner, 2026-08-20). There is no dark counterpart
    and no `.dark` class: paper is one object, and a dark sheet of paper is a
@@ -70,18 +70,17 @@
      CSS variable, so naming 'Gabarito' directly here would silently fall back
      to system-ui while looking correct in the stack. The literal name is kept
      as the var's default, so this file still works pasted anywhere. */
-  --font-display:
-    var(--font-display-face, 'Archivo'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
-    sans-serif;
+  --font-display: var(--font-display-face, 'Archivo'), system-ui, sans-serif;
   --font-sans:
-    var(--font-body-face, 'Inter'), var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui,
-    -apple-system, 'Segoe UI', Roboto, sans-serif;
-  /* The mark — `ሎሚ` in the logo square, and nothing else. Named separately from
-     the body stack because it must be Ge'ez FIRST rather than as a fallback:
-     Figtree has no Ge'ez coverage, so the browser substitutes whatever the
-     phone happens to have, and the one element that must look identical
-     everywhere renders differently on every device. */
-  --font-mark: var(--font-ethiopic, 'Noto Sans Ethiopic'), system-ui, sans-serif;
+    var(--font-body-face, 'Inter'), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* The mark — the letter in the logo square, and nothing else. It was a Ge'ez
+     glyph set
+     in Noto Sans Ethiopic and needed its own stack because the body face has no
+     Ge'ez coverage. English only since 2026-08-20, so it is Latin and the
+     display face already covers it. Kept as a named token rather than inlined:
+     the mark is the one element that must look identical on every device, and a
+     token is where that intention stays visible. */
+  --font-mark: var(--font-display-face, 'Archivo'), system-ui, sans-serif;
 
   --text-display: 2.125rem; /* 34px — countdown, score, readiness      */
   --text-display--line-height: 2.5rem;
@@ -366,8 +365,16 @@
 
      The border is INK rather than the brand: a lemon focus border on cream is
      1.23:1, which is not a focus indicator, it is the absence of one. */
+  /* `w-full` down to the cap, never past it.
+     A single-line input has a natural maximum: past roughly 34rem the caret
+     ends up far from where the eye is and the field stops reading as one thing
+     to fill in. On the student measure this changes nothing — 592px is already
+     under the cap — but on the 1200px admin frame these were rendering 1102px
+     wide, which is most of why those screens looked unresolved. Measured.
+     A field that genuinely wants the full width can still override with a
+     utility, since utilities beat the components layer. */
   .field {
-    @apply w-full min-h-[52px] px-4 rounded-control bg-surface
+    @apply w-full max-w-[34rem] min-h-[52px] px-4 rounded-control bg-surface
                     border border-border text-body
                     focus:border-ink;
   }
