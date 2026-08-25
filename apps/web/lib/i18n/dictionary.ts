@@ -212,9 +212,13 @@ export const en = {
     title: 'Sign in for testing',
     intro: 'Choose who to sign in as. This page is for local testing only.',
     password: 'Password',
-    passwordHint: 'Already filled in. Leave it as it is.',
+    passwordHint: 'The password dev:testers sets. Already filled in — leave it as it is.',
     signingIn: 'signing in…',
-    wrongPassword: 'That password is not right, or testing sign-in is switched off on this server.',
+    // 401 here means the seeded account is not on this database — which is the
+    // ordinary state of every server except a developer's own. Not an error to
+    // fix: the accounts are local fixtures and exist nowhere else.
+    notSeeded:
+      'No such test account on this server. Run `npm run dev:testers -w api` against a local database.',
     failed: (status: number) => `Could not sign in (${status}). Check the API is running.`,
     noServer: 'Could not reach the server. Is the API running?',
     // Each says what STATE the account is in, not what kind of person it is.

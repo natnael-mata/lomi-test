@@ -33,9 +33,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { sessionToken as signIn } from './tester-session.mjs';
+
 const BASE = process.argv[2] ?? 'http://localhost:3100';
 const API = process.env.API_ORIGIN ?? 'http://localhost:4000';
-const SECRET = process.env.DEV_LOGIN_SECRET ?? 'lomi-local-testing-secret-000000';
 
 /** Every screen, and who has to be signed in to see it. */
 const ROUTES = [
@@ -146,15 +147,8 @@ class Cdp {
   }
 }
 
-async function sessionToken(label) {
-  const response = await fetch(`${API}/auth/dev-login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secret: SECRET, label }),
-  });
-  if (!response.ok) throw new Error(`dev-login failed for "${label}": ${response.status}`);
-  return (await response.json()).token;
-}
+/** Signs in as a persona through the real front door. See `tester-session.mjs`. */
+const sessionToken = (label) => signIn(API, label);
 
 const AUDIT = `(() => {
   const problems = [];

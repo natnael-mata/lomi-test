@@ -211,18 +211,22 @@ export class HealthService {
       this.prisma.staffMember.count(),
     ]);
 
-    // The one thing here that IS a judgement, and a narrow one: the smoke-test
-    // door is an authentication bypass, and it being open is a fact about this
-    // server rather than an opinion about it.
-    const devDoorOpen = (process.env.DEV_LOGIN_SECRET ?? '').length > 0;
-
+    /*
+     * The smoke-test bypass is deleted (T-206a), so this no longer watches for
+     * it — there is nothing left for `DEV_LOGIN_SECRET` to switch on.
+     *
+     * The check is kept and pointed at the thing that is now true: exactly one
+     * way in, and it checks a password. A security tile that reported on a
+     * variable nobody reads any more would be worse than no tile, because it
+     * would keep saying "ok" about a question that had stopped being asked.
+     */
     return {
       key: 'security',
-      status: devDoorOpen ? 'degraded' : 'ok',
-      value: devDoorOpen ? 'Testing sign-in is open' : 'Telegram only',
-      derivation: devDoorOpen
-        ? 'DEV_LOGIN_SECRET is set on this server, so /auth/dev-login will mint accounts'
-        : 'DEV_LOGIN_SECRET is unset, so the only way in is the Telegram deep link',
+      status: 'ok',
+      value: 'Password sign-in only',
+      derivation:
+        'The smoke-test bypass was removed in T-206a. Every session comes from ' +
+        '/auth/sign-in or a verified one-time code.',
       details: [
         { label: 'Live sessions', value: String(liveSessions) },
         { label: 'Ended in 24h', value: String(revoked) },

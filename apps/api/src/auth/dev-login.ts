@@ -1,37 +1,25 @@
 /**
- * The smoke-test sign-in door, and the lock on it.
+ * Identity for the seeded test personas.
  *
- * **This is an authentication bypass.** Telegram deep-link is the only real way
- * in, and it needs a bot, a token and a phone — which makes clicking through a
- * freshly deployed box impossible until all three exist. This route exists to
- * make that possible and for no other reason.
+ * **The authentication bypass this file used to hold is gone (T-206a).** It was
+ * `POST /auth/dev-login`: present a shared secret, receive a session, no
+ * password involved. It existed because Telegram deep-link was once the only
+ * way in, which made clicking through a freshly deployed box impossible without
+ * a bot, a token and a phone. Phone-and-password sign-in removed that excuse,
+ * so the door, the secret, `isDevLoginEnabled` and `secretMatches` went with it.
  *
- * Everything here is about making it hard to leave on by accident:
+ * What remains is not a door and cannot open one: a stable way to name the
+ * smoke-test accounts. `dev:testers` derives each persona's Telegram id — and
+ * from it, their phone number — by hashing the label, so a persona's identity
+ * depends on nothing but its own name and the list can be reordered freely.
  *
- * - **Off unless `DEV_LOGIN_SECRET` is set.** No default, no fallback, no
- *   "development mode" inference. An unset variable is a closed door, and that
- *   is the state every environment is in until somebody types the variable.
- * - **The secret must be long.** A short one is a secret somebody chose in a
- *   hurry, and this door opens onto every student's account.
- * - **Compared in constant time**, like every other secret in this codebase.
- * - **It cannot reach an existing account.** The route only ever signs in users
- *   it created itself, under a reserved Telegram id range, so a leaked secret
- *   cannot be used to sign in *as* somebody. That is the property that makes the
- *   rest of it survivable.
- *
- * The last one is the important one. A bypass that mints its own throwaway
- * account is a nuisance if it leaks; a bypass that accepts a user id is a
- * complete compromise of every account in the product.
+ * **The reserved id range is a safety property, not a leftover.** Telegram's
+ * own ids are positive, so a negative id cannot collide with a real account.
+ * That is what lets `dev:testers` delete and rewrite rows without any chance of
+ * touching a student, even pointed at a database that has some — and it is a
+ * property of the number rather than of a check somebody has to remember.
  */
-import { createHash, timingSafeEqual } from 'node:crypto';
-
-/**
- * The shortest secret this will accept.
- *
- * Long enough that nobody types one from memory, which is the actual failure
- * mode — `DEV_LOGIN_SECRET=test` shipped to a public box.
- */
-export const MIN_SECRET_LENGTH = 32;
+import { createHash } from 'node:crypto';
 
 /**
  * Telegram ids reserved for smoke-test accounts.
@@ -43,23 +31,6 @@ export const MIN_SECRET_LENGTH = 32;
 export const DEV_TELEGRAM_ID_FLOOR = -2_000_000_000;
 export const DEV_TELEGRAM_ID_CEILING = -1_000_000_000;
 
-export function isDevLoginEnabled(secret: string | undefined): boolean {
-  return typeof secret === 'string' && secret.length >= MIN_SECRET_LENGTH;
-}
-
-/** Whether the presented secret is the configured one. Constant time. */
-export function secretMatches(presented: string, configured: string | undefined): boolean {
-  if (!isDevLoginEnabled(configured)) return false;
-
-  // Hashed before comparison so `timingSafeEqual` gets two equal-length buffers
-  // whatever was presented — its length check throws, and a throw on a length
-  // mismatch is itself a length oracle.
-  const a = createHash('sha256').update(presented).digest();
-  const b = createHash('sha256')
-    .update(configured as string)
-    .digest();
-  return timingSafeEqual(a, b);
-}
 
 /**
  * The Telegram id for a named smoke-test persona.

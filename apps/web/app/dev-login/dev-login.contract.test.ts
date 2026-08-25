@@ -17,6 +17,7 @@
  * it is the generic label the API accepts for an ad-hoc account, not a prepared
  * persona with a state worth a button.
  */
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,6 +72,62 @@ describe('the dev-login screen and the API agree on who exists', () => {
       expect(tester.note.length).toBeGreaterThan(20);
       expect(tester.who).not.toBe(tester.note);
     }
+  });
+
+  /*
+   * The baked-in phone numbers, against the seed's own arithmetic.
+   *
+   * The screen posts these to the real `/auth/sign-in`, so a number that has
+   * drifted is a button that signs in as nobody — or, worse, as a different
+   * persona. They are literals because deriving them in the browser would mean
+   * async SHA-256 to render a static list, and mirroring the algorithm would
+   * mean two implementations that can disagree. This is the third option: one
+   * implementation, and a test that checks the copies.
+   *
+   * The algorithm is `devTelegramId` in `dev-login.ts` and `phoneFor` in
+   * `dev-testers.ts`, reproduced here from the constants those files declare
+   * rather than from memory — if the floor or ceiling move, this recomputes and
+   * the literals fail.
+   */
+  describe('the phone numbers on the buttons', () => {
+    const floor = Number(/DEV_TELEGRAM_ID_FLOOR = (-?[\d_]+)/.exec(source)![1]!.replace(/_/g, ''));
+    const ceiling = Number(
+      /DEV_TELEGRAM_ID_CEILING = (-?[\d_]+)/.exec(source)![1]!.replace(/_/g, ''),
+    );
+
+    const phoneFor = (label: string): string => {
+      const key = label.trim().toLowerCase().replace(/\s+/g, '');
+      const digest = createHash('sha256').update(key).digest();
+      const id = floor + (digest.readUInt32BE(0) % (ceiling - floor));
+      return `09${String(Math.abs(id) % 100_000_000).padStart(8, '0')}`;
+    };
+
+    it('read the range out of the API rather than assuming it', () => {
+      expect(floor).toBeLessThan(0);
+      expect(ceiling).toBeLessThan(0);
+      expect(ceiling).toBeGreaterThan(floor);
+    });
+
+    it('matches what dev:testers seeds, for every persona', () => {
+      for (const tester of TESTERS) {
+        expect(tester.phone, `${tester.label} would sign in as the wrong account`).toBe(
+          phoneFor(tester.label),
+        );
+      }
+    });
+
+    it('gives every persona a different number', () => {
+      // A collision means two buttons that reach one account, and a seed that
+      // dies on a unique constraint. It has happened once already.
+      const numbers = TESTERS.map((t) => t.phone);
+      expect(new Set(numbers).size).toBe(numbers.length);
+    });
+
+    it('uses the reserved 09 range, never a real prefix', () => {
+      for (const tester of TESTERS) {
+        expect(tester.phone).toMatch(/^09\d{8}$/);
+      }
+    });
   });
 
   it('names each label exactly once', () => {

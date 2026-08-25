@@ -1,7 +1,6 @@
 import {
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
@@ -12,14 +11,6 @@ import type { OtpPurpose, StaffRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
-import {
-  DEV_PERSONAS,
-  devDisplayName,
-  devTelegramId,
-  isDevLoginEnabled,
-  isKnownPersona,
-  secretMatches,
-} from './dev-login';
 import { bandFor } from '../engagement/bands';
 import { normaliseEthiopianMobile } from '../common/phone';
 import { checkPassword, hashPassword, verifyPassword } from './password';
@@ -228,63 +219,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Signs in a **smoke-test** account (deploy testing only).
-   *
-   * Guarded by `DEV_LOGIN_SECRET`, which has no default: an unset variable is a
-   * closed door. See `dev-login.ts` for why the whole thing is built around
-   * minting its own account rather than accepting a user id — a bypass that
-   * takes an id is a complete compromise of every account in the product, and
-   * one that mints a throwaway is a nuisance.
-   *
-   * The label is a persona name, not an identity: "student" is the same
-   * throwaway account every time, so a tester who signs back in finds
-   * yesterday's practice rather than a fresh account.
-   */
-  async signInAsTester(presentedSecret: string, label: string): Promise<SignInResult> {
-    const configured = process.env.DEV_LOGIN_SECRET;
-    if (!isDevLoginEnabled(configured) || !secretMatches(presentedSecret, configured)) {
-      // Identical for "not enabled" and "wrong secret". Telling them apart
-      // tells somebody probing whether the door exists at all.
-      throw new UnauthorizedException('No.');
-    }
-
-    /*
-     * Checked after the secret, never before.
-     *
-     * Order matters: answering "no such persona" to an unauthenticated caller
-     * would confirm the door exists and enumerate what is behind it. Somebody
-     * without the secret gets the same "No." for everything.
-     */
-    if (!isKnownPersona(label)) {
-      throw new UnprocessableEntityException({
-        error: 'UNKNOWN_PERSONA',
-        message: `No testing account is called "${label}". Try one of: ${DEV_PERSONAS.join(', ')}.`,
-      });
-    }
-
-    const telegramId = String(devTelegramId(label));
-    // Loud on purpose, and through Nest's logger rather than `console` so it
-    // passes the redacting sink like everything else. This route should never
-    // run unnoticed, and the log is where it will be looked for afterwards.
-    new Logger('dev-login').warn(`smoke-test sign-in as ${devDisplayName(label)} (${telegramId})`);
-
-    return this.signInWithTelegramId(
-      { id: telegramId, firstName: devDisplayName(label) },
-      /*
-       * A label somebody can tell apart (T-252).
-       *
-       * Every session the door minted was called "smoke-test", so the device
-       * list showed two identical rows differing only by a timestamp and
-       * revoking the right one was guesswork — QA said so on both passes and
-       * declined to try, since revoking the wrong one ends your own run.
-       *
-       * The clock is the only thing that distinguishes two sign-ins to the same
-       * account from the same browser, so it goes in the label.
-       */
-      `smoke-test ${new Date().toISOString().slice(11, 16)}`,
-    );
-  }
 
   /**
    * Opens a session, evicting the oldest if the device limit is already met.

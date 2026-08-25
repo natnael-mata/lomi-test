@@ -9,7 +9,7 @@
  * whole design brief is written for, and a desktop score of 100 says nothing
  * about it.
  *
- * The run signs in first when a dev-login secret is available. Measuring
+ * The run signs in first when the test personas are seeded. Measuring
  * `/practice` signed out measures the error card, which paints in half the time
  * and is not the screen anybody uses; the first run of this scored 90 on
  * "That did not load" before anybody noticed.
@@ -23,26 +23,26 @@
  */
 import { spawn } from 'node:child_process';
 
+import { sessionToken as signIn } from './tester-session.mjs';
+
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--')) ?? 'http://localhost:3200/practice';
 const min = Number(args.find((a) => a.startsWith('--min='))?.slice(6) ?? 90);
 
 const API = process.env.API_ORIGIN ?? 'http://localhost:4000';
-const SECRET = process.env.DEV_LOGIN_SECRET ?? '';
 const LABEL = process.env.LIGHTHOUSE_AS ?? 'userc';
 
-/** A session, if this box has the testing door open. Silent when it does not. */
+/**
+ * A session, if this box has the personas seeded. Silent when it does not.
+ *
+ * Signed in through the real door now — see `tester-session.mjs`. Still silent
+ * on failure, deliberately: a performance run against the signed-out pages is
+ * worth having, and refusing to measure anything because a fixture is missing
+ * would be the wrong trade for this particular script.
+ */
 async function cookie() {
-  if (!SECRET) return null;
   try {
-    const response = await fetch(`${API}/auth/dev-login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret: SECRET, label: LABEL }),
-    });
-    if (!response.ok) return null;
-    const { token } = await response.json();
-    return `lomi_session=${token}`;
+    return `lomi_session=${await signIn(API, LABEL)}`;
   } catch {
     return null;
   }
@@ -51,7 +51,7 @@ async function cookie() {
 const session = await cookie();
 if (!session) {
   console.warn(
-    'No session — measuring signed out. Set DEV_LOGIN_SECRET to measure the real screen.',
+    'No session — measuring signed out. Run `npm run dev:testers -w api` to measure the real screen.',
   );
 }
 

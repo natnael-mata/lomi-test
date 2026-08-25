@@ -1,193 +1,82 @@
 /**
- * Integration test — the smoke-test door is shut by default (T-206a).
+ * The authentication bypass is gone, and stays gone (T-206a).
  *
- * `dev-login.test.ts` proves the lock. This proves the **wiring**: that the
- * route as mounted is closed when nothing is configured, and that it cannot be
- * talked into signing in as somebody real. A lock that is correct and a route
- * that never consults it is the failure this exists to catch.
+ * **This file used to test that the door worked.** `POST /auth/dev-login` took a
+ * shared secret and returned a session with no password involved — an
+ * authentication bypass, listed as a launch blocker from the day it was
+ * written. It existed because Telegram deep-link was once the only way in,
+ * which made clicking through a freshly deployed box impossible without a bot,
+ * a token and a phone.
+ *
+ * Phone-and-password sign-in removed that excuse, so the route, the service
+ * method, `DEV_LOGIN_SECRET`, and the constant-time secret comparison behind it
+ * were all deleted.
+ *
+ * What is tested now is the absence. A deleted endpoint needs a guard more than
+ * a live one does: nobody notices a route quietly coming back, and the reasons
+ * it was convenient have not changed — the next person setting up a demo box
+ * will feel exactly the pull that put it there in the first place. If these
+ * fail, an authentication bypass has been reintroduced.
  *
  * Needs Postgres (`npm run db:dev`).
  */
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
-import { PrismaService } from '../prisma/prisma.service';
 import { TEST_JWT_SECRET } from './staff-testkit.test-helper';
-import { devTelegramId, isDevTelegramId } from './dev-login';
 
-const SECRET = 'smoke-test-secret-at-least-32-chars-long';
-
-describe('the smoke-test door (T-206a)', () => {
+describe('the smoke-test door is gone (T-206a)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
-  let previous: string | undefined;
-
-  /**
-   * Accounts this run made, and only those.
-   *
-   * It used to delete **every** account with a negative telegram id — the whole
-   * smoke-test range — which was correct isolation right up until somebody kept
-   * prepared accounts in that range. `npm test` then silently emptied User A, B
-   * and C: they came back on the next sign-in with fresh names, no programme and
-   * no history, and the product looked broken for reasons nothing in the test
-   * output mentioned.
-   *
-   * Scoped by creation time rather than by label, because one of the labels this
-   * test uses is a cuid minted while it runs — there is no static list to check
-   * against. "Created since this file started" is exactly the set it owns.
-   */
-  let startedAt: Date;
-
-  const wipe = async (): Promise<void> => {
-    const testers = await prisma.user.findMany({
-      where: { telegramId: { startsWith: '-' }, createdAt: { gte: startedAt } },
-      select: { id: true },
-    });
-    const ids = testers.map((u) => u.id);
-    await prisma.session.deleteMany({ where: { userId: { in: ids } } });
-    await prisma.user.deleteMany({ where: { id: { in: ids } } });
-  };
 
   beforeAll(async () => {
-    // A second early, so a row written in the same millisecond as this line is
-    // still inside the window rather than a millisecond outside it.
-    startedAt = new Date(Date.now() - 1000);
-    previous = process.env.DEV_LOGIN_SECRET;
-    delete process.env.DEV_LOGIN_SECRET;
     process.env.JWT_SECRET = TEST_JWT_SECRET;
-
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
-    prisma = app.get(PrismaService);
-    await wipe();
-  });
-
-  afterEach(() => {
-    delete process.env.DEV_LOGIN_SECRET;
   });
 
   afterAll(async () => {
-    await wipe();
     await app.close();
-    if (previous === undefined) delete process.env.DEV_LOGIN_SECRET;
-    else process.env.DEV_LOGIN_SECRET = previous;
+    delete process.env.DEV_LOGIN_SECRET;
   });
 
-  /**
-   * The assertion this file exists for. Every environment nobody has explicitly
-   * opened is closed — including the one somebody deployed in a hurry.
-   */
-  it('is shut when nothing is configured', async () => {
-    await request(app.getHttpServer())
-      .post('/auth/dev-login')
-      .send({ secret: SECRET, label: 'student' })
-      .expect(401);
-
-    await request(app.getHttpServer()).post('/auth/dev-login').send({}).expect(401);
-  });
-
-  it('stays shut for a wrong secret once it is configured', async () => {
-    process.env.DEV_LOGIN_SECRET = SECRET;
-    await request(app.getHttpServer())
-      .post('/auth/dev-login')
-      .send({ secret: `${SECRET}-wrong`, label: 'student' })
-      .expect(401);
-  });
-
-  /**
-   * The refusal says the same thing either way. Telling "not enabled" apart
-   * from "wrong secret" tells somebody probing whether the door exists.
-   */
-  it('does not say which kind of no it is', async () => {
-    const closed = await request(app.getHttpServer())
-      .post('/auth/dev-login')
-      .send({ secret: SECRET })
-      .expect(401);
-
-    process.env.DEV_LOGIN_SECRET = SECRET;
-    const wrong = await request(app.getHttpServer())
-      .post('/auth/dev-login')
-      .send({ secret: 'nope' })
-      .expect(401);
-
-    expect(closed.body.message).toBe(wrong.body.message);
-  });
-
-  it('signs in a throwaway account when it is open', async () => {
-    process.env.DEV_LOGIN_SECRET = SECRET;
+  it('has no dev-login route at all', async () => {
     const res = await request(app.getHttpServer())
       .post('/auth/dev-login')
-      .send({ secret: SECRET, label: 'student' })
-      .expect(201);
+      .send({ secret: 'x'.repeat(64), label: 'userc' });
 
-    expect(res.body.token).toBeTruthy();
-    // The session cookie is set, so a browser can just carry on.
-    expect(res.headers['set-cookie']?.[0] ?? '').toContain('HttpOnly');
-
-    const user = await prisma.user.findUniqueOrThrow({ where: { id: res.body.userId } });
-    // What marks this as a test account is the negative telegram id, not the
-    // name: the product generates display names and takes one from nobody
-    // (T-086), which is right and not worth an exception here.
-    expect(isDevTelegramId(user.telegramId)).toBe(true);
-    expect(res.body.displayName).toBe(user.displayName);
+    // 404, not 401. A 401 would mean the route still exists and is merely
+    // refusing today's secret, which is one environment variable from open.
+    expect(res.status).toBe(404);
   });
 
-  /**
-   * **The property that makes the bypass survivable.** Whatever is presented, it
-   * mints its own account in a range Telegram cannot issue — so a leaked secret
-   * is a nuisance, not a takeover of every account in the product.
+  /*
+   * THE test. The variable was the whole lock, and the failure mode it guarded
+   * against was somebody setting it on a public box. Setting it must now do
+   * nothing whatsoever.
    */
-  it('cannot be talked into signing in as a real account', async () => {
-    process.env.DEV_LOGIN_SECRET = SECRET;
-    const real = await prisma.user.create({
-      data: { telegramId: '566000090', displayName: 'RealStudent001' },
-    });
+  it('cannot be reopened by setting the old secret', async () => {
+    process.env.DEV_LOGIN_SECRET = 'x'.repeat(64);
 
-    try {
-      for (const label of ['566000090', 'RealStudent001', real.id]) {
-        /*
-         * Refused outright now, rather than quietly minting a separate account.
-         *
-         * The property under test is unchanged and still the one that makes the
-         * bypass survivable: none of these reaches the real account. What
-         * changed is what happens instead. Answering 201 to any string at all
-         * meant a tester who mistyped a persona name got a working session on a
-         * brand-new account with a generated display name, which then sat in
-         * the admin user list looking like a real signup.
-         */
-        const res = await request(app.getHttpServer())
-          .post('/auth/dev-login')
-          .send({ secret: SECRET, label })
-          .expect(422);
-        expect(res.body.error, label).toBe('UNKNOWN_PERSONA');
-      }
+    const res = await request(app.getHttpServer())
+      .post('/auth/dev-login')
+      .send({ secret: 'x'.repeat(64), label: 'userc' });
 
-      // The account it was being aimed at is untouched — no session, and it is
-      // still the only user with that telegram id.
-      expect(await prisma.session.count({ where: { userId: real.id } })).toBe(0);
-    } finally {
-      await prisma.session.deleteMany({ where: { userId: real.id } });
-      await prisma.user.delete({ where: { id: real.id } });
-    }
+    expect(res.status).toBe(404);
+    expect(String(res.headers['set-cookie'] ?? '')).not.toContain('lomi_session');
   });
 
-  /** One persona, one account — so a two-day manual test keeps its history. */
-  it('returns the same account for the same persona', async () => {
-    process.env.DEV_LOGIN_SECRET = SECRET;
-    const first = await request(app.getHttpServer())
-      .post('/auth/dev-login')
-      .send({ secret: SECRET, label: 'student' })
-      .expect(201);
-    const again = await request(app.getHttpServer())
-      .post('/auth/dev-login')
-      .send({ secret: SECRET, label: 'student' })
-      .expect(201);
+  it('leaves sign-in as the only way to get a session', async () => {
+    // A wrong password is refused by the real door, which is the point: there
+    // is now exactly one way in and it checks a password.
+    const res = await request(app.getHttpServer())
+      .post('/auth/sign-in')
+      .send({ phone: '0913000123', password: 'not-the-password' });
 
-    expect(again.body.userId).toBe(first.body.userId);
-    expect(String(devTelegramId('student')).startsWith('-')).toBe(true);
+    expect(res.status).toBe(401);
+    expect(String(res.headers['set-cookie'] ?? '')).not.toContain('lomi_session');
   });
 });

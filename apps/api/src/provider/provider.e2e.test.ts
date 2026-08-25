@@ -338,14 +338,26 @@ describe('the provider role and its screens (T-227, T-228, T-229)', () => {
       }
     });
 
-    it('says so when the smoke-test sign-in door is open', async () => {
+    /*
+     * This used to assert that setting `DEV_LOGIN_SECRET` degraded the board.
+     * The bypass it watched for is deleted (T-206a), so the variable switches
+     * nothing on and the tile reports what is now true instead: one way in, and
+     * it checks a password.
+     *
+     * Setting the old variable is still exercised, because "the tile ignores
+     * it" is the claim worth holding — a security panel that could be made to
+     * report on a door that no longer exists would be reporting on nothing.
+     */
+    it('reports password sign-in as the only way in, whatever the old variable says', async () => {
       const previous = process.env.DEV_LOGIN_SECRET;
       process.env.DEV_LOGIN_SECRET = 'a-secret-long-enough-to-count-000';
       try {
         const body = await report();
         const security = body.components.find((c) => c.key === 'security')!;
-        expect(security.status).toBe('degraded');
-        expect(security.derivation).toContain('DEV_LOGIN_SECRET');
+        expect(security.status).toBe('ok');
+        expect(security.derivation).toContain('T-206a');
+        // The variable is dead. Nothing should be reading it.
+        expect(security.derivation).not.toContain('DEV_LOGIN_SECRET');
       } finally {
         if (previous === undefined) delete process.env.DEV_LOGIN_SECRET;
         else process.env.DEV_LOGIN_SECRET = previous;

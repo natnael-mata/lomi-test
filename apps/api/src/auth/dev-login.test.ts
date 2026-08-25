@@ -16,60 +16,11 @@ import { describe, expect, it } from 'vitest';
 import {
   DEV_TELEGRAM_ID_CEILING,
   DEV_TELEGRAM_ID_FLOOR,
-  MIN_SECRET_LENGTH,
   devDisplayName,
   devTelegramId,
-  isDevLoginEnabled,
   isDevTelegramId,
-  secretMatches,
 } from './dev-login';
 
-const GOOD = 'x'.repeat(MIN_SECRET_LENGTH);
-
-describe('whether the door is open at all', () => {
-  /**
-   * The property that matters most. Every environment that has not been told
-   * about this route is closed, including production, including a box somebody
-   * deployed in a hurry.
-   */
-  it('is shut when no secret is configured', () => {
-    for (const secret of [undefined, '', '   ']) {
-      expect(isDevLoginEnabled(secret as string | undefined), String(secret)).toBe(false);
-    }
-  });
-
-  /**
-   * The real failure mode is not a cryptographic attack — it is
-   * `DEV_LOGIN_SECRET=test` typed once and shipped to a public box.
-   */
-  it('refuses a secret short enough to have been typed from memory', () => {
-    for (const secret of ['test', 'password', 'letmein', 'a'.repeat(MIN_SECRET_LENGTH - 1)]) {
-      expect(isDevLoginEnabled(secret), secret).toBe(false);
-      // And a short *configured* secret cannot be matched, so a careless
-      // deployment fails closed rather than opening on a guessable string.
-      expect(secretMatches(secret, secret), secret).toBe(false);
-    }
-  });
-
-  it('opens only for the configured secret', () => {
-    expect(secretMatches(GOOD, GOOD)).toBe(true);
-    expect(secretMatches(`${GOOD}x`, GOOD)).toBe(false);
-    expect(secretMatches(GOOD.slice(0, -1), GOOD)).toBe(false);
-    expect(secretMatches('', GOOD)).toBe(false);
-  });
-
-  /**
-   * `timingSafeEqual` throws on a length mismatch, and a throw on a length
-   * mismatch is itself a length oracle. Hashing first gives it two equal-length
-   * buffers whatever arrives.
-   */
-  it('does not throw on a presented secret of the wrong length', () => {
-    for (const presented of ['', 'a', 'z'.repeat(4096)]) {
-      expect(() => secretMatches(presented, GOOD)).not.toThrow();
-      expect(secretMatches(presented, GOOD)).toBe(false);
-    }
-  });
-});
 
 describe('what it can reach', () => {
   /**
