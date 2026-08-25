@@ -15,9 +15,17 @@
  * first, and nobody joining later can reach them. It stops motivating exactly
  * the people who most need motivating, which is the students who started late.
  *
- * **Two bands.** Junior is Grade 6 and Grade 8; senior is Grade 12 and the exit
- * exams. An eleven-year-old and a graduating undergraduate are not in a
- * competition together, and the junior default is not to appear at all.
+ * **Two scopes: your own exam, and everyone.** Accounting against Accounting is
+ * the board a student recognises; everyone is the one that shows where that
+ * sits. Both work only because the measure is a share of your own bank — a
+ * points board across tracks would rank the package, not the student.
+ *
+ * This replaced a junior/senior *banded* board. The protection that board
+ * existed for did not go with it: `isListed` still hides a junior unless they
+ * chose to appear, and the default is not to appear. An eleven-year-old is kept
+ * off a public list by that rule, not by the shape of the query — which is the
+ * more robust place for it, since it holds on every scope that could be added
+ * later.
  */
 import { Injectable } from '@nestjs/common';
 
@@ -27,6 +35,15 @@ import { bandFor, isListed, type Band } from './bands';
 
 /** Which board: the last seven days, or everything. */
 export type BoardWindow = 'week' | 'all';
+
+/**
+ * Who is being ranked against whom.
+ *
+ * `exam` is the viewer's own track — Accounting against Accounting. `everyone`
+ * is every student on the product, whatever they are sitting, which works only
+ * because the measure is a share of your own bank rather than a raw count.
+ */
+export type BoardScope = 'exam' | 'everyone';
 
 export interface BoardRow {
   rank: number;
@@ -39,6 +56,10 @@ export interface BoardRow {
 }
 
 export interface BoardView {
+  scope: BoardScope;
+  /** The viewer's own track, so the toggle can name it. Null with none chosen. */
+  examName: string | null;
+  /** Kept for the junior/senior listing rule, which is unchanged. */
   band: Band;
   window: BoardWindow;
   rows: BoardRow[];
@@ -63,6 +84,7 @@ export class BoardService {
   async board(
     viewerId: string,
     window: BoardWindow = 'week',
+    scope: BoardScope = 'exam',
     now: Date = new Date(),
     limit = 20,
   ): Promise<BoardView> {
@@ -82,14 +104,40 @@ export class BoardService {
      */
     // `User` declares `fieldId` without a relation — a deliberate schema choice
     // documented on `StaffMember` — so the span is looked up rather than joined.
-    const fields = await this.prisma.field.findMany({ select: { id: true, maxGrade: true } });
+    const fields = await this.prisma.field.findMany({
+      select: { id: true, name: true, maxGrade: true },
+    });
     const gradeByField = new Map(fields.map((f) => [f.id, f.maxGrade]));
     const band = bandFor(viewer?.fieldId ? (gradeByField.get(viewer.fieldId) ?? null) : null);
-    const inBand = new Set(fields.filter((f) => bandFor(f.maxGrade) === band).map((f) => f.id));
+
+    /*
+     * Who is being ranked against whom.
+     *
+     * `exam` is the viewer's own track — Accounting against Accounting, Grade 12
+     * Natural against Grade 12 Natural. `everyone` is every student on the
+     * product, whatever they are sitting.
+     *
+     * **`everyone` is fair here only because the measure is a percentage.** The
+     * original objection to a cross-track board was that a Grade 12 bank holds
+     * around 3,900 questions and a Grade 6 bank around 1,310, so ranking by
+     * points ranks the *package* — the Grade 12 candidate wins by having bought
+     * a bigger one. Share of your own bank has no such problem: 60% of Grade 6
+     * and 60% of Accounting are the same claim about the student.
+     *
+     * **The child protection is unchanged and does not live here.** It is
+     * `isListed`, below: a junior appears only if they chose to, and the default
+     * is not to appear. That is what keeps an eleven-year-old off a public list
+     * beside graduating undergraduates — not the shape of the query.
+     */
+    const inScope = new Set(
+      scope === 'exam' && viewer?.fieldId
+        ? [viewer.fieldId]
+        : fields.map((f) => f.id),
+    );
 
     const totals = await this.prisma.question.groupBy({
       by: ['fieldId'],
-      where: { status: 'PUBLISHED', fieldId: { in: [...inBand] } },
+      where: { status: 'PUBLISHED', fieldId: { in: [...inScope] } },
       _count: { _all: true },
     });
     const totalByField = new Map(totals.map((t) => [t.fieldId, t._count._all]));
@@ -106,7 +154,7 @@ export class BoardService {
       where: {
         isCorrect: true,
         reasonCorrect: true,
-        fieldId: { in: [...inBand] },
+        fieldId: { in: [...inScope] },
         ...(since ? { createdAt: { gte: since } } : {}),
       },
       select: { userId: true, fieldId: true, questionId: true },
@@ -209,6 +257,10 @@ export class BoardService {
         : null);
 
     return {
+      scope,
+      examName: viewer?.fieldId
+        ? (fields.find((f) => f.id === viewer.fieldId)?.name ?? null)
+        : null,
       band,
       window,
       rows: ranked

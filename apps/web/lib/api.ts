@@ -61,6 +61,10 @@ export interface BoardRow {
 }
 
 export interface BoardView {
+  /** Your own exam, or every student on the product. */
+  scope: 'exam' | 'everyone';
+  /** The viewer's track, so the toggle can name it. Null with none chosen. */
+  examName: string | null;
   band: 'junior' | 'senior';
   window: 'week' | 'all';
   rows: BoardRow[];
@@ -847,8 +851,10 @@ export const api = {
    * The banded board. Weekly unless asked otherwise — an all-time board is
    * decided by January and stops motivating whoever joined after it.
    */
-  board: (window: 'week' | 'all' = 'week'): Promise<BoardView> =>
-    call<BoardView>(`/me/board?window=${window}`),
+  board: (
+    window: 'week' | 'all' = 'week',
+    scope: 'exam' | 'everyone' = 'exam',
+  ): Promise<BoardView> => call<BoardView>(`/me/board?window=${window}&scope=${scope}`),
 
   /**
    * Names the reason an answer was right, which is what turns a correct answer

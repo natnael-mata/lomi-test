@@ -798,6 +798,13 @@ export const en = {
      * the same exam — is a good one. Ranked by share of your own bank, which is
      * the only figure comparable across tracks of different sizes.
      */
+    scopeLabel: 'Who you are ranked against',
+    // Named by the exam wherever possible — a student sitting Accounting
+    // recognises "Accounting" and has to decode "your track". This is only the
+    // fallback, before a programme is chosen.
+    scopeYourExam: 'Your exam',
+    scopeEveryone: 'Everyone',
+    scopeEveryoneNote: 'Every student, every exam',
     bandJunior: 'Grade 6 and Grade 8',
     bandSenior: 'Grade 12 and exit exams',
     boardThisWeek: 'This week',

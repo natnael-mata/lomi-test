@@ -93,7 +93,9 @@ export class AuthController {
   async resetVerify(
     @Res({ passthrough: true }) res: Response,
     @Req() req: ExpressRequest,
-    @Body() body: { phone?: unknown; code?: unknown; password?: unknown; device?: unknown },
+    // `deviceLabel`, the same name sign-in uses. Two names for one thing is how
+    // one of them ends up unset and every device row reads the same.
+    @Body() body: { phone?: unknown; code?: unknown; password?: unknown; deviceLabel?: unknown },
   ): Promise<SignInResult> {
     this.rateLimit.consume('otpVerifyAddress', null, req.ip ?? null);
     const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
@@ -103,7 +105,7 @@ export class AuthController {
       body?.phone,
       body?.code,
       body?.password,
-      typeof body?.device === 'string' ? body.device : '',
+      typeof body?.deviceLabel === 'string' ? body.deviceLabel : '',
     );
     res.setHeader('Set-Cookie', sessionCookie(result.token, cookieOptionsFor(process.env)));
     return result;

@@ -47,8 +47,18 @@ export class EngagementController {
    * are shown.
    */
   @Get('board')
-  board(@Req() req: AuthedRequest, @Query('window') window?: string): Promise<BoardView> {
-    return this.boards.board(req.auth!.userId, window === 'all' ? 'all' : 'week');
+  board(
+    @Req() req: AuthedRequest,
+    @Query('window') window?: string,
+    @Query('scope') scope?: string,
+  ): Promise<BoardView> {
+    return this.boards.board(
+      req.auth!.userId,
+      window === 'all' ? 'all' : 'week',
+      // Anything unrecognised falls to the student's own exam — the narrower
+      // board, and the one that cannot surprise anybody by who is on it.
+      scope === 'everyone' ? 'everyone' : 'exam',
+    );
   }
 
   /** The board, with the asker's own rank whether or not they are listed (T-194). */

@@ -6,11 +6,17 @@
  * Three decisions from the handoff, visible on the screen rather than only in
  * the query behind it.
  *
- * **Two bands, and the band is named.** Grade 6 and Grade 8 on one, Grade 12 and
- * the exit exams on the other. An eleven-year-old is never ranked beside a
- * graduating undergraduate, and "why am I not competing with my cousin" is a
- * question a student will ask — the answer, that they are not sitting the same
- * exam, is a good one and belongs on screen.
+ * **Two scopes, and the scope is named.** Your own exam — "Accounting", "Grade
+ * 12 Natural" — and everyone on the product. Named by the exam rather than
+ * labelled "your track", because a student sitting Accounting recognises
+ * "Accounting" and has to decode the other. Your own exam is what you land on:
+ * it is the board a student actually wants, and the wider one is a tap away.
+ *
+ * This replaced a junior/senior banded board. The protection that board was
+ * built for is unchanged and never lived here — `isListed` on the server hides
+ * a junior unless they chose to appear, and the default is not to appear. A
+ * child stays off a public list because of that rule, not because of how the
+ * board is sliced, which is the more robust place for it.
  *
  * **Ranked by share of your own bank.** A Grade 12 package is roughly three
  * times a Grade 6 one, so a points board ranks the package rather than the
@@ -33,11 +39,19 @@ export function BandedBoard() {
   const c = copy();
   const [board, setBoard] = useState<BoardView | null>(null);
   const [window_, setWindow] = useState<'week' | 'all'>('week');
+  /*
+   * Your own exam first, and deliberately.
+   *
+   * "Everyone" is the more impressive board and the less useful one: a student
+   * wants to know how they stand among the people sitting the paper they are
+   * sitting. The wider view is one tap away and says where that sits.
+   */
+  const [scope, setScope] = useState<'exam' | 'everyone'>('exam');
   const [failed, setFailed] = useState(false);
 
-  const load = useCallback(async (which: 'week' | 'all'): Promise<void> => {
+  const load = useCallback(async (which: 'week' | 'all', where: 'exam' | 'everyone'): Promise<void> => {
     try {
-      setBoard(await api.board(which));
+      setBoard(await api.board(which, where));
       setFailed(false);
     } catch (error) {
       if (signInRequired(error)) {
@@ -51,10 +65,15 @@ export function BandedBoard() {
   }, []);
 
   useEffect(() => {
-    void load(window_);
-  }, [load, window_]);
+    void load(window_, scope);
+  }, [load, window_, scope]);
 
   if (failed || board === null) return null;
+
+  const SCOPES: ['exam' | 'everyone', string][] = [
+    ['exam', c.standing.scopeYourExam],
+    ['everyone', c.standing.scopeEveryone],
+  ];
 
   const TABS: [typeof window_, string][] = [
     ['week', c.standing.boardThisWeek],
@@ -62,14 +81,45 @@ export function BandedBoard() {
   ];
 
   return (
-    <section className="flex flex-col gap-3" data-banded-board={board.band}>
+    <section className="flex flex-col gap-3" data-banded-board={board.scope}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-caption text-ink-2 uppercase">{c.standing.board}</h2>
-        {/* Which competition this is. */}
+        {/* Which competition this is, in the student's own words for it. */}
         <span className="text-caption text-ink-2">
-          {board.band === 'junior' ? c.standing.bandJunior : c.standing.bandSenior}
+          {board.scope === 'everyone'
+            ? c.standing.scopeEveryoneNote
+            : (board.examName ?? c.standing.scopeYourExam)}
         </span>
       </div>
+
+      {/*
+        Who you are being ranked against.
+
+        Named by the exam rather than labelled "your track": a student sitting
+        Accounting recognises "Accounting" and has to decode "your track". The
+        fallback only appears before a programme is chosen, which on this screen
+        is nearly never.
+      */}
+      <nav aria-label={c.standing.scopeLabel} className="flex gap-2">
+        {SCOPES.map(([value, fallback]) => {
+          const on = scope === value;
+          const label = value === 'exam' ? (board.examName ?? fallback) : fallback;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setScope(value)}
+              className={[
+                'text-caption inline-flex min-h-11 items-center rounded-full px-3.5',
+                on ? 'bg-brand-soft text-ink font-semibold' : 'bg-surface-2 text-ink-2',
+              ].join(' ')}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </nav>
 
       <nav aria-label={c.standing.board} className="flex gap-2">
         {TABS.map(([value, label]) => {

@@ -253,6 +253,71 @@ describe('the banded board (T-257)', () => {
    * beaten more than you have. It says nothing about the other students on
    * nothing, who share the place.
    */
+  /*
+   * The two scopes (T-267).
+   *
+   * `exam` is the board a student recognises — Accounting against Accounting.
+   * `everyone` is the one that shows where that sits, and it works only because
+   * the measure is a share of the student's own bank: 80% of a five-question
+   * Grade 6 track and 50% of a twenty-question Grade 12 one are the same kind of
+   * claim, which a points board could never manage.
+   */
+  describe('scope', () => {
+    it('shows only your own exam by default', async () => {
+      const view = await boards.board(ids.senior!, 'all', 'exam');
+      expect(view.scope).toBe('exam');
+      expect(view.examName).toContain('Grade 12 Natural');
+      // The junior who chose to appear is on the product, and not on this board.
+      expect(names(view.rows)).not.toContain(`Junior In ${SFX}`);
+      expect(names(view.rows)).toContain(`Senior Half ${SFX}`);
+    });
+
+    it('puts every track on one board when asked for everyone', async () => {
+      const view = await boards.board(ids.senior!, 'all', 'everyone');
+      expect(view.scope).toBe('everyone');
+      expect(names(view.rows)).toContain(`Senior Half ${SFX}`);
+      expect(names(view.rows)).toContain(`Junior In ${SFX}`);
+    });
+
+    /*
+     * THE test. The board that used to keep an eleven-year-old away from
+     * graduating undergraduates was the *banded* one, and it is gone. The
+     * protection is not: `isListed` hides a junior unless they chose to appear,
+     * and the default is not to appear.
+     *
+     * If this ever fails, a child who was never asked has been published on a
+     * list beside adults.
+     */
+    it('still keeps a junior who was never asked off the everyone board', async () => {
+      const view = await boards.board(ids.senior!, 'all', 'everyone');
+      expect(names(view.rows)).not.toContain(`Junior Silent ${SFX}`);
+
+      // And they are still told their own rank — hiding the row never hides the
+      // number from the person it belongs to.
+      const theirs = await boards.board(ids.juniorSilent!, 'all', 'everyone');
+      expect(theirs.you).not.toBeNull();
+      expect(theirs.you?.listed).toBe(false);
+    });
+
+    it('ranks a small track fairly against a large one', async () => {
+      const view = await boards.board(ids.senior!, 'all', 'everyone');
+      const junior = view.rows.find((r) => r.displayName === `Junior In ${SFX}`);
+      const senior = view.rows.find((r) => r.displayName === `Senior Half ${SFX}`);
+
+      // 4 of 5 is 80%; 10 of 20 is 50%. The Grade 6 student is ahead despite
+      // having beaten fewer questions, because the measure is share, not count.
+      expect(junior!.pct).toBe(80);
+      expect(senior!.pct).toBe(50);
+      expect(junior!.rank).toBeLessThan(senior!.rank);
+      expect(junior!.beaten).toBeLessThan(senior!.beaten);
+    });
+
+    it('names the exam so the toggle has something to call it', async () => {
+      const view = await boards.board(ids.juniorIn!, 'all', 'exam');
+      expect(view.examName).toContain('Grade 6');
+    });
+  });
+
   describe('a student who has beaten nothing', () => {
     let novice = '';
 
