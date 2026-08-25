@@ -92,6 +92,9 @@ export class ChapaService {
     channel: DirectChannel,
     mobile: string,
   ): Promise<DirectChargeStarted> {
+    // Every purchase path checks. See `SubscriptionsService.assertPlanAllowed`.
+    await this.subscriptions.assertPlanAllowed(userId, code);
+
     const normalised = normaliseEthiopianMobile(mobile);
     if (normalised === null) {
       throw new UnprocessableEntityException({
@@ -145,6 +148,9 @@ export class ChapaService {
     code: PlanCode,
     urls: { returnUrl: string; callbackUrl: string },
   ): Promise<HostedCheckoutStarted> {
+    // Every purchase path checks. See `SubscriptionsService.assertPlanAllowed`.
+    await this.subscriptions.assertPlanAllowed(userId, code);
+
     const plan = await this.prisma.plan.findUniqueOrThrow({ where: { code } });
     const { subscriptionId, paymentId, txRef } = await this.openPayment(
       userId,

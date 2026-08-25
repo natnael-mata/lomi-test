@@ -3,6 +3,7 @@ import { ConflictException, Injectable, UnprocessableEntityException } from '@ne
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { freeRemaining } from '../practice/attempt-rules';
+import type { PlanCode } from '@prisma/client';
 import type { SubscriptionAccess } from '../practice/subscription-access';
 import {
   expiresAtFrom,
@@ -88,6 +89,39 @@ export class SubscriptionsService implements SubscriptionAccess {
     return offersFrom(plansForTrack(plans, maxGrade));
   }
 
+  /**
+   * Refuses a plan this student is not offered (T-268).
+   *
+   * **Filtering the picker is not enforcement.** `offers()` decides what a
+   * student *sees*; this decides what they can *buy*, and until both existed a
+   * Grade 6 account could submit a payment for the Br 800 exit-exam plan — a
+   * plan it is never shown — simply by naming it. The two rules were one
+   * `plansForTrack` call apart and only one of them was load-bearing.
+   *
+   * It matters in both directions. A school family charged Br 800 for a Br 300
+   * product is the obvious harm; the quieter one is that the price on the screen
+   * and the price on the invoice could disagree at all, which is the kind of
+   * thing that is discovered by a parent rather than by us.
+   *
+   * Called by every purchase path — manual transfer, telebirr, CBE Birr and
+   * Chapa — because a guard on three of four doors is a guard on none.
+   */
+  async assertPlanAllowed(userId: string, code: PlanCode): Promise<void> {
+    const active = await this.prisma.plan.findMany({
+      where: { isActive: true },
+      select: { code: true },
+    });
+    const allowed = plansForTrack(active, await this.maxGradeFor(userId));
+    if (!allowed.some((plan) => plan.code === code)) {
+      throw new UnprocessableEntityException({
+        error: 'PLAN_NOT_OFFERED',
+        // Names the fix rather than the rule. A student who somehow reaches
+        // this has a stale page, and reloading is what fixes it.
+        message: 'That plan is not available on your programme. Reload and choose again.',
+      });
+    }
+  }
+
   /** The year a student's track ends in, or null for an exit exam. */
   private async maxGradeFor(userId: string): Promise<number | null> {
     const user = await this.prisma.user.findUnique({
@@ -125,7 +159,9 @@ export class SubscriptionsService implements SubscriptionAccess {
    * and settlement cannot alter what was agreed. `Plan.priceEtb` is the price
    * today; `Subscription.paidEtb` is the price a person was quoted (T-141).
    */
-  async begin(userId: string, code: 'SIX_MONTH' | 'TWELVE_MONTH'): Promise<{ id: string }> {
+  async begin(userId: string, code: PlanCode): Promise<{ id: string }> {
+    // Every purchase path checks. See `assertPlanAllowed`.
+    await this.assertPlanAllowed(userId, code);
     const plan = await this.prisma.plan.findUniqueOrThrow({ where: { code } });
     const created = await this.prisma.subscription.create({
       data: { userId, planId: plan.id, paidEtb: plan.priceEtb, status: 'PENDING' },
@@ -509,9 +545,12 @@ export class SubscriptionsService implements SubscriptionAccess {
    */
   async submitManualPayment(
     userId: string,
-    code: 'SIX_MONTH' | 'TWELVE_MONTH',
+    code: PlanCode,
     txRef: string,
   ): Promise<{ paymentId: string; subscriptionId: string; status: 'PENDING' }> {
+    // Every purchase path checks. See `assertPlanAllowed`.
+    await this.assertPlanAllowed(userId, code);
+
     const reference = txRef.trim();
     if (reference.length === 0) {
       throw new UnprocessableEntityException({

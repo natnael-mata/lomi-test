@@ -111,6 +111,84 @@ describe('plans and paid access (Phase 8)', () => {
     await app.close();
   });
 
+  /*
+   * A student cannot buy a plan they are not offered (T-268).
+   *
+   * **Filtering the picker is not enforcement**, and until both existed only one
+   * of them was load-bearing: a Grade 6 account could submit a payment for the
+   * Br 800 exit-exam plan simply by naming it, because `offers()` decided what
+   * was *shown* and nothing decided what could be *bought*.
+   *
+   * The obvious harm is a school family charged Br 800 for a Br 300 product. The
+   * quieter one is that the price on the screen and the price on the invoice
+   * could disagree at all — the kind of thing discovered by a parent rather than
+   * by us.
+   */
+  describe('the plan gate (T-268)', () => {
+    let schoolUserId = '';
+
+    beforeAll(async () => {
+      const field = await prisma.field.create({
+        data: {
+          name: `Grade 6 gate ${SFX}`,
+          slug: `grade-6-gate-${SFX}`,
+          isPublished: true,
+          minGrade: 4,
+          maxGrade: 6,
+        },
+        select: { id: true },
+      });
+      const user = await prisma.user.create({
+        data: { displayName: `School Buyer ${SFX}`, fieldId: field.id },
+        select: { id: true },
+      });
+      schoolUserId = user.id;
+    });
+
+    afterAll(async () => {
+      // Its own cleanup: `wipe` finds accounts by telegram id and this one has
+      // none, so without this the row outlives the run and the next one trips
+      // on the unique txRef.
+      await prisma.payment.deleteMany({ where: { userId: schoolUserId } });
+      await prisma.subscription.deleteMany({ where: { userId: schoolUserId } });
+      await prisma.user.deleteMany({ where: { id: schoolUserId } });
+      await prisma.field.deleteMany({ where: { name: `Grade 6 gate ${SFX}` } });
+    });
+
+    it('lets a school student buy the school plan', async () => {
+      const started = await subscriptions.submitManualPayment(
+        schoolUserId,
+        'SCHOOL_YEAR',
+        `FT-GATE-OK-${SFX}`,
+      );
+      expect(started.status).toBe('PENDING');
+    });
+
+    /* THE test. Naming the plan must not be enough to be charged for it. */
+    it('refuses a school student the exit-exam plan', async () => {
+      await expect(
+        subscriptions.submitManualPayment(schoolUserId, 'TWELVE_MONTH', `FT-GATE-NO-${SFX}`),
+      ).rejects.toMatchObject({ response: { error: 'PLAN_NOT_OFFERED' } });
+    });
+
+    it('refuses an exit-exam student the school plan', async () => {
+      // The other direction, which is a discount rather than an overcharge —
+      // and just as much a price the product did not agree to.
+      await expect(
+        subscriptions.submitManualPayment(userId, 'SCHOOL_YEAR', `FT-GATE-NO2-${SFX}`),
+      ).rejects.toMatchObject({ response: { error: 'PLAN_NOT_OFFERED' } });
+    });
+
+    it('writes no payment for a refused plan', async () => {
+      const stranded = await prisma.payment.findFirst({
+        where: { txRef: { startsWith: `FT-GATE-NO` } },
+      });
+      // A refusal that leaves a PENDING row behind puts a claim in the
+      // operator's queue for money nobody was ever asked for.
+      expect(stranded).toBeNull();
+    });
+  });
+
   describe('the launch plans (T-140)', () => {
     /**
      * T-140's stated test, plus the school year T-268 added.
