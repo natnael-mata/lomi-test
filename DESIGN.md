@@ -376,9 +376,16 @@ headline figure is their weighted mean. Every statement ends in a practice actio
 
 ### Navigation
 
-Bottom bar on phones: exactly five labelled destinations, 56px, with the active item's icon
+Bottom bar on phones: **six** labelled destinations, 56px, with the active item's icon
 sitting in a Brand Soft pill and its label in brand colour. Labels are never hidden. Desktop
-moves the same five to a left rail.
+moves the same six to a left rail.
+
+> **This said five until 2026-08-25**, when Ask joined it. The number was never the rule —
+> what the rule protects is that every destination keeps a readable label, because "a student
+> who has to recognise five glyphs is a student who presses the wrong one" is just as true of
+> six. At 375px six items are 62px each, which holds a 13px label without truncation; the
+> layout sweep measures it at every width and fails on an overflow or a target under 44px.
+> If a seventh is ever proposed, that is the check to run — and the answer is probably no.
 
 The rail has two widths. A tablet gets it **compact at 104px** — icon above a 13px label,
 each destination an 88px block, the wordmark dropped and the glyph kept. A desktop gets it

@@ -4,7 +4,14 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { freeRemaining } from '../practice/attempt-rules';
 import type { SubscriptionAccess } from '../practice/subscription-access';
-import { expiresAtFrom, isLive, offersFrom, renewalStartsAt, type PlanOffer } from './plan';
+import {
+  expiresAtFrom,
+  isLive,
+  offersFrom,
+  plansForTrack,
+  renewalStartsAt,
+  type PlanOffer,
+} from './plan';
 
 /** One line of a student's own payment history (T-154). */
 export interface PaymentHistoryRow {
@@ -62,13 +69,37 @@ export class SubscriptionsService implements SubscriptionAccess {
   ) {}
 
   /** The plans on sale, cheapest per month first, with the maths done (T-141a). */
-  async offers(): Promise<PlanOffer[]> {
+  async offers(userId?: string): Promise<PlanOffer[]> {
     const plans = await this.prisma.plan.findMany({
       where: { isActive: true },
       orderBy: { months: 'asc' },
       select: { code: true, months: true, priceEtb: true },
     });
-    return offersFrom(plans);
+
+    /*
+     * Filtered by the student's own track (T-268).
+     *
+     * `userId` is optional only so the seeding scripts and tests can ask what
+     * is on sale without inventing a student. Every route into here supplies
+     * one — the endpoint is behind `SessionGuard`, because scoping by track
+     * needs to know who is asking.
+     */
+    const maxGrade = userId === undefined ? null : await this.maxGradeFor(userId);
+    return offersFrom(plansForTrack(plans, maxGrade));
+  }
+
+  /** The year a student's track ends in, or null for an exit exam. */
+  private async maxGradeFor(userId: string): Promise<number | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fieldId: true },
+    });
+    if (!user?.fieldId) return null;
+    const field = await this.prisma.field.findUnique({
+      where: { id: user.fieldId },
+      select: { maxGrade: true },
+    });
+    return field?.maxGrade ?? null;
   }
 
   /**

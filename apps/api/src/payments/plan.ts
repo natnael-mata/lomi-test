@@ -96,6 +96,43 @@ export interface PlanOffer extends PlanShape {
  * price nobody ever charged is the oldest trick in retail and this product does
  * not do it.
  */
+/**
+ * The plans a student on this track may buy (T-268).
+ *
+ * **Grade 12 and below get one annual price and no choice to make.** The
+ * exit-exam ladder — six months or twelve, with the per-month saving spelled
+ * out — is a decision for somebody choosing how long to study before an exam
+ * they are sitting themselves. A school subscription is usually bought by a
+ * parent, once, for a child, and offering them a duration trade-off asks a
+ * question they have no basis to answer.
+ *
+ * The test is `maxGrade`, which is exactly the school/exit-exam line already:
+ * a school track declares the year it ends in, and an exit exam draws on no
+ * school year at all. Same field `bandFor` reads, so the two cannot disagree
+ * about which kind of student this is.
+ *
+ * Falls back to the exit-exam plans when the track is unknown — a student with
+ * no programme chosen is not yet a school student, and showing them nothing
+ * would be a checkout page with no way to pay.
+ */
+export function plansForTrack<T extends { code: string }>(
+  plans: readonly T[],
+  maxGrade: number | null,
+): readonly T[] {
+  const school = maxGrade !== null;
+  const wanted = plans.filter((plan) =>
+    school ? plan.code === 'SCHOOL_YEAR' : plan.code !== 'SCHOOL_YEAR',
+  );
+  /*
+   * Never an empty list.
+   *
+   * If the school plan is withdrawn — `isActive: false` — a Grade 6 student
+   * would otherwise reach a checkout with nothing on it and no way to tell
+   * whether that was a bug. Better they see the ordinary plans than a dead end.
+   */
+  return wanted.length > 0 ? wanted : plans;
+}
+
 export function offersFrom(plans: readonly PlanShape[]): PlanOffer[] {
   if (plans.length === 0) return [];
 

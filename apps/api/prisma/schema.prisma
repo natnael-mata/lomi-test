@@ -1155,6 +1155,14 @@ model Plan {
 enum PlanCode {
   SIX_MONTH
   TWELVE_MONTH
+
+  /// A school year, for Grade 12 and below. One price, no choice to make.
+  ///
+  /// **Priced for a different buyer.** A school-track subscription is usually
+  /// paid by a parent, once, and the exit-exam ladder of "six months or twelve,
+  /// and here is the per-month saving" is a decision nobody wants to make on
+  /// behalf of an eleven-year-old. One annual price is the whole offer.
+  SCHOOL_YEAR
 }
 
 /// A student's paid access (T-140a).

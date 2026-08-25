@@ -48,10 +48,22 @@ export class PaymentsController {
     private readonly chapa: ChapaService,
   ) {}
 
-  /** The plans on sale, with the per-month maths done (T-141a). */
+  /**
+   * The plans on sale for this student, with the per-month maths done (T-141a).
+   *
+   * Scoped to their track (T-268): Grade 12 and below are offered one annual
+   * price, everybody else the six/twelve ladder.
+   *
+   * **Guarded, which it was not before.** Scoping by track needs to know who is
+   * asking, and `req.auth` is only populated by the guard — without it a Grade 6
+   * student would have been quietly served the exit-exam plans. Both callers are
+   * signed-in screens (`/checkout` and the paywall on `/practice`), so nothing
+   * anonymous loses a page it was using.
+   */
   @Get('plans')
-  plans(): Promise<PlanOffer[]> {
-    return this.subscriptions.offers();
+  @UseGuards(SessionGuard)
+  plans(@Req() req: AuthedRequest): Promise<PlanOffer[]> {
+    return this.subscriptions.offers(req.auth!.userId);
   }
 
   /**

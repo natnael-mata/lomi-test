@@ -6,8 +6,7 @@ import {
   offersFrom,
   perMonthEtb,
   renewalStartsAt,
-  type PlanShape,
-} from './plan';
+  type PlanShape, plansForTrack } from './plan';
 
 const SIX: PlanShape = { code: 'SIX_MONTH', months: 6, priceEtb: 500 };
 const TWELVE: PlanShape = { code: 'TWELVE_MONTH', months: 12, priceEtb: 800 };
@@ -223,5 +222,54 @@ describe('renewing (T-146a)', () => {
   it('treats an expiry falling exactly now as spent', () => {
     const now = at('2026-06-01T00:00:00.000Z');
     expect(renewalStartsAt(now, now).toISOString()).toBe(now.toISOString());
+  });
+});
+
+/*
+ * Who is offered what (T-268).
+ *
+ * The exit-exam ladder — six months or twelve, with the per-month saving spelled
+ * out — is a decision for somebody choosing how long to study before an exam
+ * they are sitting themselves. A school subscription is usually bought by a
+ * parent, once, for a child; offering them a duration trade-off asks a question
+ * they have no basis to answer.
+ */
+describe('plansForTrack', () => {
+  const ALL = [
+    { code: 'SIX_MONTH' },
+    { code: 'TWELVE_MONTH' },
+    { code: 'SCHOOL_YEAR' },
+  ] as const;
+
+  it('offers a school student the annual plan and nothing else', () => {
+    // Every school track: Grade 6, Grade 8, both halves of Grade 12.
+    for (const maxGrade of [6, 8, 12]) {
+      expect(plansForTrack(ALL, maxGrade).map((p) => p.code)).toEqual(['SCHOOL_YEAR']);
+    }
+  });
+
+  it('offers an exit-exam candidate the ladder and never the school plan', () => {
+    // `maxGrade` is null for a university exit exam — it draws on no school year.
+    const codes = plansForTrack(ALL, null).map((p) => p.code);
+    expect(codes).toEqual(['SIX_MONTH', 'TWELVE_MONTH']);
+    expect(codes).not.toContain('SCHOOL_YEAR');
+  });
+
+  /*
+   * THE guard on the fallback. If the school plan is ever withdrawn, a Grade 6
+   * student would otherwise reach a checkout with nothing on it and no way to
+   * tell whether that was a bug or the product refusing their money.
+   */
+  it('never leaves a student with nothing to buy', () => {
+    const withoutSchool = [{ code: 'SIX_MONTH' }, { code: 'TWELVE_MONTH' }] as const;
+    expect(plansForTrack(withoutSchool, 6).length).toBeGreaterThan(0);
+
+    const onlySchool = [{ code: 'SCHOOL_YEAR' }] as const;
+    expect(plansForTrack(onlySchool, null).length).toBeGreaterThan(0);
+  });
+
+  it('shows one price, so there is no choice to make', () => {
+    // The point of the school offer, asserted rather than implied.
+    expect(plansForTrack(ALL, 6)).toHaveLength(1);
   });
 });

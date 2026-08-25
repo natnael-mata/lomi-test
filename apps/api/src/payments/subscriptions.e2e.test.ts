@@ -112,14 +112,25 @@ describe('plans and paid access (Phase 8)', () => {
   });
 
   describe('the launch plans (T-140)', () => {
-    /** T-140's stated test. */
-    it('seeds exactly two active plans at the agreed prices', async () => {
+    /**
+     * T-140's stated test, plus the school year T-268 added.
+     *
+     * Three plans on sale, and a student is never shown all three — the six/
+     * twelve ladder is for exit-exam candidates and `SCHOOL_YEAR` is for Grade
+     * 12 and below. `plansForTrack` does that filtering and has its own tests;
+     * this one is about the prices themselves, which are the numbers a student
+     * pays and the ones worth pinning.
+     */
+    it('seeds the agreed plans at the agreed prices', async () => {
       const plans = await prisma.plan.findMany({
         where: { isActive: true },
-        orderBy: { months: 'asc' },
+        orderBy: { priceEtb: 'asc' },
         select: { code: true, months: true, priceEtb: true },
       });
       expect(plans).toEqual([
+        // A school year, bought once by a parent. Not a discount on the
+        // exit-exam price — a different product for a different buyer.
+        { code: 'SCHOOL_YEAR', months: 12, priceEtb: 300 },
         { code: 'SIX_MONTH', months: 6, priceEtb: 500 },
         { code: 'TWELVE_MONTH', months: 12, priceEtb: 800 },
       ]);

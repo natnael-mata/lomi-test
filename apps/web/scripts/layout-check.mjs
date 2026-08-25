@@ -45,6 +45,7 @@ const ROUTES = [
   // at all until it started carrying per-student state.
   { path: '/home', as: 'userc' },
   { path: '/practice', as: 'userc' },
+  { path: '/community', as: 'userc' },
   { path: '/exam', as: 'userc' },
   /*
    * A paper read back after the fact.

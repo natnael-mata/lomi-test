@@ -57,6 +57,17 @@ export const DESTINATIONS: readonly Destination[] = [
   { href: '/exam', label: c.nav.exam, icon: 'mock' },
   { href: '/progress', label: c.nav.progress, icon: 'progress' },
   { href: '/standing', label: c.nav.standing, icon: 'standing' },
+  /*
+   * The community, and it belongs here because it is scoped to the student's
+   * own programme.
+   *
+   * The worry was a free-text surface spanning Grade 6 to university. That is
+   * not what this is: topics belong to a programme, the server refuses a post
+   * into another one with `WRONG_FIELD`, and the index only ever lists the
+   * student's own. There is no room where an eleven-year-old and an
+   * undergraduate meet.
+   */
+  { href: '/community', label: c.nav.community, icon: 'community' },
   { href: '/checkout', label: c.nav.checkout, icon: 'access' },
 ];
 

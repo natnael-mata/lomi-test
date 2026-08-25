@@ -84,14 +84,21 @@ describe('the measures come from DESIGN.md (§ Layout)', () => {
 
 describe('navigation matches DESIGN.md (§ Navigation)', () => {
   it('finds the rule it is enforcing', () => {
-    expect(design).toMatch(/exactly five labelled destinations/i);
-    expect(design).toMatch(/desktop moves the same five to a left rail/i);
+    expect(design).toMatch(/six\*\* labelled destinations/i);
+    expect(design).toMatch(/desktop moves the same six to a left rail/i);
   });
 
-  /** "exactly five" — not four, not six. */
-  it('has exactly five destinations', () => {
-    expect(DESTINATIONS).toHaveLength(5);
-    expect(new Set(DESTINATIONS.map((d) => d.href)).size).toBe(5);
+  /*
+   * Six, and the count is pinned rather than left to drift.
+   *
+   * It was five until Ask joined. The number is not the rule — a readable label
+   * on every destination is — but an unpinned count is how a navigation grows a
+   * seventh and an eighth item nobody argued for. Changing it means changing
+   * DESIGN.md, which is the argument.
+   */
+  it('has exactly six destinations', () => {
+    expect(DESTINATIONS).toHaveLength(6);
+    expect(new Set(DESTINATIONS.map((d) => d.href)).size).toBe(6);
   });
 
   /**

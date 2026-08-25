@@ -41,6 +41,14 @@ const STROKE: Record<string, ReactNode> = {
   ),
 
   /* Verdicts. Never shown without the word beside them. */
+  /*
+   * A speech bubble, for the community.
+   *
+   * Drawn on the same 24px grid and the same stroke weight as the rest: an icon
+   * borrowed from another set is obvious in a row of five, and the navigation is
+   * the one place every icon is seen side by side.
+   */
+  community: <path d="M21 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.8-5.1A7.5 7.5 0 1 1 21 11.5z" />,
   check: <path d="M4 12l5 5L20 7" />,
   cross: <path d="M6 6l12 12M18 6L6 18" />,
   clock: (

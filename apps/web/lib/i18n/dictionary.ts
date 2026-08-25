@@ -91,6 +91,9 @@ export const en = {
     exam: 'Mock',
     progress: 'Progress',
     standing: 'Standing',
+    // "Ask", not "Community" — it says what you do there, and it is shorter,
+    // which matters in a six-item bar on a phone.
+    community: 'Ask',
     checkout: 'Access',
 
     main: 'Main',
@@ -845,6 +848,13 @@ export const en = {
     ask: 'Ask',
     // On the button itself while it is blocked, so the reason and the control
     // are in the same place.
+    indexTitle: 'Ask a question',
+    // Names the programme, so it is obvious this is not everybody on the app.
+    indexIntro: (field: string) => `Questions and answers from other ${field} students.`,
+    indexLoading: 'Loading your topics…',
+    indexFailed: 'Your topics could not be loaded. Try again in a moment.',
+    indexEmpty: 'No topics in your programme yet.',
+    indexWhat: 'Stuck on something? Ask here and another student can answer.',
     askNeedsBoth: 'Add a title and a question first',
     asking: 'Posting…',
     titleRequired: 'Give your question a title so somebody can find it.',
