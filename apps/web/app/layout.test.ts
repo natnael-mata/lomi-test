@@ -38,7 +38,9 @@ describe('self-hosted fonts (T-091)', () => {
     const { fileURLToPath } = await import('node:url');
 
     const here = dirname(fileURLToPath(import.meta.url));
-    for (const file of ['archivo-700.woff2', 'archivo-800.woff2', 'inter-variable.woff2']) {
+    // Bricolage replaced Archivo, and one file replaced two — see `fonts.ts`
+    // for why 700 and 800 point at the same outlines.
+    for (const file of ['bricolage-700.woff2', 'inter-variable.woff2']) {
       const path = resolve(here, 'fonts', file);
       expect(existsSync(path), `${file} is missing`).toBe(true);
       // A floor rather than an exact size: it catches the empty or truncated

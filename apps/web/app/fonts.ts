@@ -33,16 +33,32 @@ import localFont from 'next/font/local';
  * has no variable release on this machine, and two cuts at ~14KB each come in
  * under the 34KB variable Gabarito they replace.
  *
- * Archivo stands in for Bricolage Grotesque, which the visual direction names.
- * Bricolage is not obtainable here and `next/font/google` is banned above, so
- * substituting a grotesque with comparable weight and width is the honest move —
- * a silent system-ui fallback is exactly the failure this file exists to prevent.
- * Swap in Bricolage by dropping its woff2 beside these and changing `src`.
+ * **Bricolage Grotesque, at last** — the face the visual direction actually
+ * names. It stood in as Archivo for months because Bricolage was not obtainable
+ * on the build machine; it is now, under the SIL Open Font License, whose text
+ * ships beside it in `fonts/BricolageGrotesque-OFL.txt` because the licence
+ * requires that and a font shipped without its licence is not licensed.
+ *
+ * Subset to Latin-1 plus the punctuation headings use, and one file where there
+ * were two: 20KB against Archivo's 29KB, so the right typeface also costs a
+ * student less to download than the stand-in did.
+ *
+ * ⚠️ **700 and 800 are the same outlines.** Only Regular and Bold cuts exist in
+ * the release available here, and Bricolage's variable version — which has a
+ * wght axis reaching 800 — is not among them. Both weights therefore point at
+ * Bold. That is deliberate and not a mistake to tidy up: declaring only 700
+ * would make the browser synthesise 800 by smearing an already-bold face, which
+ * looks far worse than the two steps being equal. The consequence is real
+ * though — `font-extrabold` now renders identically to `font-bold`, and the
+ * five places that lean on that step have lost it. Dropping in a genuine 800
+ * cut is one file and one line here.
  */
-export const archivo = localFont({
+export const bricolage = localFont({
   src: [
-    { path: './fonts/archivo-700.woff2', weight: '700', style: 'normal' },
-    { path: './fonts/archivo-800.woff2', weight: '800', style: 'normal' },
+    { path: './fonts/bricolage-700.woff2', weight: '700', style: 'normal' },
+    // The same file. See the warning above — a real 800 does not exist here,
+    // and synthetic bold on top of Bold is worse than no extra step.
+    { path: './fonts/bricolage-700.woff2', weight: '800', style: 'normal' },
   ],
   variable: '--font-display-face',
   // `swap` renders text immediately in the fallback and swaps when the face
@@ -89,4 +105,4 @@ export const inter = localFont({
  */
 
 /** Every font variable, for the `<html>` element. */
-export const fontVariables = [archivo.variable, inter.variable].join(' ');
+export const fontVariables = [bricolage.variable, inter.variable].join(' ');
