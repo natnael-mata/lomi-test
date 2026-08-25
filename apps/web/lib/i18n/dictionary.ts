@@ -146,6 +146,68 @@ export const en = {
     refusedHome: 'Back to your home page',
   },
 
+  /*
+   * Sign-up and password reset (T-266, HANDOFF §12b).
+   *
+   * **The states are the design.** A happy path is four taps and needs no
+   * writing; what a student meets is a late code, a mistyped one, or a number
+   * they no longer have. Two rules run through all of it, both from §12b:
+   *
+   * - **The remaining try count is stated.** Somebody who does not know how
+   *   many are left cannot decide whether to guess again or start over.
+   * - **Expiry is a rule, not a fault.** Nothing here implies the student broke
+   *   something by being slow.
+   */
+  codeFlow: {
+    phoneLabel: 'Your phone number',
+    phoneHint: 'The number this phone uses. We send a code to it.',
+    sendCode: 'Send me a code',
+    sending: 'Sending…',
+    couldNotSend: 'The code could not be sent just now. Try again in a moment.',
+
+    sentTo: (phone: string) => `We sent a six-digit code to ${phone}.`,
+    codeLabel: 'The six-digit code',
+    codeHint: 'It arrives by SMS and lasts ten minutes.',
+    continue: 'Continue',
+    resend: 'Send another code',
+    // A live countdown, never a dead button: "wait" with no number is
+    // indistinguishable from broken, and the student presses it again.
+    resendIn: (seconds: number) => `Send another code in ${seconds}s`,
+    couldNotVerify: 'That did not go through. Try again in a moment.',
+
+    triesLeft: (left: number) => `${left} ${left === 1 ? 'try' : 'tries'} left, or send a new one.`,
+    // A clock time, never "later". A duration has to be added to a clock the
+    // student is already looking at.
+    tryAgainAt: (time: string) => `You can try again at ${time}.`,
+    nothingWrong: 'Nothing is wrong with your account — codes simply do not last long.',
+
+    passwordHint: 'At least 8 characters. Anything you will remember.',
+    weakPassword: 'That password is too short. Use at least 8 characters.',
+    saving: 'Saving…',
+
+    signUp: {
+      title: 'Create your account',
+      intro: 'Your phone number is your username. No email, no forms.',
+      passwordLabel: 'Choose a password',
+      finish: 'Create my account',
+      lostNumber: 'No code yet? It can take a minute on a slow network.',
+    },
+
+    reset: {
+      title: 'Reset your password',
+      // Deliberately says nothing about whether the number is registered.
+      // Confirming would make this a directory of who has an account here.
+      intro: 'Type your number and we will send a code to it.',
+      passwordLabel: 'Choose a new password',
+      finish: 'Save and sign in',
+      // The one real dead end in this flow, so it gets a route out rather than
+      // an apology. A student who has lost the number cannot prove anything by
+      // SMS, by definition.
+      lostNumber:
+        'No longer have this number? Message us on Telegram and we will move your account.',
+    },
+  },
+
   devLogin: {
     title: 'Sign in for testing',
     intro: 'Choose who to sign in as. This page is for local testing only.',
@@ -334,6 +396,8 @@ export const en = {
     phoneLabel: 'Phone number',
     phoneHint: 'The number you signed up with — 09… or 07…',
     passwordLabel: 'Password',
+    forgotPassword: 'Forgot your password?',
+    noAccount: 'Create an account',
     signInAction: 'Sign in',
     signingIn: 'Signing in…',
     /*

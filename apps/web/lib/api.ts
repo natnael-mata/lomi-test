@@ -876,6 +876,53 @@ export const api = {
   ): Promise<{ token: string; userId: string; displayName: string; fieldId: string | null }> =>
     call('/auth/sign-in', { method: 'POST', body: JSON.stringify({ phone, password }) }),
 
+  /**
+   * Asks for a code, to sign up or to reset a forgotten password (T-266).
+   *
+   * One function for both because the two flows are the same three screens —
+   * number, code, password — and splitting them into two clients is how the
+   * limits on one quietly drift from the limits on the other.
+   *
+   * **The answer never says whether the number is registered.** For `reset`
+   * that is the whole point: a response that differed would be a directory of
+   * who your students are, readable by typing numbers into a form.
+   */
+  requestCode: (
+    purpose: 'register' | 'reset',
+    phone: string,
+  ): Promise<{ sent: true; expiresInSec: number }> =>
+    call(purpose === 'register' ? '/auth/register/start' : '/auth/password/reset/start', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
+
+  /**
+   * Proves the number, sets the password, and signs in.
+   *
+   * Signing in is the server's doing and it is deliberate: somebody who has
+   * just proved they own the handset and chosen a password should not then be
+   * asked to type that password on the next screen.
+   */
+  verifyCode: (
+    purpose: 'register' | 'reset',
+    phone: string,
+    code: string,
+    password: string,
+  ): Promise<{
+    token: string;
+    userId: string;
+    displayName: string;
+    fieldId: string | null;
+    isNew: boolean;
+  }> =>
+    call(purpose === 'register' ? '/auth/register/verify' : '/auth/password/reset/verify', {
+      method: 'POST',
+      // No `deviceLabel`, the same as `signInWithPassword` — the server names
+      // the device from what it can see. Both doors behave identically, which
+      // matters more here than either behaviour does on its own.
+      body: JSON.stringify({ phone, code, password }),
+    }),
+
   /** Who am I. The generated handle, never a legal name. */
   me: (): Promise<Identity> => call<Identity>('/me'),
 

@@ -104,6 +104,35 @@ export function PasswordSignIn() {
         <Button type="submit" disabled={busy || phone.trim() === '' || password === ''}>
           {busy ? c.signIn.signingIn : c.signIn.signInAction}
         </Button>
+
+        {/*
+          The two ways out of this screen, and until now there were none.
+
+          A student who could not sign in had nowhere to go: no account yet, or
+          a forgotten password, and both dead-ended here. Phone-and-password
+          makes the second more likely than the Telegram pairing it replaced —
+          a forgotten password used to be impossible — so the reset link is not
+          a nicety, it is the other half of the door.
+        */}
+        {/*
+          `min-h-11` and vertical padding, not bare text.
+
+          As plain 18px links these were the two smallest tap targets in the
+          product — on the one screen a locked-out student has to use, on a
+          phone, probably in a hurry. The layout sweep failed them at all three
+          widths, which is exactly what it is for.
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <a
+            href="/reset"
+            className="text-caption text-ink-2 flex min-h-11 items-center px-1 underline"
+          >
+            {c.signIn.forgotPassword}
+          </a>
+          <a href="/signup" className="text-caption flex min-h-11 items-center px-1 underline">
+            {c.signIn.noAccount}
+          </a>
+        </div>
       </form>
     </Card>
   );
