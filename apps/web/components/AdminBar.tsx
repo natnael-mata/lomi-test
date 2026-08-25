@@ -94,10 +94,15 @@ export function AdminBar({ pathname }: { pathname: string }) {
       <div className="mx-auto flex min-h-16 max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 sm:px-8">
         <span className="flex items-center gap-2.5">
           <Logo size={34} />
-          {/* Named as admin, so nobody reading over a shoulder mistakes an
-              operator's screen for the student product. */}
+          {/*
+            Named for the role, so nobody reading over a shoulder mistakes an
+            operator's screen for the student product — and so a provider is not
+            told they are looking at Admin. QA noticed `/provider/*` wearing the
+            admin badge while showing screens an admin cannot open; the bar knows
+            the role already, and using it costs nothing.
+          */}
           <span className="font-display text-[18px] font-bold -tracking-[0.02em]">
-            {c.admin.nav.title}
+            {role === 'PROVIDER' ? c.provider.nav.title : c.admin.nav.title}
           </span>
         </span>
 

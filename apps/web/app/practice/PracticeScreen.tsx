@@ -334,15 +334,30 @@ export function PracticeScreen() {
             }))}
             onSelect={(label) => setChosen(label)}
           />
-          {/* Pinned to the foot of the viewport, per the handoff. */}
-          <Button
-            className="mt-auto"
-            disabled={chosen === null || submitting}
-            blockingReason={chosen === null ? c.practice.chooseFirst : undefined}
-            onClick={() => void submit()}
-          >
-            {submitting ? c.practice.checking : c.practice.checkAnswer}
-          </Button>
+          {/*
+            Sticky, not `mt-auto`.
+
+            The handoff says pinned to the foot of the viewport, and `mt-auto`
+            only manages that when the content is *shorter* than the viewport —
+            with a long stem and four options it lands wherever the column ends.
+            QA measured it around 500px below the fold and read the screen as a
+            dead end, having to search the DOM to find the button.
+
+            `sticky bottom-0` pins it for real: reachable at any content height,
+            on the screen a student uses more than any other. The negative margin
+            and padding let its own background cover the gap the column would
+            otherwise show through underneath it.
+          */}
+          <div className="bg-bg sticky bottom-0 -mx-1 mt-auto px-1 pt-2 pb-1">
+            <Button
+              className="w-full"
+              disabled={chosen === null || submitting}
+              blockingReason={chosen === null ? c.practice.chooseFirst : undefined}
+              onClick={() => void submit()}
+            >
+              {submitting ? c.practice.checking : c.practice.checkAnswer}
+            </Button>
+          </div>
         </>
       ) : (
         <>
@@ -415,14 +430,28 @@ export function PracticeScreen() {
                   </li>
                 ))}
               </ul>
-              <Button
-                variant="ghost"
-                className="self-start"
-                disabled={naming}
-                onClick={() => void load()}
-              >
-                {naming ? c.practice.reasonChecking : c.practice.reasonSkip}
-              </Button>
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  className="self-start"
+                  disabled={naming}
+                  onClick={() => void load()}
+                >
+                  {naming ? c.practice.reasonChecking : c.practice.reasonSkip}
+                </Button>
+                {/*
+                  What skipping costs, before it is skipped.
+
+                  Skipping is allowed and takes nothing away — but the question
+                  stays unbeaten, and coverage is the headline figure on
+                  `/progress`. QA skipped twice, watched "0 of 20 beaten" not
+                  move, and could not tell whether that was the rule or a bug.
+                  The rule is stated above the options; this is the same fact
+                  next to the control that triggers it, which is where somebody
+                  deciding actually looks.
+                */}
+                <p className="text-caption text-ink-2">{c.practice.reasonSkipCost}</p>
+              </div>
             </Card>
           ) : null}
 

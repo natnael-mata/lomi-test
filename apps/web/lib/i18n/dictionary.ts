@@ -341,6 +341,9 @@ export const en = {
     reasonTitle: 'Why is that the right answer?',
     reasonWhy: 'Getting this too is what marks the question as done.',
     reasonSkip: 'Skip for now',
+    // Beside the skip control, because that is where somebody deciding looks.
+    // Says the cost without discouraging: it comes round again, nothing is lost.
+    reasonSkipCost: 'The question stays unbeaten and comes round again.',
     reasonChecking: 'Checking…',
     reasonRight: 'That is the reason. This question is done.',
     reasonWrong: 'Not quite the reason — this is what makes the answer work.',
@@ -836,6 +839,9 @@ export const en = {
     askTitle: 'Your question, in a few words',
     askBody: 'What is confusing you?',
     ask: 'Ask',
+    // On the button itself while it is blocked, so the reason and the control
+    // are in the same place.
+    askNeedsBoth: 'Add a title and a question first',
     asking: 'Posting…',
     titleRequired: 'Give your question a title so somebody can find it.',
     bodyRequired: 'Write your question before posting.',
@@ -1107,7 +1113,10 @@ export const en = {
    * the morning.
    */
   provider: {
-    nav: { activity: 'Activity', health: 'Health' },
+    // The bar's own name when a provider is looking at it. A provider outranks
+    // an admin and sees screens an admin cannot, so badging their session
+    // "Admin" is simply the wrong word for what they are.
+    nav: { title: 'Lomi-Exams Provider', activity: 'Activity', health: 'Health' },
 
     activity: {
       title: 'Activity',

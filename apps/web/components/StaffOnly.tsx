@@ -79,8 +79,18 @@ export function StaffOnly({
   if (role === undefined) return null;
 
   if (role === null || RANK[role] < RANK[need]) {
+    /*
+     * The tab says so too.
+     *
+     * `metadata.title` is set per route and is right for the page the route is
+     * *for* — but a refused student sat on a browser tab reading "Upload
+     * questions · admin", which describes a screen they were explicitly not
+     * being shown. QA noticed it, and on a phone with several tabs open the
+     * title is most of what somebody has to go on.
+     */
     return (
       <div className="flex flex-col gap-4">
+        <title>{c.staff.refusedTitle}</title>
         <header className="flex flex-col gap-1">
           <h1 className="text-title">{c.staff.refusedTitle}</h1>
           <p className="text-body text-ink-2">{c.staff.refusedBody}</p>

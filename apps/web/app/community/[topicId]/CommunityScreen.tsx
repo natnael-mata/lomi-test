@@ -13,6 +13,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
 import { Input } from '../../../components/Input';
@@ -261,9 +262,22 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
           value={body}
           onChange={(e) => setBody(e.target.value)}
         />
-        <button type="button" className="btn-primary" onClick={() => void ask()} disabled={busy}>
+        {/*
+          Disabled until there is something to post.
+
+          It was enabled with both fields empty, so pressing it produced a
+          server-side rejection for a mistake the form could see. The button is
+          the last thing that should discover an empty field.
+        */}
+        <Button
+          disabled={busy || title.trim() === '' || body.trim() === ''}
+          blockingReason={
+            title.trim() === '' || body.trim() === '' ? c.community.askNeedsBoth : undefined
+          }
+          onClick={() => void ask()}
+        >
           {busy ? c.community.asking : c.community.ask}
-        </button>
+        </Button>
       </Card>
     </div>
   );

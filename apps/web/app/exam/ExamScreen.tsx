@@ -465,11 +465,22 @@ export function ExamScreen() {
         onSelect={(label) => void save({ chosenLabel: label })}
       />
 
+      {/*
+        `title`, not `blockingReason`.
+
+        `blockingReason` replaces the button's visible label, which is right for
+        a primary action — "Choose an answer first" is more use than a greyed-out
+        "Check answer". It is wrong here: it turned Back into a button reading
+        "This is the first question", a full sentence where a one-word control
+        should be, which QA read as a sentence that looked pressable and did
+        nothing. On question 1 of 20 a greyed-out "Back" needs no explaining, and
+        the navigator above already says where you are.
+      */}
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           disabled={item.position <= 1}
-          blockingReason={item.position <= 1 ? c.exam.firstQuestion : undefined}
+          title={item.position <= 1 ? c.exam.firstQuestion : undefined}
           onClick={() => void goTo(sittingId, item.position - 1)}
         >
           {c.common.back}
@@ -477,7 +488,7 @@ export function ExamScreen() {
         <Button
           variant="ghost"
           disabled={item.position >= item.totalQuestions}
-          blockingReason={item.position >= item.totalQuestions ? c.exam.lastQuestion : undefined}
+          title={item.position >= item.totalQuestions ? c.exam.lastQuestion : undefined}
           onClick={() => void goTo(sittingId, item.position + 1)}
         >
           {c.common.next}
