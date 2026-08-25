@@ -115,7 +115,7 @@ npm run brand-icons
 ```
 
 ```bash
-DEV_LOGIN_SECRET=... npm run lighthouse
+npm run lighthouse
 ```
 
 `focus-ring` tabs through five screens with real key events and fails if any

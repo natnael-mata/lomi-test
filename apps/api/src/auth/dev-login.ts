@@ -47,9 +47,8 @@ export const DEV_TELEGRAM_ID_CEILING = -1_000_000_000;
  * history was gone, and nothing said why — every seeded state a tester was
  * asked to check was unreachable by the name they had for it.
  *
- * Nothing rests on this being hard to guess: the door is closed unless
- * `DEV_LOGIN_SECRET` is set, and the range it hashes into can only ever hold
- * smoke-test accounts.
+ * Nothing rests on this being hard to guess. There is no door behind it any
+ * more, and the range it hashes into can only ever hold smoke-test accounts.
  */
 /**
  * The personas this door will open, and nothing else.

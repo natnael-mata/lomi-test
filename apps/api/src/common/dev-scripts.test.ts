@@ -96,17 +96,38 @@ describe('the dev scripts stay out of the build (T-199b)', () => {
   });
 
   /**
-   * The exception is not a hole. `dev-login.ts` may ship, but it may only ship
-   * shut — and T-206a is the launch blocker that deletes it outright.
+   * `dev-login.ts` still ships, and no longer opens anything (T-206a).
+   *
+   * It used to hold the bypass and was allowed to ship only because it was shut
+   * by default. The bypass is deleted; what is left is how the seeded personas
+   * are named — `devTelegramId` and the reserved negative id range, which is the
+   * property that stops `dev:testers` from ever touching a real account.
+   *
+   * So the assertion is inverted. The file may ship because it can no longer let
+   * anybody in, and this fails if the machinery that let people in comes back.
    */
-  it('lets the smoke-test door ship only because it is shut by default', () => {
+  it('keeps the persona helpers and none of the door', () => {
     const source = readFileSync(join(API, 'src/auth/dev-login.ts'), 'utf8');
-    // No default, no fallback, no inference from NODE_ENV.
-    expect(source).toContain('DEV_LOGIN_SECRET');
-    expect(source).not.toMatch(/DEV_LOGIN_SECRET\s*\?\?/);
-    expect(source).not.toContain("NODE_ENV !== 'production'");
-    // And it is tracked for removal, in the file a launch checklist reads.
-    expect(readFileSync(join(API, '../../TASK.md'), 'utf8')).toContain('T-206a');
+    /*
+     * Comments stripped before the absence checks.
+     *
+     * The file's docstring names what was removed — that history is the most
+     * useful thing in it, and a guard that forbids writing down what a file used
+     * to do would push the next person into deleting the explanation instead of
+     * the code.
+     */
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+
+    // The safety property, which is the reason the file exists at all.
+    expect(code).toContain('DEV_TELEGRAM_ID_FLOOR');
+    expect(code).toContain('devTelegramId');
+
+    // And nothing that reads a secret or decides whether a door is open.
+    for (const gone of ['isDevLoginEnabled', 'secretMatches', 'MIN_SECRET_LENGTH']) {
+      expect(code, `${gone} is back`).not.toContain(gone);
+    }
+    expect(code).not.toMatch(/process\.env\.DEV_LOGIN_SECRET/);
+    expect(code).not.toContain("NODE_ENV !== 'production'");
   });
 
   /**

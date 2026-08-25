@@ -3516,11 +3516,31 @@ could reach.
   > endpoint is a copy of the bank behind one request. It fails the moment somebody adds one,
   > which is exactly when it would be added for a good reason and shipped without anyone
   > thinking about the bank.
-- [ ] **T-206a** **LAUNCH BLOCKER — delete the smoke-test sign-in door.**
+- [x] **T-206a** **LAUNCH BLOCKER — delete the smoke-test sign-in door.** ✅ 2026-08-25
       `POST /auth/dev-login` is a deliberate authentication bypass, added 2026-08-10 so the first
       VPS deploy could be clicked through before a Telegram bot existed.
       **Test:** the route is gone, `apps/api/src/auth/dev-login.ts` is deleted, and
       `DEV_LOGIN_SECRET` appears nowhere in the tree or on the box.
+
+  > **Done, and one clause of the test above was not met on purpose.** The route, the service
+  > method, `MIN_SECRET_LENGTH`, `isDevLoginEnabled` and the constant-time `secretMatches` are
+  > deleted. `dev-login.e2e.test.ts` is inverted: it asserts the route 404s and that setting the
+  > old variable does nothing.
+  >
+  > **`dev-login.ts` still exists**, because deleting it would delete the wrong thing. What is
+  > left in it is `devTelegramId`, `isDevTelegramId` and the reserved negative id range — the
+  > property that stops `dev:testers` from ever touching a real account, since Telegram cannot
+  > issue a negative id. That is a safety mechanism the seeds depend on, not part of the bypass.
+  > `dev-scripts.test.ts` is inverted to match: the file may ship *because* it can no longer let
+  > anybody in, and it fails if the secret machinery returns.
+  >
+  > It became possible only once phone-and-password sign-in existed (T-263, T-266). Until then
+  > there was no other way in at all, which is exactly why the door had survived four months of
+  > being a known launch blocker.
+  >
+  > `/dev-login` the *screen* survives as a convenience: it fills in a seeded persona's real
+  > number and password and posts them to `/auth/sign-in`. Same route, same guard, same rate
+  > limit — which also makes it a continuous test of the door everybody else uses.
 
   > It is built to be survivable rather than safe, and the difference matters. It is shut unless
   > `DEV_LOGIN_SECRET` is set to 32+ characters — no default and no inference from `NODE_ENV`, so

@@ -95,9 +95,10 @@ Set on the **web** app:
 | `API_ORIGIN` | The **API** app's internal or public URL. The rewrite target |
 | `NODE_ENV`   | `production`                                                 |
 
-**`DEV_LOGIN_SECRET` is deliberately absent.** It is the smoke-test sign-in door
-(T-206a) and a launch blocker. Set it only if you need to click through before
-the Telegram bot exists, and delete the variable afterwards.
+**`DEV_LOGIN_SECRET` does nothing.** It used to open the smoke-test sign-in door;
+that door was deleted in T-206a, along with the variable that opened it. Setting
+it on a box has no effect — there is nothing left for it to switch on. Sign-in is
+a phone number and a password, and that is the only way in.
 
 ## Moving the data
 
