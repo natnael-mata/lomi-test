@@ -40,6 +40,11 @@ function row(overrides: Partial<ImportRow> = {}): ImportRow {
     year: '',
     status: 'ready',
     source_grade: '',
+    concept_line: 'VAT is charged on the value added at each stage.',
+    why_wrong_a: '',
+    why_wrong_b: 'B misstates who bears the cost.',
+    why_wrong_c: 'C confuses VAT with turnover tax.',
+    why_wrong_d: 'D applies the wrong rate.',
     ...overrides,
   };
 }

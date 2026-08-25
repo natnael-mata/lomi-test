@@ -35,6 +35,14 @@ export interface MappedOption {
   label: OptionLabelLetter;
   text: string;
   isCorrect: boolean;
+  /**
+   * Why this option is wrong, for the ones that are.
+   *
+   * Null on the correct option — a right answer has no reason for being wrong —
+   * and null where the file left it blank, which the publish gate then reports
+   * as a blocker rather than letting the question reach a student half-explained.
+   */
+  whyWrong: string | null;
 }
 
 export interface MappedRow {
@@ -46,6 +54,8 @@ export interface MappedRow {
   qType: QType;
   stem: string;
   codeBlock: string | null;
+  /** The one thing to remember. Required by the publish gate. */
+  conceptLine: string | null;
   explanation: string | null;
   timeLimitSec: number;
   /** The source file's rating, where it gave a usable one. */
@@ -226,11 +236,27 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
     notes.push(`typed as ${qType} from its numeric options alone — no type column, worth a look`);
   }
 
+  const whyWrongTexts = [
+    row.why_wrong_a,
+    row.why_wrong_b,
+    row.why_wrong_c,
+    row.why_wrong_d,
+  ] as const;
+
   const options: MappedOption[] = [];
   OPTION_LABELS.forEach((label, i) => {
     const text = optionTexts[i]!.trim();
     if (text === '') return;
-    options.push({ label, text, isCorrect: hasAnswer && answer === label });
+    const isCorrect = hasAnswer && answer === label;
+    const why = (whyWrongTexts[i] ?? '').trim();
+    options.push({
+      label,
+      text,
+      isCorrect,
+      // Ignored on the correct option, so a spreadsheet may fill every column
+      // in without the right answer acquiring a reason for being wrong.
+      whyWrong: isCorrect || why === '' ? null : why,
+    });
   });
 
   return {
@@ -243,6 +269,7 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
       qType,
       stem,
       codeBlock: row.code_block.trim() || null,
+      conceptLine: row.concept_line.trim() || null,
       explanation: row.explanation.trim() || null,
       timeLimitSec: TIME_LIMIT_SEC[qType],
       difficulty,

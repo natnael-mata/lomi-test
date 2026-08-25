@@ -137,10 +137,24 @@ export function parseImportCsv(text: string): ParsedRow[] {
    * rejects every spreadsheet uploaded before the column existed.
    */
   const trimmed = header.map((h) => h.trim());
+  /*
+   * Any prefix of the schema, from the required columns to all of them.
+   *
+   * This used to fall back to `REQUIRED_COLUMNS` alone, which worked while
+   * there was exactly one optional column: a header was either sixteen or
+   * seventeen. T-212 appended five more, so the accepted lengths run from
+   * sixteen to twenty-two and a file stopping anywhere in between — at
+   * `source_grade`, or with a concept line but no why-wrongs — is a file
+   * somebody will reasonably produce.
+   *
+   * Still a strict *prefix*: the columns must appear in schema order with
+   * nothing missing from the middle, because a gap there shifts every cell to
+   * its right and files the explanation under `difficulty`.
+   */
   const expected =
     trimmed.length >= IMPORT_COLUMNS.length
       ? [...IMPORT_COLUMNS]
-      : [...REQUIRED_COLUMNS].slice(0, Math.max(trimmed.length, REQUIRED_COLUMNS.length));
+      : [...IMPORT_COLUMNS].slice(0, Math.max(trimmed.length, REQUIRED_COLUMNS.length));
 
   if (header.length !== expected.length || header.some((h, i) => h.trim() !== expected[i])) {
     // Name the difference rather than dumping both lists: a reordered or
@@ -158,7 +172,22 @@ export function parseImportCsv(text: string): ParsedRow[] {
   }
 
   return rows.map(({ cells, line }) => {
-    if (cells.length !== expected.length) {
+    /*
+     * A row may stop early, but only inside the optional tail.
+     *
+     * Spreadsheet editors drop trailing empty cells, so a file whose header
+     * runs to `why_wrong_d` will often carry rows that stop at `status` — and
+     * before T-212 that never came up, because there was one optional column
+     * and the difference was a single cell. Six of them makes short rows
+     * ordinary, and rejecting the file for it would send somebody hunting for a
+     * problem in a spreadsheet that is fine.
+     *
+     * A row shorter than the required columns is still refused: the missing
+     * cells there are the question itself. And a row that is too *long* is
+     * refused, because extra cells mean the row is shifted and the importer
+     * would file the explanation under `difficulty`.
+     */
+    if (cells.length > expected.length || cells.length < REQUIRED_COLUMNS.length) {
       throw new CsvError(`Row has ${cells.length} cells, expected ${expected.length}.`, line);
     }
     // Every schema column is present on the object; the ones the file did not

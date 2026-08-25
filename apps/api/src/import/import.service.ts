@@ -168,6 +168,15 @@ export class ImportService {
       qType: row.qType,
       stem: row.stem,
       codeBlock: row.codeBlock,
+      /*
+       * Only when the file says something (T-212).
+       *
+       * Same rule as `whyWrong` below: the concept line may have been written
+       * in the review queue, and a spreadsheet that predates the column would
+       * otherwise erase it on every re-import. A blank cell is "no opinion",
+       * never "delete what is there".
+       */
+      ...(row.conceptLine !== null ? { conceptLine: row.conceptLine } : {}),
       explanation: row.explanation,
       difficulty: row.difficulty,
       sourceRef: row.sourceRef,
@@ -222,8 +231,8 @@ export class ImportService {
    * what a reviewer added.
    *
    * Delete-all-and-recreate is the obvious implementation and it is destructive:
-   * `whyWrong` is authored in the review queue, exists in no CSV column, and is
-   * required by the publish gate. Wiping it on every re-import means a reviewed
+   * `whyWrong` may be authored in the review queue, and until T-212 it existed
+   * in no CSV column at all. It is required by the publish gate. Wiping it on every re-import means a reviewed
    * question quietly becomes unpublishable again, and the person who wrote those
    * lines has to write them a second time.
    *
@@ -252,7 +261,21 @@ export class ImportService {
         update: {
           text: option.text,
           isCorrect: option.isCorrect,
-          ...(staleReasoning ? { whyWrong: null } : {}),
+          /*
+           * The file wins when it says something; the reviewer wins when it
+           * does not.
+           *
+           * The CSV can carry a why-wrong since T-212. A blank column still
+           * means "no opinion" rather than "erase it" — otherwise every
+           * re-import of a spreadsheet that predates the new columns would wipe
+           * the reasoning somebody typed in the review queue, which is the
+           * exact loss this method was written to prevent.
+           */
+          ...(option.whyWrong !== null
+            ? { whyWrong: option.whyWrong }
+            : staleReasoning
+              ? { whyWrong: null }
+              : {}),
         },
         create: { questionId, ...option },
       });

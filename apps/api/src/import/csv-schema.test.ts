@@ -3,6 +3,8 @@ import { dirname, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { parseImportCsv } from './parse-csv';
+
 import {
   IMPORT_COLUMNS,
   REQUIRED_COLUMNS,
@@ -37,14 +39,27 @@ function templateHeader(): string[] {
 }
 
 describe('canonical import schema (T-050)', () => {
-  it('declares exactly 17 columns, the last of them optional', () => {
-    expect(IMPORT_COLUMNS).toHaveLength(17);
-    // Sixteen were the original schema; `source_grade` was appended (T-253) and
-    // is the only one a file may omit. Asserted as a count *and* as a
-    // difference, so appending a second optional column without deciding it is
-    // optional fails here rather than in a spreadsheet.
+  it('declares exactly 22 columns, six of them optional', () => {
+    expect(IMPORT_COLUMNS).toHaveLength(22);
+    /*
+     * Sixteen were the original schema. `source_grade` was appended by T-253;
+     * the concept line and the four why-wrongs by T-212, which is what made the
+     * importer able to produce a *publishable* question rather than a draft with
+     * four blockers on it.
+     *
+     * Asserted as a count and as the exact difference, so appending a column
+     * without deciding whether it is optional fails here rather than in
+     * somebody's spreadsheet.
+     */
     expect(REQUIRED_COLUMNS).toHaveLength(16);
-    expect(IMPORT_COLUMNS.filter((c) => !REQUIRED_COLUMNS.includes(c))).toEqual(['source_grade']);
+    expect(IMPORT_COLUMNS.filter((c) => !REQUIRED_COLUMNS.includes(c))).toEqual([
+      'source_grade',
+      'concept_line',
+      'why_wrong_a',
+      'why_wrong_b',
+      'why_wrong_c',
+      'why_wrong_d',
+    ]);
   });
 
   /*
@@ -104,19 +119,32 @@ describe('canonical import schema (T-050)', () => {
       year: '',
       status: 'ready',
       source_grade: '',
+      concept_line: '',
+      why_wrong_a: '',
+      why_wrong_b: '',
+      why_wrong_c: '',
+      why_wrong_d: '',
     };
-    expect(Object.keys(row)).toHaveLength(17);
+    expect(Object.keys(row)).toHaveLength(22);
     expect(Object.keys(row).sort()).toEqual([...IMPORT_COLUMNS].sort());
   });
 
   it('covers every status the template uses', () => {
+    /*
+     * Read by column name, not by position.
+     *
+     * This took "the last column" and sliced at the final comma. `status` was
+     * last when the test was written; `source_grade` moved it and the test
+     * survived only because that column is empty in the template, so the slice
+     * returned '' and `filter(Boolean)` dropped it. T-212's why-wrongs are not
+     * empty, and the test started asserting that a sentence about CSS was a
+     * valid status.
+     *
+     * Parsing properly costs one function call and cannot drift again.
+     */
     const used = new Set(
-      readFileSync(TEMPLATE, 'utf8')
-        .split('\n')
-        .slice(1)
-        .filter((l) => l.trim() !== '')
-        // status is the last column
-        .map((l) => l.slice(l.lastIndexOf(',') + 1).trim())
+      parseImportCsv(readFileSync(TEMPLATE, 'utf8'))
+        .map((p) => p.row.status.trim())
         .flatMap((s) => s.split(';'))
         .filter(Boolean),
     );

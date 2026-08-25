@@ -36,6 +36,30 @@ export const IMPORT_COLUMNS = [
    * is better null than guessed.
    */
   'source_grade',
+  /*
+   * The concept line and the why-wrongs (T-212).
+   *
+   * **Without these the importer cannot produce a publishable question.** The
+   * publish gate requires a concept line and a reason for every incorrect
+   * option; the template carried neither, so every uploaded row landed as a
+   * draft with four or five blockers and somebody had to type them back in by
+   * hand, one question at a time, in `/admin/review`. Forty-six published
+   * questions existed and not one of them had come through the importer.
+   *
+   * Appended, never inserted, for the reason `source_grade` gives above: a
+   * column added in the middle silently shifts every field to its right, and
+   * the importer would accept the file and file the explanation under
+   * `difficulty`.
+   *
+   * `why_wrong_*` for the option matching `correct_option` is ignored — a right
+   * answer has no reason for being wrong — so a spreadsheet may leave it blank
+   * or fill it in without changing anything.
+   */
+  'concept_line',
+  'why_wrong_a',
+  'why_wrong_b',
+  'why_wrong_c',
+  'why_wrong_d',
 ] as const;
 
 export type ImportColumn = (typeof IMPORT_COLUMNS)[number];
@@ -54,7 +78,17 @@ export type ImportColumn = (typeof IMPORT_COLUMNS)[number];
  * right and silently file the explanation under `difficulty`, which is why new
  * columns are only ever appended.
  */
-export const OPTIONAL_TRAILING_COLUMNS: readonly ImportColumn[] = ['source_grade'];
+export const OPTIONAL_TRAILING_COLUMNS: readonly ImportColumn[] = [
+  'source_grade',
+  // T-212's five. Same argument as `source_grade`: every spreadsheet already
+  // uploaded stops at `status` or `source_grade`, and requiring twenty-two
+  // columns would reject all of them at the header.
+  'concept_line',
+  'why_wrong_a',
+  'why_wrong_b',
+  'why_wrong_c',
+  'why_wrong_d',
+];
 
 /** The shortest header this importer will accept — the schema minus its optional tail. */
 export const REQUIRED_COLUMNS: readonly ImportColumn[] = IMPORT_COLUMNS.filter(
@@ -88,6 +122,19 @@ export interface ImportRow {
   year: string;
   status: string;
   source_grade: string;
+  /** The one thing to remember. Required by the publish gate (T-212). */
+  concept_line: string;
+  /**
+   * Why each option is wrong. The one matching `correct_option` is ignored.
+   *
+   * Required by the publish gate for every incorrect option — a question that
+   * reaches a student with three unexplained wrong answers teaches them the
+   * letter and nothing else.
+   */
+  why_wrong_a: string;
+  why_wrong_b: string;
+  why_wrong_c: string;
+  why_wrong_d: string;
 }
 
 /**

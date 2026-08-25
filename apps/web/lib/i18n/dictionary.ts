@@ -38,7 +38,9 @@ export const en = {
     orPaste: 'Or paste the file contents',
     upload: 'Upload',
     uploading: 'Reading the file…',
-    formatHint: 'Use the 16 columns in docs/question_import_template.csv.',
+    // 22 now, six of them optional — a file may stop at `status` and still
+    // import, it just lands with blockers on it.
+    formatHint: 'Use the columns in docs/question_import_template.csv.',
 
     read: 'Rows read',
     created: 'Added',
