@@ -92,6 +92,22 @@ export interface ExamPreview {
   } | null;
 }
 
+/**
+ * A reported post, as the moderation queue shows it.
+ *
+ * The post is included rather than linked: an operator deciding whether to hide
+ * something needs to read it, and a queue that makes them click through to find
+ * out what they are ruling on is a queue that gets rubber-stamped.
+ */
+export interface ReportedPost {
+  id: string;
+  postId: string;
+  reason: string;
+  note: string | null;
+  createdAt: string;
+  post: { id: string; body: string; hiddenAt: string | null; threadId: string } | null;
+}
+
 /** A live session, as the device list shows it. Dates arrive as ISO strings. */
 export interface DeviceEntry {
   id: string;
@@ -1054,6 +1070,26 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
+
+  /**
+   * The moderation queue: reported posts nobody has looked at yet (T-197).
+   *
+   * ADMIN only. Oldest first, because a report that has waited longest is the
+   * one most likely to have been abandoned.
+   */
+  moderationQueue: (): Promise<ReportedPost[]> =>
+    call<ReportedPost[]>('/admin/community/reports'),
+
+  /** Hides a post. The only thing in the product that hides one. */
+  hidePost: (postId: string, note?: string): Promise<{ hidden: boolean }> =>
+    call(`/admin/community/posts/${postId}/hide`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
+
+  /** Puts it back. A moderation queue without an undo is one nobody trusts. */
+  restorePost: (postId: string): Promise<{ hidden: boolean }> =>
+    call(`/admin/community/posts/${postId}/restore`, { method: 'POST' }),
 
   reportPost: (postId: string, reason: string, note?: string): Promise<{ queued: true }> =>
     call(`/community/posts/${postId}/report`, {

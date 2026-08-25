@@ -33,6 +33,9 @@ export const ADMIN_DESTINATIONS: readonly { href: string; label: string }[] = [
   { href: '/admin/review', label: c.admin.nav.review },
   { href: '/admin/weights', label: c.admin.nav.weights },
   { href: '/admin/users', label: c.admin.nav.users },
+  // The moderation queue. Last because it is usually empty, and first would put
+  // an empty screen in front of an operator who came to do something else.
+  { href: '/admin/community', label: c.admin.nav.moderation },
 ];
 
 /**

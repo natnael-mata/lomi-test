@@ -84,6 +84,7 @@ const ROUTES = [
   { path: '/admin/dashboard', as: 'admin' },
   { path: '/admin/payments', as: 'admin' },
   { path: '/admin/users', as: 'admin' },
+  { path: '/admin/community', as: 'admin' },
   { path: '/admin/import', as: 'admin' },
   { path: '/admin/weights', as: 'admin' },
   { path: '/admin/review', as: 'admin' },

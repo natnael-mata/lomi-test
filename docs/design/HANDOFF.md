@@ -488,9 +488,20 @@ exists only in conversation.
 
 ## 15. What is not designed
 
-- The remaining admin screens — `/admin/review`, `/admin/payments`, `/admin/weights` and the
-  two provider screens are still single stacked columns at 1200px. `/admin/dashboard`,
-  `/admin/users` and `/admin/import` have been done and are the pattern.
+- ~~The remaining admin screens are still single stacked columns at 1200px.~~ **Stale — three
+  of the five named here had already been done when this was read back on 2026-08-25.**
+  `/admin/review` has a documented two-column split, `/admin/weights` has a sticky summary
+  panel at `lg:grid-cols-[minmax(0,1fr)_320px]`, and `/provider/health` is a component grid
+  rather than a column. `/provider/activity` is on the design system already.
+
+  What was genuinely outstanding was one thing: `/admin/payments` hand-rolled `.card` and
+  dropped the border, so the claims table was the only surface in the product without an
+  edge. Fixed.
+
+  The entry is left here struck through rather than deleted, because it cost an afternoon of
+  re-reading screens that were finished — and "the pattern" it points at does not hold
+  either: `/admin/users`, named as the reference, is itself a single column. If a future
+  layout pass is wanted on these screens it needs a specification, not this line.
 - The sign-up screens themselves.
 - The parent weekly summary (an engagement and renewal mechanism for Grade 6 and 8, where
   the parent is the buyer).

@@ -907,6 +907,34 @@ export const en = {
   },
 
   admin: {
+    /*
+     * Reported posts (T-197).
+     *
+     * The tone is deliberately flat. This screen decides whether a student's
+     * words stay up, and copy with any warmth in it — "great work keeping the
+     * community safe" — pushes an operator towards acting rather than judging.
+     */
+    moderation: {
+      title: 'Reported posts',
+      intro: 'A student reported each of these. One report is one opinion — read the post.',
+      loading: 'Loading the queue…',
+      couldNotLoad: 'The queue could not be loaded. Nothing has changed — try again.',
+      waiting: (count: number) =>
+        count === 0 ? 'Nothing waiting' : `${count} waiting`,
+      // Not a congratulation: an empty queue is the ordinary state.
+      empty: 'No reports are waiting.',
+      isHidden: 'Hidden',
+      postGone: 'That post no longer exists.',
+      reporterSaid: (note: string) => `They added: ${note}`,
+      hide: 'Hide this post',
+      hideWhy: 'Students stop seeing it. You can put it back.',
+      restore: 'Put it back',
+      restoreWhy: 'Students see it again.',
+      hidden: 'Hidden, and the report is settled.',
+      restored: 'Back up, and the report is settled.',
+      couldNotAct: 'That did not go through. Nothing has changed — try again.',
+    },
+
     nav: {
       title: 'Lomi-Exams Admin',
       label: 'Admin sections',
@@ -916,6 +944,7 @@ export const en = {
       review: 'Review',
       weights: 'Weights',
       users: 'Users',
+      moderation: 'Reports',
     },
 
     /**

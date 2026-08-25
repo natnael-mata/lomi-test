@@ -45,6 +45,26 @@ export interface ThreadView extends ThreadSummary {
   posts: PostView[];
 }
 
+/**
+ * A reported post, as the moderation queue shows it (T-197).
+ *
+ * The post's text is included rather than linked: an operator deciding whether
+ * to hide something has to read it, and a queue that makes them click through
+ * to find out what they are ruling on is a queue that gets rubber-stamped.
+ *
+ * **Who reported it is deliberately absent.** The operator's job is to judge the
+ * post, and knowing which student complained invites judging the complainer —
+ * it is also the fact most likely to get somebody in trouble in a classroom.
+ */
+export interface ReportedPost {
+  id: string;
+  postId: string;
+  reason: string;
+  note: string | null;
+  createdAt: string;
+  post: { id: string; body: string; hiddenAt: string | null; threadId: string } | null;
+}
+
 @Injectable()
 export class CommunityService {
   constructor(
@@ -225,13 +245,38 @@ export class CommunityService {
   }
 
   /** The moderation queue: reported posts nobody has looked at yet. */
-  async pendingReports(limit = 50) {
-    return this.prisma.report.findMany({
+  async pendingReports(limit = 50): Promise<ReportedPost[]> {
+    const rows = await this.prisma.report.findMany({
       where: { reviewedAt: null },
       orderBy: { createdAt: 'asc' },
       take: limit,
       include: { post: { select: { id: true, body: true, hiddenAt: true, threadId: true } } },
     });
+
+    /*
+     * Mapped to a declared shape rather than returned raw.
+     *
+     * `findMany` with an `include` returns whatever the row happens to hold, so
+     * a column added to `Report` would start appearing on the wire without
+     * anybody deciding it should — and `reportedBy` is on that table. Naming
+     * the shape also gives `contracts.test.ts` something to hold the client's
+     * copy against, which raw Prisma output cannot.
+     */
+    return rows.map((row) => ({
+      id: row.id,
+      postId: row.postId,
+      reason: row.reason,
+      note: row.note,
+      createdAt: row.createdAt.toISOString(),
+      post: row.post
+        ? {
+            id: row.post.id,
+            body: row.post.body,
+            hiddenAt: row.post.hiddenAt?.toISOString() ?? null,
+            threadId: row.post.threadId,
+          }
+        : null,
+    }));
   }
 
   /** An operator hides a post, or puts it back. This is the only thing that hides one. */

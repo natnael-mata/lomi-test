@@ -132,7 +132,17 @@ export function PaymentsScreen() {
         /* Scrolls inside its own container, so the page never moves sideways
            — the six columns need about 900px and a laptop is not always wider. */
         <div className="overflow-x-auto">
-          <div className="bg-surface rounded-card shadow-card min-w-[900px] overflow-hidden">
+          {/*
+            `border-border`, so this surface is the same surface as every other.
+
+            The table hand-rolls `.card` rather than using the component — it
+            has to, because a card pads its contents and a table's rows must
+            reach the edge — but it had copied three of the four declarations
+            and dropped the border. Every other surface in the product has one,
+            so this was the single panel that floated: right colour, right
+            radius, right shadow, no edge.
+          */}
+          <div className="bg-surface border-border rounded-card shadow-card min-w-[900px] overflow-hidden border">
             <div
               className={`${COLUMNS} border-border text-caption text-ink-2 grid gap-4 border-b px-5 py-3 uppercase`}
             >
