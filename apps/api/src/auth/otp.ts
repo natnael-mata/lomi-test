@@ -37,7 +37,21 @@ export const CODE_TTL_SEC = 600;
  * possibilities is only a million if the attempts are counted — uncounted, six
  * digits is a formality.
  */
-export const MAX_ATTEMPTS = 5;
+export const MAX_ATTEMPTS = 3;
+
+/**
+ * How long a number waits after burning through a code's attempts.
+ *
+ * Fifteen minutes, and the design is emphatic that it is stated as a **clock
+ * time** — "you can try again at 14:32", never "later". A student who does not
+ * know when the door reopens has to keep trying it, which is both the worst
+ * experience and the most traffic.
+ *
+ * The lock is on the *number*, not the account, because the number is what is
+ * being attacked and it may have no account at all. A lock that applied only to
+ * registered numbers would be a slower way of asking which numbers exist.
+ */
+export const LOCKOUT_SEC = 15 * 60;
 
 /**
  * The wait before a second code may be sent to the same number.
@@ -82,10 +96,24 @@ export interface StoredCode {
   attempts: number;
   consumedAt: Date | null;
   createdAt: Date;
+  /** Set once this number has burned through a code's attempts. */
+  lockedUntil: Date | null;
 }
 
 export type CodeVerdict =
-  { ok: true } | { ok: false; reason: 'expired' | 'consumed' | 'exhausted' | 'wrong' };
+  | { ok: true }
+  | {
+      ok: false;
+      reason: 'expired' | 'consumed' | 'exhausted' | 'locked' | 'wrong';
+      /**
+       * Guesses left against this code, after this one.
+       *
+       * Stated to the student on purpose: somebody who does not know how many
+       * tries remain cannot decide whether to guess again or ask for a new
+       * code, so they guess — which is the behaviour the cap exists to stop.
+       */
+      triesLeft: number;
+    };
 
 /**
  * Whether a supplied code may be accepted.
@@ -96,11 +124,23 @@ export type CodeVerdict =
  * right.
  */
 export function checkCode(supplied: string, stored: StoredCode, now: Date): CodeVerdict {
-  if (stored.consumedAt !== null) return { ok: false, reason: 'consumed' };
-  if (stored.expiresAt.getTime() <= now.getTime()) return { ok: false, reason: 'expired' };
-  if (stored.attempts >= MAX_ATTEMPTS) return { ok: false, reason: 'exhausted' };
-  if (!codeMatches(supplied, stored.codeHash)) return { ok: false, reason: 'wrong' };
+  const triesLeft = Math.max(0, MAX_ATTEMPTS - stored.attempts - 1);
+
+  if (stored.lockedUntil !== null && stored.lockedUntil.getTime() > now.getTime()) {
+    return { ok: false, reason: 'locked', triesLeft: 0 };
+  }
+  if (stored.consumedAt !== null) return { ok: false, reason: 'consumed', triesLeft: 0 };
+  if (stored.expiresAt.getTime() <= now.getTime()) {
+    return { ok: false, reason: 'expired', triesLeft: 0 };
+  }
+  if (stored.attempts >= MAX_ATTEMPTS) return { ok: false, reason: 'exhausted', triesLeft: 0 };
+  if (!codeMatches(supplied, stored.codeHash)) return { ok: false, reason: 'wrong', triesLeft };
   return { ok: true };
+}
+
+/** When a number that has just run out of attempts may try again. */
+export function lockUntil(now: Date): Date {
+  return new Date(now.getTime() + LOCKOUT_SEC * 1000);
 }
 
 /**

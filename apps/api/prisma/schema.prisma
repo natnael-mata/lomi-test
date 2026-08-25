@@ -578,6 +578,15 @@ model OtpCode {
   /// account yet.
   phone String
 
+  /// What the code is for.
+  ///
+  /// **A reset code and a sign-up code must not be interchangeable.** Without
+  /// this, a code sent to prove a number during sign-up would also satisfy a
+  /// password reset for an existing account — one OTP with two meanings is one
+  /// OTP too many, and the reset path is a second front door onto a live
+  /// account rather than a convenience bolted onto sign-in.
+  purpose OtpPurpose @default(REGISTER)
+
   /// SHA-256 of the code. Sent once, to the handset, and never recoverable.
   codeHash String
 
@@ -592,12 +601,28 @@ model OtpCode {
   /// already used" is answerable and a replay is refused rather than ignored.
   consumedAt DateTime?
 
+  /// When this number may try again, after burning through a code's attempts.
+  ///
+  /// On the row rather than on the account, because the number is what is being
+  /// attacked and it may have no account at all — a reset path that only locks
+  /// registered numbers tells you which numbers are registered.
+  lockedUntil DateTime?
+
   createdAt DateTime @default(now())
 
   /// The resend cooldown reads the newest row for a phone; the sweep reads the
   /// expired ones.
-  @@index([phone, createdAt])
+  @@index([phone, purpose, createdAt])
   @@index([expiresAt])
+}
+
+/// Why a one-time code was issued. See `OtpCode.purpose`.
+enum OtpPurpose {
+  /// Proving a number during sign-up, before any account exists.
+  REGISTER
+
+  /// Proving a number in order to set a new password on an account that does.
+  RESET
 }
 
 model Session {

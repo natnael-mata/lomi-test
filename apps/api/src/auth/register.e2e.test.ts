@@ -163,10 +163,24 @@ describe('registering with a phone number (T-264)', () => {
   });
 
   /*
-   * One answer for every way a code can fail. A distinguishable "expired"
-   * tells an attacker their digits were right but slow.
+   * Expired, spent and wrong are now told apart — deliberately, and the
+   * reasoning that forbade it was too broad.
+   *
+   * The property worth protecting is that nothing reveals whether the *digits*
+   * were close. `checkCode` settles consumption, expiry and the attempt counter
+   * **before** it compares anything, so saying "that code expired" is a
+   * statement about the clock, which the student already knows: they know when
+   * they asked for it. Nothing about their guess leaks.
+   *
+   * What the old behaviour cost was real. A student whose code timed out was
+   * told it was wrong, and went looking for a typing mistake they had not made
+   * — while the fix, asking for a new code, was the one thing the message did
+   * not suggest. The design (§12b) states it plainly: expiry is a rule, not a
+   * fault.
+   *
+   * The membership oracle is untouched and has its own test above.
    */
-  it('answers the same way for a wrong, expired and spent code', async () => {
+  it('tells an expired code apart from a wrong one, without leaking the digits', async () => {
     await plantCode(NEW_PHONE, '333333');
     const wrong = await verify(NEW_PHONE, '999999', PASSWORD);
     limits.reset();
@@ -186,9 +200,55 @@ describe('registering with a phone number (T-264)', () => {
     await plantCode(NEW_PHONE, '555555', { consumedAt: new Date() });
     const spent = await verify(NEW_PHONE, '555555', PASSWORD);
 
-    for (const res of [wrong, expired, spent]) expect(res.status).toBe(401);
-    expect(expired.body.message).toBe(wrong.body.message);
-    expect(spent.body.message).toBe(wrong.body.message);
+    for (const res of [wrong, expired, spent]) {
+      expect(res.status).toBe(401);
+      // One error code for all of them, so a client cannot branch on it, and
+      // one shape, so the response length gives nothing away either.
+      expect(res.body.error).toBe('CODE_REJECTED');
+    }
+
+    // The clock is allowed to speak.
+    expect(expired.body.reason).toBe('expired');
+    expect(expired.body.message).toContain('expired');
+
+    /*
+     * And the digits are not. A wrong guess reports how many tries remain — a
+     * fact about the counter — and never anything about the guess itself: no
+     * "close", no partial match, no difference between one wrong digit and six.
+     */
+    expect(wrong.body.reason).toBe('wrong');
+    expect(wrong.body.message).not.toContain('close');
+    expect(typeof wrong.body.triesLeft).toBe('number');
+
+    // A spent code says nothing about what it once was.
+    expect(spent.body.reason).toBe('consumed');
+  });
+
+  /*
+   * Three wrong guesses close the door on the *number*, not just the code.
+   *
+   * Otherwise three tries per code times a free resend every minute is not a
+   * cap, it is a slower keyboard.
+   */
+  it('locks the number after the third wrong guess, and says when it reopens', async () => {
+    await plantCode(NEW_PHONE, '888888');
+    let last = await verify(NEW_PHONE, '000000', PASSWORD);
+    for (let i = 1; i < MAX_ATTEMPTS; i++) {
+      limits.reset();
+      last = await verify(NEW_PHONE, '000000', PASSWORD);
+    }
+
+    expect(last.status).toBe(401);
+    expect(last.body.reason).toBe('locked');
+    // A clock time, never "later": somebody who does not know when the door
+    // reopens has to keep trying it.
+    expect(typeof last.body.retryAt).toBe('string');
+    expect(new Date(last.body.retryAt).getTime()).toBeGreaterThan(Date.now());
+
+    // And the right code does not get in either — the lock is on the number.
+    limits.reset();
+    const right = await verify(NEW_PHONE, '888888', PASSWORD);
+    expect(right.status).toBe(401);
   });
 
   it('counts wrong guesses and gives up after five', async () => {

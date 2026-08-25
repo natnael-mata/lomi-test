@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CODE_LENGTH,
+  LOCKOUT_SEC,
   MAX_ATTEMPTS,
   RESEND_COOLDOWN_SEC,
   checkCode,
@@ -17,6 +18,7 @@ import {
   expiryFrom,
   generateCode,
   hashCode,
+  lockUntil,
 } from './otp';
 
 const now = new Date('2026-08-23T10:00:00Z');
@@ -26,6 +28,7 @@ const stored = (over: Partial<Parameters<typeof checkCode>[1]> = {}) => ({
   attempts: 0,
   consumedAt: null,
   createdAt: new Date('2026-08-23T09:55:00Z'),
+  lockedUntil: null,
   ...over,
 });
 
@@ -62,19 +65,35 @@ describe('checkCode', () => {
     expect(checkCode('123456', stored(), now)).toEqual({ ok: true });
   });
 
-  it('refuses the wrong one', () => {
-    expect(checkCode('000000', stored(), now)).toEqual({ ok: false, reason: 'wrong' });
+  it('refuses the wrong one, and says how many guesses are left', () => {
+    // Three tries, so a first wrong guess leaves two. The student is told,
+    // because somebody who does not know how many remain cannot decide whether
+    // to guess again or ask for a new code — so they guess, which is the
+    // behaviour the cap exists to stop.
+    expect(checkCode('000000', stored(), now)).toEqual({
+      ok: false,
+      reason: 'wrong',
+      triesLeft: 2,
+    });
+    expect(checkCode('000000', stored({ attempts: 1 }), now).ok).toBe(false);
+    const second = checkCode('000000', stored({ attempts: 1 }), now);
+    if (!second.ok) expect(second.triesLeft).toBe(1);
   });
 
   it('refuses an expired code', () => {
     const late = new Date('2026-08-23T10:06:00Z');
-    expect(checkCode('123456', stored(), late)).toEqual({ ok: false, reason: 'expired' });
+    expect(checkCode('123456', stored(), late)).toEqual({
+      ok: false,
+      reason: 'expired',
+      triesLeft: 0,
+    });
   });
 
   it('refuses a code that has already been spent', () => {
     expect(checkCode('123456', stored({ consumedAt: now }), now)).toEqual({
       ok: false,
       reason: 'consumed',
+      triesLeft: 0,
     });
   });
 
@@ -82,25 +101,65 @@ describe('checkCode', () => {
     expect(checkCode('123456', stored({ attempts: MAX_ATTEMPTS }), now)).toEqual({
       ok: false,
       reason: 'exhausted',
+      triesLeft: 0,
     });
-    expect(MAX_ATTEMPTS).toBe(5);
+    // Three, per the design table. A million combinations against three
+    // guesses; five was this module's own invention and the looser of the two.
+    expect(MAX_ATTEMPTS).toBe(3);
+  });
+
+  it('refuses a locked number before anything else', () => {
+    const locked = stored({ lockedUntil: new Date('2026-08-23T10:15:00Z') });
+    // Even with the right code: the lock is on the number, and burning through
+    // three guesses must not be escapable by then getting one right.
+    expect(checkCode('123456', locked, now)).toEqual({
+      ok: false,
+      reason: 'locked',
+      triesLeft: 0,
+    });
+  });
+
+  it('lets a number back in once the lock has passed', () => {
+    const expired = stored({ lockedUntil: new Date('2026-08-23T09:59:00Z') });
+    expect(checkCode('123456', expired, now)).toEqual({ ok: true });
+  });
+
+  it('says when the door reopens', () => {
+    // A clock time, never "later" — see LOCKOUT_SEC.
+    expect(lockUntil(now).getTime() - now.getTime()).toBe(LOCKOUT_SEC * 1000);
   });
 
   /*
-   * Order matters. A spent or stale code is refused *before* the digits are
-   * compared, so discovering it is dead costs nothing and reveals nothing about
-   * whether the digits were right.
+   * Order matters, and what it protects is narrower than it once claimed.
+   *
+   * A spent, stale or locked code is refused **before** the digits are compared,
+   * so discovering it is dead costs nothing and reveals nothing about whether
+   * the digits were right. That is the property, and it still holds.
+   *
+   * What this file used to also assert — that expired and wrong are
+   * indistinguishable — was over-cautious, and the design overrules it. Expiry
+   * is decided by the clock alone, before any comparison, so telling somebody
+   * their code expired leaks nothing they did not already know: they know when
+   * they asked for it. Meanwhile the student who is told "wrong code" about a
+   * code that simply timed out goes looking for a mistake they did not make.
    */
   it('does not compare the digits of a dead code', () => {
-    // The right code against a consumed row still reports `consumed`, not `ok`;
-    // the wrong code against an expired row still reports `expired`, not
-    // `wrong`. Either leak would turn a dead code into an oracle.
     expect(checkCode('123456', stored({ consumedAt: now }), now).ok).toBe(false);
     const late = new Date('2026-08-23T11:00:00Z');
-    expect(checkCode('000000', stored(), late)).toEqual({ ok: false, reason: 'expired' });
+    const outcome = checkCode('000000', stored(), late);
+    expect(outcome.ok).toBe(false);
+    // 'expired', not 'wrong': the row died on the clock, and the digits were
+    // never looked at.
+    if (!outcome.ok) expect(outcome.reason).toBe('expired');
+  });
+
+  it('never reports a negative number of tries', () => {
+    const outcome = checkCode('000000', stored({ attempts: 99 }), now);
+    expect(outcome.ok).toBe(false);
+    // A UI handed -96 renders it.
+    if (!outcome.ok) expect(outcome.triesLeft).toBeGreaterThanOrEqual(0);
   });
 });
-
 describe('the resend cooldown', () => {
   it('is open when no code has been sent', () => {
     expect(cooldownRemainingSec(null, now)).toBe(0);

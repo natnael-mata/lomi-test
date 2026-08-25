@@ -7,7 +7,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 
-import type { StaffRole } from '@prisma/client';
+import type { OtpPurpose, StaffRole } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { generateDisplayName } from './display-name';
@@ -25,11 +25,14 @@ import { normaliseEthiopianMobile } from '../common/phone';
 import { checkPassword, hashPassword, verifyPassword } from './password';
 import {
   CODE_TTL_SEC,
+  MAX_ATTEMPTS,
   checkCode,
   cooldownRemainingSec,
   expiryFrom,
   generateCode,
   hashCode,
+  lockUntil,
+  type CodeVerdict,
 } from './otp';
 import { TooManyRequests } from '../common/rate-limit.service';
 import { SmsService } from './sms.service';
@@ -128,6 +131,35 @@ export interface FieldOption {
    * we do not cover their exam at all.
    */
   questionCount: number;
+}
+
+/**
+ * The one refusal every failed code gets (T-266).
+ *
+ * One shape, so a caller cannot tell a wrong code from a missing account by the
+ * response it gets back. `reason` distinguishes only things the clock already
+ * told the student — expired, spent, locked — never anything about the digits.
+ *
+ * **`retryAt` is a clock time, never a duration.** The design is emphatic: "you
+ * can try again at 14:32", not "try again later". Somebody who does not know
+ * when the door reopens has to keep trying it, which is both the worst
+ * experience and the most traffic.
+ */
+function codeRejected(verdict: CodeVerdict & { ok: false }, retryAt: Date | null = null) {
+  const message =
+    verdict.reason === 'locked'
+      ? 'Too many wrong codes. This number is locked for a short while.'
+      : verdict.reason === 'expired'
+        ? 'That code has expired. Codes last ten minutes — ask for a new one.'
+        : 'That code is not right. Ask for a new one if you need to.';
+
+  return new UnauthorizedException({
+    error: 'CODE_REJECTED',
+    reason: verdict.reason,
+    triesLeft: verdict.triesLeft,
+    retryAt: retryAt?.toISOString() ?? null,
+    message,
+  });
 }
 
 @Injectable()
@@ -511,8 +543,25 @@ export class AuthService {
       });
     }
 
+    await this.issueCode(phone, 'REGISTER', now);
+    return { sent: true, expiresInSec: CODE_TTL_SEC };
+  }
+
+  /**
+   * Sends a code, or refuses because one was just sent.
+   *
+   * Shared by sign-up and reset because the rules are identical and must stay
+   * that way: **a generous reset path beside a strict sign-in is the same as
+   * having no sign-in.** Reset is a second equal front door onto a live
+   * account, not a convenience bolted onto the first one.
+   *
+   * The cooldown is per number *and per purpose*. Sharing it would let a
+   * sign-up attempt rate-limit a password reset on the same handset, which
+   * looks like the reset being broken.
+   */
+  private async issueCode(phone: string, purpose: OtpPurpose, now: Date): Promise<void> {
     const newest = await this.prisma.otpCode.findFirst({
-      where: { phone },
+      where: { phone, purpose },
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     });
@@ -525,11 +574,212 @@ export class AuthService {
 
     const code = generateCode();
     await this.prisma.otpCode.create({
-      data: { phone, codeHash: hashCode(code), expiresAt: expiryFrom(now) },
+      data: { phone, purpose, codeHash: hashCode(code), expiresAt: expiryFrom(now) },
     });
 
     await this.sms.send(phone, `Your Lomi code is ${code}. It expires in 10 minutes.`);
+  }
+
+  /**
+   * Checks a code and spends it, or throws the one refusal every failure gets.
+   *
+   * **The refusal carries what the student needs and nothing an attacker can
+   * use.** How many guesses remain, and when a locked number reopens, are both
+   * stated: somebody who does not know how many tries are left cannot decide
+   * whether to guess again, so they guess — the exact behaviour the cap exists
+   * to prevent. Neither figure says anything about whether the digits were
+   * close, because `checkCode` settles the clock and the counter *before* it
+   * compares anything.
+   *
+   * What is deliberately NOT distinguished is whether the number has an
+   * account: a missing row and a wrong code are one answer, so the reset path
+   * cannot be used to ask which of your students are registered.
+   *
+   * Spending it is the caller's win condition — the code is gone whether or not
+   * whatever comes next succeeds, because a code that outlives a rejected
+   * password is one somebody can hold open while they try passwords.
+   */
+  private async spendCode(
+    phone: string,
+    purpose: OtpPurpose,
+    supplied: string,
+    now: Date,
+  ): Promise<void> {
+    const stored = await this.prisma.otpCode.findFirst({
+      where: { phone, purpose },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!stored) throw codeRejected({ ok: false, reason: 'wrong', triesLeft: 0 });
+
+    const verdict = checkCode(supplied, stored, now);
+    if (!verdict.ok) {
+      if (verdict.reason === 'wrong') {
+        const attempts = stored.attempts + 1;
+        await this.prisma.otpCode.update({
+          where: { id: stored.id },
+          data: {
+            attempts,
+            // The last wrong guess closes the door on the number, not just on
+            // the code. Otherwise three guesses per code times a free resend
+            // every minute is not a cap, it is a slower keyboard.
+            ...(attempts >= MAX_ATTEMPTS ? { lockedUntil: lockUntil(now) } : {}),
+          },
+        });
+        throw codeRejected(
+          attempts >= MAX_ATTEMPTS
+            ? { ok: false, reason: 'locked', triesLeft: 0 }
+            : verdict,
+          attempts >= MAX_ATTEMPTS ? lockUntil(now) : null,
+        );
+      }
+      throw codeRejected(verdict, stored.lockedUntil);
+    }
+
+    await this.prisma.otpCode.update({ where: { id: stored.id }, data: { consumedAt: now } });
+  }
+
+  /**
+   * Sends a code to reset a password (T-266).
+   *
+   * **The answer is the same whether or not the number has an account.** Reset
+   * is the one path where confirming would be a directory of who your students
+   * are — anybody could type numbers in and read the answers off the screen.
+   * Sign-up is allowed to confirm, because a student blocked by a number they
+   * already own with no way to find out is simply stuck; reset has no such
+   * excuse, since a student who owns the number gets the code either way.
+   *
+   * So the cooldown is checked for every number, and only the send is
+   * conditional. An unregistered number that skipped the cooldown would answer
+   * instantly where a registered one waited, which is the same oracle wearing a
+   * stopwatch.
+   */
+  async startPasswordReset(
+    rawPhone: unknown,
+    now: Date = new Date(),
+  ): Promise<{ sent: true; expiresInSec: number }> {
+    const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
+    if (!phone) {
+      throw new UnprocessableEntityException({
+        error: 'INVALID_PHONE',
+        message: 'That is not an Ethiopian mobile number.',
+      });
+    }
+
+    const account = await this.prisma.user.findFirst({
+      where: { phone, deactivatedAt: null },
+      select: { id: true },
+    });
+    if (account) {
+      await this.issueCode(phone, 'RESET', now);
+    } else {
+      // Nothing to send to, and nothing to say about it. The cooldown is still
+      // spent so the timing matches a number that does have an account.
+      await this.holdCooldown(phone, 'RESET', now);
+    }
     return { sent: true, expiresInSec: CODE_TTL_SEC };
+  }
+
+  /**
+   * Proves the number, sets the new password, and signs the student in.
+   *
+   * Signing them in is deliberate: they have just proved they own the handset
+   * and chosen a password with it, and asking them to type that password again
+   * on the next screen is a step that proves nothing.
+   *
+   * **Every session is ended first.** A reset is what somebody does when they
+   * think their account is not theirs any more, and a reset that leaves the
+   * other party signed in has not given the account back.
+   */
+  async completePasswordReset(
+    rawPhone: unknown,
+    code: unknown,
+    password: unknown,
+    device: string,
+    now: Date = new Date(),
+  ): Promise<SignInResult> {
+    const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
+    const supplied = typeof code === 'string' ? code.trim() : '';
+    if (!phone || supplied === '') {
+      throw codeRejected({ ok: false, reason: 'wrong', triesLeft: 0 });
+    }
+
+    await this.spendCode(phone, 'RESET', supplied, now);
+
+    const check = checkPassword(password);
+    if (!check.ok) {
+      throw new UnprocessableEntityException({ error: 'WEAK_PASSWORD', reasons: check.reasons });
+    }
+
+    /*
+     * The account is looked up only now, and its absence is the same refusal a
+     * wrong code gets.
+     *
+     * A code for a number with no account cannot exist — `startPasswordReset`
+     * does not issue one — so reaching here means the row was created and the
+     * account was deleted in between. Rare, and it must not become the one path
+     * that answers "no such account".
+     */
+    const account = await this.prisma.user.findFirst({
+      where: { phone, deactivatedAt: null },
+      select: { id: true },
+    });
+    if (!account) throw codeRejected({ ok: false, reason: 'wrong', triesLeft: 0 });
+
+    await this.prisma.user.update({
+      where: { id: account.id },
+      data: { passwordHash: await hashPassword(password as string), phoneVerifiedAt: now },
+    });
+
+    // See the docstring: a reset that leaves the other party signed in has not
+    // given the account back.
+    await this.prisma.session.updateMany({
+      where: { userId: account.id, revokedAt: null },
+      data: { revokedAt: now },
+    });
+
+    const session = await this.startSession(account.id, device);
+    const who = await this.prisma.user.findUniqueOrThrow({
+      where: { id: account.id },
+      select: { displayName: true, fieldId: true },
+    });
+    return {
+      token: signSessionToken({ sub: account.id, sid: session.id }, this.jwtSecret),
+      userId: account.id,
+      sessionId: session.id,
+      displayName: who.displayName,
+      fieldId: who.fieldId,
+      isNew: false,
+    };
+  }
+
+  /**
+   * Spends the resend cooldown without sending anything.
+   *
+   * Only used where a send is skipped for a reason the caller must not reveal.
+   * Without it, an unregistered number answers instantly where a registered one
+   * has to wait, and the difference is readable with a stopwatch.
+   */
+  private async holdCooldown(phone: string, purpose: OtpPurpose, now: Date): Promise<void> {
+    const newest = await this.prisma.otpCode.findFirst({
+      where: { phone, purpose },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+    const wait = cooldownRemainingSec(newest, now);
+    if (wait > 0) throw new TooManyRequests(wait);
+
+    /*
+     * A real row, with a code nobody will ever be told.
+     *
+     * The alternative — no row — leaves the cooldown with nothing to measure,
+     * so the *second* request for an unregistered number returns immediately
+     * while a registered one is still waiting out its minute. The row is what
+     * makes the two indistinguishable, and its code is unusable because it was
+     * generated and discarded.
+     */
+    await this.prisma.otpCode.create({
+      data: { phone, purpose, codeHash: hashCode(generateCode()), expiresAt: expiryFrom(now) },
+    });
   }
 
   /**
@@ -554,39 +804,7 @@ export class AuthService {
       });
     }
 
-    const stored = await this.prisma.otpCode.findFirst({
-      where: { phone },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!stored) {
-      throw new UnauthorizedException({
-        error: 'CODE_REJECTED',
-        message: 'That code is not right, or it has expired. Ask for a new one.',
-      });
-    }
-
-    const verdict = checkCode(supplied, stored, now);
-    if (!verdict.ok) {
-      // Counted before the refusal is returned, so a guess costs an attempt
-      // even when the answer is "wrong" — otherwise the cap counts nothing.
-      if (verdict.reason === 'wrong') {
-        await this.prisma.otpCode.update({
-          where: { id: stored.id },
-          data: { attempts: { increment: 1 } },
-        });
-      }
-      throw new UnauthorizedException({
-        error: 'CODE_REJECTED',
-        message: 'That code is not right, or it has expired. Ask for a new one.',
-      });
-    }
-
-    // Spent first. See the note above: a code that outlives a rejected password
-    // is a code somebody can hold open while they try passwords.
-    await this.prisma.otpCode.update({
-      where: { id: stored.id },
-      data: { consumedAt: now },
-    });
+    await this.spendCode(phone, 'REGISTER', supplied, now);
 
     const check = checkPassword(password);
     if (!check.ok) {

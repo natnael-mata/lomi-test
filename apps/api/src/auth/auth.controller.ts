@@ -64,6 +64,52 @@ export class AuthController {
   }
 
   /**
+   * Sends a code to reset a forgotten password (T-266).
+   *
+   * **The same limits as sign-up, on purpose.** Reset is a second equal front
+   * door onto a live account, and a generous reset beside a strict sign-in is
+   * the same as having no sign-in. An OTP that can set a password can take over
+   * an account.
+   */
+  @Post('password/reset/start')
+  resetStart(
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown },
+  ): Promise<{ sent: true; expiresInSec: number }> {
+    this.rateLimit.consume('otpSendAddress', null, req.ip ?? null);
+    const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    if (phone) this.rateLimit.consume('otpSend', phone, null);
+    return this.auth.startPasswordReset(body?.phone);
+  }
+
+  /**
+   * Proves the number, sets the new password, and signs the student in.
+   *
+   * Signing them in is the point: they have just proved they own the handset
+   * and chosen a password with it, so asking them to type it again on the next
+   * screen proves nothing and is one more place to get stuck.
+   */
+  @Post('password/reset/verify')
+  async resetVerify(
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown; code?: unknown; password?: unknown; device?: unknown },
+  ): Promise<SignInResult> {
+    this.rateLimit.consume('otpVerifyAddress', null, req.ip ?? null);
+    const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    if (phone) this.rateLimit.consume('otpVerify', phone, null);
+
+    const result = await this.auth.completePasswordReset(
+      body?.phone,
+      body?.code,
+      body?.password,
+      typeof body?.device === 'string' ? body.device : '',
+    );
+    res.setHeader('Set-Cookie', sessionCookie(result.token, cookieOptionsFor(process.env)));
+    return result;
+  }
+
+  /**
    * Smoke-test sign-in (deploy testing only).
    *
    * **An authentication bypass, and it is spelled that way on purpose.** It
