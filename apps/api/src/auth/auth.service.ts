@@ -13,6 +13,7 @@ import { generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
 import { bandFor } from '../engagement/bands';
 import { normaliseEthiopianMobile } from '../common/phone';
+import { planFitsTrack } from '../payments/plan';
 import { checkPassword, hashPassword, verifyPassword } from './password';
 import {
   CODE_TTL_SEC,
@@ -797,6 +798,41 @@ export class AuthService {
     };
   }
 
+  /**
+   * Why this student may not move to `fieldId`, or null if they may.
+   *
+   * Inline rather than through `SubscriptionsService`: the rule is one pure
+   * function and two queries, and reaching for the payments service from the
+   * auth service is how a dependency cycle starts. `plansForTrack` is the same
+   * predicate the picker and the purchase gate are built on, so the three
+   * cannot drift.
+   */
+  private async crossesPricingLine(userId: string, fieldId: string): Promise<string | null> {
+    const live = await this.prisma.subscription.findFirst({
+      where: { userId, status: 'ACTIVE', expiresAt: { gt: new Date() } },
+      include: { plan: { select: { code: true } } },
+    });
+    if (!live) return null;
+
+    const target = await this.prisma.field.findUnique({
+      where: { id: fieldId },
+      select: { maxGrade: true },
+    });
+    if (!target) return null;
+
+    if (planFitsTrack(live.plan.code, target.maxGrade)) return null;
+
+    /*
+     * Named as a price difference, not as a refusal to let somebody study what
+     * they like. This is the one case where "message us" is the honest answer:
+     * the fix is a payment, and a student cannot make it themselves without
+     * first giving up access they have already paid for.
+     */
+    return live.plan.code === 'SCHOOL_YEAR'
+      ? 'Your access was bought on a school plan. Exit-exam programmes are priced differently — message us and we will move you across.'
+      : 'Your access was bought on an exit-exam plan. Message us and we will move you across.';
+  }
+
   async chooseField(
     userId: string,
     fieldId: string,
@@ -810,6 +846,24 @@ export class AuthService {
       // One message for both: which unpublished fields exist is not a signed-in
       // student's business.
       throw new NotFoundException('No such programme.');
+    }
+
+    /*
+     * A move across the pricing line, while holding access bought on the other
+     * side of it (T-268).
+     *
+     * Grade 12 and below pay Br 300 a year; an exit-exam candidate pays Br 800
+     * for the same twelve months. Subscriptions are account-wide, so without
+     * this the cheaper plan buys the dearer product in two moves — claim
+     * `SCHOOL_YEAR` on a Grade 6 account, then come here. It was verified
+     * against the running server before this existed.
+     *
+     * Only blocks the crossing. Grade 6 to Grade 8 is the same plan and stays
+     * open, and a student with no live subscription may go anywhere.
+     */
+    const blocked = await this.crossesPricingLine(userId, fieldId);
+    if (blocked) {
+      throw new ConflictException({ error: 'PLAN_COVERS_ANOTHER_TRACK', message: blocked });
     }
 
     /*

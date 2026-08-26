@@ -18,8 +18,9 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../app.module';
-import { signInByPhone } from '../auth/staff-testkit.test-helper';
+import { signInByPhone, TEST_JWT_SECRET } from '../auth/staff-testkit.test-helper';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthService } from './auth.service';
 import { FieldRequiredGuard } from './field-required.guard';
 import { SessionGuard } from './session.guard';
 
@@ -241,3 +242,154 @@ describe('choosing a programme', () => {
     await request(app.getHttpServer()).get('/__test/gated').expect(401);
   });
 });
+
+/*
+ * A programme switch that would change what the student paid (T-268).
+ *
+ * Subscriptions are account-wide and the price is not. Without this, Br 300 of
+ * school access became Br 300 of exit-exam access by choosing a different
+ * programme — no exploit needed, just the ordinary screen.
+ */
+describe('switching programme across the pricing line (T-268)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+  let userId = '';
+  let schoolField = '';
+  let exitField = '';
+  const SFX2 = 'e2e-field-cross';
+
+  beforeAll(async () => {
+    process.env.JWT_SECRET = TEST_JWT_SECRET;
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+    prisma = app.get(PrismaService);
+
+    const school = await prisma.field.create({
+      data: {
+        name: `Grade 6 ${SFX2}`,
+        slug: `grade-6-${SFX2}`,
+        isPublished: true,
+        minGrade: 4,
+        maxGrade: 6,
+      },
+      select: { id: true },
+    });
+    const grade8 = await prisma.field.create({
+      data: {
+        name: `Grade 8 ${SFX2}`,
+        slug: `grade-8-${SFX2}`,
+        isPublished: true,
+        minGrade: 7,
+        maxGrade: 8,
+      },
+      select: { id: true },
+    });
+    const exit = await prisma.field.create({
+      data: { name: `Exit ${SFX2}`, slug: `exit-${SFX2}`, isPublished: true },
+      select: { id: true },
+    });
+    schoolField = school.id;
+    exitField = exit.id;
+
+    /*
+     * One published question per field.
+     *
+     * `chooseField` refuses an empty programme before it looks at anything
+     * else — "this one is being written" — so without content the pricing guard
+     * below is never reached and these tests would pass on the wrong refusal.
+     */
+    for (const fieldId of [schoolField, grade8.id, exitField]) {
+      const course = await prisma.course.create({
+        data: { fieldId, name: 'Subject', slug: `c-${fieldId}` },
+        select: { id: true },
+      });
+      const topic = await prisma.topic.create({
+        data: { courseId: course.id, name: 'Topic', slug: `t-${fieldId}` },
+        select: { id: true },
+      });
+      await prisma.question.create({
+        data: {
+          stableId: `${SFX2}-${fieldId}`,
+          topicId: topic.id,
+          fieldId,
+          qType: 'CONCEPT',
+          stem: 'Q',
+          conceptLine: 'C',
+          explanation: 'E',
+          timeLimitSec: 60,
+          status: 'PUBLISHED',
+          authorId: 'field-cross-e2e',
+        },
+      });
+    }
+
+    const user = await prisma.user.create({
+      data: { displayName: `Switcher ${SFX2}`, fieldId: schoolField },
+      select: { id: true },
+    });
+    userId = user.id;
+
+    // Live school access, the state that makes the move a price change.
+    const plan = await prisma.plan.findUniqueOrThrow({ where: { code: 'SCHOOL_YEAR' } });
+    await prisma.subscription.create({
+      data: {
+        userId,
+        planId: plan.id,
+        // What they actually paid, which is the whole point of the guard below.
+        paidEtb: plan.priceEtb,
+        status: 'ACTIVE',
+        activatedAt: new Date(),
+        expiresAt: new Date(Date.now() + 300 * 86_400_000),
+      },
+    });
+
+  });
+
+  afterAll(async () => {
+    await prisma.subscription.deleteMany({ where: { userId } });
+    await prisma.user.deleteMany({ where: { id: userId } });
+    await prisma.question.deleteMany({ where: { stableId: { contains: SFX2 } } });
+    await prisma.topic.deleteMany({ where: { course: { field: { name: { contains: SFX2 } } } } });
+    await prisma.course.deleteMany({ where: { field: { name: { contains: SFX2 } } } });
+    await prisma.field.deleteMany({ where: { name: { contains: SFX2 } } });
+    await app.close();
+  });
+
+  it('refuses a move onto an exit track while school access is live', async () => {
+    const service = app.get(AuthService);
+    await expect(service.chooseField(userId, exitField)).rejects.toMatchObject({
+      response: { error: 'PLAN_COVERS_ANOTHER_TRACK' },
+    });
+  });
+
+  it('names the price rather than refusing to explain', async () => {
+    const service = app.get(AuthService);
+    await service.chooseField(userId, exitField).catch((e: unknown) => {
+      const body = (e as { response?: { message?: string } }).response;
+      // "message us" is the honest answer here: the fix is a payment the student
+      // cannot make without first giving up access they hold.
+      expect(body?.message).toMatch(/priced differently|message us/i);
+    });
+  });
+
+  it('allows a move within the same tier', async () => {
+    const service = app.get(AuthService);
+    const grade8 = await prisma.field.findFirstOrThrow({
+      where: { name: `Grade 8 ${SFX2}` },
+      select: { id: true },
+    });
+    // Grade 6 to Grade 8 is the same plan. Blocking it would be punishing a
+    // student for moving up a year.
+    const moved = await service.chooseField(userId, grade8.id);
+    expect(moved.fieldId).toBe(grade8.id);
+  });
+
+  it('allows anything once no subscription is live', async () => {
+    await prisma.subscription.updateMany({ where: { userId }, data: { status: 'EXPIRED' } });
+    const service = app.get(AuthService);
+    const moved = await service.chooseField(userId, exitField);
+    expect(moved.fieldId).toBe(exitField);
+  });
+});
+

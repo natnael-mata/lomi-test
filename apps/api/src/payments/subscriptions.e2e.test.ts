@@ -189,6 +189,92 @@ describe('plans and paid access (Phase 8)', () => {
     });
   });
 
+  /*
+   * Br 300 must not buy the Br 800 product (T-268).
+   *
+   * A subscription is account-wide and the price is not: Grade 12 and below pay
+   * Br 300 a year, an exit-exam candidate Br 800 for the same twelve months.
+   * Nothing tied the two together, so the cheaper plan bought the dearer
+   * product in two moves — claim `SCHOOL_YEAR` on a Grade 6 account, then
+   * switch programme. It was verified against the running server before this
+   * existed, in both orderings.
+   */
+  describe('crossing the pricing line (T-268)', () => {
+    let schoolId = '';
+    let schoolField = '';
+    let exitField = '';
+
+    beforeAll(async () => {
+      const school = await prisma.field.create({
+        data: {
+          name: `Grade 6 cross ${SFX}`,
+          slug: `grade-6-cross-${SFX}`,
+          isPublished: true,
+          minGrade: 4,
+          maxGrade: 6,
+        },
+        select: { id: true },
+      });
+      const exit = await prisma.field.create({
+        data: { name: `Exit cross ${SFX}`, slug: `exit-cross-${SFX}`, isPublished: true },
+        select: { id: true },
+      });
+      schoolField = school.id;
+      exitField = exit.id;
+
+      const user = await prisma.user.create({
+        data: { displayName: `Crosser ${SFX}`, fieldId: schoolField },
+        select: { id: true },
+      });
+      schoolId = user.id;
+    });
+
+    afterAll(async () => {
+      await prisma.payment.deleteMany({ where: { userId: schoolId } });
+      await prisma.subscription.deleteMany({ where: { userId: schoolId } });
+      await prisma.user.deleteMany({ where: { id: schoolId } });
+      await prisma.field.deleteMany({ where: { id: { in: [schoolField, exitField] } } });
+    });
+
+    /*
+     * THE test for the second ordering: switch first, approve second. The
+     * purchase gate cannot see this — a bank transfer sits in the queue for a
+     * day and the student moves in the meantime.
+     */
+    it('will not activate a school plan for a student now on an exit track', async () => {
+      const claim = await subscriptions.submitManualPayment(
+        schoolId,
+        'SCHOOL_YEAR',
+        `FT-CROSS-A-${SFX}`,
+      );
+      await prisma.user.update({ where: { id: schoolId }, data: { fieldId: exitField } });
+
+      await expect(subscriptions.activate(claim.subscriptionId)).rejects.toMatchObject({
+        response: { error: 'PLAN_NOT_OFFERED' },
+      });
+
+      // Refused, not rejected: the money is real and the student may have moved
+      // for an honest reason. It stays a thing a person looks at.
+      const stillPending = await prisma.subscription.findUniqueOrThrow({
+        where: { id: claim.subscriptionId },
+      });
+      expect(stillPending.status).toBe('PENDING');
+      expect(stillPending.expiresAt).toBeNull();
+    });
+
+    it('activates normally when the student has not moved', async () => {
+      await prisma.user.update({ where: { id: schoolId }, data: { fieldId: schoolField } });
+      const claim = await subscriptions.submitManualPayment(
+        schoolId,
+        'SCHOOL_YEAR',
+        `FT-CROSS-B-${SFX}`,
+      );
+      const activated = await subscriptions.activate(claim.subscriptionId);
+      expect(activated.activated).toBe(true);
+      expect(activated.expiresAt).not.toBeNull();
+    });
+  });
+
   describe('the launch plans (T-140)', () => {
     /**
      * T-140's stated test, plus the school year T-268 added.

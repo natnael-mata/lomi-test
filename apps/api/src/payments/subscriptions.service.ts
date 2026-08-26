@@ -184,7 +184,7 @@ export class SubscriptionsService implements SubscriptionAccess {
   ): Promise<{ activated: boolean; expiresAt: Date | null }> {
     const subscription = await this.prisma.subscription.findUniqueOrThrow({
       where: { id: subscriptionId },
-      include: { plan: { select: { months: true } } },
+      include: { plan: { select: { months: true, code: true } } },
     });
 
     if (subscription.status !== 'PENDING') {
@@ -192,6 +192,22 @@ export class SubscriptionsService implements SubscriptionAccess {
       // caller is a retry, and the honest answer is the existing expiry.
       return { activated: false, expiresAt: subscription.expiresAt };
     }
+
+    /*
+     * The plan must still fit the student's track (T-268).
+     *
+     * The purchase gate checks at submit; approval happens later, and a bank
+     * transfer can sit in the queue for a day. Without this, claiming
+     * `SCHOOL_YEAR` on a Grade 6 account and switching programme before the
+     * operator gets to it buys twelve months of an exit-exam track for Br 300.
+     * The switch itself is blocked once access is live, so this closes the
+     * other ordering — switch first, approve second.
+     *
+     * A refusal rather than a silent grant, and deliberately not a rejection:
+     * the money is real and the student may have moved for an honest reason.
+     * Same shape as an underpayment — a thing a person looks at.
+     */
+    await this.assertPlanAllowed(subscription.userId, subscription.plan.code);
 
     /*
      * Renewal counts from the existing expiry, not from today (T-146a).

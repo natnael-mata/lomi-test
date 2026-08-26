@@ -97,6 +97,25 @@ export interface PlanOffer extends PlanShape {
  * not do it.
  */
 /**
+ * Whether a plan belongs to a track at all (T-268).
+ *
+ * **Separate from `plansForTrack`, and the difference matters.** That function
+ * answers "what should this student be shown", and it will hand back the whole
+ * list rather than an empty checkout — a deliberate fallback so a withdrawn
+ * plan never leaves somebody staring at a page with no way to pay.
+ *
+ * That fallback is wrong for a membership question. Asked "does this
+ * SCHOOL_YEAR plan fit an exit-exam track" with a one-element list, it filters
+ * to nothing, falls back, and answers yes. Which is how a guard written on top
+ * of it silently permitted the thing it was guarding against — caught by its
+ * own test, and the reason this predicate exists.
+ */
+export function planFitsTrack(code: string, maxGrade: number | null): boolean {
+  const school = maxGrade !== null;
+  return school ? code === 'SCHOOL_YEAR' : code !== 'SCHOOL_YEAR';
+}
+
+/**
  * The plans a student on this track may buy (T-268).
  *
  * **Grade 12 and below get one annual price and no choice to make.** The
@@ -119,10 +138,7 @@ export function plansForTrack<T extends { code: string }>(
   plans: readonly T[],
   maxGrade: number | null,
 ): readonly T[] {
-  const school = maxGrade !== null;
-  const wanted = plans.filter((plan) =>
-    school ? plan.code === 'SCHOOL_YEAR' : plan.code !== 'SCHOOL_YEAR',
-  );
+  const wanted = plans.filter((plan) => planFitsTrack(plan.code, maxGrade));
   /*
    * Never an empty list.
    *
