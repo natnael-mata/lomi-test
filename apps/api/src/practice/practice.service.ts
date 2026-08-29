@@ -345,40 +345,70 @@ export class PracticeService {
     }
 
     const subscribed = await this.subscriptions.hasActiveSubscription(userId, user.fieldId);
-
-    // Distinct questions, not attempts — re-answering one to re-read its
-    // explanation has not consumed a new question.
-    const attemptedIds = await this.prisma.attempt.findMany({
-      where: { userId, fieldId: user.fieldId },
-      select: { questionId: true },
-      distinct: ['questionId'],
-    });
-    const alreadyAttempted = new Set(attemptedIds.map((a) => a.questionId));
-    const isNewQuestion = !alreadyAttempted.has(question.id);
-
-    if (!subscribed && isNewQuestion && freeRemaining(alreadyAttempted.size) === 0) {
-      // Refused BEFORE the attempt is written and before any answer content is
-      // read: a 402 that still returned the explanation would be a paywall you
-      // can walk through.
-      throw new FreeLimitReached(0);
-    }
-
     const isCorrect = chosen.isCorrect;
+    // Captured before the closure: a narrowing established by an earlier guard
+    // does not survive into a callback, and `fieldId` is non-null by here.
+    const fieldId = user.fieldId;
 
-    const attempt = await this.prisma.attempt.create({
-      data: {
-        userId,
-        questionId: question.id,
-        fieldId: question.fieldId,
-        topicId: question.topicId,
-        chosenLabel,
-        // Resolved now, stored, never recomputed: if the question is corrected
-        // later, this student's result stays what it was when they sat it.
-        isCorrect,
-        timeTakenSec,
+    /*
+     * Counting and writing are ONE step, serialised per student (T-269).
+     *
+     * **The paywall was a read, a decision, and then a write**, so six requests
+     * fired at once all read "eight used" and all passed. Measured against the
+     * running server: a student with two free questions left answered six, each
+     * response cheerfully reporting `freeRemaining: 1`, and the account finished
+     * on fourteen of ten. Nothing exotic is needed to do it — a flaky connection
+     * that retries, or a student tapping fast on a slow network, gets there by
+     * accident.
+     *
+     * The lock is on the student's own row, so two people practising never wait
+     * on each other and one person's answers queue behind their own, which is
+     * what they do anyway. A `SERIALIZABLE` transaction would also work and
+     * would abort under contention; this makes the second request wait a few
+     * milliseconds and then see the truth.
+     *
+     * The whole check lives inside, including the re-read of what has been
+     * attempted — a count taken before the lock is a count that can be stale by
+     * the time the lock is held, which is the bug wearing a hat.
+     */
+    const { attempt, alreadyAttempted, isNewQuestion } = await this.prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+
+        // Distinct questions, not attempts — re-answering one to re-read its
+        // explanation has not consumed a new question.
+        const attemptedIds = await tx.attempt.findMany({
+          where: { userId, fieldId },
+          select: { questionId: true },
+          distinct: ['questionId'],
+        });
+        const seen = new Set(attemptedIds.map((a) => a.questionId));
+
+        if (!subscribed && !seen.has(question.id) && freeRemaining(seen.size) === 0) {
+          // Refused BEFORE the attempt is written and before any answer content
+          // is read: a 402 that still returned the explanation would be a paywall
+          // you can walk through.
+          throw new FreeLimitReached(0);
+        }
+
+        const written = await tx.attempt.create({
+          data: {
+            userId,
+            questionId: question.id,
+            fieldId: question.fieldId,
+            topicId: question.topicId,
+            chosenLabel,
+            // Resolved now, stored, never recomputed: if the question is
+            // corrected later, this student's result stays what it was when they
+            // sat it.
+            isCorrect,
+            timeTakenSec,
+          },
+          select: { id: true },
+        });
+        return { attempt: written, alreadyAttempted: seen, isNewQuestion: !seen.has(question.id) };
       },
-      select: { id: true },
-    });
+    );
 
     /*
      * The points, and the day (T-190, T-191).

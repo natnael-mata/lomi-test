@@ -203,6 +203,82 @@ describe('POST /attempts', () => {
     expect(body.pacing).toBe('unknown');
   });
 
+  /*
+   * The free limit under concurrency (T-269).
+   *
+   * **The paywall was a read, a decision, and then a write.** Six requests
+   * fired at once all read the same "eight used" and all passed. Measured
+   * against the running server before the fix: a student with two free
+   * questions left answered six, every response reporting `freeRemaining: 1`,
+   * and the account finished on fourteen of ten.
+   *
+   * Nothing exotic is needed to reach it. A flaky connection that retries, or a
+   * student tapping fast on a slow network, gets there by accident — which is
+   * why this is a paywall bug rather than a curiosity.
+   *
+   * Deliberately fired with `Promise.all` rather than in sequence: sequential
+   * requests pass on the broken code too, so a test that awaited each one would
+   * have proved nothing and looked thorough doing it.
+   */
+  describe('the free limit holds when requests arrive together', () => {
+    const TG_RACE = 561000009;
+    let racer: { token: string; userId: string };
+
+    beforeAll(async () => {
+      // The suite's own helper, which also puts them on the right field.
+      racer = await signIn(TG_RACE);
+
+      // Two left, which is the interesting number: enough that some must
+      // succeed, few enough that most must fail.
+      for (let i = 0; i < FREE_ATTEMPTS_PER_FIELD - 2; i++) {
+        await prisma.attempt.create({
+          data: {
+            userId: racer.userId,
+            questionId: questionIds[i]!,
+            fieldId,
+            topicId,
+            chosenLabel: 'A',
+            isCorrect: true,
+            timeTakenSec: 20,
+          },
+        });
+      }
+    });
+
+    afterAll(async () => {
+      await prisma.attempt.deleteMany({ where: { userId: racer.userId } });
+      await prisma.pointEntry.deleteMany({ where: { userId: racer.userId } });
+    });
+
+    it('lets exactly the remaining two through, not all six', async () => {
+      const unseen = questionIds.slice(FREE_ATTEMPTS_PER_FIELD - 2, FREE_ATTEMPTS_PER_FIELD + 4);
+      expect(unseen.length).toBeGreaterThanOrEqual(6);
+
+      const responses = await Promise.all(
+        unseen.map((questionId) =>
+          request(app.getHttpServer())
+            .post('/attempts')
+            .set('Authorization', `Bearer ${racer.token}`)
+            .send({ questionId, chosenLabel: 'A', timeTakenSec: 20 }),
+        ),
+      );
+
+      const accepted = responses.filter((r) => r.status === 201);
+      const refused = responses.filter((r) => r.status === 402);
+      expect(accepted).toHaveLength(2);
+      expect(refused).toHaveLength(unseen.length - 2);
+
+      // And the ledger agrees, which is the claim that actually matters — a
+      // count that says ten while the table holds fourteen is the bug.
+      const distinct = await prisma.attempt.findMany({
+        where: { userId: racer.userId, fieldId },
+        select: { questionId: true },
+        distinct: ['questionId'],
+      });
+      expect(distinct).toHaveLength(FREE_ATTEMPTS_PER_FIELD);
+    });
+  });
+
   describe('rejections', () => {
     it('422s an answer outside A–D, writing nothing', async () => {
       const before = await prisma.attempt.count({ where: { userId } });
