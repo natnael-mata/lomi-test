@@ -20,6 +20,7 @@ import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
 import { AnswerView } from '../../components/AnswerView';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { ExamTimer } from '../../components/ExamTimer';
 import { Chip } from '../../components/Chip';
 import { CodeBlock } from '../../components/CodeBlock';
 import { Icon } from '../../components/icons';
@@ -80,6 +81,16 @@ export function PracticeScreen() {
    * measurement anyone is scored on.
    */
   const shownAt = useRef<number>(Date.now());
+  /*
+   * Seconds on the current question, ticking (T-270).
+   *
+   * The elapsed time was already measured and sent — it is what produces the
+   * "within time" or "over time" note after an answer — but the student could
+   * not see it while it mattered. A pacing verdict that only ever arrives
+   * afterwards teaches nothing: the exam is timed, and knowing you are running
+   * long is the whole point of practising against a clock.
+   */
+  const [elapsed, setElapsed] = useState(0);
 
   /**
    * The paywall needs prices, and the prices come from the server.
@@ -100,6 +111,7 @@ export function PracticeScreen() {
     try {
       const question = await api.nextQuestion();
       shownAt.current = Date.now();
+      setElapsed(0);
       setPhase({ kind: 'asking', question });
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
@@ -139,6 +151,22 @@ export function PracticeScreen() {
       });
     }
   }, [c.practice.didNotLoad, paywall]);
+
+  /*
+   * Ticks only while a question is open.
+   *
+   * Stopped once an answer is in: the number beside the explanation is what the
+   * attempt actually took, and a clock still running behind it would disagree
+   * with the server's own figure within a second.
+   */
+  useEffect(() => {
+    if (phase.kind !== 'asking') return;
+    const id = setInterval(
+      () => setElapsed(Math.round((Date.now() - shownAt.current) / 1000)),
+      1000,
+    );
+    return () => clearInterval(id);
+  }, [phase.kind]);
 
   useEffect(() => {
     void load();
@@ -269,6 +297,22 @@ export function PracticeScreen() {
             is 30px the question stem does not get. */}
         <h1 className="text-title hidden sm:block">{c.practice.title}</h1>
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+          {/*
+            The clock for this question (T-270).
+            
+            Counts *down* against the question's own budget while there is one
+            left, and then keeps going as an overrun rather than stopping at
+            zero or taking the question away. The exam is timed and practising
+            against a clock is the point — but nothing here is scored on it, and
+            snatching a question from somebody who is thinking would punish the
+            student this product is most careful with.
+          */}
+          {phase.kind === 'asking' && (
+            <ExamTimer
+              remainingSec={Math.max(0, question.timeLimitSec - elapsed)}
+              durationSec={question.timeLimitSec}
+            />
+          )}
           <Chip className="uppercase">{question.topic}</Chip>
           {freeLeft !== null && (
             <Chip tone={freeLeft <= 2 ? 'pending' : 'neutral'} className="uppercase">
@@ -348,7 +392,17 @@ export function PracticeScreen() {
             and padding let its own background cover the gap the column would
             otherwise show through underneath it.
           */}
-          <div className="bg-bg sticky bottom-0 -mx-1 mt-auto px-1 pt-2 pb-1">
+          {/*
+            `sticky`, and NOT `mt-auto`.
+
+            The two together were the worst of both: `mt-auto` pushed the button
+            to the bottom of a `flex-1` column, so on a desktop the options ended
+            and then eight hundred pixels of cream went by before anything else
+            happened. Sticky alone puts it directly under the options where the
+            eye already is, and still pins it to the foot once a long stem makes
+            the page scroll.
+          */}
+          <div className="bg-bg sticky bottom-0 -mx-1 px-1 pt-2 pb-1">
             <Button
               className="w-full"
               disabled={chosen === null || submitting}
