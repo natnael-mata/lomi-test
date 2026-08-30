@@ -59,6 +59,25 @@ export interface AnswerViewProps {
    */
   withholdConcept?: boolean;
   /**
+   * Hold back the per-option notes, for the same reason (T-268).
+   *
+   * **The reason check's distractors ARE these notes.** `buildReasonCheck` takes
+   * the question's own `whyWrong` texts as the wrong options, so a student
+   * choosing between four sentences could read three of them a few centimetres
+   * above, each one labelled as the explanation for a wrong answer. The check
+   * asks which sentence is the right reason; the screen was already saying which
+   * ones are not.
+   *
+   * `withholdConcept` had exactly this bug for the *correct* option and was
+   * fixed; the distractors are the other half of it, and QA saw the duplication
+   * without seeing why it mattered.
+   *
+   * Held rather than removed. They arrive the moment the check is answered or
+   * skipped — a student who does not know they are coming assumes this question
+   * simply has none.
+   */
+  withholdWhyWrongs?: boolean;
+  /**
    * Print the question itself above the answer (T-268).
    *
    * **Off in practice, on in a review, and that difference is why it was
@@ -118,6 +137,7 @@ export function AnswerView({
   pacing,
   timeTakenSec,
   withholdConcept = false,
+  withholdWhyWrongs = false,
   showQuestion = false,
 }: AnswerViewProps) {
   const timed = pacing !== undefined && timeTakenSec !== undefined;
@@ -259,7 +279,16 @@ export function AnswerView({
       </section>
 
       {/* 4 — why-wrongs, the student's own answer first */}
-      {whyWrongs.length > 0 && (
+      {withholdWhyWrongs && whyWrongs.length > 0 ? (
+        <section
+          data-section="why-wrongs"
+          data-withheld=""
+          className="border-border text-ink-2 rounded-card border border-dashed p-4"
+        >
+          <p className="text-caption">{copy().practice.whyWrongsAfterReason}</p>
+        </section>
+      ) : null}
+      {!withholdWhyWrongs && whyWrongs.length > 0 && (
         <section data-section="why-wrongs" className="flex flex-col gap-2">
           {whyWrongs.map((option) => {
             const mine = isOwnAnswer(option, answer.chosenLabel);

@@ -17,6 +17,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
 import { Input } from '../../../components/Input';
+import { Textarea } from '../../../components/Textarea';
 import { ApiError, api, type ThreadSummary, type ThreadView } from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
 import { REPORT_REASONS, reasonLabel } from '../../../lib/report-reasons';
@@ -128,6 +129,19 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
     [fail],
   );
 
+  /** The same, for the opening question. Different route, same promise. */
+  const reportQuestion = useCallback(
+    async (threadId: string, reason: string): Promise<void> => {
+      try {
+        await api.reportThread(threadId, reason);
+        setReported(threadId);
+      } catch (error) {
+        fail(error);
+      }
+    },
+    [fail],
+  );
+
   if (phase.kind === 'loading') {
     return <p className="text-body text-ink-2">{c.community.working}</p>;
   }
@@ -147,6 +161,35 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
           <h1 className="text-title">{thread.title}</h1>
           <p className="text-body">{thread.body}</p>
           <span className="text-caption text-ink-2">{thread.authorName}</span>
+
+          {/*
+            Reporting the question itself (T-268).
+
+            Report was on replies only, so the most visible thing in a topic —
+            the question every answer hangs off — could not be raised with
+            anybody. Not offered on your own question: reporting yourself is not
+            a thing a person wants to do, and the moderator's queue is not the
+            place to withdraw something.
+          */}
+          {thread.isYours ? null : reported === thread.id ? (
+            <p className="text-caption text-ink-2">{c.community.reported}</p>
+          ) : (
+            <details>
+              <summary className="text-caption text-ink-2">{c.community.reportQuestion}</summary>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {REPORT_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => void reportQuestion(thread.id, reason)}
+                  >
+                    {reasonLabel(reason, c)}
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
         </Card>
 
         <ul className="flex flex-col gap-2">
@@ -199,7 +242,8 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
           ))}
         </ul>
 
-        <Input
+        {/* An answer is prose too — the same reasoning as the question body. */}
+        <Textarea
           label={c.community.reply}
           error={fieldError ?? undefined}
           value={replyBody}
@@ -220,7 +264,10 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-title">{c.community.title}</h1>
+      {/* The topic, by name. This was the constant "Ask about this topic", so
+          somebody who had opened one of four rooms could not tell which. The
+          list is empty before the first thread exists, hence the fallback. */}
+      <h1 className="text-title">{phase.threads[0]?.topicName || c.community.title}</h1>
 
       {phase.threads.length === 0 ? (
         <p className="text-body text-ink-2">{c.community.empty}</p>
@@ -249,7 +296,10 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <Input
+        {/* A textarea, not a one-line input. Somebody explaining what confused
+            them writes sentences, and a single line scrolls the start of them
+            out of sight while they are still typing. */}
+        <Textarea
           label={c.community.askBody}
           error={fieldError ?? undefined}
           value={body}

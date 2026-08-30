@@ -113,6 +113,7 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'StandingView', api: 'StandingView', file: 'engagement/engagement.service.ts' },
   { web: 'FieldOption', api: 'FieldOption', file: 'auth/auth.service.ts' },
   { web: 'DeviceEntry', api: 'DeviceEntry', file: 'auth/auth.service.ts' },
+  { web: 'DeviceList', api: 'DeviceList', file: 'auth/auth.service.ts' },
   { web: 'ExamPreview', api: 'ExamPreview', file: 'exams/exams.service.ts' },
   { web: 'Identity', api: 'Identity', file: 'auth/auth.service.ts' },
   { web: 'ReasonCheck', api: 'ReasonCheck', file: 'practice/reason-check.ts' },

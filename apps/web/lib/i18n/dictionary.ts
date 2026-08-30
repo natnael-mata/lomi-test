@@ -141,7 +141,10 @@ export const en = {
   account: {
     title: 'This account',
     devicesTitle: 'Where you are signed in',
-    devicesIntro: 'Two devices at a time. Signing in on a third ends the oldest.',
+    // The account's own cap, from the server. School tracks get four (T-260),
+    // so a fixed "two" here contradicted the four rows printed under it.
+    devicesIntro: (max: number) =>
+      `${max} devices at a time. Signing in on one more ends the oldest.`,
     thisDevice: 'This device',
     unknownDevice: 'Unknown device',
     signedInAt: (when: string) => `Signed in ${when}`,
@@ -387,6 +390,11 @@ export const en = {
     // being asked. Says the explanation is coming, so its absence does not read
     // as this question simply not having one.
     conceptAfterReason: 'The concept behind this answer appears once you have named the reason.',
+    // The notes on the other options are the check's own wrong answers. Saying
+    // they are coming, rather than leaving a gap that reads as "this question
+    // has none".
+    whyWrongsAfterReason:
+      'Why the other options were wrong appears once you have named the reason.',
     reasonTitle: 'Why is that the right answer?',
     reasonWhy: 'Getting this too is what marks the question as done.',
     reasonSkip: 'Skip for now',
@@ -924,6 +932,9 @@ export const en = {
     hidden: 'Hidden by a moderator. Only you can see this.',
 
     report: 'Report',
+    // Named separately from `report` so the question and the replies under it
+    // do not present four identical "Report" links with different targets.
+    reportQuestion: 'Report this question',
     reported: 'Reported. Somebody will look at it.',
     reportWhy: 'Why are you reporting this?',
     reportWrong: 'The answer is wrong',
@@ -1013,6 +1024,16 @@ export const en = {
       hiddenNote: (note: string) => `Note when hidden: ${note}`,
       hide: 'Hide this post',
       hideWhy: 'Students stop seeing it. You can put it back.',
+      // Which of the two is being ruled on. Hiding a question is a bigger act
+      // than hiding a reply and the screen has to say which one this is.
+      isQuestion: 'Question',
+      isReply: 'Reply',
+      hideQuestion: 'Hide this question',
+      hideQuestionWhy:
+        'The question and every answer under it stop being seen. Nothing is deleted, and it ' +
+        'all comes back together.',
+      takesReplies: (count: number) =>
+        count === 1 ? '1 answer under it' : `${count} answers under it`,
       restore: 'Put it back',
       restoreWhy: 'Students see it again.',
       hidden: 'Hidden, and the report is settled.',

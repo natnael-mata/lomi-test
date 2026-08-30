@@ -1318,7 +1318,8 @@ model Thread {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  posts Post[]
+  posts   Post[]
+  reports Report[]
 
   @@index([topicId, createdAt])
   @@index([fieldId, createdAt])
@@ -1368,8 +1369,21 @@ model Post {
 model Report {
   id String @id @default(cuid())
 
-  postId String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  /// The reply being reported, or null when it is the opening question.
+  ///
+  /// Exactly one of `postId` and `threadId` is set — a CHECK constraint in
+  /// `20260830150000_report_a_thread` enforces it, because a row naming both or
+  /// neither leaves the queue guessing what it is ruling on.
+  postId String?
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  /// The opening question being reported, or null when it is a reply.
+  ///
+  /// Reports could only ever name a `Post`, so the most visible thing in a topic
+  /// — the question every reply hangs off — was the one thing nobody could
+  /// report.
+  threadId String?
+  thread   Thread? @relation(fields: [threadId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   reporterId String
 
@@ -1386,5 +1400,8 @@ model Report {
   /// One report per person per post. A student who taps twice has not found two
   /// problems, and a queue that counts them twice misleads whoever works it.
   @@unique([postId, reporterId])
+  /// The same rule for an opening question.
+  @@unique([threadId, reporterId])
   @@index([reviewedAt, createdAt])
+  @@index([threadId])
 }

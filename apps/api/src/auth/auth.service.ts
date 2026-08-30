@@ -64,6 +64,19 @@ export interface DeviceEntry {
   isCurrent: boolean;
 }
 
+/**
+ * The device list, with the cap that applies to this account (T-268).
+ *
+ * The number is sent rather than written into the client, because it is not one
+ * number: school tracks get four (T-260) and everybody else two. The screen said
+ * "Two devices at a time" unconditionally, above four live rows on a Grade 6
+ * account.
+ */
+export interface DeviceList {
+  devices: DeviceEntry[];
+  maxDevices: number;
+}
+
 export interface RevokeResult {
   id: string;
   revoked: boolean;
@@ -123,6 +136,17 @@ export interface FieldOption {
    * we do not cover their exam at all.
    */
   questionCount: number;
+  /**
+   * The highest school year this track covers, or null for a university exit
+   * exam (T-268).
+   *
+   * Sent because the chooser asks "have you sat the exit exam before?" and was
+   * asking it of a Grade 6 pupil, who has not sat anything and cannot make sense
+   * of the question. It is the same field the pricing and leaderboard-band rules
+   * turn on, so the client having it also stops the next screen inventing its
+   * own way to tell school tracks apart.
+   */
+  maxGrade: number | null;
 }
 
 /**
@@ -263,20 +287,7 @@ export class AuthService {
      * not of the sessions being evicted, and holding a second table's row for
      * the length of the write buys nothing.
      */
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { fieldId: true },
-    });
-    const field = user?.fieldId
-      ? await this.prisma.field.findUnique({
-          where: { id: user.fieldId },
-          select: { maxGrade: true },
-        })
-      : null;
-    const cap =
-      bandFor(field?.maxGrade ?? null) === 'junior'
-        ? MAX_CONCURRENT_SESSIONS_JUNIOR
-        : MAX_CONCURRENT_SESSIONS;
+    const cap = await this.sessionCapFor(userId);
 
     return this.prisma.$transaction(async (tx) => {
       const live = await tx.session.findMany({
@@ -534,7 +545,27 @@ export class AuthService {
       data: { phone, purpose, codeHash: hashCode(code), expiresAt: expiryFrom(now) },
     });
 
-    await this.sms.send(phone, `Your Lomi code is ${code}. It expires in 10 minutes.`);
+    /*
+     * Not awaited, and that is a privacy fix rather than a speed one (T-268).
+     *
+     * **The reset path was timeable.** `startPasswordReset` is careful to answer
+     * identically for a registered and an unregistered number — same status,
+     * same body, same cooldown — and then awaited an HTTP call to the SMS
+     * provider on exactly one of those two paths. Measured locally: 330ms for a
+     * number with an account, 11ms for one without. Anybody can type numbers
+     * into the form and read the answer off a stopwatch, which is the directory
+     * the identical wording exists to prevent. QA suspected an oracle here and
+     * could not pin it down; this is it.
+     *
+     * Safe to drop the await: `SmsService.send` never throws — it logs and
+     * returns — so nothing downstream depended on it resolving, and the student
+     * is told a code is on its way rather than that it has arrived. `void` with
+     * an explicit catch so an unhandled rejection can never take the process
+     * down on a background send.
+     */
+    void this.sms
+      .send(phone, `Your Lomi code is ${code}. It expires in 10 minutes.`)
+      .catch(() => {});
   }
 
   /**
@@ -1009,7 +1040,7 @@ export class AuthService {
     const fields = await this.prisma.field.findMany({
       where: { isPublished: true },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, slug: true },
+      select: { id: true, name: true, slug: true, maxGrade: true },
     });
 
     /*
@@ -1056,14 +1087,29 @@ export class AuthService {
    * now", and a history of ended sessions buries that under noise — the reason a
    * session ended is kept on the row for support, not for this list.
    */
-  async listDevices(userId: string, currentSessionId: string): Promise<DeviceEntry[]> {
+  async listDevices(userId: string, currentSessionId: string): Promise<DeviceList> {
     const sessions = await this.prisma.session.findMany({
       where: { userId, revokedAt: null },
       orderBy: { lastSeenAt: 'desc' },
       select: { id: true, deviceLabel: true, lastSeenAt: true, createdAt: true },
     });
 
-    return sessions.map((session) => ({
+    /*
+     * The cap this account actually has (T-268).
+     *
+     * School tracks get four (T-260) — a household sharing one phone is the
+     * best customer this product has — and the screen said "Two devices at a
+     * time" to everybody. QA read that sentence above a list of four live
+     * devices on a Grade 6 account and filed the product as contradicting
+     * itself, which from the screen is exactly what it was doing.
+     *
+     * Sent rather than duplicated in the client: the number is a rule, it has
+     * already changed once, and a copy of it in the web app is a copy that will
+     * be wrong the next time.
+     */
+    const cap = await this.sessionCapFor(userId);
+
+    const devices = sessions.map((session) => ({
       id: session.id,
       deviceLabel: session.deviceLabel,
       lastSeenAt: session.lastSeenAt,
@@ -1072,6 +1118,31 @@ export class AuthService {
       // in their hand before they revoke the other one.
       isCurrent: session.id === currentSessionId,
     }));
+
+    return { devices, maxDevices: cap };
+  }
+
+  /**
+   * How many devices this account may hold at once.
+   *
+   * Extracted from `startSession`, which computed the same thing inline — two
+   * copies of a rule that has already been changed once is how the screen and
+   * the enforcement come to disagree.
+   */
+  private async sessionCapFor(userId: string): Promise<number> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { fieldId: true },
+    });
+    const field = user?.fieldId
+      ? await this.prisma.field.findUnique({
+          where: { id: user.fieldId },
+          select: { maxGrade: true },
+        })
+      : null;
+    return bandFor(field?.maxGrade ?? null) === 'junior'
+      ? MAX_CONCURRENT_SESSIONS_JUNIOR
+      : MAX_CONCURRENT_SESSIONS;
   }
 
   /**

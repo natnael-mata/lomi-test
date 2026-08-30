@@ -66,6 +66,23 @@ export class CommunityController {
   ): Promise<{ queued: true }> {
     return this.community.report(req.auth!.userId, postId, body?.reason ?? '', body?.note);
   }
+
+  /**
+   * Flags the opening question (T-268).
+   *
+   * A separate route because a thread is not a post — the Report control was on
+   * replies only, so the most visible thing in a topic could not be raised with
+   * anybody. Same reasons, same one-per-person rule, same "hides nothing on its
+   * own".
+   */
+  @Post('threads/:threadId/report')
+  reportThread(
+    @Req() req: AuthedRequest,
+    @Param('threadId') threadId: string,
+    @Body() body: { reason?: string; note?: string },
+  ): Promise<{ queued: true }> {
+    return this.community.reportThread(req.auth!.userId, threadId, body?.reason ?? '', body?.note);
+  }
 }
 
 /**
@@ -114,5 +131,30 @@ export class AdminCommunityController {
     @Param('postId') postId: string,
   ): Promise<{ hidden: boolean }> {
     return this.community.setPostHidden(postId, req.auth!.userId, false);
+  }
+
+  /**
+   * The same pair for an opening question (T-268).
+   *
+   * `Thread.hiddenAt` has existed since T-197 and the read path has always
+   * honoured it; nothing could ever set it, because nothing could report a
+   * thread. Hiding one takes its replies out of view with it — they are not
+   * deleted, and they come back when it does.
+   */
+  @Post('threads/:threadId/hide')
+  hideThread(
+    @Req() req: AuthedRequest,
+    @Param('threadId') threadId: string,
+    @Body() body: { note?: string },
+  ): Promise<{ hidden: boolean }> {
+    return this.community.setThreadHidden(threadId, req.auth!.userId, true, body?.note);
+  }
+
+  @Post('threads/:threadId/restore')
+  restoreThread(
+    @Req() req: AuthedRequest,
+    @Param('threadId') threadId: string,
+  ): Promise<{ hidden: boolean }> {
+    return this.community.setThreadHidden(threadId, req.auth!.userId, false);
   }
 }

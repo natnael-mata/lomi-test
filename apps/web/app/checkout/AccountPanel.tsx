@@ -34,7 +34,9 @@ import { dayAndTime } from '../../lib/dates';
 
 type Phase =
   | { kind: 'loading' }
-  | { kind: 'ready'; devices: DeviceEntry[] }
+  // The cap rides along with the list: it differs by track, so the sentence
+  // above the rows cannot be a constant.
+  | { kind: 'ready'; devices: DeviceEntry[]; maxDevices: number }
   | { kind: 'error'; message: string };
 
 export function AccountPanel() {
@@ -46,7 +48,8 @@ export function AccountPanel() {
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      setPhase({ kind: 'ready', devices: await api.devices() });
+      const list = await api.devices();
+      setPhase({ kind: 'ready', devices: list.devices, maxDevices: list.maxDevices });
     } catch (error) {
       if (signInRequired(error)) {
         window.location.assign('/signin');
@@ -92,8 +95,15 @@ export function AccountPanel() {
       <div className="flex flex-col gap-1">
         <h2 className="text-label">{c.account.devicesTitle}</h2>
         {/* The rule, stated where it applies. A limit a student only meets by
-            being evicted is a limit they experience as a fault. */}
-        <p className="text-caption text-ink-2">{c.account.devicesIntro}</p>
+            being evicted is a limit they experience as a fault.
+
+            Held back until the list has loaded, because the number is not the
+            same for everybody — school tracks get four — and a placeholder that
+            said "two" while waiting would be wrong for exactly the accounts
+            that have more. */}
+        {phase.kind === 'ready' ? (
+          <p className="text-caption text-ink-2">{c.account.devicesIntro(phase.maxDevices)}</p>
+        ) : null}
       </div>
 
       {phase.kind === 'loading' && (

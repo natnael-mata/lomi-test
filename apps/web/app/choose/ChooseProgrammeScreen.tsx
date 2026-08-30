@@ -74,7 +74,12 @@ export function ChooseProgrammeScreen() {
     if (!chosen) return;
     setSaving(true);
     try {
-      await api.chooseField(chosen, retaker ?? undefined);
+      // Never sent for a school track, where the question is not asked — an
+      // unanswered question must stay unanswered rather than becoming a false.
+      const schoolTrack =
+        phase.kind === 'ready' &&
+        phase.fields.find((field) => field.id === chosen)?.maxGrade != null;
+      await api.chooseField(chosen, schoolTrack ? undefined : (retaker ?? undefined));
       // Straight to practice: the student came here to start, not to land on a
       // confirmation screen.
       window.location.assign('/practice');
@@ -86,7 +91,7 @@ export function ChooseProgrammeScreen() {
     } finally {
       setSaving(false);
     }
-  }, [c.choose.couldNotSave, chosen, retaker]);
+  }, [c.choose.couldNotSave, chosen, retaker, phase]);
 
   if (phase.kind === 'loading') {
     return <p className="text-body text-ink-2">{c.choose.working}</p>;
@@ -94,6 +99,15 @@ export function ChooseProgrammeScreen() {
   if (phase.kind === 'error') {
     return <p className="text-body">{phase.message}</p>;
   }
+
+  /**
+   * Whether the selected programme is a school year rather than an exit exam.
+   *
+   * `maxGrade` is non-null exactly for the school tracks — the same test the
+   * pricing and the leaderboard bands turn on, rather than a fourth way of
+   * asking the question.
+   */
+  const isSchoolTrack = phase.fields.find((field) => field.id === chosen)?.maxGrade != null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -158,6 +172,20 @@ export function ChooseProgrammeScreen() {
         </fieldset>
       )}
 
+      {/*
+        Only asked of somebody it could apply to (T-268).
+
+        "Have you sat the exit exam before?" was on the screen whatever was
+        selected, including Grade 6 and Grade 8 — where there is no exit exam to
+        have sat, and the question reads as either a mistake or a demand for
+        information about somebody else. `maxGrade` is non-null exactly for the
+        school tracks, which is the same test the pricing and the leaderboard
+        bands use.
+
+        Nothing is sent for a school track, so `isRetaker` stays unset rather
+        than being recorded as a false everybody was never asked about.
+      */}
+      {isSchoolTrack ? null : (
       <Card as="section" className="flex flex-col gap-2">
         <h2 className="text-caption text-ink-2 uppercase">{c.choose.retakerQuestion}</h2>
         <div className="flex flex-col gap-2">
@@ -184,6 +212,7 @@ export function ChooseProgrammeScreen() {
             reason is given. */}
         <p className="text-caption text-ink-2">{c.choose.retakerWhy}</p>
       </Card>
+      )}
 
       <button
         type="button"

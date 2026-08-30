@@ -35,6 +35,7 @@ import { AppModule } from '../app.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitService } from '../common/rate-limit.service';
 import { MAX_ATTEMPTS, hashCode } from './otp';
+import { SmsService } from './sms.service';
 import { hashPassword } from './password';
 import { TEST_JWT_SECRET } from './staff-testkit.test-helper';
 
@@ -140,6 +141,52 @@ describe('resetting a forgotten password (T-266)', () => {
     const again = await start(UNKNOWN);
     expect(again.status).toBe(429);
     expect(again.headers['retry-after']).toBeDefined();
+  });
+
+  /**
+   * The stopwatch test, with an actual stopwatch (T-268).
+   *
+   * **Identical wording is worth nothing if the clock disagrees.** This endpoint
+   * answered a registered number in ~330ms and an unregistered one in ~11ms,
+   * because sending the SMS was awaited inside the request and only one of the
+   * two paths sends anything. Same status, same body, same cooldown — and a
+   * stopwatch told you which of your students had accounts. QA suspected an
+   * oracle here and could not reproduce it; it was this.
+   *
+   * The provider is made deliberately slow rather than timed as it really is,
+   * so the assertion is about the shape of the code path and not about how fast
+   * this machine happens to be today. Awaiting the send would put the whole
+   * delay on the registered number and nothing on the other.
+   */
+  it('takes the same time whether or not the number has an account', async () => {
+    const sms = app.get(SmsService);
+    const realSend = sms.send.bind(sms);
+    const DELAY_MS = 400;
+    sms.send = async (...args: Parameters<typeof realSend>) => {
+      await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
+      return realSend(...args);
+    };
+
+    try {
+      await prisma.otpCode.deleteMany({ where: { phone: { in: [KNOWN, UNKNOWN] } } });
+
+      const startedKnown = Date.now();
+      await start(KNOWN).expect(201);
+      const knownMs = Date.now() - startedKnown;
+      limits.reset();
+
+      const startedUnknown = Date.now();
+      await start(UNKNOWN).expect(201);
+      const unknownMs = Date.now() - startedUnknown;
+
+      // Neither request may carry the provider's delay. Half of it is a
+      // generous line: awaiting the send puts the full 400ms on the registered
+      // path, and the gap this is guarding was thirty times the real one.
+      expect(knownMs, `registered took ${knownMs}ms`).toBeLessThan(DELAY_MS / 2);
+      expect(unknownMs, `unregistered took ${unknownMs}ms`).toBeLessThan(DELAY_MS / 2);
+    } finally {
+      sms.send = realSend;
+    }
   });
 
   it('refuses a number that is not an Ethiopian mobile', async () => {

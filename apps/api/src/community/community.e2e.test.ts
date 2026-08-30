@@ -316,6 +316,107 @@ describe('the community (T-195, T-196, T-197)', () => {
       });
     });
 
+    /**
+     * The opening question is reportable too (T-268).
+     *
+     * **It was the one thing nobody could report.** `Report` referenced `Post`,
+     * and a thread's opening question is a `Thread` row — so the control sat
+     * under every reply and never under the question they were all answering.
+     * An abusive or off-topic question stayed up because there was no way to
+     * raise it with anybody.
+     */
+    it('queues a report against the opening question', async () => {
+      const { id } = await community.openThread(
+        reviewer.userId,
+        topicA,
+        'Buy my notes',
+        'Cheap notes, message me.',
+      );
+
+      await community.reportThread(student.userId, id, 'SPAM', 'Selling something.');
+
+      const queue = await community.pendingReports();
+      const row = queue.find((r) => r.threadId === id);
+      expect(row).toBeDefined();
+      // The queue shows the question itself, not an empty row where a post
+      // would have been — the moderator has to read what they are ruling on.
+      expect(row?.postId).toBeNull();
+      expect(row?.thread?.title).toBe('Buy my notes');
+      expect(row?.thread?.body).toContain('Cheap notes');
+
+      // And it is still up. A report is an opinion, not a delete button.
+      const view = await community.threadFor(student.userId, id);
+      expect(view.id).toBe(id);
+    });
+
+    it('counts one report per person against a question', async () => {
+      const { id } = await community.openThread(
+        reviewer.userId,
+        topicA,
+        'Buy my notes',
+        'Cheap notes, message me.',
+      );
+
+      await community.reportThread(student.userId, id, 'SPAM');
+      await community.reportThread(student.userId, id, 'OFF_TOPIC');
+
+      expect(await prisma.report.count({ where: { threadId: id } })).toBe(1);
+      expect((await prisma.report.findFirstOrThrow({ where: { threadId: id } })).reason).toBe(
+        'OFF_TOPIC',
+      );
+    });
+
+    /**
+     * Hiding a question takes its answers out of view with it, and gives them
+     * back together. Nothing is deleted — which is what makes the undo real.
+     */
+    it('hides a question and every answer under it, reversibly', async () => {
+      const { id } = await community.openThread(
+        reviewer.userId,
+        topicA,
+        'Buy my notes',
+        'Cheap notes, message me.',
+      );
+      await community.reply(student.userId, id, 'Please stop.');
+      await community.reportThread(student.userId, id, 'SPAM');
+
+      await community.setThreadHidden(id, 'staff-1', true, 'Advertising');
+
+      // Gone for everybody but its author.
+      await expect(community.threadFor(student.userId, id)).rejects.toMatchObject({ status: 404 });
+      expect(await community.pendingReports()).toHaveLength(0);
+
+      // And reachable from the hidden list, which is the only place Restore
+      // can be offered from once the report is settled.
+      const hidden = await community.hiddenPosts();
+      const row = hidden.find((h) => h.id === id);
+      expect(row?.kind).toBe('thread');
+
+      await community.setThreadHidden(id, 'staff-1', false);
+      const back = await community.threadFor(student.userId, id);
+      expect(back.posts.map((p) => p.body)).toContain('Please stop.');
+    });
+
+    /**
+     * A thread whose only reply is hidden must not still advertise it.
+     *
+     * The list counted every row, so a topic offered "1 reply" onto a thread
+     * with nothing visible in it — a count on a link promising something that
+     * is not there.
+     */
+    it('counts only the replies a passer-by would find', async () => {
+      const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C.');
+      const post = await community.reply(reviewer.userId, id, 'B is correct.');
+
+      const before = await community.threadsForTopic(student.userId, topicA);
+      expect(before.find((t) => t.id === id)?.replies).toBe(1);
+
+      await community.setPostHidden(post.id, 'staff-1', true);
+
+      const after = await community.threadsForTopic(student.userId, topicA);
+      expect(after.find((t) => t.id === id)?.replies).toBe(0);
+    });
+
     it('hides a post only when an operator does', async () => {
       const { id } = await community.openThread(
         student.userId,

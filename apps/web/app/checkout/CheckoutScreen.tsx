@@ -334,7 +334,7 @@ export function CheckoutScreen() {
     const { method } = phase;
     const direct = method === 'telebirr' || method === 'cbebirr';
     return (
-      <div className="flex flex-1 flex-col gap-3">
+      <div className="flex flex-col gap-3">
         <Heading onBack={() => setPhase({ kind: 'choosing' })}>{c.checkout[method]}</Heading>
 
         <Card as="section" className="flex flex-col gap-3 p-5">
@@ -401,7 +401,7 @@ export function CheckoutScreen() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <h1 className="text-title">{lapsedOn ? c.checkout.lapsedBanner : c.checkout.heading}</h1>
 
       {/*

@@ -101,10 +101,21 @@ export interface ExamPreview {
  */
 export interface ReportedPost {
   id: string;
-  postId: string;
+  postId: string | null;
+  threadId: string | null;
   reason: string;
   note: string | null;
   createdAt: string;
+  /** Set when the opening question was reported rather than a reply (T-268). */
+  thread: {
+    id: string;
+    title: string;
+    body: string;
+    hiddenAt: string | null;
+    authorName: string | null;
+    topicName: string | null;
+    replyCount: number;
+  } | null;
   post: {
     id: string;
     body: string;
@@ -118,6 +129,8 @@ export interface ReportedPost {
 
 /** A hidden post, as the "currently hidden" list shows it. */
 export interface HiddenPost {
+  /** A reply or a whole question — Restore goes to a different route for each. */
+  kind: 'post' | 'thread';
   id: string;
   body: string;
   hiddenAt: string;
@@ -126,6 +139,18 @@ export interface HiddenPost {
   threadTitle: string | null;
   topicName: string | null;
   authorName: string | null;
+}
+
+/**
+ * The device list and the cap that applies to this account (T-268).
+ *
+ * The number comes from the server because it is not one number: school tracks
+ * get four, everybody else two. The screen used to state "two" unconditionally,
+ * above four live rows on a Grade 6 account.
+ */
+export interface DeviceList {
+  devices: DeviceEntry[];
+  maxDevices: number;
 }
 
 /** A live session, as the device list shows it. Dates arrive as ISO strings. */
@@ -145,6 +170,13 @@ export interface FieldOption {
   chosen: boolean;
   /** Published questions behind it. Zero means listed but not yet practisable. */
   questionCount: number;
+  /**
+   * Highest school year covered, or null for a university exit exam.
+   *
+   * The chooser needs it to stop asking a Grade 6 pupil whether they have sat
+   * the exit exam before (T-268).
+   */
+  maxGrade: number | null;
 }
 
 export class ApiError extends Error {
@@ -550,10 +582,16 @@ export interface ThreadSummary {
   id: string;
   title: string;
   topicId: string;
+  /** The room you are in. The heading was a constant before this (T-268). */
+  topicName: string;
   replies: number;
   authorName: string;
   authorVerified: boolean;
   createdAt: string;
+  /** Whether you wrote it — the report control is hidden on your own (T-268). */
+  isYours: boolean;
+  /** Hidden by an operator. Only its author can see it at all. */
+  hidden: boolean;
 }
 
 export interface PostView {
@@ -990,7 +1028,7 @@ export const api = {
   me: (): Promise<Identity> => call<Identity>('/me'),
 
   /** Every session still open on this account, this one marked. */
-  devices: (): Promise<DeviceEntry[]> => call<DeviceEntry[]>('/me/devices'),
+  devices: (): Promise<DeviceList> => call<DeviceList>('/me/devices'),
 
   revokeDevice: (id: string): Promise<{ revoked: boolean; alreadyRevoked: boolean }> =>
     call<{ revoked: boolean; alreadyRevoked: boolean }>(`/me/devices/${id}/revoke`, {
@@ -1140,6 +1178,29 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ reason, note }),
     }),
+
+  /**
+   * The same, for the opening question (T-268).
+   *
+   * A thread is not a post, so Report appeared under every reply and never
+   * under the question they were all answering — the most visible thing in a
+   * topic was the one thing nobody could raise.
+   */
+  reportThread: (threadId: string, reason: string, note?: string): Promise<{ queued: true }> =>
+    call(`/community/threads/${threadId}/report`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, note }),
+    }),
+
+  /** Hides an opening question, taking its replies out of view with it. */
+  hideThread: (threadId: string, note?: string): Promise<{ hidden: boolean }> =>
+    call(`/admin/community/threads/${threadId}/hide`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
+    }),
+
+  restoreThread: (threadId: string): Promise<{ hidden: boolean }> =>
+    call(`/admin/community/threads/${threadId}/restore`, { method: 'POST' }),
 
   /** Admin. Every one of these is ADMIN-guarded and audited on the server. */
   adminWeights: (fieldId: string): Promise<EffectiveWeight[]> =>

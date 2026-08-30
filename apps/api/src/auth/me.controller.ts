@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import type { StaffRole } from '@prisma/client';
 
-import { AuthService, type DeviceEntry, type Identity, type RevokeResult } from './auth.service';
+import { AuthService, type DeviceList, type Identity, type RevokeResult } from './auth.service';
 import { SessionGuard, type AuthedRequest } from './session.guard';
 
 /** Everything about the signed-in student. Guarded in full — nothing here is public. */
@@ -86,7 +86,7 @@ export class MeController {
   }
 
   @Get('devices')
-  devices(@Req() req: AuthedRequest): Promise<DeviceEntry[]> {
+  devices(@Req() req: AuthedRequest): Promise<DeviceList> {
     return this.auth.listDevices(req.auth!.userId, req.auth!.sessionId);
   }
 

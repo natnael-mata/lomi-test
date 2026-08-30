@@ -66,11 +66,28 @@ export function ModerationScreen() {
     void load();
   }, [load]);
 
-  const act = async (postId: string, hide: boolean): Promise<void> => {
-    setBusy(postId);
+  /**
+   * Hide or restore, for a reply or a whole question (T-268).
+   *
+   * `kind` rather than two handlers: the confirmation, the reload and the
+   * failure message are identical, and the only thing that differs is which of
+   * four routes is called.
+   */
+  const act = async (
+    id: string,
+    hide: boolean,
+    kind: 'post' | 'thread' = 'post',
+  ): Promise<void> => {
+    setBusy(id);
     setNotice(null);
     try {
-      await (hide ? api.hidePost(postId) : api.restorePost(postId));
+      await (kind === 'thread'
+        ? hide
+          ? api.hideThread(id)
+          : api.restoreThread(id)
+        : hide
+          ? api.hidePost(id)
+          : api.restorePost(id));
       setNotice(hide ? c.admin.moderation.hidden : c.admin.moderation.restored);
       // Reloaded rather than patched in place: acting on a report marks it
       // reviewed, so the row leaves the queue and the list is the truth.
@@ -123,15 +140,29 @@ export function ModerationScreen() {
       ) : (
         <ul className="flex flex-col gap-3">
           {phase.reports.map((report) => {
-            const hidden = report.post?.hiddenAt !== null && report.post?.hiddenAt !== undefined;
+            /*
+             * A report names a reply or a whole question, never both — the
+             * table has a CHECK saying so. `target` is whichever it is, so the
+             * row below reads the same either way and only the buttons differ.
+             */
+            const isThread = report.thread !== null;
+            const target = report.thread ?? report.post;
+            const targetId = isThread ? report.threadId : report.postId;
+            const hidden = target?.hiddenAt != null;
             return (
               <li key={report.id}>
-                <Card as="article" className="flex flex-col gap-3" data-report={report.postId}>
+                <Card as="article" className="flex flex-col gap-3" data-report={targetId}>
                   <div className="flex flex-wrap items-center gap-2">
                     {/* The student's own words for the reason, not the stored
                         enum. `OFF_TOPIC` is a database value that had been
                         showing up on an operator's screen. */}
                     <Chip>{reasonLabel(report.reason, c)}</Chip>
+                    {/* Which of the two this is. Hiding a question takes its
+                        answers down with it, so an operator must not have to
+                        infer the difference from the text. */}
+                    <Chip tone={isThread ? 'pending' : undefined}>
+                      {isThread ? c.admin.moderation.isQuestion : c.admin.moderation.isReply}
+                    </Chip>
                     {hidden ? <Chip tone="wrong">{c.admin.moderation.isHidden}</Chip> : null}
                     <span className="text-caption text-ink-2 num ml-auto">
                       {dayAndTime(report.createdAt)}
@@ -150,13 +181,17 @@ export function ModerationScreen() {
                     scoped to their own programme anyway — a link would be a
                     403 dressed up as a way to read the thread.
                   */}
-                  {report.post ? (
+                  {target ? (
                     <p className="text-caption text-ink-2">
                       {c.admin.moderation.context(
-                        report.post.authorName,
-                        report.post.topicName,
-                        report.post.threadTitle,
+                        target.authorName,
+                        target.topicName,
+                        report.thread ? report.thread.title : report.post!.threadTitle,
                       )}
+                      {/* What hiding this would take with it. A question with
+                          nine answers under it is a different decision from a
+                          question with none. */}
+                      {report.thread ? ` · ${c.admin.moderation.takesReplies(report.thread.replyCount)}` : ''}
                     </p>
                   ) : null}
 
@@ -167,10 +202,15 @@ export function ModerationScreen() {
                     part of what is being judged, and `break-words` because one
                     unbroken string must not widen the console.
                   */}
-                  {report.post ? (
-                    <p className="text-body bg-surface-2 rounded-card p-3 break-words whitespace-pre-wrap">
-                      {report.post.body}
-                    </p>
+                  {target ? (
+                    <div className="bg-surface-2 rounded-card flex flex-col gap-1 p-3">
+                      {/* A question's title is part of what is being judged and
+                          is often the whole of it. */}
+                      {report.thread ? (
+                        <p className="text-label break-words">{report.thread.title}</p>
+                      ) : null}
+                      <p className="text-body break-words whitespace-pre-wrap">{target.body}</p>
+                    </div>
                   ) : (
                     <p className="text-body text-ink-2">{c.admin.moderation.postGone}</p>
                   )}
@@ -181,29 +221,33 @@ export function ModerationScreen() {
                     </p>
                   ) : null}
 
-                  {report.post ? (
+                  {target && targetId ? (
                     <div className="flex flex-wrap gap-2">
                       {hidden ? (
                         <Button
                           variant="ghost"
-                          disabled={busy === report.postId}
-                          onClick={() => void act(report.postId, false)}
+                          disabled={busy === targetId}
+                          onClick={() => void act(targetId, false, isThread ? 'thread' : 'post')}
                         >
                           {c.admin.moderation.restore}
                         </Button>
                       ) : (
                         <Button
                           variant="danger"
-                          disabled={busy === report.postId}
-                          onClick={() => void act(report.postId, true)}
+                          disabled={busy === targetId}
+                          onClick={() => void act(targetId, true, isThread ? 'thread' : 'post')}
                         >
-                          {c.admin.moderation.hide}
+                          {isThread ? c.admin.moderation.hideQuestion : c.admin.moderation.hide}
                         </Button>
                       )}
                       {/* Either action settles the report, so the difference
                           worth stating is what happens to the post. */}
                       <p className="text-caption text-ink-2 self-center">
-                        {hidden ? c.admin.moderation.restoreWhy : c.admin.moderation.hideWhy}
+                        {hidden
+                          ? c.admin.moderation.restoreWhy
+                          : isThread
+                            ? c.admin.moderation.hideQuestionWhy
+                            : c.admin.moderation.hideWhy}
                       </p>
                     </div>
                   ) : null}
@@ -236,6 +280,11 @@ export function ModerationScreen() {
                 <Card as="article" className="flex flex-col gap-3" data-hidden={post.id}>
                   <div className="flex flex-wrap items-center gap-2">
                     <Chip tone="wrong">{c.admin.moderation.isHidden}</Chip>
+                    <Chip tone={post.kind === 'thread' ? 'pending' : undefined}>
+                      {post.kind === 'thread'
+                        ? c.admin.moderation.isQuestion
+                        : c.admin.moderation.isReply}
+                    </Chip>
                     <span className="text-caption text-ink-2 num ml-auto">
                       {dayAndTime(post.hiddenAt)}
                     </span>
@@ -259,7 +308,7 @@ export function ModerationScreen() {
                     <Button
                       variant="ghost"
                       disabled={busy === post.id}
-                      onClick={() => void act(post.id, false)}
+                      onClick={() => void act(post.id, false, post.kind)}
                     >
                       {c.admin.moderation.restore}
                     </Button>

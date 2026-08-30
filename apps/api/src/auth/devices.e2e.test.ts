@@ -200,19 +200,31 @@ describe('GET /me/devices and revoke (T-083, T-084)', () => {
     delete process.env.JWT_SECRET;
   });
 
-  const devices = async (token: string) =>
+  /**
+   * The whole response, which now carries the account's own device cap (T-268).
+   *
+   * It used to be a bare array and the screen wrote "Two devices at a time"
+   * itself — wrong for the school tracks, which get four, and QA duly found
+   * that sentence above four live rows on a Grade 6 account.
+   */
+  const deviceList = async (token: string) =>
     (
       await request(app.getHttpServer())
         .get('/me/devices')
         .set('Authorization', `Bearer ${token}`)
         .expect(200)
     ).body as {
-      id: string;
-      deviceLabel: string | null;
-      isCurrent: boolean;
-      lastSeenAt: string;
-      signedInAt: string;
-    }[];
+      devices: {
+        id: string;
+        deviceLabel: string | null;
+        isCurrent: boolean;
+        lastSeenAt: string;
+        signedInAt: string;
+      }[];
+      maxDevices: number;
+    };
+
+  const devices = async (token: string) => (await deviceList(token)).devices;
 
   // The task's own test.
   it('marks exactly one device as current, and it is the caller’s', async () => {
@@ -312,5 +324,22 @@ describe('GET /me/devices and revoke (T-083, T-084)', () => {
   it('records why the session ended', async () => {
     const session = await prisma.session.findUniqueOrThrow({ where: { id: laptop.sessionId } });
     expect(session.revokedReason).toContain('device list');
+  });
+
+  /**
+   * The number the screen states is the number the server enforces (T-268).
+   *
+   * The cap was a constant in the web app, and it had already stopped being one
+   * constant: T-260 gave the school tracks four. So the sentence "Two devices at
+   * a time" sat above four live rows on a Grade 6 account, and the product
+   * contradicted itself in the same card. Sending it removes the second copy.
+   */
+  it('states the cap it actually enforces', async () => {
+    const fresh = await signInByPhone(app, prisma, TG, 'Cap check');
+    const list = await deviceList(fresh.token);
+
+    expect(list.maxDevices).toBe(MAX_CONCURRENT_SESSIONS);
+    // And it is a bound the list respects, not a decorative number.
+    expect(list.devices.length).toBeLessThanOrEqual(list.maxDevices);
   });
 });

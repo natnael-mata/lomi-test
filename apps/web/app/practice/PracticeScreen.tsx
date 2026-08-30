@@ -456,9 +456,12 @@ export function PracticeScreen() {
             isCorrect={phase.result.isCorrect}
             pacing={phase.result.pacing}
             timeTakenSec={phase.result.timeTakenSec}
-            /* The concept line IS one of the options below. Held until the
-               check is answered or skipped — see `withholdConcept`. */
+            /* The concept line IS one of the options below, and the per-option
+               notes ARE the rest of them. Both held until the check is answered
+               or skipped — otherwise the picker's four sentences are all
+               printed above it, three of them already marked as wrong. */
             withholdConcept={phase.result.reasonCheck !== null && reason === null}
+            withholdWhyWrongs={phase.result.reasonCheck !== null && reason === null}
           />
 
           {/*
