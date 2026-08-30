@@ -44,6 +44,23 @@ export function formatRemaining(totalSec: number): string {
 }
 
 /**
+ * The same clock, but able to run past zero (T-268).
+ *
+ * **Only practice uses this.** A practice question's limit is advisory — going
+ * over costs nothing, which is the decision on record — so the clock stopping
+ * dead at 00:00 was the one thing on screen that could not tell the student
+ * what was happening. It looked frozen, and the honest number (`over time
+ * 2:26 / 1:30`) only appeared after they answered.
+ *
+ * A mock sitting must NOT use this: there the clock reaching zero ends the
+ * paper, so counting upwards would describe time the student does not have.
+ */
+export function formatWithOverrun(remainingSec: number): string {
+  const whole = Math.floor(remainingSec);
+  return whole >= 0 ? formatRemaining(whole) : `+${formatRemaining(-whole)}`;
+}
+
+/**
  * What a screen reader is told, and how often.
  *
  * A timer that announces every second makes the page unusable with a screen

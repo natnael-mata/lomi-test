@@ -277,6 +277,93 @@ describe('registering with a phone number (T-264)', () => {
     expect(stored.consumedAt).not.toBeNull();
   });
 
+  /**
+   * The code screen's own endpoint (T-268).
+   *
+   * **Verification used to happen only alongside the password**, so a mistyped
+   * code was met with silence, then a password screen, then a bounce backwards
+   * with a try already spent. QA read that as a client that never checks the
+   * code, which is what it looked like.
+   *
+   * `check` judges the same code the same way and leaves it alive, so the
+   * refusal — and the count, and the lockout — arrive on the screen that caused
+   * them.
+   */
+  describe('checking a code without spending it (T-268)', () => {
+    const check = (phone: unknown, code: unknown) =>
+      request(app.getHttpServer()).post('/auth/register/check').send({ phone, code });
+
+    it('accepts the right code and leaves it usable', async () => {
+      await plantCode(NEW_PHONE, '424242');
+
+      await check(NEW_PHONE, '424242').expect(201);
+      limits.reset();
+
+      const stored = await prisma.otpCode.findFirstOrThrow({ where: { phone: NEW_PHONE } });
+      // Still alive: the password step is what spends it. A check that consumed
+      // the code would make the very next screen fail.
+      expect(stored.consumedAt).toBeNull();
+
+      const done = await verify(NEW_PHONE, '424242', PASSWORD);
+      expect(done.status).toBe(201);
+    });
+
+    it('counts a wrong guess down and says how many are left', async () => {
+      await plantCode(NEW_PHONE, '424242');
+
+      const first = await check(NEW_PHONE, '000000');
+      expect(first.status).toBe(401);
+      expect(first.body.reason).toBe('wrong');
+      expect(first.body.triesLeft).toBe(MAX_ATTEMPTS - 1);
+      limits.reset();
+
+      const second = await check(NEW_PHONE, '000000');
+      expect(second.body.triesLeft).toBe(MAX_ATTEMPTS - 2);
+    });
+
+    /*
+     * A guess through this door has to cost what a guess through the other one
+     * costs, or it is simply the cheaper way to brute-force the same code.
+     */
+    it('locks after the same number of guesses the final step allows', async () => {
+      await plantCode(NEW_PHONE, '424242');
+
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await check(NEW_PHONE, '000000');
+        limits.reset();
+      }
+
+      const locked = await check(NEW_PHONE, '424242');
+      expect(locked.status).toBe(401);
+      expect(locked.body.reason).toBe('locked');
+      limits.reset();
+
+      // And the lock holds on the real door too, not just on the check.
+      const final = await verify(NEW_PHONE, '424242', PASSWORD);
+      expect(final.status).toBe(401);
+    });
+
+    /**
+     * The refusal names the time, not "a short while".
+     *
+     * `retryAt` was already in the response and the sentence still said "for a
+     * short while" — so the one number answering the student's actual question
+     * lived only in a machine field.
+     */
+    it('states when the lock lifts, in the message a person reads', async () => {
+      await plantCode(NEW_PHONE, '424242');
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await check(NEW_PHONE, '000000');
+        limits.reset();
+      }
+
+      const locked = await check(NEW_PHONE, '000000');
+      expect(locked.body.retryAt).toBeTruthy();
+      expect(locked.body.message).toMatch(/\d{2}:\d{2}/);
+      expect(locked.body.message.toLowerCase()).not.toContain('a short while');
+    });
+  });
+
   /*
    * Every send costs money. This is the limit that stops a resend button
    * spending a telecom balance as fast as it can be pressed.

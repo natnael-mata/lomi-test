@@ -1,6 +1,6 @@
 import { CodeFlow } from '../../components/CodeFlow';
 
-export const metadata = { title: 'Create your account · Lomi-Exams' };
+export const metadata = { title: 'Create your account' };
 
 /**
  * Signing up: a number, a code, a password.

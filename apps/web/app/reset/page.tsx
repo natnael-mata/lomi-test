@@ -1,6 +1,6 @@
 import { CodeFlow } from '../../components/CodeFlow';
 
-export const metadata = { title: 'Reset your password · Lomi-Exams' };
+export const metadata = { title: 'Reset your password' };
 
 /**
  * The door a locked-out student comes to.

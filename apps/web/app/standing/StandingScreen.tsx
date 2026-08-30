@@ -53,6 +53,20 @@ export function StandingScreen() {
 
   const load = useCallback(async (): Promise<void> => {
     try {
+      /*
+       * The programme first, because without one this screen is misleading
+       * rather than empty (T-268).
+       *
+       * A student who had chosen nothing was shown a populated board headed
+       * "Your exam" — four other students ranked under a scope they do not
+       * have. Practise, Mock and Ask all send them to `/choose`; this one
+       * invented an answer. An empty screen would have been merely useless.
+       */
+      const fields = await api.myFields().catch(() => []);
+      if (fields.length > 0 && !fields.some((field) => field.chosen)) {
+        window.location.assign('/choose');
+        return;
+      }
       const [standing, ledger, board] = await Promise.all([
         api.standing(),
         api.pointsLedger(),
@@ -76,7 +90,10 @@ export function StandingScreen() {
     if (phase.kind !== 'ready') return;
     setBusy(true);
     try {
-      await api.setLeaderboardOptOut(phase.board.you?.listed !== false);
+      // The choice, from the same field the label reads. Deriving it from
+      // `you` meant a student with no points always sent `optOut: true`,
+      // whichever state they were actually in.
+      await api.setLeaderboardOptOut(phase.board.youListed);
       await load();
     } finally {
       setBusy(false);
@@ -205,7 +222,11 @@ export function StandingScreen() {
             onClick={() => void toggleListed()}
             disabled={busy}
           >
-            {board.you?.listed === false ? c.standing.showMe : c.standing.hideMe}
+            {/* `youListed`, not `board.you?.listed`. The latter is null for
+                anybody with no points — which is every junior who has not
+                started — so the button offered "Hide me" to students who were
+                hidden by default and had never been asked. */}
+            {board.youListed ? c.standing.hideMe : c.standing.showMe}
           </button>
         </section>
       </div>

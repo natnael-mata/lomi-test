@@ -31,7 +31,16 @@ export type CodePurpose = 'register' | 'reset';
 
 type Step =
   | { kind: 'phone' }
-  | { kind: 'code'; phone: string; expiresInSec: number }
+  /**
+   * `sent` is whether a code actually went out just now (T-268).
+   *
+   * The screen said "We sent a six-digit code to 0963424628" unconditionally,
+   * including when the server had refused with a 429 and sent nothing. The only
+   * clue was the resend countdown reading something like 1103s, which is not a
+   * thing anybody reads as "we lied on the line above". A student then waits
+   * for an SMS that was never sent.
+   */
+  | { kind: 'code'; phone: string; expiresInSec: number; sent: boolean }
   | { kind: 'password'; phone: string; code: string };
 
 /**
@@ -98,7 +107,7 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
       setRefusal(null);
       try {
         const sent = await api.requestCode(purpose, to);
-        setStep({ kind: 'code', phone: to, expiresInSec: sent.expiresInSec });
+        setStep({ kind: 'code', phone: to, expiresInSec: sent.expiresInSec, sent: true });
         setCooldown(RESEND_AFTER_SEC);
       } catch (e) {
         /*
@@ -113,7 +122,12 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
             (e.body as { retryAfterSec?: unknown } | undefined)?.retryAfterSec ?? RESEND_AFTER_SEC,
           );
           setCooldown(Number.isFinite(wait) ? wait : RESEND_AFTER_SEC);
-          setStep((s) => (s.kind === 'phone' ? { kind: 'code', phone: to, expiresInSec: 600 } : s));
+          // `sent: false` — nothing went out. An earlier code may still be
+          // valid, so the student is not sent back to the number screen, but
+          // the screen must stop claiming an SMS is on its way.
+          setStep((s) =>
+            s.kind === 'phone' ? { kind: 'code', phone: to, expiresInSec: 600, sent: false } : s,
+          );
           setProblem(null);
           return;
         }
@@ -124,6 +138,36 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
     },
     [purpose, c.codeFlow.couldNotSend],
   );
+
+  /**
+   * Leaves the code screen only if the code is good (T-268).
+   *
+   * **The screen that asks has to be the screen that refuses.** This step used
+   * to be a plain `setStep` — no request at all — because the code and the
+   * password were verified together at the end. So a mistyped code produced
+   * nothing: no error, no counter, no network traffic, just the password screen.
+   * The tries-remaining and the lockout clock were written, tested and
+   * unreachable, and a tester reasonably concluded the code was never checked.
+   *
+   * The code is judged here and spent at the end, so a refusal lands on the
+   * screen that caused it and the count means something while it still can.
+   */
+  const checkThenContinue = async (to: string): Promise<void> => {
+    setBusy(true);
+    setProblem(null);
+    setRefusal(null);
+    try {
+      await api.checkCode(purpose, to, code);
+      setStep({ kind: 'password', phone: to, code });
+    } catch (e) {
+      explain(e, c.codeFlow.couldNotVerify);
+      // Cleared, because the next thing the student does is type it again and
+      // six digits they have already been told are wrong are only in the way.
+      setCode('');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const finish = async (): Promise<void> => {
     if (step.kind !== 'password') return;
@@ -151,7 +195,7 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
       // code is only spent when the password is submitted. Sent back a step so
       // the student can retype it.
       explain(e, c.codeFlow.couldNotVerify);
-      setStep({ kind: 'code', phone: step.phone, expiresInSec: 600 });
+      setStep({ kind: 'code', phone: step.phone, expiresInSec: 600, sent: true });
       setBusy(false);
     }
   };
@@ -181,7 +225,9 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
 
       {step.kind === 'code' && (
         <Card as="section" className="flex flex-col gap-3">
-          <p className="text-body">{c.codeFlow.sentTo(step.phone)}</p>
+          <p className="text-body">
+            {step.sent ? c.codeFlow.sentTo(step.phone) : c.codeFlow.notSentYet(step.phone)}
+          </p>
           <Input
             label={c.codeFlow.codeLabel}
             hint={c.codeFlow.codeHint}
@@ -193,9 +239,9 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
 
           <Button
             disabled={busy || code.length !== 6}
-            onClick={() => setStep({ kind: 'password', phone: step.phone, code })}
+            onClick={() => void checkThenContinue(step.phone)}
           >
-            {c.codeFlow.continue}
+            {busy ? c.codeFlow.checking : c.codeFlow.continue}
           </Button>
 
           {/*

@@ -62,7 +62,36 @@ export interface ReportedPost {
   reason: string;
   note: string | null;
   createdAt: string;
-  post: { id: string; body: string; hiddenAt: string | null; threadId: string } | null;
+  post: {
+    id: string;
+    body: string;
+    hiddenAt: string | null;
+    threadId: string;
+    /**
+     * Who wrote it, and where.
+     *
+     * Added because the row was the post's text and nothing else, which is not
+     * enough to rule on it: whether a reply is abuse or a blunt correction can
+     * depend on the question it answers, and a moderator with no thread to open
+     * is deciding on a fragment. Display names only — the same handle every
+     * other student sees.
+     */
+    authorName: string | null;
+    threadTitle: string | null;
+    topicName: string | null;
+  } | null;
+}
+
+/** A post an operator has hidden, and enough context to decide to put it back. */
+export interface HiddenPost {
+  id: string;
+  body: string;
+  hiddenAt: string;
+  hiddenNote: string | null;
+  threadId: string;
+  threadTitle: string | null;
+  topicName: string | null;
+  authorName: string | null;
 }
 
 @Injectable()
@@ -250,8 +279,30 @@ export class CommunityService {
       where: { reviewedAt: null },
       orderBy: { createdAt: 'asc' },
       take: limit,
-      include: { post: { select: { id: true, body: true, hiddenAt: true, threadId: true } } },
+      include: {
+        post: {
+          select: {
+            id: true,
+            body: true,
+            hiddenAt: true,
+            threadId: true,
+            authorId: true,
+            thread: { select: { title: true, topicId: true } },
+          },
+        },
+      },
     });
+
+    const names = await this.namesFor(
+      rows.flatMap((row) => (row.post ? [row.post.authorId] : [])),
+    );
+    const topics = await this.prisma.topic.findMany({
+      where: {
+        id: { in: [...new Set(rows.flatMap((row) => (row.post ? [row.post.thread.topicId] : [])))] },
+      },
+      select: { id: true, name: true },
+    });
+    const topicName = new Map(topics.map((topic) => [topic.id, topic.name]));
 
     /*
      * Mapped to a declared shape rather than returned raw.
@@ -274,8 +325,63 @@ export class CommunityService {
             body: row.post.body,
             hiddenAt: row.post.hiddenAt?.toISOString() ?? null,
             threadId: row.post.threadId,
+            authorName: names.get(row.post.authorId) ?? null,
+            threadTitle: row.post.thread.title,
+            topicName: topicName.get(row.post.thread.topicId) ?? null,
           }
         : null,
+    }));
+  }
+
+  /**
+   * Everything currently hidden, so hiding can be undone (T-268).
+   *
+   * **Restore had no screen it could ever appear on.** Hiding a post settles its
+   * report, and the queue is `reviewedAt: null` — so the row left the queue at
+   * the exact moment the restore button became relevant. The endpoint existed,
+   * the button existed, and the only path to it was a report that no longer
+   * matched the query. A moderator who mis-clicked had no way back, under a
+   * caption promising "you can put it back".
+   *
+   * Keyed on the post being hidden rather than on a report, deliberately: what a
+   * moderator needs to audit is what students cannot currently see, and that is
+   * a fact about posts. Sorted newest-hidden first, because a mistake is
+   * noticed straight after it is made.
+   */
+  async hiddenPosts(limit = 50): Promise<HiddenPost[]> {
+    const rows = await this.prisma.post.findMany({
+      where: { hiddenAt: { not: null } },
+      orderBy: { hiddenAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        body: true,
+        hiddenAt: true,
+        hiddenNote: true,
+        threadId: true,
+        authorId: true,
+        // `Thread.topicId` is a plain column — there is no relation to follow,
+        // so the topic names are fetched in one go below rather than per row.
+        thread: { select: { title: true, topicId: true } },
+      },
+    });
+
+    const names = await this.namesFor(rows.map((row) => row.authorId));
+    const topics = await this.prisma.topic.findMany({
+      where: { id: { in: [...new Set(rows.map((row) => row.thread.topicId))] } },
+      select: { id: true, name: true },
+    });
+    const topicName = new Map(topics.map((topic) => [topic.id, topic.name]));
+
+    return rows.map((row) => ({
+      id: row.id,
+      body: row.body,
+      hiddenAt: row.hiddenAt!.toISOString(),
+      hiddenNote: row.hiddenNote,
+      threadId: row.threadId,
+      threadTitle: row.thread.title,
+      topicName: topicName.get(row.thread.topicId) ?? null,
+      authorName: names.get(row.authorId) ?? null,
     }));
   }
 

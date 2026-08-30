@@ -1,6 +1,6 @@
 import { CommunityIndex } from './CommunityIndex';
 
-export const metadata = { title: 'Ask · Lomi-Exams' };
+export const metadata = { title: 'Ask' };
 
 /**
  * The community index — the student's own programme's topics.

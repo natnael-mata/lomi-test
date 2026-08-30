@@ -86,9 +86,27 @@ describe('the home screen (T-198)', () => {
    */
   it('gates nothing on the session check', () => {
     expect(screen).toContain("{ kind: 'signedOut' }");
-    // No redirect, no hiding of destinations behind the check.
     expect(screen).not.toContain('redirect');
-    expect(screen).not.toContain('window.location');
+
+    /*
+     * The screen may navigate, but only because somebody pressed something.
+     *
+     * It used to be enough to say "no `window.location` anywhere", and then
+     * sign-out arrived — a deliberate action whose whole job is to leave. The
+     * rule was never "never navigate"; it is that *the session check* must not,
+     * because a home page enforcing access is a second opinion about it. So the
+     * check is now on where the navigation sits rather than on whether it
+     * exists: inside an `onClick`, never in the effect that reads the session.
+     */
+    const effect = screen.slice(screen.indexOf('useEffect('), screen.indexOf('const destinations'));
+    expect(effect).not.toContain('window.location');
+    for (const call of screen.match(/window\.location\.assign\([^)]*\)/g) ?? []) {
+      const at = screen.indexOf(call);
+      const handler = screen.lastIndexOf('onClick', at);
+      expect(handler, call).toBeGreaterThan(-1);
+      // And in the handler that immediately precedes it, not one far above.
+      expect(at - handler).toBeLessThan(400);
+    }
   });
 
   it('takes its words from the dictionary rather than the file', () => {

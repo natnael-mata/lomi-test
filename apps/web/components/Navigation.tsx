@@ -249,6 +249,35 @@ function RailFooter() {
       {until === null ? null : (
         <span className="text-caption text-ink-2 num uppercase">{c.nav.accessUntil(until)}</span>
       )}
+      {/*
+        The way out, next to who you are (T-268).
+
+        The only sign-out in the product was at the foot of the Access page,
+        below the device list — a page you go to in order to pay. A tester
+        looking for it could not find one and had to clear the session by hand,
+        and a student on a shared phone has the same problem with higher stakes.
+
+        Beside the name deliberately: "you are User C" and "stop being User C"
+        are the same thought, and the name is what prompts it.
+      */}
+      {who === null ? null : (
+        <button
+          type="button"
+          className="btn-ghost text-caption self-start"
+          data-sign-out=""
+          onClick={() => {
+            void api
+              .signOut()
+              .catch(() => {})
+              // Either way the session is over on this device. A failed request
+              // that left the student staring at a nav is worse than a sign-in
+              // screen they can act on.
+              .finally(() => window.location.assign('/signin'));
+          }}
+        >
+          {c.account.signOut}
+        </button>
+      )}
     </div>
   );
 }

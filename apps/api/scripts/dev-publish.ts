@@ -37,6 +37,24 @@ const prisma = new PrismaClient();
 const FIELD_SLUG = 'local-dev';
 
 /**
+ * What the demo field calls itself on screen.
+ *
+ * **Not "Local Dev".** The slug is a developer's word and it was also the
+ * display name, so it surfaced everywhere the product names a programme —
+ * "Local Dev mock", "Questions and answers from other Local Dev students", the
+ * progress heading. A tester quite reasonably filed that as copy leaking an
+ * environment name.
+ *
+ * The replacement also says the thing that was confusing about this field: it
+ * bundles Operating Systems, Financial Accounting, Epidemiology and Taxation,
+ * which is deliberate — four weighted topics is the smallest bank that fills a
+ * readiness table — but from inside the product it looks like an Accounting
+ * student being served Public Health questions. Naming it "mixed subjects"
+ * makes the demo describe itself instead of looking broken.
+ */
+const FIELD_NAME = 'Demo programme (mixed subjects)';
+
+/**
  * Removes demo content this script no longer owns.
  *
  * **Without this the field's weights stop summing to 100.** An earlier version
@@ -110,8 +128,8 @@ async function removeSupersededContent(fieldId: string, keepTopics: Set<string>)
 async function main(): Promise<void> {
   const field = await prisma.field.upsert({
     where: { slug: FIELD_SLUG },
-    update: { isPublished: true },
-    create: { slug: FIELD_SLUG, name: 'Local Dev', isPublished: true },
+    update: { isPublished: true, name: FIELD_NAME },
+    create: { slug: FIELD_SLUG, name: FIELD_NAME, isPublished: true },
   });
 
   /*

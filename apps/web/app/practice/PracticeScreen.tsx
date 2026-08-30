@@ -113,6 +113,16 @@ export function PracticeScreen() {
       shownAt.current = Date.now();
       setElapsed(0);
       setPhase({ kind: 'asking', question });
+      /*
+       * Back to the top, because the last screen was taller than this one.
+       *
+       * A student reaches "Next question" by scrolling down through an
+       * explanation, and the browser keeps that scroll position across the
+       * state change — so the new question arrived with its stem behind the
+       * sticky header and its clock off-screen entirely, every single time.
+       * The one thing they need to read was the one thing not visible.
+       */
+      window.scrollTo({ top: 0, behavior: 'auto' });
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         // Running out is the natural end of a session, so it is where the
@@ -309,8 +319,13 @@ export function PracticeScreen() {
           */}
           {phase.kind === 'asking' && (
             <ExamTimer
-              remainingSec={Math.max(0, question.timeLimitSec - elapsed)}
+              // Not clamped at zero. It was — `Math.max(0, …)` — directly under
+              // a comment promising an overrun, so the clock froze at 00:00 and
+              // the true figure surfaced only after answering ("over time
+              // 2:26 / 1:30"). The clamp was the bug; the comment was right.
+              remainingSec={question.timeLimitSec - elapsed}
               durationSec={question.timeLimitSec}
+              countUpPastZero
             />
           )}
           <Chip className="uppercase">{question.topic}</Chip>

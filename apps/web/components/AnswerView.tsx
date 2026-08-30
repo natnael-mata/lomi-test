@@ -58,6 +58,18 @@ export interface AnswerViewProps {
    * explanation is coming will assume this question simply has none.
    */
   withholdConcept?: boolean;
+  /**
+   * Print the question itself above the answer (T-268).
+   *
+   * **Off in practice, on in a review, and that difference is why it was
+   * missed.** In practice the stem and the four options are already on screen —
+   * this component renders underneath them — so repeating the question would be
+   * noise. A review has no such screen above it: `ExamReview` renders this
+   * component and nothing else, so every entry read "Question 1 · Correct · [key
+   * idea] · [explanation]" with no way to find out what had been asked. A
+   * student rereading a paper they scored 11/20 on could not see the eleven.
+   */
+  showQuestion?: boolean;
 }
 
 /**
@@ -106,6 +118,7 @@ export function AnswerView({
   pacing,
   timeTakenSec,
   withholdConcept = false,
+  showQuestion = false,
 }: AnswerViewProps) {
   const timed = pacing !== undefined && timeTakenSec !== undefined;
   // A blank is not a wrong answer — the review of a paper somebody ran short on
@@ -116,6 +129,43 @@ export function AnswerView({
 
   return (
     <div className="flex flex-col gap-3" data-answer-view="">
+      {/*
+        0 — the question, when nothing above is showing it.
+
+        The options carry both marks a reader needs: which one was right, and
+        which one they picked. Shown together rather than as two lists, because
+        "I chose C, the answer was A" is one comparison and splitting it across
+        the screen makes the reader do the join.
+      */}
+      {showQuestion && (
+        <section data-section="question" className="flex flex-col gap-2">
+          <p className="text-stem">{answer.stem}</p>
+          <ul className="flex flex-col gap-1" data-question-options="">
+            {answer.options.map((option) => {
+              const right = option.label === answer.correctLabel;
+              const mine = option.label === answer.chosenLabel;
+              return (
+                <li
+                  key={option.label}
+                  data-option={option.label}
+                  data-correct={right ? '' : undefined}
+                  data-chosen={mine ? '' : undefined}
+                  className={`rounded-card flex items-start gap-2 p-2 ${
+                    right ? 'bg-correct-soft text-correct' : 'bg-surface-2 text-ink'
+                  }`}
+                >
+                  <span className="text-label num shrink-0">{option.label}</span>
+                  <span className="text-body grow">{option.text}</span>
+                  {/* The same word the why-wrongs use below. Two names for
+                      "the one you picked" on one screen is one too many. */}
+                  {mine && <Chip tone={right ? 'correct' : 'wrong'}>{copy().answer.yours}</Chip>}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* 1 — verdict.
           The ONLY element that animates on entrance (T-117). The spring is the
           answer moment; anything else moving at the same time competes with it,

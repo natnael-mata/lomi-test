@@ -140,7 +140,13 @@ export interface FieldOption {
 function codeRejected(verdict: CodeVerdict & { ok: false }, retryAt: Date | null = null) {
   const message =
     verdict.reason === 'locked'
-      ? 'Too many wrong codes. This number is locked for a short while.'
+      ? // The time, in the sentence. It was computed, put in `retryAt`, and then
+        // the prose said "for a short while" — so the one number that answers
+        // the student's actual question lived only in a machine field. QA
+        // quoted this back as a failure and was right to.
+        retryAt === null
+        ? 'Too many wrong codes. This number is locked for fifteen minutes.'
+        : `Too many wrong codes. This number is locked until ${clockTime(retryAt)}.`
       : verdict.reason === 'expired'
         ? 'That code has expired. Codes last ten minutes — ask for a new one.'
         : 'That code is not right. Ask for a new one if you need to.';
@@ -151,6 +157,22 @@ function codeRejected(verdict: CodeVerdict & { ok: false }, retryAt: Date | null
     triesLeft: verdict.triesLeft,
     retryAt: retryAt?.toISOString() ?? null,
     message,
+  });
+}
+
+/**
+ * A wall-clock time in Addis, for putting inside a sentence.
+ *
+ * Formatted on the server rather than left to the reader's browser because this
+ * string is also read out by the bot and by anything else holding the API, and
+ * every student sitting these exams is in one timezone. `retryAt` stays in the
+ * response as an ISO instant for anybody who would rather format it themselves.
+ */
+function clockTime(at: Date): string {
+  return at.toLocaleTimeString('en-GB', {
+    timeZone: 'Africa/Addis_Ababa',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -533,12 +555,26 @@ export class AuthService {
    * Spending it is the caller's win condition — the code is gone whether or not
    * whatever comes next succeeds, because a code that outlives a rejected
    * password is one somebody can hold open while they try passwords.
+   *
+   * **`spend: false` judges without consuming**, which is what the code screen
+   * needs (T-268). The three screens are number → code → password, and the code
+   * was only ever judged on the third: a student who mistyped it was told
+   * nothing, chose a password, and was then thrown back a screen with a try
+   * already burned. QA read that as "the client never checks the code at all",
+   * which is the right conclusion from the outside.
+   *
+   * Checking without spending is not a weaker check. A wrong guess still counts
+   * and still locks, so the number of guesses is unchanged; a right guess leaves
+   * a code that was already valid for ten minutes valid for the ninety seconds
+   * it takes to choose a password. What it buys is the refusal arriving on the
+   * screen that caused it.
    */
   private async spendCode(
     phone: string,
     purpose: OtpPurpose,
     supplied: string,
     now: Date,
+    { spend = true }: { spend?: boolean } = {},
   ): Promise<void> {
     const stored = await this.prisma.otpCode.findFirst({
       where: { phone, purpose },
@@ -570,7 +606,31 @@ export class AuthService {
       throw codeRejected(verdict, stored.lockedUntil);
     }
 
-    await this.prisma.otpCode.update({ where: { id: stored.id }, data: { consumedAt: now } });
+    if (spend) {
+      await this.prisma.otpCode.update({ where: { id: stored.id }, data: { consumedAt: now } });
+    }
+  }
+
+  /**
+   * Judges a code without spending it, for the code screen (T-268).
+   *
+   * Returns nothing on success and throws the same refusal `spendCode` throws on
+   * failure, so the client has one shape to render either way.
+   */
+  async checkCode(
+    rawPhone: unknown,
+    purpose: OtpPurpose,
+    supplied: unknown,
+    now: Date = new Date(),
+  ): Promise<{ ok: true }> {
+    const phone = typeof rawPhone === 'string' ? normaliseEthiopianMobile(rawPhone) : null;
+    // The same answer a wrong code gets. A malformed number must not be
+    // distinguishable here either — this endpoint is reachable without a
+    // session, so it is a directory if it answers differently.
+    if (!phone) throw codeRejected({ ok: false, reason: 'wrong', triesLeft: 0 });
+    const code = typeof supplied === 'string' ? supplied.trim() : '';
+    await this.spendCode(phone, purpose, code, now, { spend: false });
+    return { ok: true };
   }
 
   /**

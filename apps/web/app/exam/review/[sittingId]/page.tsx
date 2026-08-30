@@ -1,6 +1,6 @@
 import { ReviewScreen } from './ReviewScreen';
 
-export const metadata = { title: 'Your paper · Lomi-Exams' };
+export const metadata = { title: 'Your paper' };
 
 /**
  * A paper you sat, read back in full.

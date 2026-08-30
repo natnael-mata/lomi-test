@@ -32,6 +32,21 @@ const boardSurfaces = `${standing}\n${bandedBoard}`;
 const community = stripComments(
   readFileSync(resolve(here, '../community/[topicId]/CommunityScreen.tsx'), 'utf8'),
 );
+/*
+ * The reason labels moved into a shared helper (T-268).
+ *
+ * They were written inline in the student's picker and nowhere else, so the
+ * moderation queue — ruling on those same reports — rendered the stored enum
+ * instead: an operator read `OFF_TOPIC` where the student had clicked "Off
+ * topic". One list, asked by both screens, is the fix, and these scans follow
+ * it rather than passing because the strings went somewhere else.
+ */
+const reportReasons = stripComments(
+  readFileSync(resolve(here, '../../lib/report-reasons.ts'), 'utf8'),
+);
+const moderation = stripComments(
+  readFileSync(resolve(here, '../admin/community/ModerationScreen.tsx'), 'utf8'),
+);
 
 describe('the standing screen (T-190…T-194)', () => {
   it('still has code left after the comments are stripped', () => {
@@ -121,8 +136,37 @@ describe('the community screen (T-195…T-197)', () => {
 
   it('offers a reason for a report rather than a bare button', () => {
     for (const key of ['reportWrong', 'reportAbusive', 'reportSpam', 'reportOffTopic'] as const) {
-      expect(community, key).toContain(`c.community.${key}`);
+      expect(reportReasons, key).toContain(`c.community.${key}`);
     }
+    // The picker still renders all four, from the shared list.
+    expect(community).toContain('REPORT_REASONS.map');
+    expect(community).toContain('reasonLabel(');
+  });
+
+  /**
+   * The operator reads what the student clicked.
+   *
+   * The queue printed `report.reason` straight out of the database, so a
+   * moderator ruling on a report saw `OFF_TOPIC` — screaming snake case,
+   * underscore and all — where the student had chosen "Off topic". A stored
+   * value on a person's screen is a missing translation, not a label.
+   */
+  it('names the report reason in words on the moderation queue', () => {
+    expect(moderation).toContain('reasonLabel(report.reason');
+    expect(moderation).not.toMatch(/\{report\.reason\}/);
+  });
+
+  /**
+   * Restore has a screen it can actually appear on.
+   *
+   * Hiding a post settles its report, and the queue is the unreviewed reports —
+   * so the row left the screen at the moment the undo became relevant, and the
+   * button promising "you can put it back" was reachable from nowhere.
+   */
+  it('lists what is currently hidden, so hiding can be undone', () => {
+    expect(moderation).toContain('api.hiddenPosts');
+    expect(moderation).toContain('c.admin.moderation.restore');
+    expect(en.admin.moderation.hideWhy.toLowerCase()).toContain('put it back');
   });
 
   it('says what happens after a report, not just that it was received', () => {

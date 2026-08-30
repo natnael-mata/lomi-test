@@ -1,6 +1,6 @@
 import { HomeScreen } from '../HomeScreen';
 
-export const metadata = { title: 'Home · Lomi-Exams' };
+export const metadata = { title: 'Home' };
 
 /**
  * The signed-in hub.

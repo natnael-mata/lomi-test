@@ -45,6 +45,16 @@ type Session =
       pendingClaim: { txRef: string; amountEtb: number } | null;
       /** Free questions left. Null with no programme chosen. */
       freeRemaining: number | null;
+      /**
+       * Whether they have picked a programme yet (T-268).
+       *
+       * **`/home` was the one signed-in screen that did not ask.** Practise,
+       * Mock and Ask all redirect to `/choose`; Home rendered the full hub of
+       * five destinations, three of which immediately bounce. Since a fresh
+       * sign-in lands here, the very first screen a new student saw was the one
+       * that did not tell them what to do first.
+       */
+      needsProgramme: boolean;
     };
 
 export function HomeScreen() {
@@ -55,7 +65,13 @@ export function HomeScreen() {
     let live = true;
     void (async () => {
       try {
-        const me = await api.mySubscription();
+        // Both, together: the hub cannot say anything useful about a student
+        // whose programme it does not know, and a second round trip after the
+        // first has painted would move the page under them.
+        const [me, fields] = await Promise.all([
+          api.mySubscription(),
+          api.myFields().catch(() => []),
+        ]);
         if (live) {
           setSession({
             kind: 'signedIn',
@@ -63,6 +79,9 @@ export function HomeScreen() {
             lapsedOn: !me.active && me.hasEverPaid ? me.expiresAt : null,
             pendingClaim: me.pendingClaim,
             freeRemaining: me.freeRemaining,
+            // An empty list means the request failed, and a student who has one
+            // must not be nagged to choose because of a dropped connection.
+            needsProgramme: fields.length > 0 && !fields.some((field) => field.chosen),
           });
         }
       } catch {
@@ -118,7 +137,26 @@ export function HomeScreen() {
         knew none of them. QA read the same sentence on three different accounts
         and reported the home page as blind to who was looking at it.
       */}
-      {session.kind === 'signedIn' ? (
+      {/*
+        The first thing to do, when nothing else on this page will work yet.
+
+        Practise, Mock and Ask all redirect to `/choose`, so a student with no
+        programme met three dead links before finding the one screen that
+        unblocks them — on the page a fresh sign-in lands on. Shown above the
+        access line because "you have 10 free questions" is not actionable until
+        there is a programme to spend them in.
+      */}
+      {session.kind === 'signedIn' && session.needsProgramme ? (
+        <Card as="section" className="flex flex-col gap-3" data-needs-programme="">
+          <p className="text-body">{c.home.chooseFirst}</p>
+          <p className="text-caption text-ink-2">{c.home.chooseFirstWhy}</p>
+          <a href="/choose" className="btn-primary self-start">
+            {c.home.chooseProgramme}
+          </a>
+        </Card>
+      ) : null}
+
+      {session.kind === 'signedIn' && !session.needsProgramme ? (
         <div className="flex flex-col gap-1">
           <p className="text-caption text-ink-2">
             {session.activeUntil
@@ -154,6 +192,33 @@ export function HomeScreen() {
           </a>
         ))}
       </nav>
+
+      {/*
+        The way out, on a phone.
+
+        The rail carries one from `lg` up, but the rail is desktop-only and the
+        bottom bar has six destinations and no room for a seventh. That left the
+        foot of the Access page — a page you open in order to pay — as the only
+        sign-out in the product, which is where a tester failed to find it. This
+        is the hub, so this is where it belongs.
+      */}
+      {session.kind === 'signedIn' ? (
+        <button
+          type="button"
+          className="btn-ghost self-start lg:hidden"
+          data-sign-out=""
+          onClick={() => {
+            void api
+              .signOut()
+              .catch(() => {})
+              // The session is over on this device either way; a student left
+              // staring at the hub after a failed request cannot act on it.
+              .finally(() => window.location.assign('/signin'));
+          }}
+        >
+          {c.account.signOut}
+        </button>
+      ) : null}
     </div>
   );
 }

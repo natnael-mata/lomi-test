@@ -86,6 +86,18 @@ export class AdminCommunityController {
     return this.community.pendingReports(Math.min(Math.max(Number(limit) || 50, 1), 200));
   }
 
+  /**
+   * What is currently hidden, which is where Restore lives (T-268).
+   *
+   * Separate from the queue because hiding settles the report: the row leaves
+   * `reports` the moment restoring it becomes the relevant action, so a screen
+   * built only on the queue can never offer the undo its own copy promises.
+   */
+  @Get('hidden')
+  hidden(@Query('limit') limit?: string) {
+    return this.community.hiddenPosts(Math.min(Math.max(Number(limit) || 50, 1), 200));
+  }
+
   @Post('posts/:postId/hide')
   hide(
     @Req() req: AuthedRequest,

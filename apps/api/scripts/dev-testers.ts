@@ -593,7 +593,7 @@ async function main(): Promise<void> {
         {
           fieldId: field.id,
           slug: 'local-dev-mock',
-          name: 'Local Dev mock (short)',
+          name: 'Demo mock paper (short)',
           // 12 + 8 is the whole demo bank, which is what it holds: 12 concept
           // and 8 calculation. Asking for one more calculation than exists is
           // how the first version of this failed, with a 422 that named the

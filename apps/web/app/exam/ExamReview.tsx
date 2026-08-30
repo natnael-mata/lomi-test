@@ -59,6 +59,10 @@ export function ExamReview({ result }: { result: SittingResult }) {
             <AnswerView
               answer={item.answerView}
               isCorrect={item.answerView.chosenLabel === item.answerView.correctLabel}
+              // Nothing above this renders the question, unlike practice. Without
+              // it every entry was a verdict and an explanation for a question
+              // the reader could not see.
+              showQuestion
             />
           </article>
         ))}

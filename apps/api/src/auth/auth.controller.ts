@@ -64,6 +64,43 @@ export class AuthController {
   }
 
   /**
+   * Judges a code without spending it, so the code screen can refuse (T-268).
+   *
+   * **The screen that takes the code has to be the screen that rejects it.**
+   * Verification only ever happened at `register/verify`, together with the
+   * password, so a mistyped code was accepted in silence, the student picked a
+   * password, and only then were they thrown back a screen — with an attempt
+   * already gone and nothing on the code screen to say so. From the outside that
+   * is indistinguishable from a client that never checks at all, which is
+   * exactly how it was reported.
+   *
+   * Rate limited identically to `register/verify`: this is the same guess
+   * against the same code, so it must cost the same.
+   */
+  @Post('register/check')
+  registerCheck(
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown; code?: unknown },
+  ): Promise<{ ok: true }> {
+    this.rateLimit.consume('otpVerifyAddress', null, req.ip ?? null);
+    const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    if (phone) this.rateLimit.consume('otpVerify', phone, null);
+    return this.auth.checkCode(body?.phone, 'REGISTER', body?.code);
+  }
+
+  /** The same judgement for the reset flow. See `registerCheck`. */
+  @Post('password/reset/check')
+  resetCheck(
+    @Req() req: ExpressRequest,
+    @Body() body: { phone?: unknown; code?: unknown },
+  ): Promise<{ ok: true }> {
+    this.rateLimit.consume('otpVerifyAddress', null, req.ip ?? null);
+    const phone = typeof body?.phone === 'string' ? normaliseEthiopianMobile(body.phone) : null;
+    if (phone) this.rateLimit.consume('otpVerify', phone, null);
+    return this.auth.checkCode(body?.phone, 'RESET', body?.code);
+  }
+
+  /**
    * Sends a code to reset a forgotten password (T-266).
    *
    * **The same limits as sign-up, on purpose.** Reset is a second equal front

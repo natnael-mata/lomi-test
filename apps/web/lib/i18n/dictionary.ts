@@ -20,6 +20,26 @@
  * costs a review comment rather than a student's confusion.
  */
 
+/**
+ * A wait, said the way a person would say it (T-268).
+ *
+ * Seconds are right up to about a minute and a half and wrong after that: an
+ * escalated rate limiter hands back numbers like 1103 or 84238, and "in 84238
+ * seconds" is a sum, not a sentence. Nobody works out that it means tomorrow.
+ *
+ * Deliberately coarse above a minute — "in 18 minutes" rather than "18m 23s" —
+ * because a student reading this is deciding whether to wait or come back, and
+ * the seconds do not change that decision.
+ */
+export function plainDuration(seconds: number): string {
+  const whole = Math.max(0, Math.round(seconds));
+  if (whole < 90) return `${whole}s`;
+  const minutes = Math.round(whole / 60);
+  if (minutes < 60) return `${minutes} minutes`;
+  const hours = Math.round(minutes / 60);
+  return hours === 1 ? 'an hour' : `${hours} hours`;
+}
+
 export const en = {
   common: {
     tryAgain: 'Try again',
@@ -171,13 +191,24 @@ export const en = {
     couldNotSend: 'The code could not be sent just now. Try again in a moment.',
 
     sentTo: (phone: string) => `We sent a six-digit code to ${phone}.`,
+    // When the server refused to send another one. Says plainly that nothing
+    // went out, and points at the code they may already have rather than
+    // leaving them waiting for an SMS that is not coming.
+    notSentYet: (phone: string) =>
+      `We have not sent another code to ${phone} yet. If one arrived earlier, it still works.`,
     codeLabel: 'The six-digit code',
     codeHint: 'It arrives by SMS and lasts ten minutes.',
     continue: 'Continue',
+    checking: 'Checking…',
     resend: 'Send another code',
     // A live countdown, never a dead button: "wait" with no number is
     // indistinguishable from broken, and the student presses it again.
-    resendIn: (seconds: number) => `Send another code in ${seconds}s`,
+    //
+    // Read as time, not as seconds. The cooldown is a minute, so seconds are
+    // right for the ordinary case — but a rate limiter that has escalated hands
+    // back numbers like 1103, and "in 1103s" is a number a student has to do
+    // arithmetic on to discover it means eighteen minutes.
+    resendIn: (seconds: number) => `Send another code in ${plainDuration(seconds)}`,
     couldNotVerify: 'That did not go through. Try again in a moment.',
 
     triesLeft: (left: number) => `${left} ${left === 1 ? 'try' : 'tries'} left, or send a new one.`,
@@ -270,7 +301,16 @@ export const en = {
   },
 
   home: {
-    tagline: 'Practise for your exit exam, one question at a time.',
+    // "Your exit exam" was written when that was the only thing this product
+    // prepared anybody for. It now runs from Grade 6 upwards, and a page that
+    // greets an eleven-year-old with "your exit exam" is talking to somebody
+    // else. Neutral about which exam, specific about the method.
+    tagline: 'Practise for your exam, one question at a time.',
+    chooseFirst: 'Choose your programme to begin.',
+    chooseFirstWhy:
+      'It decides every question you practise, and it is the only thing standing between you ' +
+      'and your first one. You can change it later.',
+    chooseProgramme: 'Choose a programme',
     working: 'Loading…',
 
     signedOut: 'Open Lomi-Exams from the Telegram bot to sign in.',
@@ -379,8 +419,8 @@ export const en = {
   paywall: {
     title: 'You have used your ten free questions',
     intro:
-      'Every question in the bank comes with a full explanation. Unlock the rest for six or ' +
-      'twelve months — one plan covers every programme.',
+      'Every question in the bank comes with a full explanation. Unlock the rest of your ' +
+      'programme — nothing in it is held back or sold separately.',
     months: (count: number) => `${count} months`,
     perMonth: (etb: number) => `Br ${etb} / month`,
     price: (etb: number) => `Br ${etb}`,
@@ -455,10 +495,11 @@ export const en = {
     step2: 'New here? Sign up with your number — we send a code to confirm it.',
     step3: 'Your first 10 questions are free — explanations included.',
     continue: 'Continue with Telegram',
-    // Named tracks went stale the moment there were seven of them. One plan
-    // covering everything is the durable half of the claim, and the one
-    // PRODUCT.md T-141b actually commits to.
-    coverage: 'One plan covers every programme — school tracks and exit exams alike.',
+    // Named tracks went stale the moment there were seven of them, and "one
+    // plan covers every programme" went stale when school tracks got their own
+    // Br 300 price. What survives both is the range the product spans, said
+    // without implying one price or one plan across it.
+    coverage: 'For school tracks and university exit exams alike.',
 
     signedIn: 'You are signed in.',
     goPractise: 'Start practising',
@@ -670,7 +711,19 @@ export const en = {
     // the heading they land on say the same thing.
     heading: 'Access',
     chosen: 'Chosen',
-    countedFromToday: 'Counted from today. One plan covers every programme.',
+    /*
+     * "One plan covers every programme" was true and stopped being true.
+     *
+     * It dated from a single price for everybody. School tracks now pay Br 300
+     * and exit exams Br 500 or Br 800, and a live school plan will not carry a
+     * student onto an exit-exam programme — `crossesPricingLine` refuses it. So
+     * the sentence contradicted the three different prices printed directly
+     * above it, on all three versions of this page.
+     *
+     * What is still true is the part that matters to somebody deciding: nothing
+     * inside their own programme is held back or sold separately.
+     */
+    countedFromToday: 'Counted from today. Covers every question in your programme.',
 
     // telebirr / CBE Birr, waiting for the handset.
     waitingBanner: 'Check your phone',
@@ -938,6 +991,26 @@ export const en = {
       isHidden: 'Hidden',
       postGone: 'That post no longer exists.',
       reporterSaid: (note: string) => `They added: ${note}`,
+      /*
+       * Who wrote it, and what it was answering.
+       *
+       * Each part is dropped when it is missing rather than printed as
+       * "Unknown" — a moderator reading "by Unknown in Unknown" learns nothing
+       * and has to work out whether that is a deleted account or a bug.
+       */
+      context: (author: string | null, topic: string | null, thread: string | null): string => {
+        const parts = [
+          author ? `By ${author}` : null,
+          topic ? `in ${topic}` : null,
+          thread ? `· ${thread}` : null,
+        ].filter(Boolean);
+        return parts.length === 0 ? '' : parts.join(' ');
+      },
+
+      hiddenTitle: 'Currently hidden',
+      hiddenIntro: 'Posts students cannot see. Anything here can be put back.',
+      hiddenEmpty: 'Nothing is hidden.',
+      hiddenNote: (note: string) => `Note when hidden: ${note}`,
       hide: 'Hide this post',
       hideWhy: 'Students stop seeing it. You can put it back.',
       restore: 'Put it back',

@@ -19,14 +19,13 @@ import { Chip } from '../../../components/Chip';
 import { Input } from '../../../components/Input';
 import { ApiError, api, type ThreadSummary, type ThreadView } from '../../../lib/api';
 import { copy } from '../../../lib/i18n';
+import { REPORT_REASONS, reasonLabel } from '../../../lib/report-reasons';
 
 type Phase =
   | { kind: 'loading' }
   | { kind: 'list'; threads: ThreadSummary[] }
   | { kind: 'thread'; thread: ThreadView }
   | { kind: 'error'; message: string };
-
-const REASONS = ['WRONG', 'ABUSIVE', 'SPAM', 'OFF_TOPIC'] as const;
 
 export function CommunityScreen({ topicId }: { topicId: string }) {
   const c = copy();
@@ -182,20 +181,14 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
                   <details>
                     <summary className="text-caption text-ink-2">{c.community.report}</summary>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {REASONS.map((reason) => (
+                      {REPORT_REASONS.map((reason) => (
                         <button
                           key={reason}
                           type="button"
                           className="btn-ghost"
                           onClick={() => void report(post.id, reason)}
                         >
-                          {reason === 'WRONG'
-                            ? c.community.reportWrong
-                            : reason === 'ABUSIVE'
-                              ? c.community.reportAbusive
-                              : reason === 'SPAM'
-                                ? c.community.reportSpam
-                                : c.community.reportOffTopic}
+                          {reasonLabel(reason, c)}
                         </button>
                       ))}
                     </div>

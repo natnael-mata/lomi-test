@@ -105,7 +105,27 @@ export interface ReportedPost {
   reason: string;
   note: string | null;
   createdAt: string;
-  post: { id: string; body: string; hiddenAt: string | null; threadId: string } | null;
+  post: {
+    id: string;
+    body: string;
+    hiddenAt: string | null;
+    threadId: string;
+    authorName: string | null;
+    threadTitle: string | null;
+    topicName: string | null;
+  } | null;
+}
+
+/** A hidden post, as the "currently hidden" list shows it. */
+export interface HiddenPost {
+  id: string;
+  body: string;
+  hiddenAt: string;
+  hiddenNote: string | null;
+  threadId: string;
+  threadTitle: string | null;
+  topicName: string | null;
+  authorName: string | null;
 }
 
 /** A live session, as the device list shows it. Dates arrive as ISO strings. */
@@ -517,6 +537,13 @@ export interface LeaderboardView {
   rows: LeaderboardRow[];
   /** Present even when opted out — hiding the row never hides the rank (T-194). */
   you: { rank: number; points: number; tier: StandingView['tier']; listed: boolean } | null;
+  /**
+   * Whether you appear on boards, whether or not you have any points (T-268).
+   *
+   * `you` is null for anybody who has never scored, so a control reading its
+   * state from there offered "Hide me" to a student who was already hidden.
+   */
+  youListed: boolean;
 }
 
 export interface ThreadSummary {
@@ -919,6 +946,20 @@ export const api = {
     }),
 
   /**
+   * Judges a code without spending it, so the code screen can refuse (T-268).
+   *
+   * Called when the student leaves the code screen. Without it the code was
+   * only ever judged alongside the password, which meant a mistyped code was
+   * met with silence, then a password screen, then a bounce backwards with a
+   * try already spent.
+   */
+  checkCode: (purpose: 'register' | 'reset', phone: string, code: string): Promise<{ ok: true }> =>
+    call(purpose === 'register' ? '/auth/register/check' : '/auth/password/reset/check', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code }),
+    }),
+
+  /**
    * Proves the number, sets the password, and signs in.
    *
    * Signing in is the server's doing and it is deliberate: somebody who has
@@ -1079,6 +1120,9 @@ export const api = {
    */
   moderationQueue: (): Promise<ReportedPost[]> =>
     call<ReportedPost[]>('/admin/community/reports'),
+
+  /** Everything currently hidden. Where Restore is reachable from. */
+  hiddenPosts: (): Promise<HiddenPost[]> => call<HiddenPost[]>('/admin/community/hidden'),
 
   /** Hides a post. The only thing in the product that hides one. */
   hidePost: (postId: string, note?: string): Promise<{ hidden: boolean }> =>

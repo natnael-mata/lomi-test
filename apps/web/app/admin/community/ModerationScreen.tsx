@@ -14,23 +14,30 @@
  * something has to read it, and a queue that makes them click through to find
  * out what they are ruling on is a queue that gets rubber-stamped.
  *
- * **Hiding is reversible and says so.** The API pairs every `hide` with a
- * `restore`, and this screen keeps both on the row: a moderation tool without a
- * visible undo is one an operator hesitates to use, and hesitation on this
- * screen means a reported post stays up.
+ * **Hiding is reversible and says so — and for a while it was not** (T-268).
+ * The row carried both buttons, but hiding a post settles its report, and the
+ * queue is "reports nobody has looked at yet": the row left the screen at the
+ * exact moment Restore became the relevant action. So the undo was rendered
+ * only in the one state where nobody needed it, under a caption promising "you
+ * can put it back". QA went looking for the way back and found none.
+ *
+ * Hence the second list. What is currently hidden is a fact about posts, not
+ * about reports, so it survives the report being settled and is the honest
+ * answer to "what can students not see, and who decided that".
  */
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
-import { api, signInRequired, type ReportedPost } from '../../../lib/api';
+import { api, signInRequired, type HiddenPost, type ReportedPost } from '../../../lib/api';
 import { dayAndTime } from '../../../lib/dates';
 import { copy } from '../../../lib/i18n';
+import { reasonLabel } from '../../../lib/report-reasons';
 
 type Phase =
   | { kind: 'loading' }
-  | { kind: 'ready'; reports: ReportedPost[] }
+  | { kind: 'ready'; reports: ReportedPost[]; hidden: HiddenPost[] }
   | { kind: 'error'; message: string };
 
 export function ModerationScreen() {
@@ -41,7 +48,11 @@ export function ModerationScreen() {
 
   const load = useCallback(async (): Promise<void> => {
     try {
-      setPhase({ kind: 'ready', reports: await api.moderationQueue() });
+      // Both lists together: acting on a post moves it from one to the other,
+      // so refreshing only the queue would leave the hidden list stale in
+      // exactly the case the operator is watching.
+      const [reports, hidden] = await Promise.all([api.moderationQueue(), api.hiddenPosts()]);
+      setPhase({ kind: 'ready', reports, hidden });
     } catch (error) {
       if (signInRequired(error)) {
         window.location.assign('/signin');
@@ -117,12 +128,37 @@ export function ModerationScreen() {
               <li key={report.id}>
                 <Card as="article" className="flex flex-col gap-3" data-report={report.postId}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Chip>{report.reason}</Chip>
+                    {/* The student's own words for the reason, not the stored
+                        enum. `OFF_TOPIC` is a database value that had been
+                        showing up on an operator's screen. */}
+                    <Chip>{reasonLabel(report.reason, c)}</Chip>
                     {hidden ? <Chip tone="wrong">{c.admin.moderation.isHidden}</Chip> : null}
                     <span className="text-caption text-ink-2 num ml-auto">
                       {dayAndTime(report.createdAt)}
                     </span>
                   </div>
+
+                  {/*
+                    Who wrote it and where.
+
+                    A row that is only the post's text asks somebody to rule on
+                    a fragment: whether a reply is abuse or a blunt correction
+                    can turn on the question it answers.
+
+                    Text, not a link. Threads are opened client-side inside a
+                    topic page and have no URL of their own, and staff are
+                    scoped to their own programme anyway — a link would be a
+                    403 dressed up as a way to read the thread.
+                  */}
+                  {report.post ? (
+                    <p className="text-caption text-ink-2">
+                      {c.admin.moderation.context(
+                        report.post.authorName,
+                        report.post.topicName,
+                        report.post.threadTitle,
+                      )}
+                    </p>
+                  ) : null}
 
                   {/*
                     The post itself, verbatim.
@@ -177,6 +213,66 @@ export function ModerationScreen() {
           })}
         </ul>
       )}
+
+      {/*
+        Everything currently hidden — the only place Restore can be reached.
+
+        Rendered even when empty, unlike the queue: an operator who has just
+        hidden something needs to see where it went, and a section that appears
+        only when it is non-empty teaches nobody that it exists.
+      */}
+      <section className="flex flex-col gap-3">
+        <header className="flex flex-col gap-1">
+          <h2 className="text-subtitle">{c.admin.moderation.hiddenTitle}</h2>
+          <p className="text-caption text-ink-2">{c.admin.moderation.hiddenIntro}</p>
+        </header>
+
+        {phase.hidden.length === 0 ? (
+          <p className="text-body text-ink-2">{c.admin.moderation.hiddenEmpty}</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {phase.hidden.map((post) => (
+              <li key={post.id}>
+                <Card as="article" className="flex flex-col gap-3" data-hidden={post.id}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip tone="wrong">{c.admin.moderation.isHidden}</Chip>
+                    <span className="text-caption text-ink-2 num ml-auto">
+                      {dayAndTime(post.hiddenAt)}
+                    </span>
+                  </div>
+
+                  <p className="text-caption text-ink-2">
+                    {c.admin.moderation.context(post.authorName, post.topicName, post.threadTitle)}
+                  </p>
+
+                  <p className="text-body bg-surface-2 rounded-card p-3 break-words whitespace-pre-wrap">
+                    {post.body}
+                  </p>
+
+                  {post.hiddenNote ? (
+                    <p className="text-caption text-ink-2">
+                      {c.admin.moderation.hiddenNote(post.hiddenNote)}
+                    </p>
+                  ) : null}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="ghost"
+                      disabled={busy === post.id}
+                      onClick={() => void act(post.id, false)}
+                    >
+                      {c.admin.moderation.restore}
+                    </Button>
+                    <p className="text-caption text-ink-2 self-center">
+                      {c.admin.moderation.restoreWhy}
+                    </p>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

@@ -15,6 +15,42 @@ describe('root layout', () => {
     expect(viewport.width).toBe('device-width');
     expect(viewport.initialScale).toBe(1);
   });
+
+  /**
+   * No page appends the site name itself (T-268).
+   *
+   * The template already does it, so five pages that also wrote it produced
+   * "Home · Lomi-Exams · Lomi-Exams" in the tab. Easy to write and invisible
+   * unless somebody reads the tab strip, which is why it is worth a test rather
+   * than a habit.
+   */
+  it('leaves the site name to the template', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { dirname, join, resolve } = await import('node:path');
+    const { fileURLToPath } = await import('node:url');
+
+    const root = dirname(fileURLToPath(import.meta.url));
+    const pages: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir)) {
+        const path = join(dir, entry);
+        if (statSync(path).isDirectory()) walk(path);
+        else if (entry === 'page.tsx') pages.push(path);
+      }
+    };
+    walk(root);
+
+    expect(pages.length).toBeGreaterThan(10);
+    for (const page of pages) {
+      const source = readFileSync(resolve(page), 'utf8');
+      // `title: { absolute: … }` opts out of the template deliberately — the
+      // landing page's title is the tagline, not a section name — so only the
+      // plain form is checked.
+      const title = /title:\s*'([^']*)'/.exec(source)?.[1];
+      if (title === undefined) continue;
+      expect(title, page).not.toContain('Lomi-Exams');
+    }
+  });
 });
 
 describe('self-hosted fonts (T-091)', () => {

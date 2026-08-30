@@ -12,6 +12,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { bandFor, isListed } from './bands';
 import {
   RULES,
   award,
@@ -67,6 +68,21 @@ export interface LeaderboardView {
    * doing" has punished somebody for a privacy choice.
    */
   you: { rank: number; points: number; tier: TierId; listed: boolean } | null;
+  /**
+   * Whether the asker's row may appear on a board, independent of ranking
+   * (T-268).
+   *
+   * **`you` is null for anybody with no points**, because this board is built
+   * from the points ledger — so the one control that changes this setting was
+   * reading its state from a row that does not exist for a student who has
+   * never scored. A Grade 6 student who is hidden by default was offered "Hide
+   * me from the board", the button they least needed.
+   *
+   * Separate field because it answers a different question: `you` is "where do
+   * I stand", this is "am I visible", and the second is true or false for every
+   * account whether or not the first has an answer.
+   */
+  youListed: boolean;
 }
 
 @Injectable()
@@ -197,6 +213,29 @@ export class EngagementService {
     });
     const byId = new Map(users.map((u) => [u.id, u]));
 
+    /*
+     * The asker's own setting, fetched whether or not they have scored.
+     *
+     * `byId` only holds people with points, so reading the viewer out of it
+     * gives `undefined` for exactly the students this setting matters most for
+     * — the ones who have not started competing yet.
+     */
+    const me = await this.prisma.user.findUnique({
+      where: { id: viewerId },
+      // `fieldId` is a plain column on User — there is no relation to follow.
+      select: { leaderboardOptOut: true, fieldId: true },
+    });
+    const myField = me?.fieldId
+      ? await this.prisma.field.findUnique({
+          where: { id: me.fieldId },
+          select: { maxGrade: true },
+        })
+      : null;
+    // The three-state default: juniors are hidden until asked, seniors listed.
+    // The same function the boards themselves use, so the button cannot
+    // disagree with the board it sits under.
+    const youListed = isListed(bandFor(myField?.maxGrade ?? null), me?.leaderboardOptOut ?? null);
+
     // Ranked first, over everybody. Ties share a rank: two students on 40 points
     // are both second, because telling one of them they are third is a claim the
     // numbers do not support.
@@ -241,6 +280,7 @@ export class EngagementService {
             listed: viewer !== undefined && !viewer.leaderboardOptOut,
           }
         : null,
+      youListed,
     };
   }
 
