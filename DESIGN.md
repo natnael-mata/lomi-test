@@ -324,6 +324,38 @@ Borders are 1px at rest. Option rows carry 2px so their selected, correct and wr
 legible at arm's length on a cheap screen. Icons are 2px-stroke rounded-join outlines drawn on
 a 24px grid — never emoji, in any surface, including bot messages.
 
+## The mark
+
+A whole lemon on a 24px grid: an oval body tilted 20° with a nub at each end of its long
+axis, a cream glint on the upper shoulder, twin mint leaves on a short stem, and **the
+answer screens' correct stroke laid across it** — mint over ink, the same gesture drawn over
+a correct option. The fruit is the name (ሎሚ *means* lemon) and the check is the product.
+
+It sits in the lemon rounded square everywhere the interface names itself: the navigation
+bar, sign-in, the admin bar, the app icons. Inside that tile the body is **unfilled** — the
+tile already is the fruit, and a second yellow on top only thickens the outline. Standing
+alone on cream it takes the brand fill.
+
+**The check is drawn twice, ink under mint.** Mint alone is about 1.2:1 on the lemon tile
+and the check disappears into the fruit; the ink underlay is what keeps it a check on
+yellow, on cream, and at 20px.
+
+**The leaves come off below 24px.** At a 16–20px browser tab two 3px leaves are four grey
+pixels and a suggestion, while the fruit and the check still read — so the favicon is the
+leafless variant. `LemonMark` applies that threshold itself rather than leaving each caller
+to remember it.
+
+> The mark has been three things. A Ge'ez `ሎሚ` glyph until 2026-08-20 — the only thing in
+> the product needing Ge'ez coverage, at 198KB of font on every first load. Then the letter
+> `L`, honest about being a placeholder. Both were **text**, which is the failure worth
+> naming: a mark set in a typeface renders in whatever face the device substitutes, so it is
+> the one element guaranteed to differ on every phone. This one is drawn.
+>
+> The geometry lives in `apps/web/components/lemon-mark.mjs`, imported by both the component
+> and the icon script. That is not tidiness. The script previously held its own copy —
+> `#5b4be0` violet and an Ethiopic `@font-face` — and stayed broken for three weeks after the
+> palette changed, because app icons are regenerated about twice a year.
+
 ## Components
 
 ### Buttons

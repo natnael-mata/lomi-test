@@ -3,41 +3,51 @@
  *
  *   node apps/web/scripts/brand-icons.mjs
  *
- * **Nothing here is a new brand.** The mark is the one `components/Logo.tsx`
- * renders on every screen — a brand-violet rounded square with `ሎሚ` in Noto
- * Sans Ethiopic — and this draws exactly that at the sizes a phone home screen
- * needs. Designing an icon would be somebody else's job; reproducing the
- * existing one at 512px is arithmetic.
+ * **Nothing here is a new brand.** It imports `lemon-mark.mjs` — the same paths
+ * `components/Logo.tsx` renders on every screen — so the icon on a phone's home
+ * screen cannot drift from the one in the navigation. Designing an icon would
+ * be somebody else's job; reproducing the existing one at 512px is arithmetic.
  *
- * Chrome does the rendering, because it is the only thing on this machine that
- * can lay out a Ge'ez glyph in a specific font and turn it into a PNG. The font
- * is the repo's own committed woff2, read off disk and inlined, so the icon
- * cannot come out in a substitute face on a machine that happens to lack it —
- * which is the failure that produces an icon nobody notices is wrong.
+ * That import is the fix for how this file spent three weeks broken. It carried
+ * its own copy of the design: a hardcoded `#5b4be0` violet and a `@font-face`
+ * pointing at an Ethiopic woff2, both left behind by the move to a lemon
+ * palette and English-only text. The script could not have run, and nobody
+ * noticed, because icons are regenerated about twice a year.
+ *
+ * Chrome does the rendering because it is the thing on this machine that turns
+ * markup into a PNG at an exact pixel size.
  *
  * Two variants per size, and the difference matters on Android:
  *
  * - **any** — the mark filling the square, which is what a browser tab and a
  *   desktop shortcut show.
- * - **maskable** — the same mark at 60% scale on a full-bleed violet ground, so
+ * - **maskable** — the same mark at 42% scale on a full-bleed lemon ground, so
  *   a launcher that crops to a circle crops the background rather than the
- *   glyph. Shipping only `any` is how a logo ends up with its corners bitten
+ *   fruit. Shipping only `any` is how a logo ends up with its corners bitten
  *   off on half the phones in the country.
  */
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { MARK_COLORS, lemonMarkSvg } from '../components/lemon-mark.mjs';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB = resolve(HERE, '..');
 const OUT = join(WEB, 'public', 'brand');
-const FONT = join(WEB, 'app', 'fonts', 'noto-sans-ethiopic-variable.woff2');
 
-/** From `design-system/tailwind-theme.css`. Not re-picked here. */
-const BRAND = '#5b4be0';
-const ON_BRAND = '#ffffff';
+/**
+ * From `design-system/tailwind-theme.css`. Not re-picked here.
+ *
+ * This said `#5b4be0` — brand violet — until 2026-09-01, three weeks after the
+ * palette became lemon, alongside a `@font-face` pointing at an Ethiopic woff2
+ * deleted with the move to English only. The script could not have run. Icons
+ * regenerate rarely enough that stale is the default state unless the mark they
+ * draw is the same object the app draws, which it now is.
+ */
+const BRAND = MARK_COLORS.lemon;
 
 const ICONS = [
   { name: 'lomi-test-192.png', size: 192, maskable: false },
@@ -57,20 +67,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * a launcher will not crop — the spec's guidance is that everything inside the
  * middle 80% survives, and 60% leaves room for a circular mask too.
  */
-function page(size, maskable, fontData) {
+function page(size, maskable) {
   const radius = maskable ? 0 : Math.round(size * 0.22);
-  const glyph = Math.round(size * (maskable ? 0.42 : 0.44));
+  const glyph = Math.round(size * (maskable ? 0.42 : 0.56));
   return `<!doctype html><meta charset="utf-8"><style>
-    @font-face { font-family: 'Ethiopic'; src: url(data:font/woff2;base64,${fontData}) format('woff2'); font-weight: 100 900; }
     html, body { margin: 0; padding: 0; background: transparent; }
     .mark {
       width: ${size}px; height: ${size}px; border-radius: ${radius}px;
-      background: ${BRAND}; color: ${ON_BRAND};
+      background: ${BRAND};
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Ethiopic'; font-weight: 600; font-size: ${glyph}px;
-      line-height: 1;
     }
-  </style><div class="mark">ሎሚ</div>`;
+  </style><div class="mark">${lemonMarkSvg({
+    size: glyph,
+    // Every icon here is 180px or larger, so the leaves are always well past
+    // the size at which they stop resolving. The favicon is the small case and
+    // it is `app/icon.svg`, not this.
+    leaves: true,
+    // The tile is the fruit; a second yellow on top only thickens the outline.
+    filled: false,
+  })}</div>`;
 }
 
 class Cdp {
@@ -109,9 +124,40 @@ class Cdp {
   }
 }
 
+/**
+ * The favicon, which is the one place the leaves come off.
+ *
+ * A browser tab draws this at 16–20px. Two 3px leaves there are four grey
+ * pixels and a suggestion, while the fruit and the check still read — which is
+ * the supplied design's own rule ("favicon 20px — leaves drop, check stays").
+ *
+ * SVG rather than another PNG: a tab icon is the smallest thing the brand is
+ * ever drawn at, and a rasterised 192px square scaled to 16 is where a mark
+ * turns to mud. Listed ahead of the PNG in `layout.tsx`, with the PNG left
+ * behind it for anything that cannot read SVG.
+ */
+function faviconSvg() {
+  const size = 32;
+  const radius = 7;
+  const inner = 26;
+  const offset = (size - inner) / 2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  <rect width="${size}" height="${size}" rx="${radius}" fill="${BRAND}"/>
+  <g transform="translate(${offset} ${offset}) scale(${inner / 24})">
+${lemonMarkSvg({ size: 24, leaves: false, filled: false })
+  .replace(/^<svg[^>]*>\n?/, '')
+  .replace(/<\/svg>$/, '')
+  .trimEnd()}
+  </g>
+</svg>`;
+}
+
 async function main() {
-  const fontData = readFileSync(FONT).toString('base64');
   mkdirSync(OUT, { recursive: true });
+
+  const favicon = join(OUT, 'lomi-favicon.svg');
+  writeFileSync(favicon, faviconSvg());
+  console.log(`${'lomi-favicon.svg'.padEnd(30)} 32px  leaves dropped`);
 
   const profile = mkdtempSync(join(tmpdir(), 'lomi-icons-'));
   const chrome = spawn(
@@ -144,7 +190,7 @@ async function main() {
     await cdp.send('Page.enable');
 
     for (const icon of ICONS) {
-      const html = page(icon.size, icon.maskable, fontData);
+      const html = page(icon.size, icon.maskable);
       await cdp.send('Emulation.setDeviceMetricsOverride', {
         width: icon.size,
         height: icon.size,

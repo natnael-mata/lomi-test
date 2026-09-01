@@ -27,7 +27,18 @@ export const metadata: Metadata = {
   // iOS reads these rather than the manifest.
   appleWebApp: { capable: true, title: 'Lomi-Exams', statusBarStyle: 'default' },
   icons: {
-    icon: [{ url: '/brand/lomi-test-192.png', sizes: '192x192', type: 'image/png' }],
+    /*
+     * The SVG first, and it is a different drawing.
+     *
+     * A tab renders this at 16–20px, where the mark's two leaves are four grey
+     * pixels — so the favicon is the leafless variant, fruit and check only,
+     * which is the brand handoff's own rule. The 192px PNG stays behind it for
+     * anything that cannot read SVG, and is what a bookmark or a shortcut takes.
+     */
+    icon: [
+      { url: '/brand/lomi-favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/lomi-test-192.png', sizes: '192x192', type: 'image/png' },
+    ],
     apple: [{ url: '/brand/lomi-test-apple-180.png', sizes: '180x180', type: 'image/png' }],
   },
   description:
