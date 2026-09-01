@@ -71,12 +71,30 @@ describe('the home screen (T-198)', () => {
   });
 
   /**
-   * The sign-in prompt gives a reason. "Sign in with Telegram" reads as a hoop;
-   * why it is Telegram is a benefit worth one sentence.
+   * The signed-out card answers "and if I have no account?" (T-268).
+   *
+   * It used to assert the word "password", which was checking that the card
+   * explained *why sign-in went through Telegram* — a door removed with T-263.
+   * The card then said "Open Lomi-Exams from the Telegram bot" while `/signin`
+   * asked for a phone and a password and `/signup` sent an SMS code: three
+   * stories about how to get in, and a tester followed the wrong one.
+   *
+   * What has to hold now is that somebody with no account is told what to do,
+   * and that both routes are reachable from here.
    */
-  it('explains the sign-in rather than only demanding it', () => {
+  it('tells a visitor with no account what to do', () => {
     expect(screen).toContain('c.home.signedOutWhy');
-    expect(en.home.signedOutWhy.toLowerCase()).toContain('password');
+    expect(en.home.signedOutWhy.toLowerCase()).toContain('new here');
+    expect(screen).toContain('/signup');
+    expect(screen).toContain('/signin');
+  });
+
+  /** No door that no longer exists. Telegram sign-in went with T-263. */
+  it('does not send a signed-out visitor to a bot', () => {
+    for (const line of [en.home.signedOut, en.home.signedOutWhy]) {
+      expect(line.toLowerCase()).not.toContain('telegram');
+      expect(line.toLowerCase()).not.toContain('bot');
+    }
   });
 
   /**

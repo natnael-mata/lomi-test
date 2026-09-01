@@ -49,13 +49,29 @@ export function PasswordSignIn() {
       // changed, and every screen behind this one reads it on mount.
       window.location.assign('/home');
     } catch (error) {
-      if (error instanceof ApiError && error.status === 429) {
-        setProblem(c.signIn.tooMany);
-      } else {
-        // Deliberately not `refusalMessage`: the server's words and these are
-        // the same sentence, and a network failure must not read as a rejected
-        // password.
+      const status = error instanceof ApiError ? error.status : 0;
+      if (status === 429) {
+        // The wait, in words. The server sends `retryAfterSec`, and it can be
+        // in the hundreds — "try again in 525 seconds" is a sum, not a sentence.
+        const wait = Number(
+          (error as ApiError).body &&
+            ((error as ApiError).body as { retryAfterSec?: unknown }).retryAfterSec,
+        );
+        setProblem(c.signIn.tooMany(Number.isFinite(wait) && wait > 0 ? wait : 600));
+      } else if (status === 401) {
+        // The only case where the password is genuinely in question.
         setProblem(c.signIn.signInFailed);
+      } else {
+        /*
+         * A fault, and named as one.
+         *
+         * This branch used to fall through to `signInFailed`, which is the
+         * sentence about a wrong password — so a 500, a dropped connection or a
+         * CORS failure all told the student their credentials were wrong. The
+         * comment here already said a network failure must not read as a
+         * rejected password; the code did not do it.
+         */
+        setProblem(c.signIn.signInBroken);
       }
       setBusy(false);
     }

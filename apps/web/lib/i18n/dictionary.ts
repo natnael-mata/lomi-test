@@ -215,9 +215,14 @@ export const en = {
     couldNotVerify: 'That did not go through. Try again in a moment.',
 
     triesLeft: (left: number) => `${left} ${left === 1 ? 'try' : 'tries'} left, or send a new one.`,
-    // A clock time, never "later". A duration has to be added to a clock the
-    // student is already looking at.
-    tryAgainAt: (time: string) => `You can try again at ${time}.`,
+    /*
+     * `tryAgainAt` is gone.
+     *
+     * The rule it served — a lockout names a clock time, never "later" — is now
+     * kept by the server's own refusal message, which has to carry the time
+     * anyway for the bot and any other API caller. Two sentences meant one
+     * instant printed twice in two locale formats, one line under the other.
+     */
     nothingWrong: 'Nothing is wrong with your account — codes simply do not last long.',
 
     passwordHint: 'At least 8 characters. Anything you will remember.',
@@ -316,8 +321,17 @@ export const en = {
     chooseProgramme: 'Choose a programme',
     working: 'Loading…',
 
-    signedOut: 'Open Lomi-Exams from the Telegram bot to sign in.',
-    signedOutWhy: 'Signing in through Telegram means no password to remember and none to lose.',
+    /*
+     * The product told three different stories about how to get in (T-268).
+     *
+     * `/home` said "Open Lomi-Exams from the Telegram bot", `/signin` asks for
+     * a phone number and a password, and `/signup` sends an SMS code. Telegram
+     * deep-link was the only door once; phone-and-password replaced it, and
+     * this screen kept the old sentence. A visitor who follows it goes looking
+     * for a bot they do not need.
+     */
+    signedOut: 'Sign in with your phone number to pick up where you left off.',
+    signedOutWhy: 'New here? Creating an account takes a number and a code we text you.',
 
     goPractice: 'Practise',
     goPracticeWhy: 'Answer questions and see why each answer is right.',
@@ -466,7 +480,21 @@ export const en = {
      * hold accounts, and mobile numbers are issued in guessable blocks.
      */
     signInFailed: 'That phone number and password do not match an account.',
-    tooMany: 'Too many attempts on this number. Wait a few minutes and try again.',
+    /*
+     * When the fault is ours, say so (T-268).
+     *
+     * Every failure that was not a 429 rendered `signInFailed`, so a service
+     * returning 500 to every sign-in told each student their password was
+     * wrong. A tester watched seven accounts get that message against an API
+     * that could not mint a session for anybody, and a real student would spend
+     * the evening retyping a password that was never the problem.
+     */
+    // Names the cause, clears the reader, gives the move. "Something went
+    // wrong" is banned by the voice rules for the middle reason: it leaves
+    // somebody holding a problem with nothing to do about it.
+    signInBroken: 'We could not reach the server. Your password is fine — try again in a moment.',
+    tooMany: (seconds: number) =>
+      `Too many attempts on this number. Try again in ${plainDuration(seconds)}.`,
     orTelegram: 'Or sign in with Telegram',
     title: 'Sign in with Telegram',
     intro:

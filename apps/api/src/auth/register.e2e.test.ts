@@ -344,6 +344,61 @@ describe('registering with a phone number (T-264)', () => {
     });
 
     /**
+     * THE bypass. A lock the student can clear themselves is not a lock.
+     *
+     * `lockedUntil` is a column on a code row, and asking for a new code wrote
+     * a fresh row with `attempts: 0` — so three wrong guesses, one press of
+     * "Send another code", and there were three more. QA verified it end to
+     * end: locked until 19:40, resent, immediately told "2 tries left". The
+     * sentence "This number is locked until 19:40" was untrue and the cap was
+     * worth three times what it claimed.
+     */
+    it('cannot be unlocked by asking for a new code', async () => {
+      await plantCode(NEW_PHONE, '424242');
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await check(NEW_PHONE, '000000');
+        limits.reset();
+      }
+
+      // The send itself is refused, so a locked number cannot even spend an SMS.
+      const resend = await start(NEW_PHONE);
+      expect(resend.status).toBe(401);
+      expect(resend.body.reason).toBe('locked');
+      limits.reset();
+
+      // And nothing was issued behind it that could carry fresh attempts.
+      const after = await check(NEW_PHONE, '000000');
+      expect(after.status).toBe(401);
+      expect(after.body.reason).toBe('locked');
+      expect(after.body.triesLeft).toBe(0);
+    });
+
+    /*
+     * The same hole from the other side: a code row planted after the lock —
+     * whatever put it there — must not hand back a fresh set of guesses,
+     * because verification reads only the newest row.
+     */
+    it('holds the lock against a newer code row', async () => {
+      await plantCode(NEW_PHONE, '424242');
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await check(NEW_PHONE, '000000');
+        limits.reset();
+      }
+
+      await prisma.otpCode.create({
+        data: {
+          phone: NEW_PHONE,
+          codeHash: hashCode('999999'),
+          expiresAt: new Date(Date.now() + 600_000),
+        },
+      });
+
+      const right = await check(NEW_PHONE, '999999');
+      expect(right.status).toBe(401);
+      expect(right.body.reason).toBe('locked');
+    });
+
+    /**
      * The refusal names the time, not "a short while".
      *
      * `retryAt` was already in the response and the sentence still said "for a

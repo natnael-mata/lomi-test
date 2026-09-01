@@ -20,6 +20,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../app.module';
 import { RedactingLogger } from './logger';
 import { PrismaService } from '../prisma/prisma.service';
+import { TEST_JWT_SECRET } from '../auth/staff-testkit.test-helper';
 
 const TG = 566000009;
 
@@ -43,6 +44,18 @@ describe('a full run writes no personal data (T-207)', () => {
   };
 
   beforeAll(async () => {
+    /*
+     * A configured secret, because this drives a full app and asserts on
+     * `/health` (T-268).
+     *
+     * `/health` used to return a hardcoded `{"status":"ok"}` and now reports
+     * whether the process can actually serve — so without this it answers 503,
+     * the `.expect(200)` below throws inside the output capture, and all four
+     * assertions fail against an empty string. Which is the health check doing
+     * its job: this file was running an app that could not have minted a
+     * session for anybody.
+     */
+    process.env.JWT_SECRET = TEST_JWT_SECRET;
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication({ logger: new RedactingLogger() });
     await app.init();

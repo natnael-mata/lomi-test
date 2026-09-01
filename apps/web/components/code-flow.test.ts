@@ -45,15 +45,24 @@ describe('the code screen (T-268)', () => {
     expect(continueButton).not.toMatch(/onClick=\{\(\) => setStep\(\{ kind: 'password'/);
   });
 
-  it('renders the tries remaining and the reopening time it is given', () => {
+  it('renders the tries remaining, and the server refusal verbatim', () => {
     expect(flow).toContain('c.codeFlow.triesLeft');
-    expect(flow).toContain('c.codeFlow.tryAgainAt');
+    expect(flow).toContain('refusal.message');
   });
 
-  /** A lockout the student cannot see the end of is one they keep testing. */
-  it('states a lockout as a clock time, never as "later"', () => {
-    expect(en.codeFlow.tryAgainAt('14:32')).toContain('14:32');
-    expect(en.codeFlow.tryAgainAt('14:32').toLowerCase()).not.toContain('later');
+  /**
+   * One sentence about the time, not two.
+   *
+   * The screen printed the server's "This number is locked until 19:40."
+   * directly above its own "You can try again at 07:40 PM." — one instant,
+   * twice, in two locale formats, which reads as two deadlines. The server owns
+   * the sentence now, because the bot needs the time in the prose too, so this
+   * side must not format `retryAt` a second time.
+   */
+  it('does not restate the reopening time in its own words', () => {
+    expect(flow).not.toContain('tryAgainAt');
+    expect(flow).not.toContain('toLocaleTimeString');
+    expect(en.codeFlow).not.toHaveProperty('tryAgainAt');
   });
 
   /**
@@ -67,6 +76,46 @@ describe('the code screen (T-268)', () => {
     expect(flow).toContain('c.codeFlow.notSentYet');
     expect(flow).toContain('sent: false');
     expect(en.codeFlow.notSentYet('0913000000').toLowerCase()).toContain('not sent');
+  });
+
+  /*
+   * The refusal has to reach the student on a RESEND too, which is the case
+   * that was silent: the 429 branch only rewrote the step when arriving from
+   * the phone screen, so pressing "Send another code" and being refused
+   * restarted the countdown under a line still reading "We sent a six-digit
+   * code to 0913…".
+   */
+  it('drops the sent claim when a resend is refused, not only a first send', () => {
+    expect(flow).toContain("s.kind === 'code'");
+    expect(flow).toContain('{ ...s, sent: false }');
+  });
+});
+
+describe('sign-in refusals name the right culprit (T-268)', () => {
+  const signIn = stripComments(readFileSync(resolve(here, 'PasswordSignIn.tsx'), 'utf8'));
+
+  /**
+   * A 500 is not a wrong password.
+   *
+   * Every non-429 failure rendered "That phone number and password do not match
+   * an account", so a service returning 500 to every sign-in told each student
+   * their password was wrong. Seven accounts, one broken environment variable,
+   * and an evening of retyping a password that was never the problem.
+   */
+  it('only blames the password on a 401', () => {
+    expect(signIn).toContain('status === 401');
+    expect(signIn).toContain('c.signIn.signInFailed');
+    expect(signIn).toContain('c.signIn.signInBroken');
+    // Clears the reader explicitly. The whole cost of this bug was students
+    // retyping a password that was never wrong.
+    expect(en.signIn.signInBroken.toLowerCase()).toContain('password is fine');
+    expect(en.signIn.signInBroken.toLowerCase()).not.toContain('do not match');
+  });
+
+  it('says the rate-limit wait in words, not raw seconds', () => {
+    expect(en.signIn.tooMany(525)).toContain('9 minutes');
+    expect(en.signIn.tooMany(525)).not.toContain('525');
+    expect(en.signIn.tooMany(86234)).not.toMatch(/\d{3,}/);
   });
 });
 

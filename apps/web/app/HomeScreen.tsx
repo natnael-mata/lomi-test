@@ -115,14 +115,21 @@ export function HomeScreen() {
       {session.kind === 'signedOut' ? (
         <Card as="section" className="flex flex-col gap-3">
           <p className="text-body">{c.home.signedOut}</p>
-          {/* Why, not just what. "Sign in with Telegram" reads as a hoop; the
-              reason it is Telegram is a benefit worth one sentence. */}
+          {/* What to do if you have no account yet, since the button below is
+              for people who do. */}
           <p className="text-caption text-ink-2">{c.home.signedOutWhy}</p>
-          {/* Somewhere to press. Telling somebody to open a bot they have not
-              found yet, with no link to the screen that mints one, is the
-              instruction this card used to end on. */}
+          {/*
+            The button says where it goes.
+
+            It read "Continue with Telegram" and linked to `/signin`, which is a
+            phone-and-password form — so the one press on this card promised a
+            door that has not existed since Telegram sign-in was removed.
+          */}
           <a href="/signin" className="btn-primary">
-            {c.signIn.continue}
+            {c.signIn.signInAction}
+          </a>
+          <a href="/signup" className="btn-ghost">
+            {c.signIn.noAccount}
           </a>
         </Card>
       ) : null}

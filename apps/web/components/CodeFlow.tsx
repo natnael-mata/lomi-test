@@ -122,11 +122,22 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
             (e.body as { retryAfterSec?: unknown } | undefined)?.retryAfterSec ?? RESEND_AFTER_SEC,
           );
           setCooldown(Number.isFinite(wait) ? wait : RESEND_AFTER_SEC);
-          // `sent: false` — nothing went out. An earlier code may still be
-          // valid, so the student is not sent back to the number screen, but
-          // the screen must stop claiming an SMS is on its way.
+          /*
+           * `sent: false` on the way in **and** on a resend.
+           *
+           * This used to rewrite the step only when arriving from the phone
+           * screen and leave it untouched otherwise — so pressing "Send another
+           * code" and being refused restarted the countdown under a line still
+           * reading "We sent a six-digit code to 0913…", with no error
+           * anywhere. The student then waits for a message nobody dispatched.
+           *
+           * An earlier code may still be live, so they are not sent back to the
+           * number screen; the screen simply stops claiming a new one is coming.
+           */
           setStep((s) =>
-            s.kind === 'phone' ? { kind: 'code', phone: to, expiresInSec: 600, sent: false } : s,
+            s.kind === 'code'
+              ? { ...s, sent: false }
+              : { kind: 'code', phone: to, expiresInSec: 600, sent: false },
           );
           setProblem(null);
           return;
@@ -291,9 +302,20 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
           {refusal.reason === 'wrong' && refusal.triesLeft > 0 && (
             <p className="text-caption text-ink-2">{c.codeFlow.triesLeft(refusal.triesLeft)}</p>
           )}
-          {refusal.retryAt && (
-            <p className="text-caption text-ink-2">{c.codeFlow.tryAgainAt(clockTime(refusal.retryAt))}</p>
-          )}
+          {/*
+            No second sentence about the time (T-268).
+
+            This rendered "You can try again at 07:40 PM." directly under the
+            server's own "This number is locked until 19:40." — one instant,
+            twice, in two clock formats, one with a leading zero. At a glance it
+            reads as two deadlines.
+
+            The server's message names the time, in Addis, because the bot and
+            anything else holding the API need it in the prose too. Formatting
+            it a second time here in the browser's locale could only ever agree
+            by accident. `retryAt` stays in the response for callers that would
+            rather format it themselves.
+          */}
           {/* Expiry is a rule, not a fault. The copy never implies the student
               broke something. */}
           {refusal.reason === 'expired' && (
@@ -310,16 +332,12 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
 /** How long before "send another" is offered. Matches the server's cooldown. */
 const RESEND_AFTER_SEC = 60;
 
-/**
- * A wall-clock time, in the reader's own timezone.
+/*
+ * `clockTime` lived here and is gone.
  *
- * The design is emphatic that a lockout is stated as a time — "you can try
- * again at 14:32" — never as a duration. A duration has to be added to a clock
- * the student is already looking at, and "later" is not an answer at all.
+ * The design's rule — a lockout is stated as a time, "you can try again at
+ * 14:32", never as "later" — has not changed. What changed is who says it: the
+ * server's own refusal message now carries the time, so a second formatter in
+ * the browser produced the same instant twice in two locales. See the refusal
+ * card above.
  */
-function clockTime(iso: string): string {
-  const when = new Date(iso);
-  return Number.isNaN(when.getTime())
-    ? ''
-    : when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}

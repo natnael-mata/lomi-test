@@ -528,6 +528,24 @@ export class AuthService {
    * looks like the reset being broken.
    */
   private async issueCode(phone: string, purpose: OtpPurpose, now: Date): Promise<void> {
+    /*
+     * A locked number cannot buy its way out with a new code (T-268).
+     *
+     * **The lock was on the code, not on the number.** `lockedUntil` is a column
+     * on `OtpCode`, verification only ever reads the newest row, and this method
+     * created a fresh one with `attempts: 0` — so three wrong guesses, one press
+     * of "Send another code", and the attacker had three more. QA verified it:
+     * locked until 19:40, resent, and was immediately told "2 tries left". The
+     * sentence "This number is locked until 19:40" was simply untrue, and the
+     * cap was worth three times what it claimed.
+     *
+     * Checked here as well as at verification because sending is the half that
+     * costs money: a locked number that keeps being sent codes is a telecom
+     * bill being run up by somebody who cannot use them.
+     */
+    const lockedUntil = await this.lockedUntilFor(phone, purpose, now);
+    if (lockedUntil) throw codeRejected({ ok: false, reason: 'locked', triesLeft: 0 }, lockedUntil);
+
     const newest = await this.prisma.otpCode.findFirst({
       where: { phone, purpose },
       orderBy: { createdAt: 'desc' },
@@ -600,6 +618,26 @@ export class AuthService {
    * it takes to choose a password. What it buys is the refusal arriving on the
    * screen that caused it.
    */
+  /**
+   * When this **number** may next try a code, or null (T-268).
+   *
+   * `lockedUntil` is a column on a code row, and a number can have many rows —
+   * so asking only the newest one meant a resend erased the lock. The lock
+   * belongs to the number: any unexpired lock on any of its codes holds.
+   */
+  private async lockedUntilFor(
+    phone: string,
+    purpose: OtpPurpose,
+    now: Date,
+  ): Promise<Date | null> {
+    const held = await this.prisma.otpCode.findFirst({
+      where: { phone, purpose, lockedUntil: { gt: now } },
+      orderBy: { lockedUntil: 'desc' },
+      select: { lockedUntil: true },
+    });
+    return held?.lockedUntil ?? null;
+  }
+
   private async spendCode(
     phone: string,
     purpose: OtpPurpose,
@@ -607,6 +645,12 @@ export class AuthService {
     now: Date,
     { spend = true }: { spend?: boolean } = {},
   ): Promise<void> {
+    // The number's lock, before the newest code's own state. Otherwise a code
+    // issued after a lock was set carries `attempts: 0` and hands back a fresh
+    // set of guesses.
+    const locked = await this.lockedUntilFor(phone, purpose, now);
+    if (locked) throw codeRejected({ ok: false, reason: 'locked', triesLeft: 0 }, locked);
+
     const stored = await this.prisma.otpCode.findFirst({
       where: { phone, purpose },
       orderBy: { createdAt: 'desc' },
