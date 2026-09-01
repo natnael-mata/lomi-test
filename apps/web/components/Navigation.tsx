@@ -36,6 +36,7 @@ import { useEffect, useState } from 'react';
 
 import { Icon, type IconName } from './icons';
 import { Logo } from './Logo';
+import { SignOutButton } from './SignOutButton';
 import { api } from '../lib/api';
 import { day } from '../lib/dates';
 import { copy } from '../lib/i18n';
@@ -166,10 +167,38 @@ export function SideRail({ pathname }: { pathname: string }) {
       */
       className="bg-surface border-border rounded-panel shadow-nav fixed inset-x-4 top-4 z-10 hidden items-center gap-2 border px-3 py-2 sm:flex lg:mx-auto lg:max-w-[1100px]"
     >
-      <span className="mb-4 flex justify-center lg:mb-6 lg:justify-start lg:px-3">
-        {/* The glyph alone where there is no room for the wordmark beside it. */}
-        <Logo size={34} className="lg:hidden" />
-        <Logo size={34} wordmark className="hidden lg:inline-flex" />
+      {/* No bottom margin. `mb-4`/`lg:mb-6` were spacing under a logo that sat
+          at the top of a vertical rail; in a horizontal pill they are 24px of
+          height added to the tallest child, which is every row of the bar. */}
+      <span className="flex shrink-0 justify-center lg:justify-start lg:px-2">
+        {/*
+          The glyph alone where there is no room for the wordmark beside it —
+          which is now everything below `xl`, not just tablets.
+
+          The wordmark is about 110px, and between 1024 and 1280 the bar has to
+          hold it, six labelled destinations, the name and the way out. Six
+          labelled destinations is the rule DESIGN.md actually protects ("a
+          student who has to recognise six glyphs is a student who presses the
+          wrong one"); the wordmark is the thing in that list nobody navigates
+          by, on a screen where they already know which app they opened. So it
+          is what yields, and it comes back at `xl` where the room exists.
+        */}
+        {/*
+          The glyph, at every width. The wordmark does not come back.
+
+          The bar is capped at 1100px and has to hold six labelled destinations,
+          the account and the way out. The wordmark is 147px against the glyph's
+          34px, and carrying it meant the only shrinkable thing in the row —
+          the account name — gave up 113px to a logo, so "Signed in as"
+          rendered as "Signed in…" on a 1440px screen. DESIGN.md restores the
+          wordmark on desktop, but it is describing a 232px vertical rail with a
+          theme switch in its footer, and neither has existed since the bar went
+          horizontal.
+
+          Six readable destination labels is the rule that section actually
+          protects. This is what paying for them costs.
+        */}
+        <Logo size={34} />
       </span>
 
       {DESTINATIONS.map((d) => (
@@ -227,7 +256,23 @@ function RailFooter() {
   }, []);
 
   return (
-    <div className="mt-auto hidden flex-col gap-3 px-3 lg:flex">
+    /*
+      A row at the end of the bar, not a column at the foot of a rail.
+
+      This was written when navigation was a full-height rail down the left
+      side, where stacking the name, the access date and the way out was the
+      only option. The rail became a horizontal pill and this kept its
+      `flex-col`, so three stacked items set the height of the whole bar — a
+      72px pill rendering at about 150px, with the sign-out button pushing it
+      the last stretch. The space was there to be used sideways.
+
+      `ml-auto` pins it to the right end, away from the destinations, because it
+      is not one of them.
+    */
+    // `min-w-0` here as well as on the name: a flex item will not shrink below
+    // its content's width unless every ancestor in the chain says it may, and
+    // this wrapper was the link that refused.
+    <div className="ml-auto hidden min-w-0 items-center gap-2 pl-2 lg:flex">
       {/*
         Who you are, which nothing in the product said (T-251).
 
@@ -240,14 +285,34 @@ function RailFooter() {
         The generated handle, never a legal name — the same one the leaderboard
         would show.
       */}
+      {/*
+        Who you are. Two tight lines, and no third.
+
+        The access date used to sit beside this as its own uppercase run —
+        "ACCESS UNTIL AUG 17, 2027", about 180px — and between the two of them
+        plus a 52px button the bar carried 1481px of content in a 1100px pill.
+        It now lives on `/home` and on `/checkout`, which is where somebody goes
+        to ask about it, and where this component's own tablet branch has always
+        sent it: "a date does not fit at a readable size, and the answer to it
+        does not fit is never to set it at 11px."
+
+        This is the one thing in the bar allowed to shrink — `min-w-0` with a
+        truncating name, rather than `shrink-0`. Everything else here is fixed
+        text or a fixed control, so if the bar is ever too narrow the only
+        graceful loser is the tail of a display name. Pinning this open instead
+        was what put three pixels of overflow at exactly 1024, and a long handle
+        would have put ninety.
+
+        Both lines show at every desktop width now that the wordmark is not
+        taking 113px out of this block. What a tester needed to see was *which
+        account*, and the label above it is what makes the name unambiguous
+        rather than decorative.
+      */}
       {who === null ? null : (
-        <span className="flex flex-col" data-signed-in-as="">
-          <span className="text-caption text-ink-2 uppercase">{c.nav.signedInAs}</span>
+        <span className="flex min-w-0 max-w-[11rem] flex-col leading-tight" data-signed-in-as="">
+          <span className="text-caption text-ink-2 truncate">{c.nav.signedInAs}</span>
           <span className="text-label truncate">{who}</span>
         </span>
-      )}
-      {until === null ? null : (
-        <span className="text-caption text-ink-2 num uppercase">{c.nav.accessUntil(until)}</span>
       )}
       {/*
         The way out, next to who you are (T-268).
@@ -258,26 +323,10 @@ function RailFooter() {
         and a student on a shared phone has the same problem with higher stakes.
 
         Beside the name deliberately: "you are User C" and "stop being User C"
-        are the same thought, and the name is what prompts it.
+        are the same thought, and the name is what prompts it. Its weight — and
+        why it is not `.btn-ghost` — lives in `SignOutButton`.
       */}
-      {who === null ? null : (
-        <button
-          type="button"
-          className="btn-ghost text-caption self-start"
-          data-sign-out=""
-          onClick={() => {
-            void api
-              .signOut()
-              .catch(() => {})
-              // Either way the session is over on this device. A failed request
-              // that left the student staring at a nav is worse than a sign-in
-              // screen they can act on.
-              .finally(() => window.location.assign('/signin'));
-          }}
-        >
-          {c.account.signOut}
-        </button>
-      )}
+      {who === null ? null : <SignOutButton />}
     </div>
   );
 }

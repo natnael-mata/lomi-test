@@ -20,6 +20,7 @@
 import { useEffect, useState } from 'react';
 
 import { Card } from '../components/Card';
+import { SignOutButton } from '../components/SignOutButton';
 import { api } from '../lib/api';
 import { day } from '../lib/dates';
 import { copy } from '../lib/i18n';
@@ -202,23 +203,7 @@ export function HomeScreen() {
         sign-out in the product, which is where a tester failed to find it. This
         is the hub, so this is where it belongs.
       */}
-      {session.kind === 'signedIn' ? (
-        <button
-          type="button"
-          className="btn-ghost self-start lg:hidden"
-          data-sign-out=""
-          onClick={() => {
-            void api
-              .signOut()
-              .catch(() => {})
-              // The session is over on this device either way; a student left
-              // staring at the hub after a failed request cannot act on it.
-              .finally(() => window.location.assign('/signin'));
-          }}
-        >
-          {c.account.signOut}
-        </button>
-      ) : null}
+      {session.kind === 'signedIn' ? <SignOutButton className="self-start lg:hidden" /> : null}
     </div>
   );
 }

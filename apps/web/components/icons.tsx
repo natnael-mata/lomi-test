@@ -58,6 +58,14 @@ const STROKE: Record<string, ReactNode> = {
     </>
   ),
   star: <path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9z" />,
+  /* A doorway with an arrow leaving it. Sign out, and nothing else — the arrow
+     points away from the frame, which is the whole of the meaning. */
+  leave: (
+    <>
+      <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
+      <path d="M10 8l-4 4 4 4M6 12h9" />
+    </>
+  ),
 
   /* Ways to pay. */
   phone: (
