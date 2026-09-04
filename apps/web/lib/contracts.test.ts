@@ -126,6 +126,7 @@ const CONTRACTS: { web: string; api: string; file: string }[] = [
   { web: 'LeaderboardRow', api: 'LeaderboardRow', file: 'engagement/engagement.service.ts' },
   { web: 'LeaderboardView', api: 'LeaderboardView', file: 'engagement/engagement.service.ts' },
   { web: 'ThreadSummary', api: 'ThreadSummary', file: 'community/community.service.ts' },
+  { web: 'TopicThreads', api: 'TopicThreads', file: 'community/community.service.ts' },
   { web: 'PostView', api: 'PostView', file: 'community/community.service.ts' },
   { web: 'ThreadView', api: 'ThreadView', file: 'community/community.service.ts' },
   { web: 'ImportReport', api: 'ImportReport', file: 'import/import.service.ts' },

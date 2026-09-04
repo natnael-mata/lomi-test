@@ -24,7 +24,10 @@ import { REPORT_REASONS, reasonLabel } from '../../../lib/report-reasons';
 
 type Phase =
   | { kind: 'loading' }
-  | { kind: 'list'; threads: ThreadSummary[] }
+  // The topic's name travels with its threads, so the heading can name the room
+  // even when there is nothing in it yet — which is when a student is about to
+  // write the first question and most needs to know where they are.
+  | { kind: 'list'; topicName: string; threads: ThreadSummary[] }
   | { kind: 'thread'; thread: ThreadView }
   | { kind: 'error'; message: string };
 
@@ -63,7 +66,8 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
 
   const loadList = useCallback(async (): Promise<void> => {
     try {
-      setPhase({ kind: 'list', threads: await api.threads(topicId) });
+      const { topicName, threads } = await api.threads(topicId);
+      setPhase({ kind: 'list', topicName, threads });
     } catch (error) {
       fail(error);
     }
@@ -265,9 +269,11 @@ export function CommunityScreen({ topicId }: { topicId: string }) {
   return (
     <div className="flex flex-col gap-4">
       {/* The topic, by name. This was the constant "Ask about this topic", so
-          somebody who had opened one of four rooms could not tell which. The
-          list is empty before the first thread exists, hence the fallback. */}
-      <h1 className="text-title">{phase.threads[0]?.topicName || c.community.title}</h1>
+          somebody who had opened one of four rooms could not tell which. Read
+          from the response rather than off `threads[0]`, which left an empty
+          room unnamed — the one case where a student is about to write the
+          first question and has only the heading to go on. */}
+      <h1 className="text-title">{phase.topicName}</h1>
 
       {phase.threads.length === 0 ? (
         <p className="text-body text-ink-2">{c.community.empty}</p>

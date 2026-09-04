@@ -125,8 +125,8 @@ describe('the community (T-195, T-196, T-197)', () => {
       const inA = await community.threadsForTopic(student.userId, topicA);
       const inB = await community.threadsForTopic(student.userId, topicB);
 
-      expect(inA.map((t) => t.id)).toContain(id);
-      expect(inB).toHaveLength(0);
+      expect(inA.threads.map((t) => t.id)).toContain(id);
+      expect(inB.threads).toHaveLength(0);
     });
 
     /**
@@ -137,7 +137,22 @@ describe('the community (T-195, T-196, T-197)', () => {
     it('shows nothing to a student in another programme', async () => {
       const { id } = await community.openThread(student.userId, topicA, 'Why B?', 'I chose C.');
 
-      expect(await community.threadsForTopic(other.userId, topicA)).toHaveLength(0);
+      /*
+       * A 404, not an empty list (T-269).
+       *
+       * It used to return `[]`, which was safe only because the response
+       * carried nothing but threads. The topic's *name* now travels with them —
+       * the heading needs it when the room is empty — and a name returned for
+       * any guessable id would be a way to read another programme's topic list.
+       * So the topic is scoped to the caller's field before anything comes
+       * back, and an id outside it is simply not found.
+       *
+       * The same answer `threadFor` gives below, and for the same reason: "no
+       * such topic" and "not yours" must be indistinguishable.
+       */
+      await expect(community.threadsForTopic(other.userId, topicA)).rejects.toMatchObject({
+        status: 404,
+      });
       // And the thread itself is not found rather than forbidden — "no such
       // thread" and "not yours" are the same answer, so this cannot be used to
       // discover which threads exist.
@@ -409,12 +424,12 @@ describe('the community (T-195, T-196, T-197)', () => {
       const post = await community.reply(reviewer.userId, id, 'B is correct.');
 
       const before = await community.threadsForTopic(student.userId, topicA);
-      expect(before.find((t) => t.id === id)?.replies).toBe(1);
+      expect(before.threads.find((t) => t.id === id)?.replies).toBe(1);
 
       await community.setPostHidden(post.id, 'staff-1', true);
 
       const after = await community.threadsForTopic(student.userId, topicA);
-      expect(after.find((t) => t.id === id)?.replies).toBe(0);
+      expect(after.threads.find((t) => t.id === id)?.replies).toBe(0);
     });
 
     it('hides a post only when an operator does', async () => {

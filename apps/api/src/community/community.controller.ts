@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nest
 
 import { AdminGuard } from '../auth/staff.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
-import { CommunityService, type ThreadSummary, type ThreadView } from './community.service';
+import { CommunityService, type ThreadView, type TopicThreads } from './community.service';
 
 /**
  * The student's side of the community (T-195, T-196, T-197).
@@ -18,7 +18,7 @@ export class CommunityController {
 
   /** Threads under one topic, in the caller's own field (T-195). */
   @Get('topics/:topicId/threads')
-  threads(@Req() req: AuthedRequest, @Param('topicId') topicId: string): Promise<ThreadSummary[]> {
+  threads(@Req() req: AuthedRequest, @Param('topicId') topicId: string): Promise<TopicThreads> {
     return this.community.threadsForTopic(req.auth!.userId, topicId);
   }
 

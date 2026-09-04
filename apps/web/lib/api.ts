@@ -578,12 +578,23 @@ export interface LeaderboardView {
   youListed: boolean;
 }
 
+/**
+ * One topic's threads, and the topic's own name (T-269).
+ *
+ * The name sits on the envelope rather than on every thread, because the case
+ * that matters is the empty one: a student opening a room with no questions in
+ * it is about to write the first, and that is exactly when the heading fell
+ * back to a generic "Ask about this topic".
+ */
+export interface TopicThreads {
+  topicName: string;
+  threads: ThreadSummary[];
+}
+
 export interface ThreadSummary {
   id: string;
   title: string;
   topicId: string;
-  /** The room you are in. The heading was a constant before this (T-268). */
-  topicName: string;
   replies: number;
   authorName: string;
   authorVerified: boolean;
@@ -608,6 +619,14 @@ export interface PostView {
 export interface ThreadView extends ThreadSummary {
   body: string;
   posts: PostView[];
+  /**
+   * The topic this thread sits under, by name.
+   *
+   * Here rather than on `ThreadSummary`: a list of threads is always fetched
+   * *for* a topic and carries the name once on its envelope, whereas an open
+   * thread is fetched by its own id and has no envelope to put it on.
+   */
+  topicName: string;
 }
 
 export interface RowOutcome {
@@ -1132,8 +1151,8 @@ export const api = {
   setLeaderboardOptOut: (optOut: boolean): Promise<{ optedOut: boolean }> =>
     call('/me/leaderboard/opt-out', { method: 'POST', body: JSON.stringify({ optOut }) }),
 
-  threads: (topicId: string): Promise<ThreadSummary[]> =>
-    call<ThreadSummary[]>(`/community/topics/${topicId}/threads`),
+  threads: (topicId: string): Promise<TopicThreads> =>
+    call<TopicThreads>(`/community/topics/${topicId}/threads`),
 
   openThread: (topicId: string, title: string, body: string): Promise<{ id: string }> =>
     call(`/community/topics/${topicId}/threads`, {

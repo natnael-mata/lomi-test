@@ -18,6 +18,19 @@ import {
 } from './community';
 import { RateLimitService } from '../common/rate-limit.service';
 
+/**
+ * One topic's threads, and the topic's own name (T-269).
+ *
+ * The name is on the envelope rather than repeated on every thread, because the
+ * case that matters is the one with no threads in it: a student opening an
+ * empty room is about to write its first question, and that is exactly when the
+ * heading fell back to a generic "Ask about this topic".
+ */
+export interface TopicThreads {
+  topicName: string;
+  threads: ThreadSummary[];
+}
+
 export interface ThreadSummary {
   id: string;
   title: string;
@@ -27,14 +40,6 @@ export interface ThreadSummary {
   authorName: string;
   authorVerified: boolean;
   createdAt: string;
-  /**
-   * The topic this sits under, by name (T-268).
-   *
-   * The topic page's heading was the constant "Ask about this topic", so a
-   * student who had opened one of four rooms could not tell which one they were
-   * in — and neither could anybody reading a screenshot of it.
-   */
-  topicName: string;
   /**
    * Whether the asker wrote it, the same flag replies already carry (T-268).
    *
@@ -61,6 +66,14 @@ export interface PostView {
 export interface ThreadView extends ThreadSummary {
   body: string;
   posts: PostView[];
+  /**
+   * The topic this thread sits under, by name.
+   *
+   * Declared here rather than on `ThreadSummary`: a list of threads is always
+   * fetched *for* a topic and carries the name once on its envelope, whereas an
+   * open thread is fetched by its own id and has no envelope to put it on.
+   */
+  topicName: string;
 }
 
 /**
@@ -154,8 +167,33 @@ export class CommunityService {
    * topic id is guessable, and scoping on it alone would let anybody read any
    * programme's discussion by typing a different id.
    */
-  async threadsForTopic(viewerId: string, topicId: string): Promise<ThreadSummary[]> {
+  async threadsForTopic(viewerId: string, topicId: string): Promise<TopicThreads> {
     const fieldId = await this.fieldOf(viewerId);
+
+    /*
+     * The topic's name, from the topic (T-269).
+     *
+     * It used to ride on each `ThreadSummary`, so the screen read it off
+     * `threads[0]` and fell back to a generic heading when there were none —
+     * which is the one moment a student most needs to know which room they are
+     * in, because they are about to write its first question.
+     *
+     * Scoped to the caller's own field before it is returned. A topic id is
+     * guessable, and an unscoped name would turn this into a way to read the
+     * topic list of a programme you are not studying — the empty thread list
+     * gave nothing away, so adding the name has to keep that true.
+     */
+    const topic = await this.prisma.topic.findFirst({
+      where: { id: topicId, course: { fieldId } },
+      select: { name: true },
+    });
+    if (!topic) {
+      throw new NotFoundException({
+        error: 'NO_SUCH_TOPIC',
+        message: 'That topic is not part of your programme.',
+      });
+    }
+
     const threads = await this.prisma.thread.findMany({
       where: {
         topicId,
@@ -183,24 +221,21 @@ export class CommunityService {
 
     const names = await this.namesFor(threads.map((t) => t.authorId));
     const roles = await this.rolesFor(threads.map((t) => t.authorId));
-    // One lookup for the whole list — every thread here is in the same topic.
-    const topic = await this.prisma.topic.findUnique({
-      where: { id: topicId },
-      select: { name: true },
-    });
 
-    return threads.map((thread) => ({
-      id: thread.id,
-      title: thread.title,
-      topicId: thread.topicId,
-      topicName: topic?.name ?? '',
-      replies: thread._count.posts,
-      authorName: names.get(thread.authorId) ?? '',
-      authorVerified: isVerifiedAuthor(roles.get(thread.authorId) ?? 'STUDENT'),
-      createdAt: thread.createdAt.toISOString(),
-      isYours: thread.authorId === viewerId,
-      hidden: thread.hiddenAt !== null,
-    }));
+    return {
+      topicName: topic.name,
+      threads: threads.map((thread) => ({
+        id: thread.id,
+        title: thread.title,
+        topicId: thread.topicId,
+        replies: thread._count.posts,
+        authorName: names.get(thread.authorId) ?? '',
+        authorVerified: isVerifiedAuthor(roles.get(thread.authorId) ?? 'STUDENT'),
+        createdAt: thread.createdAt.toISOString(),
+        isYours: thread.authorId === viewerId,
+        hidden: thread.hiddenAt !== null,
+      })),
+    };
   }
 
   /** Opens a thread. The field is taken from the topic, never from the caller. */
