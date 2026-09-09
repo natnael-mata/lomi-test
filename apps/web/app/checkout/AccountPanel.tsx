@@ -19,9 +19,9 @@
  * two controls is a worse answer than putting them where somebody is already
  * looking.
  *
- * Signing out is deliberately the plain button, not the filled one. It is the
- * only destructive thing here and the paid actions above it are what the screen
- * is for.
+ * **The panel's own Sign out has since been removed** (T-269) — see the note at
+ * the foot of this file. The device list stays; it is the half of this that
+ * exists nowhere else.
  */
 import { useCallback, useEffect, useState } from 'react';
 
@@ -43,7 +43,6 @@ export function AccountPanel() {
   const c = copy();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [busy, setBusy] = useState<string | null>(null);
-  const [leaving, setLeaving] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
@@ -75,18 +74,6 @@ export function AccountPanel() {
       setProblem(refusalMessage(error) ?? c.account.devicesFailed);
     } finally {
       setBusy(null);
-    }
-  };
-
-  const signOut = async (): Promise<void> => {
-    setLeaving(true);
-    setProblem(null);
-    try {
-      await api.signOut();
-      window.location.assign('/signin');
-    } catch (error) {
-      setProblem(refusalMessage(error) ?? c.account.signOutFailed);
-      setLeaving(false);
     }
   };
 
@@ -148,15 +135,22 @@ export function AccountPanel() {
         ))}
 
       {problem && <p className="text-caption text-wrong">{problem}</p>}
-
-      <Button
-        variant="ghost"
-        className="self-start"
-        disabled={leaving}
-        onClick={() => void signOut()}
-      >
-        {leaving ? c.account.signingOut : c.account.signOut}
-      </Button>
     </Card>
   );
 }
+
+/*
+ * The third Sign out is gone (T-269).
+ *
+ * This card ended with a full-width bordered "Sign out" — directly beneath a
+ * list of devices whose every row carries a visually identical "Sign this one
+ * out". Three ways to end a session in one card, two of them looking the same
+ * and meaning different things: one ends this session, the others end a session
+ * somewhere else. An operator or a student in a hurry cannot tell those apart
+ * by shape, and the consequence of confusing them is being logged out of the
+ * phone in your hand.
+ *
+ * The nav carries Sign out at every width now (and `/home` does below `lg`), so
+ * this one was the duplicate rather than the only way out — which is what it
+ * had been when it was written.
+ */

@@ -388,7 +388,24 @@ export function CheckoutScreen() {
             </>
           ) : null}
 
-          <Button onClick={() => void pay(method)} disabled={busy}>
+          {/*
+            A bank claim needs its reference before it can be sent (T-269).
+
+            This was `disabled={busy}` alone, so "Submit for verification" was
+            live with the reference box empty — and the product's convention
+            everywhere else is the opposite: a control that cannot work yet is
+            disabled and says what is missing ("Choose an answer first", "Add a
+            title and a question first"). The reference is the only thing that
+            lets an operator find the transfer on a statement, so a claim
+            without one is a row nobody can settle and a student waiting on it.
+          */}
+          <Button
+            onClick={() => void pay(method)}
+            disabled={busy || (method === 'bank' && txRef.trim() === '')}
+            blockingReason={
+              method === 'bank' && txRef.trim() === '' ? c.checkout.txRefNeeded : undefined
+            }
+          >
             {busy
               ? c.checkout.sending
               : method === 'bank'

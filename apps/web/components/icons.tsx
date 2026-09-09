@@ -50,6 +50,9 @@ const STROKE: Record<string, ReactNode> = {
    */
   community: <path d="M21 11.5a7.5 7.5 0 0 1-10.9 6.7L4 20l1.8-5.1A7.5 7.5 0 1 1 21 11.5z" />,
   check: <path d="M4 12l5 5L20 7" />,
+  /* A plus that becomes a close when rotated 45°, which is how the FAQ rows
+     signal open and shut with one shape. */
+  plus: <path d="M12 5v14M5 12h14" />,
   cross: <path d="M6 6l12 12M18 6L6 18" />,
   clock: (
     <>

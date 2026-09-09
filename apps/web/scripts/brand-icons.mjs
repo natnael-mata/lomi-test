@@ -125,11 +125,22 @@ class Cdp {
 }
 
 /**
- * The favicon, which is the one place the leaves come off.
+ * The favicon: the tile and the check, and nothing else.
  *
- * A browser tab draws this at 16–20px. Two 3px leaves there are four grey
- * pixels and a suggestion, while the fruit and the check still read — which is
- * the supplied design's own rule ("favicon 20px — leaves drop, check stays").
+ * **The fruit does not survive a browser tab.** This used to be the full mark
+ * with the leaves dropped, on the design's own rule ("favicon 20px — leaves
+ * drop, check stays"). Dropping the leaves was right and not enough: at 16–20px
+ * the body's outline, its two nubs and the check are four strokes inside twenty
+ * pixels, and they merge. An audit rendered it at real size and reported what
+ * survives as "a yellow square with a dark smudge" — not a lemon, and not a
+ * check either.
+ *
+ * So the smallest size gets its own drawing rather than a shrunk one. What is
+ * left is the half that carries the meaning: a single bold check on the lemon
+ * tile, one colour, nothing crossing it. The fruit is the name and the check is
+ * the product, and at this size only one of them can be legible.
+ *
+ * Ink on lemon at 11.24:1, so it holds on a light or dark tab strip.
  *
  * SVG rather than another PNG: a tab icon is the smallest thing the brand is
  * ever drawn at, and a rasterised 192px square scaled to 16 is where a mark
@@ -137,18 +148,9 @@ class Cdp {
  * behind it for anything that cannot read SVG.
  */
 function faviconSvg() {
-  const size = 32;
-  const radius = 7;
-  const inner = 26;
-  const offset = (size - inner) / 2;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-  <rect width="${size}" height="${size}" rx="${radius}" fill="${BRAND}"/>
-  <g transform="translate(${offset} ${offset}) scale(${inner / 24})">
-${lemonMarkSvg({ size: 24, leaves: false, filled: false })
-  .replace(/^<svg[^>]*>\n?/, '')
-  .replace(/<\/svg>$/, '')
-  .trimEnd()}
-  </g>
+  return `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="7" fill="${BRAND}"/>
+  <path d="M8 16.8 L13.4 22.2 L24 9.8" fill="none" stroke="${MARK_COLORS.ink}" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 }
 
@@ -157,7 +159,7 @@ async function main() {
 
   const favicon = join(OUT, 'lomi-favicon.svg');
   writeFileSync(favicon, faviconSvg());
-  console.log(`${'lomi-favicon.svg'.padEnd(30)} 32px  leaves dropped`);
+  console.log(`${'lomi-favicon.svg'.padEnd(30)} 32px  tile and check only`);
 
   const profile = mkdtempSync(join(tmpdir(), 'lomi-icons-'));
   const chrome = spawn(

@@ -391,7 +391,7 @@ export const en = {
     startPractising: 'Start practising',
     doneForToday: 'Done for today',
     freeLimit: 'That is your ten free questions',
-    seePlans: 'See the plans',
+    seePlans: 'Get full access',
     nextQuestion: 'Next question',
     practiseTopic: (topic: string) => `Practise ${topic}`,
     whyRanked:
@@ -444,7 +444,7 @@ export const en = {
       'New questions come back when you renew.',
     outOfNewBody:
       'You can keep going over the ones you have already answered as often as you like — ' +
-      'that stays free. New questions are part of a subscription.',
+      'that stays free. New questions need full access.',
   },
 
   /**
@@ -602,7 +602,7 @@ export const en = {
     resume: (position: number) => `Go back to question ${position}`,
     preparing: 'Preparing your paper…',
     chooseProgramme: 'Choose a programme first.',
-    seePlans: 'See the plans',
+    seePlans: 'Get full access',
     finished: 'Sitting finished',
     answersRecorded: 'Your answers are recorded. The review is on its way.',
     questionOf: (position: number, total: number) => `Question ${position} of ${total}`,
@@ -731,7 +731,7 @@ export const en = {
 
   checkout: {
     title: 'Get full access',
-    working: 'Loading the plans…',
+    working: 'Loading…',
     perMonth: (etb: number) => `Br ${etb} a month`,
     forMonths: (etb: number, months: number) => `Br ${etb} for ${months} months`,
     bestValue: 'Best value',
@@ -753,6 +753,8 @@ export const en = {
       'From the number you shared on Telegram. Change it if you pay with another.',
     mobileInvalid: 'That does not look like an Ethiopian mobile number. Check it and try again.',
     txRefLabel: 'Transfer reference',
+    // Names what is missing, like every other blocked control in the product.
+    txRefNeeded: 'Add the transfer reference first',
     txRefHint:
       "The reference is on your bank's confirmation SMS. A person checks every claim — access is " +
       'granted after it is verified, usually within a few hours.',
@@ -815,7 +817,7 @@ export const en = {
      */
     lapsedBanner: 'Your access has ended',
     lapsedBody: (ended: string) =>
-      `Your subscription ran until ${ended}. Renew below and it picks up from today — ` +
+      `Your access ran until ${ended}. Renew below and it picks up from today — ` +
       'everything you have answered is still here.',
     renew: 'Renew',
 

@@ -15,16 +15,32 @@
  * `Copy` is the product's shape, and marketing prose that changes weekly does
  * not belong in a contract every screen is type-checked against.
  *
- * The eight `<Todo>` markers are unfilled facts: social links, contact details,
- * school-track pricing and the household device policy. They render loudly on
- * purpose so the page cannot go live with an invented phone number.
+ * The `<Todo>` markers are unfilled facts: contact details, school-track pricing
+ * and the household device policy. They render loudly **in development only** —
+ * they used to render loudly to everybody, which is a different thing entirely.
+ * See `Todo`.
  */
 import Link from 'next/link';
 
+import { Icon } from '../components/icons';
 import { Logo } from '../components/Logo';
 
-/** An unfilled fact. Deliberately ugly — see the note above. */
+/**
+ * A note to ourselves, and only to ourselves (T-269).
+ *
+ * **These were rendering to the public.** The landing page carried two of them
+ * in dashed red — "school-track prices to confirm", "household policy for Grade
+ * 6/8 to confirm" — and three more standing in for the contact details, so a
+ * visitor's first sight of the product included our own unfinished homework in
+ * the colour the app uses for a wrong answer. A tester reported them as page
+ * content, which is exactly what they were.
+ *
+ * They are useful to keep, though: deleting them would lose the list of what is
+ * still owed. So they stay in the source and show only in development, where
+ * the person who can resolve them is looking.
+ */
 function Todo({ children }: { children: React.ReactNode }) {
+  if (process.env.NODE_ENV !== 'development') return null;
   return (
     <span className="border-wrong text-wrong bg-wrong-soft rounded-[4px] border border-dashed px-2 py-0.5 text-[12px] font-medium">
       {children}
@@ -117,6 +133,37 @@ const FAQ = [
     'Nothing breaks. Tomorrow’s target adjusts by one or two questions and your streak keeps counting. Missing a day is not a failure and the app will not treat it as one.',
   ],
 ] as const;
+
+/**
+ * How to reach a person, once there is a person to reach.
+ *
+ * `value` is the real thing and `null` means it is still owed — which is what
+ * `todo` names, in development only. Nothing here may be invented: a phone
+ * number on a landing page is a promise, and a wrong one is worse than none.
+ */
+const CONTACTS: readonly { label: string; value: string | null; todo: string; why: string }[] = [
+  {
+    label: 'Telegram',
+    value: null,
+    todo: '@handle to add',
+    why: 'Fastest. Someone answers during the day.',
+  },
+  {
+    label: 'Phone',
+    value: null,
+    todo: '+251 … to add',
+    why: 'For payment questions and bank transfers.',
+  },
+  {
+    label: 'Email',
+    value: null,
+    todo: 'address to add',
+    why: 'For schools and bulk enquiries.',
+  },
+];
+
+/** Where the product actually has an account. Empty until it does. */
+const SOCIALS: readonly { name: string; href: string }[] = [];
 
 export function LandingScreen() {
   return (
@@ -270,10 +317,30 @@ export function LandingScreen() {
       <section id="faq" className="border-border flex flex-col gap-6 border-t py-14">
         <Head eyebrow="Questions people actually ask" title="FAQ" />
         <div className="border-border bg-surface overflow-hidden rounded-[8px] border">
+          {/*
+            Every question here has an answer, and now looks like it does.
+
+            `list-none` removed the disclosure triangle and nothing replaced it,
+            so six questions sat as plain bold text with no affordance of any
+            kind. A tester read the whole section as questions printed without
+            answers — the reasonable conclusion, since the only way to discover
+            otherwise was to click text that gave no sign it was clickable.
+
+            The marker is drawn rather than left to the browser because the
+            native one differs on every platform and sits outside the padding.
+            It rotates on open, which is the one thing that says "there is more
+            here" before you press it.
+          */}
           {FAQ.map(([q, a], i) => (
-            <details key={q} className={i < FAQ.length - 1 ? 'border-border border-b' : ''}>
-              <summary className="cursor-pointer list-none p-4 text-[16px] font-semibold">
+            <details key={q} className={`group ${i < FAQ.length - 1 ? 'border-border border-b' : ''}`}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-[16px] font-semibold">
                 {q}
+                <span
+                  aria-hidden="true"
+                  className="text-ink-2 shrink-0 transition-transform duration-150 group-open:rotate-45"
+                >
+                  <Icon name="plus" size={18} />
+                </span>
               </summary>
               <p className="text-ink-2 max-w-[70ch] px-4 pb-4 text-[15px]">{a}</p>
             </details>
@@ -290,19 +357,35 @@ export function LandingScreen() {
       {/* ------------------------------------------------------- contact */}
       <section id="contact" className="border-border flex flex-col gap-6 border-t py-14">
         <Head eyebrow="Contact us" title="Talk to a person" />
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            ['Telegram', '@handle to add', 'Fastest. Someone answers during the day.'],
-            ['Phone', '+251 … to add', 'For payment questions and bank transfers.'],
-            ['Email', 'address to add', 'For schools and bulk enquiries.'],
-          ].map(([label, todo, why]) => (
-            <div key={label} className="card flex flex-col items-start gap-2">
-              <span className="text-caption text-ink-2 uppercase">{label}</span>
-              <Todo>{todo}</Todo>
-              <span className="text-ink-2 text-[14px]">{why}</span>
-            </div>
-          ))}
-        </div>
+        {/*
+          A card only exists once there is something on it to contact.
+
+          Every one of these was a label, a red "to add" marker and a sentence
+          about how fast we answer — so hiding the markers would have left three
+          cards promising a reply through a channel with no address on it, which
+          is worse than not offering the channel. `value` is the card: null and
+          it does not render, and the section goes with the last one.
+        */}
+        {CONTACTS.some((contact) => contact.value !== null) ? (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {CONTACTS.filter((contact) => contact.value !== null).map((contact) => (
+              <div key={contact.label} className="card flex flex-col items-start gap-2">
+                <span className="text-caption text-ink-2 uppercase">{contact.label}</span>
+                <span className="text-[16px] font-semibold">{contact.value}</span>
+                <span className="text-ink-2 text-[14px]">{contact.why}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-ink-2 max-w-[54ch] text-[15px]">
+            {/* Said plainly rather than dressed as three empty cards. */}
+            We are setting up our support channels. Until then, sign in and use the question thread
+            on any topic — a person reads those.
+          </p>
+        )}
+        {CONTACTS.filter((contact) => contact.value === null).map((contact) => (
+          <Todo key={contact.label}>{contact.todo}</Todo>
+        ))}
       </section>
 
       {/* -------------------------------------------------------- footer */}
@@ -316,16 +399,29 @@ export function LandingScreen() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          {['Facebook', 'TikTok', 'Telegram'].map((name) => (
-            <span
-              key={name}
-              className="border-ink bg-surface inline-flex items-center gap-2 rounded-[6px] border-2 px-4 py-2 text-[14px] font-semibold"
-            >
-              {name} <Todo>link</Todo>
-            </span>
-          ))}
-        </div>
+        {/*
+          Social links appear when there are links.
+
+          These were three heavy bordered chips reading "Facebook link",
+          "TikTok link", "Telegram link" — buttons in every respect except
+          going anywhere. Three dead controls in a footer is a page that has
+          been abandoned, which is the opposite of what a footer is for.
+        */}
+        {SOCIALS.length > 0 ? (
+          <div className="flex flex-wrap gap-3">
+            {SOCIALS.map(({ name, href }) => (
+              <a
+                key={name}
+                href={href}
+                className="border-ink bg-surface inline-flex items-center gap-2 rounded-[6px] border-2 px-4 py-2 text-[14px] font-semibold"
+              >
+                {name}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <Todo>social links to add — Facebook, TikTok, Telegram</Todo>
+        )}
 
         <div className="flex flex-col gap-2">
           <span className="text-caption text-ink-2 uppercase">Lomi-Exams</span>

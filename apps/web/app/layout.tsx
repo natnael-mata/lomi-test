@@ -30,10 +30,13 @@ export const metadata: Metadata = {
     /*
      * The SVG first, and it is a different drawing.
      *
-     * A tab renders this at 16–20px, where the mark's two leaves are four grey
-     * pixels — so the favicon is the leafless variant, fruit and check only,
-     * which is the brand handoff's own rule. The 192px PNG stays behind it for
-     * anything that cannot read SVG, and is what a bookmark or a shortcut takes.
+     * A tab renders this at 16–20px. Dropping the leaves there was the brand
+     * handoff's own rule and still not enough — the body outline, its two nubs
+     * and the check are four strokes inside twenty pixels and they merge, which
+     * an audit reported as "a yellow square with a dark smudge". The smallest
+     * size therefore has its own drawing: the tile and one bold check, no
+     * fruit. The 192px PNG stays behind it for anything that cannot read SVG,
+     * and is what a bookmark or a shortcut takes.
      */
     icon: [
       { url: '/brand/lomi-favicon.svg', type: 'image/svg+xml' },
