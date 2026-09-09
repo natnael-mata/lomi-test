@@ -49,6 +49,22 @@ type Phase =
 
 export function PracticeScreen() {
   const c = copy();
+  /*
+   * The topic the caller asked to work on, from `?topic=` (T-269).
+   *
+   * `PracticeCta` has been writing that parameter since it was built — it is
+   * what "→ Practise Depreciation" on `/progress` links to, with a unit test
+   * pinning the URL — and this screen never read it. So the one control in the
+   * product whose job is "do this next" handed back a random question from the
+   * whole programme, and a student following the app's own advice practised
+   * something else. Read from `location` rather than `useSearchParams` to keep
+   * this route out of a Suspense boundary it does not otherwise need.
+   */
+  const [topicId] = useState<string | null>(() =>
+    typeof window === 'undefined'
+      ? null
+      : new URLSearchParams(window.location.search).get('topic'),
+  );
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [chosen, setChosen] = useState<OptionLabel | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -109,7 +125,7 @@ export function PracticeScreen() {
     setChosen(null);
     setReason(null);
     try {
-      const question = await api.nextQuestion();
+      const question = await api.nextQuestion(topicId);
       shownAt.current = Date.now();
       setElapsed(0);
       setPhase({ kind: 'asking', question });
@@ -160,7 +176,7 @@ export function PracticeScreen() {
         code: e instanceof ApiError ? e.code : null,
       });
     }
-  }, [c.practice.didNotLoad, paywall]);
+  }, [c.practice.didNotLoad, paywall, topicId]);
 
   /*
    * Ticks only while a question is open.
@@ -318,15 +334,27 @@ export function PracticeScreen() {
             student this product is most careful with.
           */}
           {phase.kind === 'asking' && (
-            <ExamTimer
-              // Not clamped at zero. It was — `Math.max(0, …)` — directly under
-              // a comment promising an overrun, so the clock froze at 00:00 and
-              // the true figure surfaced only after answering ("over time
-              // 2:26 / 1:30"). The clamp was the bug; the comment was right.
-              remainingSec={question.timeLimitSec - elapsed}
-              durationSec={question.timeLimitSec}
-              countUpPastZero
-            />
+            <span className="inline-flex items-center gap-1.5">
+              {/*
+                The word "suggested", beside the clock.
+
+                An unlabelled countdown at the top of a practice screen puts a
+                stressed student on a deadline nobody explained — a tester read
+                it as a limit, waited to see what would happen at zero, and only
+                then found out that nothing does. One word is the whole fix: it
+                is a pace to practise against, not a rule.
+              */}
+              <span className="text-caption text-ink-2 uppercase">{c.practice.suggestedTime}</span>
+              <ExamTimer
+                // Not clamped at zero. It was — `Math.max(0, …)` — directly
+                // under a comment promising an overrun, so the clock froze at
+                // 00:00 and the true figure surfaced only after answering
+                // ("over time 2:26 / 1:30"). The clamp was the bug.
+                remainingSec={question.timeLimitSec - elapsed}
+                durationSec={question.timeLimitSec}
+                countUpPastZero
+              />
+            </span>
           )}
           <Chip className="uppercase">{question.topic}</Chip>
           {freeLeft !== null && (

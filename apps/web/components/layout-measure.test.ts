@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { stripComments } from '../lib/strip-comments';
 import { MEASURES } from './AppShell';
 import { DESTINATIONS, isActive } from './Navigation';
 
@@ -123,11 +124,25 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
     expect((nav.match(/DESTINATIONS\.map/g) ?? []).length).toBe(2);
   });
 
-  /** 56px, and the bar is phone-only while the rail is `sm` and up. */
-  it('is 56px, bottom bar on phones and a rail above', () => {
+  /**
+   * 56px, and the two shapes hand over at `lg` — not at `sm` (T-269).
+   *
+   * The bar used to hide at 640px and the pill appeared there, but the account
+   * block that carries "Signed in as" and the only Sign out in the chrome was
+   * gated at 1024px. Every width in between had a pill with no way out of the
+   * account, and below about 757px the sixth destination overflowed and clipped
+   * to "Ac" while the page scrolled sideways. A tablet lands in that gap.
+   *
+   * So the handover is one breakpoint now, and this holds all three parts of it
+   * together — bar, pill, and the account block inside it.
+   */
+  it('is 56px, and hands over from bar to pill at one breakpoint', () => {
     expect(nav).toContain('min-h-[56px]');
-    expect(nav).toContain('sm:hidden');
-    expect(nav).toContain('sm:flex');
+    expect(nav).toContain('lg:hidden');
+    expect(nav).toContain('lg:flex');
+    // The gap that caused this: nothing may reshape the bar at `sm` while the
+    // pill it belongs to does not exist until `lg`.
+    expect(nav).not.toMatch(/sm:(hidden|flex)\b/);
   });
 
   /**
@@ -143,14 +158,25 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
    */
   it('marks the active item with a pill and a second signal, not one alone', () => {
     /*
-     * The pill is MINT now (handoff bundle, 2026-08-23), not lemon-soft.
+     * The pill is the LEMON wash, and mint is not allowed near it (T-269).
      *
-     * Mint carries selected, correct and the active nav across the whole
-     * system, so "where I am" and "what I chose" read as one family. The rule
-     * being asserted is unchanged — a fill AND a second signal — and the fill
-     * is the only part that moved.
+     * It was mint for a while, on the reasoning that selected, correct and the
+     * active nav should read as one family. What that produced: the highlight
+     * around "Progress" drawn in `correct-soft`, the exact fill a correct
+     * answer gets — and, on the practice screen, any option turning success
+     * green the moment it was tapped, before anything had been submitted.
+     *
+     * Mint means "this is right". Brand is the marker — the pen you run over
+     * the line you are on — which is what "you are here" and "the one I chose"
+     * both are. The theme's own token comment has said `brand-soft` is the
+     * "selected option, active nav" the whole time.
+     *
+     * The rule being asserted is unchanged: a fill AND a second signal.
      */
-    expect(nav).toContain('bg-correct-soft');
+    expect(nav).toContain('bg-brand-soft');
+    // Comments stripped: the file *explains* the mint it moved away from, and a
+    // scan that cannot tell prose from code would forbid writing down why.
+    expect(stripComments(nav)).not.toContain('correct-soft');
     expect(nav).toContain('text-ink font-semibold');
     // The lemon must not have crept back into a label.
     expect(nav).not.toContain('text-brand');

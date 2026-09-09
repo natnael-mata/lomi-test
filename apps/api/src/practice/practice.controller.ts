@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { FieldRequiredGuard } from '../auth/field-required.guard';
 import { RateLimitService } from '../common/rate-limit.service';
@@ -30,7 +30,10 @@ export class PracticeController {
   ) {}
 
   @Get('next')
-  next(@Req() req: AuthedRequest): Promise<ServedQuestion> {
+  next(
+    @Req() req: AuthedRequest,
+    @Query('topicId') topicId?: string,
+  ): Promise<ServedQuestion> {
     /*
      * Rate limited per student (T-259).
      *
@@ -49,7 +52,9 @@ export class PracticeController {
      */
     this.rateLimit.consume('serveQuestion', req.auth!.userId, req.ip ?? null);
     this.rateLimit.consume('serveQuestionDaily', req.auth!.userId, req.ip ?? null);
-    return this.practice.next(req.auth!.userId);
+    // `?topicId=` narrows the draw to one topic — what `/progress`'s "Practise
+    // Depreciation" button has been asking for since it was written (T-269).
+    return this.practice.next(req.auth!.userId, topicId ?? null);
   }
 }
 

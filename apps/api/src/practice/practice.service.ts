@@ -122,7 +122,7 @@ export class PracticeService {
    * which turns the bank into a shareable answer list. Randomness here is a
    * mild anti-sharing measure, not a pedagogy claim.
    */
-  async next(userId: string): Promise<ServedQuestion> {
+  async next(userId: string, topicId?: string | null): Promise<ServedQuestion> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { fieldId: true },
@@ -157,10 +157,37 @@ export class PracticeService {
         });
     const remaining = subscribed ? null : freeRemaining(attempted.length);
 
+    /*
+     * One topic, when the caller asked for one (T-269).
+     *
+     * **`/practice?topic=…` was built and never read.** `PracticeCta` renders
+     * "→ Practise Depreciation" on `/progress` and on every mock review, with a
+     * unit test pinning the URL it produces — and nothing on the other end ever
+     * looked at the parameter. So the single button whose whole job is "do this
+     * next" served a random question from the whole programme, and a student
+     * following the app's own advice was quietly practising something else.
+     *
+     * The topic is scoped to the student's own field. A topic id is guessable,
+     * and one from another programme must not become a way to pull that
+     * programme's questions.
+     */
+    let topicFilter: string | undefined;
+    if (topicId) {
+      const topic = await this.prisma.topic.findFirst({
+        where: { id: topicId, course: { fieldId: user.fieldId } },
+        select: { id: true },
+      });
+      if (!topic) {
+        throw new NotFoundException('That topic is not part of your programme.');
+      }
+      topicFilter = topic.id;
+    }
+
     const eligible = await this.prisma.question.findMany({
       where: {
         fieldId: user.fieldId,
         status: 'PUBLISHED',
+        ...(topicFilter ? { topicId: topicFilter } : {}),
         // T-110: not one they have already got right today.
         NOT: {
           attempts: { some: { userId, isCorrect: true, createdAt: { gte: startOfToday() } } },
@@ -170,7 +197,19 @@ export class PracticeService {
     });
 
     if (eligible.length === 0) {
-      throw new NotFoundException('Nothing left to practise in this programme today.');
+      /*
+       * Named, so the student can tell which wall they hit.
+       *
+       * "Nothing left in this programme" is a very different message from
+       * "nothing left in Depreciation", and the second is the one that follows
+       * a button that said Depreciation on it. A single message here would send
+       * somebody away believing they had finished the whole bank.
+       */
+      throw new NotFoundException(
+        topicFilter
+          ? 'Nothing left to practise in this topic today.'
+          : 'Nothing left to practise in this programme today.',
+      );
     }
 
     /*

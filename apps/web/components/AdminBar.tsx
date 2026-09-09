@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 
 import { api } from '../lib/api';
 import { copy } from '../lib/i18n';
+import { SignOutButton } from './SignOutButton';
 import { Logo } from './Logo';
 
 const c = copy();
@@ -132,6 +133,29 @@ export function AdminBar({ pathname }: { pathname: string }) {
             );
           })}
         </nav>
+
+        {/*
+          The way out of the console (T-269).
+
+          **Staff could not leave.** Seven to nine navigation links, no sign-out
+          anywhere, and the title was not a link — so an operator who wanted to
+          go back to the student app or end their session had to edit the URL.
+          A shared office machine with an admin session on it and no visible way
+          to close it is the version of this that matters.
+
+          Both halves: "the student app" because most staff are also using the
+          product, and Sign out because this is the account that can settle
+          payments and retire questions.
+        */}
+        <div className="ml-auto flex items-center gap-1">
+          <a
+            href="/home"
+            className="text-ink-2 hover:text-ink text-caption rounded-control inline-flex min-h-11 items-center px-3"
+          >
+            {c.admin.nav.backToApp}
+          </a>
+          <SignOutButton />
+        </div>
       </div>
     </header>
   );

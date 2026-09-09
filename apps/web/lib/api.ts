@@ -771,7 +771,19 @@ export interface ImportReport {
 }
 
 export const api = {
-  nextQuestion: (): Promise<ServedQuestion> => call<ServedQuestion>('/questions/next'),
+  /**
+   * The next question, optionally from one topic (T-269).
+   *
+   * `topicId` is what `/practice?topic=…` has always meant and never did:
+   * `PracticeCta` built that URL for "→ Practise Depreciation" on `/progress`
+   * and on every mock review, and nothing read it — so the button that exists
+   * to say "work on this next" served a question from anywhere in the
+   * programme.
+   */
+  nextQuestion: (topicId?: string | null): Promise<ServedQuestion> =>
+    call<ServedQuestion>(
+      topicId ? `/questions/next?topicId=${encodeURIComponent(topicId)}` : '/questions/next',
+    ),
 
   /** The receipt and the payments behind it. Their own, from the session. */
   paymentHistory: (): Promise<{ payments: PaymentHistoryRow[] }> =>

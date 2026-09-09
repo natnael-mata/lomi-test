@@ -369,20 +369,32 @@
     @apply scale-[.99];
   }
   /*
-   * The sticky note (handoff frame 3a): MINT fill, forest border, and the mono
-   * SELECTED tag the component already renders.
+   * The sticky note (handoff frame 3a): the LEMON wash, forest border, and the
+   * mono SELECTED tag the component already renders.
    *
-   * The fill moved from the lemon wash to mint so that "the one I chose" and
-   * "the one that was right" belong to the same family — a student picking an
-   * answer and then seeing it confirmed watches one colour stay put rather than
-   * one colour replace another.
+   * **It was mint, and mint is what "correct" means.** The reasoning was that
+   * "the one I chose" and "the one that was right" should belong to one family,
+   * so a confirmed answer watches a colour stay put rather than change. What it
+   * actually produced: tapping any option filled it with `correct-soft`, the
+   * identical fill a correct answer gets — so a student choosing a *wrong*
+   * answer watched it turn the app's success green before they had submitted
+   * anything. The only difference was a teal border and a small chip.
+   *
+   * The token's own comment in this file has said `brand-soft` is the
+   * "selected option, active nav" the whole time, and DESIGN.md says the same.
+   * The rule had drifted from the system it belongs to.
+   *
+   * The lemon wash is right for a different reason too: brand is the marker in
+   * this palette, the pen you run over the line you are working on. That is
+   * exactly what choosing an option is — and it says nothing about whether the
+   * choice is any good, which is the point.
    *
    * The border is ink and stays 2px while every other row is 1px. That weight
    * step is the second signal: the fill says which one you chose, the edge says
    * you chose it, and either alone would be colour doing the work by itself.
    */
   .option[data-state='selected'] {
-    @apply border-2 border-ink bg-correct-soft;
+    @apply border-2 border-ink bg-brand-soft;
   }
   .option[data-state='correct'] {
     @apply border-2 border-correct bg-correct-soft;

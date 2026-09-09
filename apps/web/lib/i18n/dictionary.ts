@@ -108,6 +108,13 @@ export const en = {
   },
 
   nav: {
+    /*
+     * The mark's accessible name (T-269).
+     *
+     * It is the only route to `/home` in the whole interface — nothing else
+     * linked there — so it cannot be an unlabelled image to a screen reader.
+     */
+    home: 'Lomi-Exams home',
     signedInAs: 'Signed in as',
     practice: 'Practise',
     exam: 'Mock',
@@ -371,6 +378,16 @@ export const en = {
 
   practice: {
     title: 'Practise',
+    /*
+     * What the clock on a practice question is (T-269).
+     *
+     * It had no label at all, so a countdown simply appeared above the question
+     * — the largest, most urgent-looking thing on a screen belonging to a
+     * student who is already anxious. A tester read it as a limit and waited to
+     * find out what happened at zero. Nothing does: the pace is advisory, and
+     * this is the word that says so before the waiting starts.
+     */
+    suggestedTime: 'Suggested',
     startPractising: 'Start practising',
     doneForToday: 'Done for today',
     freeLimit: 'That is your ten free questions',
@@ -1077,8 +1094,19 @@ export const en = {
       import: 'Import',
       review: 'Review',
       weights: 'Weights',
-      users: 'Users',
-      moderation: 'Reports',
+      users: 'Students',
+      /*
+       * "Reports" meant the wrong thing (T-269).
+       *
+       * In an admin console that word is exports and statistics. This is the
+       * forum moderation queue, and the page it opens is headed "Reported
+       * posts" — so the label and the destination disagreed on what kind of
+       * report was meant. `Users` → `Students` for the same reason: the page
+       * has always been headed "Students".
+       */
+      moderation: 'Reported posts',
+      /** Staff are students too, and the console had no way back to the app. */
+      backToApp: 'Student app',
     },
 
     /**

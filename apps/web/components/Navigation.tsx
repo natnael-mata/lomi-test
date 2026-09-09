@@ -89,28 +89,35 @@ function Item({ destination, active }: { destination: Destination; active: boole
         'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-px px-1',
         // Tablet and desktop: a row in the horizontal pill, sized to its own
         // content rather than to a rail's width (handoff frame 3a).
-        'sm:min-h-11 sm:w-auto sm:flex-none sm:flex-row sm:gap-2 sm:rounded-full sm:px-3.5 sm:py-2',
+        // The pill-row shape belongs to the rail, so it starts where the rail
+        // now starts. It was `sm:`, which reshaped the items at 640px while the
+        // bar they were in did not appear until 1024.
+        'lg:min-h-11 lg:w-auto lg:flex-none lg:flex-row lg:gap-2 lg:rounded-full lg:px-3.5 lg:py-2',
         // The pill AND weight. This used to lean on a brand-coloured label, but
         // the lemon cannot set text (1.23:1 on cream), so active is now carried
         // by full-strength ink at 600 against ink-2 at 400 — a contrast step
         // from 6.72:1 to 13.27:1 plus a weight step, with the wash behind it.
         // On a phone the pill sits behind the icon only: a filled cell in a
         // 56px bar reads as a button rather than as "you are here".
-        active ? 'text-ink font-semibold sm:bg-correct-soft' : 'text-ink-2',
+        // `brand-soft`, not `correct-soft`. The active pill was drawn in the
+        // fill that means "this answer is right", so the highlight around
+        // Progress was the same colour as a correct option. The theme's own
+        // token comment assigns brand-soft to "selected option, active nav".
+        active ? 'text-ink font-semibold lg:bg-brand-soft' : 'text-ink-2',
       ].join(' ')}
       {...(active ? { 'aria-current': 'page' as const } : {})}
     >
       <span
         className={
           active
-            ? 'bg-correct-soft inline-flex rounded-full px-3 py-0.5 sm:bg-transparent sm:p-0'
+            ? 'bg-brand-soft inline-flex rounded-full px-3 py-0.5 lg:bg-transparent lg:p-0'
             : ''
         }
       >
         <Icon name={destination.icon} size={22} />
       </span>
       {/* Never hidden, at any width — only resized. */}
-      <span className="text-[11px] font-semibold sm:text-[13px] lg:text-label">
+      <span className="text-[11px] font-semibold lg:text-label">
         {destination.label}
       </span>
     </a>
@@ -118,7 +125,31 @@ function Item({ destination, active }: { destination: Destination; active: boole
 }
 
 /**
- * The bottom bar. Phones only — the rail replaces it from `sm` up.
+ * The mark, at the top of a phone screen, linking home (T-269).
+ *
+ * **Below `lg` there was no route to `/home` anywhere in the product**, and no
+ * brand mark on screen at all — the pill that carries both is desktop-only, and
+ * the bottom bar's six destinations do not include the hub. A seventh bottom-bar
+ * item is the wrong answer (DESIGN.md: "if a seventh is ever proposed… the
+ * answer is probably no"), so the mark goes where every other app on a
+ * student's phone has taught them to look for it.
+ *
+ * Deliberately just the mark. It is 34px of height on a five-inch screen, and
+ * each screen below it already has its own heading — a second title bar would
+ * be taking the question stem's room to say something the page already says.
+ */
+export function TopMark() {
+  return (
+    <div className="flex px-4 pt-4 lg:hidden">
+      <a href="/home" aria-label={c.nav.home} className="rounded-control inline-flex">
+        <Logo size={34} />
+      </a>
+    </div>
+  );
+}
+
+/**
+ * The bottom bar. Phones and tablets — the pill replaces it from `lg` up.
  *
  * `pb-[env(safe-area-inset-bottom)]` so it clears the home indicator on a phone
  * that has one, rather than sitting under it.
@@ -130,7 +161,21 @@ export function BottomBar({ pathname }: { pathname: string }) {
       // The phone bar stays edge-to-edge: a floating card at the bottom of a
       // 390px screen costs 32px of width the question stem needs, and the
       // safe-area inset already keeps it clear of the home indicator.
-      className="bg-surface border-border fixed inset-x-0 bottom-0 z-10 flex border-t pb-[env(safe-area-inset-bottom)] sm:hidden"
+      /*
+        Holds until `lg`, not `sm` (T-269).
+
+        The bar hid at 640px and the pill appeared there, but the account block
+        — "Signed in as", and the only Sign out in the chrome — was gated at
+        1024px. So every width from 640 to 1023 had a rail with no way out of
+        the account, and below about 757px the sixth destination overflowed the
+        pill and clipped to "Ac" while the page scrolled sideways. A tablet, or
+        a lab machine at 1024x768 with any browser chrome, landed in that gap.
+
+        Six labelled destinations fit this bar at 375px, so it is the shape that
+        works for the whole band. The pill takes over only where it can carry
+        everything it is supposed to.
+      */
+      className="bg-surface border-border fixed inset-x-0 bottom-0 z-10 flex border-t pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       {DESTINATIONS.map((d) => (
         <Item key={d.href} destination={d} active={isActive(pathname, d.href)} />
@@ -165,12 +210,27 @@ export function SideRail({ pathname }: { pathname: string }) {
         — a long soft lemon glow, because a grey drop next to cream reads as
         dirt.
       */
-      className="bg-surface border-border rounded-panel shadow-nav fixed inset-x-4 top-4 z-10 hidden items-center gap-2 border px-3 py-2 sm:flex lg:mx-auto lg:max-w-[1100px]"
+      className="bg-surface border-border rounded-panel shadow-nav fixed inset-x-4 top-4 z-10 mx-auto hidden max-w-[1100px] items-center gap-2 border px-3 py-2 lg:flex"
     >
-      {/* No bottom margin. `mb-4`/`lg:mb-6` were spacing under a logo that sat
-          at the top of a vertical rail; in a horizontal pill they are 24px of
-          height added to the tallest child, which is every row of the bar. */}
-      <span className="flex shrink-0 justify-center lg:justify-start lg:px-2">
+      {/*
+        The mark is the way to `/home`, and it is a link (T-269).
+
+        **Nothing in the product linked to `/home` at all.** The six
+        destinations go to Practise, Mock, Progress, Standing, Ask and Access;
+        the hub that tells a paid student when their access ends, and a
+        paywalled one that they have run out, was reachable only by typing the
+        URL. The brand tile was a `<span>`, which is the one place every other
+        app on a student's phone has taught them to press.
+
+        No bottom margin: `mb-4`/`lg:mb-6` were spacing under a logo that sat at
+        the top of a vertical rail; in a horizontal pill they are 24px of height
+        added to the tallest child, which is every row of the bar.
+      */}
+      <a
+        href="/home"
+        aria-label={c.nav.home}
+        className="rounded-control flex shrink-0 justify-center lg:justify-start lg:px-2"
+      >
         {/*
           The glyph alone where there is no room for the wordmark beside it —
           which is now everything below `xl`, not just tablets.
@@ -199,7 +259,7 @@ export function SideRail({ pathname }: { pathname: string }) {
           protects. This is what paying for them costs.
         */}
         <Logo size={34} />
-      </span>
+      </a>
 
       {DESTINATIONS.map((d) => (
         <Item key={d.href} destination={d} active={isActive(pathname, d.href)} />

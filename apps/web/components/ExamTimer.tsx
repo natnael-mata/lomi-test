@@ -22,6 +22,20 @@ const TIMER_CLASS: Record<TimerState, string> = {
   critical: 'bg-wrong-soft text-wrong',
 };
 
+/**
+ * Running over, in practice, is not an error (T-269).
+ *
+ * The overrun inherited `critical` and rendered in the wrong-answer pair —
+ * terracotta on its wash — so a student who took an extra eight seconds on a
+ * practice question watched the screen turn the colour it uses to say they got
+ * it wrong. Nothing had been submitted.
+ *
+ * Pencil instead, which is what this palette has for exactly this: "pending is
+ * not failure, so it gets no alarm colour". A mock sitting keeps `critical`,
+ * because there the clock reaching zero really does end the paper.
+ */
+const OVERRUN_CLASS = 'bg-pending-soft text-pending';
+
 export interface ExamTimerProps {
   remainingSec: number;
   durationSec: number;
@@ -48,7 +62,7 @@ export function ExamTimer({ remainingSec, durationSec, countUpPastZero = false }
       data-over={over ? '' : undefined}
       // `num` is tabular figures: without it the digits shuffle sideways every
       // second, which reads as flickering even though nothing is animating.
-      className={`${TIMER_CLASS[state]} rounded-control num text-label px-3 py-1.5`}
+      className={`${over ? OVERRUN_CLASS : TIMER_CLASS[state]} rounded-control num text-label px-3 py-1.5`}
       role="timer"
       aria-live={timerPoliteness(state)}
       // "over" rather than "remaining" past zero: a screen reader saying "2:26
