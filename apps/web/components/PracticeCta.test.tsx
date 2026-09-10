@@ -109,10 +109,41 @@ describe('the trend is a sequence, not a timeline (T-138)', () => {
     expect(source).toContain('{point.label}');
   });
 
-  // The chart is decoration for anyone not looking at it; the numbers are the
-  // content, so they are also written out.
-  it('restates every bar in words', () => {
-    expect(source).toContain('data-trend-rows');
-    expect(source).toContain('{point.scoreCorrect}');
+  /**
+   * The chart is decoration for anyone not looking at it; the numbers are the
+   * content, so they are also written out (T-269).
+   *
+   * The rule has not changed — what changed is where it is kept. `ScoreTrend`
+   * used to carry a second list restating every bar as `label · correct/total`,
+   * and `SittingHistory` sits directly under it giving the same rows with the
+   * date, the minutes, the correct/wrong/blank split and a link into the paper.
+   * So `/progress` printed every mock three times, and the middle copy was the
+   * smallest of the three.
+   *
+   * It is satisfied now by the percentage printed above each bar, plus the full
+   * history below — so nothing on this screen depends on reading a shape.
+   */
+  it('never leaves a number encoded only as a bar height', () => {
+    expect(source).toContain('{point.scorePct}%');
+    // And the removed list has not simply left the numbers nowhere.
+    const history = readFileSync(join(HERE, 'SittingHistory.tsx'), 'utf8');
+    expect(history).toContain('point.scoreCorrect');
+    // The legend is the sentence that spells out correct/wrong/blank/total.
+    expect(history).toContain('sittingLegend');
+  });
+
+  /**
+   * A zero reads as a zero.
+   *
+   * Every bar carried a flat 6px foot so that a score of nothing did not draw
+   * as an empty box — and 6px is also what 5% of the track comes to, so early
+   * sittings rendered as identical strips whatever they stood for. An audit
+   * found five bars the same across 0% and 5%.
+   */
+  it('draws a zero differently from a small score', () => {
+    expect(source).toContain('point.scorePct === 0');
+    // Pencil for nothing scored, brand for a score — not one colour for both.
+    expect(source).toContain('bg-pending');
+    expect(source).toContain('bg-brand');
   });
 });

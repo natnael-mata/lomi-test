@@ -12,7 +12,6 @@
  * something, and there is nothing between Mock 1 and Mock 2 — it is a sequence
  * of separate events, not a continuous measurement.
  */
-import { Chip } from './Chip';
 import { copy } from '../lib/i18n';
 
 export interface TrendPoint {
@@ -51,16 +50,34 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
                 baseline rather than against whichever was tallest. */}
             <div className="bg-surface-2 rounded-control flex h-24 w-full items-end overflow-hidden">
               {/*
-                A floor in pixels, not per cent.
+                A floor in pixels, not per cent — and a zero that looks like a
+                zero (T-269).
+
                 `Math.max(2, …)` of a 96px track is a 2px hairline, so a zero
-                drew as an empty outlined box — which reads as a chart that
-                failed to render rather than a score of nothing. QA reported it
-                as a rendering fault, and from the outside that is exactly what
-                it looks like. A 6px foot is unmistakably a bar at the bottom.
+                drew as an empty outlined box, which reads as a chart that
+                failed to render rather than a score of nothing. The fix was a
+                flat 6px foot on every bar, and that overshot: 6px is also what
+                5% of the track comes to, so on a set of early scores every bar
+                was the same 6px strip whatever it stood for. An audit found
+                five bars rendering identically across 0% and 5%, and called the
+                colour there meaningless. It was.
+
+                So the foot is only for a genuine zero, and it is drawn in
+                pencil rather than brand — a bar that stands for nothing scored
+                should not be the same colour as one that stands for a score.
+                Anything above zero uses its true height with a 3px minimum,
+                which is thinner than the 6px zero and therefore never confused
+                with it.
               */}
               <div
-                className="bg-brand w-full rounded-t-[inherit]"
-                style={{ minHeight: '6px', height: `${Math.min(100, point.scorePct)}%` }}
+                className={`w-full rounded-t-[inherit] ${
+                  point.scorePct === 0 ? 'bg-pending' : 'bg-brand'
+                }`}
+                style={
+                  point.scorePct === 0
+                    ? { height: '6px' }
+                    : { minHeight: '3px', height: `${Math.min(100, point.scorePct)}%` }
+                }
                 aria-hidden="true"
               />
             </div>
@@ -69,35 +86,21 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
         ))}
       </ul>
 
-      {/* Every bar restated in words. The chart is decoration for anyone not
-          looking at it, and the numbers are the content. */}
-      <ul className="flex flex-col gap-1" data-trend-rows="">
-        {points.map((point) => (
-          /*
-           * The score last and fixed-width, so it holds one column.
-           *
-           * These were three children under `justify-between` with the chip
-           * conditional, so a row with a chip put the score in the middle and a
-           * row without it put the score on the right. Two of three rows lined
-           * up and the third did not — which reads as a glitch, and on a screen
-           * whose whole claim is that every number can be checked, a column
-           * that moves undermines the numbers in it.
-           */
-          <li key={point.sittingId} className="flex items-center gap-2">
-            <span className="text-caption text-ink-2 min-w-0 flex-1 truncate">{point.label}</span>
-            {/* A mock that expired at question 60 is a different story from one
-                finished badly, and a bar alone cannot tell them apart. */}
-            {point.ranOutOfTime && (
-              <Chip tone="pending" data-ran-out="">
-                {c.progress.notReached(point.unanswered)}
-              </Chip>
-            )}
-            <span className="text-caption num w-16 shrink-0 text-right">
-              {point.scoreCorrect} / {point.totalQuestions}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {/*
+        The text list that used to sit here is gone (T-269).
+
+        It restated every bar in words — label, a ran-out chip, and
+        `correct / total` — on the reasoning that the chart is decoration and
+        the numbers are the content. That reasoning still holds, and it is
+        `SittingHistory` directly below that satisfies it: the same rows, with
+        the date, the minutes taken, the correct/wrong/blank split, and a link
+        into the paper. This list was a strictly smaller copy sitting between
+        the chart and the full version of itself, so `/progress` printed every
+        mock three times.
+
+        The numbers stay on the chart — each bar carries its percentage above
+        it — so nothing here depends on reading a shape.
+      */}
     </div>
   );
 }

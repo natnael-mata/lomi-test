@@ -340,20 +340,28 @@ export const en = {
     signedOut: 'Sign in with your phone number to pick up where you left off.',
     signedOutWhy: 'New here? Creating an account takes a number and a code we text you.',
 
-    goPractice: 'Practise',
-    goPracticeWhy: 'Answer questions and see why each answer is right.',
-    goExam: 'Mock exam',
-    // No counts here: this tile is rendered before anything knows which paper
-    // has been built, and "100 questions in 3 hours" was a promise about the
-    // product's intentions printed over a twenty-question one. `/exam` states
-    // the real shape, having asked.
-    goExamWhy: 'A full paper against the clock, sat once through.',
-    goProgress: 'Progress',
-    goProgressWhy: 'Where you are strong, and what to work on next.',
-    goStanding: 'Where you stand',
-    goStandingWhy: 'Your points, your streak and the board.',
+    /*
+     * The five destination tiles are gone (T-269).
+     *
+     * `/home` opened with Practise, Mock exam, Progress, Where you stand and
+     * Get full access — the same five the navigation bar carries directly
+     * above, in the same order, minus Ask. A menu printed twice on one screen,
+     * the second copy incomplete. What is left is the state only this screen
+     * knows, one action, and Ask.
+     */
     goCheckout: 'Get full access',
-    goCheckoutWhy: 'Six or twelve months, from the day you pay.',
+    /** The default next step, for anybody who can still answer something. */
+    startPractising: 'Start practising',
+    /*
+     * Ask survives the cull, alone.
+     *
+     * It is in the bar like the others, but it is the one destination a student
+     * does not reach by habit — the rest are where the daily loop already lives
+     * — so a line pointing at it is the difference between a discussion surface
+     * that is used and one that is not.
+     */
+    goAsk: 'Ask a question',
+    goAskWhy: 'Stuck on something? Another student, or a reviewer, can answer.',
 
     accessUntil: (date: string) => `Full access until ${date}.`,
     freeTier: 'You are on the free questions.',

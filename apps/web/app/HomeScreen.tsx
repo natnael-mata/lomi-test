@@ -97,13 +97,27 @@ export function HomeScreen() {
     };
   }, []);
 
-  const destinations = [
-    { href: '/practice', label: c.home.goPractice, why: c.home.goPracticeWhy },
-    { href: '/exam', label: c.home.goExam, why: c.home.goExamWhy },
-    { href: '/progress', label: c.home.goProgress, why: c.home.goProgressWhy },
-    { href: '/standing', label: c.home.goStanding, why: c.home.goStandingWhy },
-    { href: '/checkout', label: c.home.goCheckout, why: c.home.goCheckoutWhy },
-  ];
+  /**
+   * The one thing to do next, which depends on where the student is (T-269).
+   *
+   * **`/home` had no primary action at all in the state that most needed one.**
+   * A paywalled student was told "Your free questions are used up" in caption
+   * text with no control attached, and the way out was the fifth of five cards
+   * styled exactly like the four that would no longer do anything for them. The
+   * student who had *not* chosen a programme, by contrast, got a proper dark
+   * button — so the product was clearest with the visitor who had the least
+   * urgent problem.
+   */
+  const nextStep =
+    session.kind !== 'signedIn'
+      ? null
+      : session.needsProgramme
+        ? { href: '/choose', label: c.home.chooseProgramme }
+        : session.activeUntil === null && session.freeRemaining === 0
+          ? // Out of free questions and not paying. The only move that opens
+            // anything new is the one this button is.
+            { href: '/checkout', label: c.home.goCheckout }
+          : { href: '/practice', label: c.home.startPractising };
 
   return (
     <div className="flex flex-col gap-5">
@@ -154,27 +168,33 @@ export function HomeScreen() {
         access line because "you have 10 free questions" is not actionable until
         there is a programme to spend them in.
       */}
-      {session.kind === 'signedIn' && session.needsProgramme ? (
-        <Card as="section" className="flex flex-col gap-3" data-needs-programme="">
-          <p className="text-body">{c.home.chooseFirst}</p>
-          <p className="text-caption text-ink-2">{c.home.chooseFirstWhy}</p>
-          <a href="/choose" className="btn-primary self-start">
-            {c.home.chooseProgramme}
-          </a>
-        </Card>
-      ) : null}
+      {session.kind === 'signedIn' ? (
+        <Card as="section" className="flex flex-col gap-3" data-standing="">
+          {/*
+            The state, then the move. In that order and nothing between them.
 
-      {session.kind === 'signedIn' && !session.needsProgramme ? (
-        <div className="flex flex-col gap-1">
-          <p className="text-caption text-ink-2">
-            {session.activeUntil
-              ? c.home.accessUntil(day(session.activeUntil))
-              : session.lapsedOn
-                ? c.home.lapsedOn(day(session.lapsedOn))
-                : session.freeRemaining !== null
-                  ? c.home.freeLeft(session.freeRemaining)
-                  : c.home.freeTier}
+            This screen used to open with five destination cards — Practise,
+            Mock, Progress, Where you stand, Get full access — which are the same
+            five the navigation bar carries directly above, in the same order,
+            minus Ask. A menu printed twice on one screen, the second copy
+            incomplete. What only `/home` can say is what is true of *this*
+            student today, so that is what is left.
+          */}
+          <p className="text-body">
+            {session.needsProgramme
+              ? c.home.chooseFirst
+              : session.activeUntil
+                ? c.home.accessUntil(day(session.activeUntil))
+                : session.lapsedOn
+                  ? c.home.lapsedOn(day(session.lapsedOn))
+                  : session.freeRemaining !== null
+                    ? c.home.freeLeft(session.freeRemaining)
+                    : c.home.freeTier}
           </p>
+
+          {session.needsProgramme ? (
+            <p className="text-caption text-ink-2">{c.home.chooseFirstWhy}</p>
+          ) : null}
 
           {/* The money they have already sent. Named by its reference, because
               that is what somebody quotes when they ask where it went. */}
@@ -183,23 +203,35 @@ export function HomeScreen() {
               {c.home.claimWaiting(session.pendingClaim.txRef)}
             </p>
           )}
-        </div>
+
+          {nextStep ? (
+            <a href={nextStep.href} className="btn-primary self-start" data-next-step="">
+              {nextStep.label}
+            </a>
+          ) : null}
+        </Card>
       ) : null}
 
-      <nav className="flex flex-col gap-2">
-        {destinations.map((destination) => (
-          <a
-            key={destination.href}
-            href={destination.href}
-            className="bg-surface-2 rounded-card flex flex-col gap-0.5 p-4"
-          >
-            <span className="text-body">{destination.label}</span>
-            {/* What each one is, on the link itself. A menu of five bare nouns
-                makes somebody guess, and a stressed student guesses wrong. */}
-            <span className="text-caption text-ink-2">{destination.why}</span>
-          </a>
-        ))}
-      </nav>
+      {/*
+        Ask is the exception, and the only destination that stays.
+
+        Everything else on this page was a second copy of the navigation bar.
+        Ask is in that bar too, but it is the one destination a student does not
+        reach by habit — the other five are where the daily loop lives — so a
+        single line pointing at it is the difference between a discussion
+        surface that is used and one that is not.
+      */}
+      {session.kind === 'signedIn' && !session.needsProgramme ? (
+        <a
+          href="/community"
+          className="bg-surface-2 rounded-card flex flex-col gap-0.5 p-4"
+        >
+          <span className="text-body">{c.home.goAsk}</span>
+          {/* What it is, on the link itself. A bare noun makes somebody guess,
+              and a stressed student guesses wrong. */}
+          <span className="text-caption text-ink-2">{c.home.goAskWhy}</span>
+        </a>
+      ) : null}
 
       {/*
         The way out, on a phone.
