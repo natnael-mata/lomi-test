@@ -146,7 +146,23 @@ export function BandedBoard() {
       {window_ === 'week' && <p className="text-caption text-ink-2">{c.standing.boardWhyWeekly}</p>}
 
       {board.rows.length === 0 ? (
-        <p className="text-body text-ink-2">{c.standing.boardEmpty}</p>
+        /*
+         * Two different empty boards, and they were saying the same thing
+         * (T-269).
+         *
+         * `rows` excludes anybody not listed — an opted-out student, or a
+         * junior who has never been asked. So a hidden student who has answered
+         * something produces an empty `rows` *and* a `you` holding rank 1, and
+         * the screen printed "Nobody has scored yet. Answer a question and you
+         * are first." directly above a card reading "You are 1st · 100% · 6 of
+         * 6". An audit quoted the pair back as two adjacent sentences that
+         * contradict each other, which is exactly what they are.
+         *
+         * Nobody has scored is only true when nobody has — including you.
+         */
+        <p className="text-body text-ink-2">
+          {board.you ? c.standing.boardNobodyListed : c.standing.boardEmpty}
+        </p>
       ) : (
         <ol className="flex flex-col gap-1.5">
           {board.rows.map((row) => (

@@ -28,6 +28,7 @@ import {
   type LedgerRow,
   type StandingView,
 } from '../../lib/api';
+import { PracticeCta } from '../../components/PracticeCta';
 import { BandedBoard } from '../../components/BandedBoard';
 import { copy } from '../../lib/i18n';
 // Aliased: `day` is what the ledger row's field is called too.
@@ -229,6 +230,22 @@ export function StandingScreen() {
             {board.youListed ? c.standing.hideMe : c.standing.showMe}
           </button>
         </section>
+
+        {/*
+          The way to move, which this screen did not offer (T-269).
+
+          DESIGN.md: "every statement ends in a practice action" — and every
+          analytics view honoured it except this one. `/standing` ended on a
+          privacy toggle, so the only thing a student could *do* here was hide
+          themselves. On a fresh account that was starker still: the single
+          control on the whole screen was "Hide me from the board", which is the
+          least useful thing available and was also the loudest.
+
+          No topic to name — this screen measures across the whole track rather
+          than per topic, and `PracticeCta` handles a null by offering plain
+          practice rather than inventing a recommendation.
+        */}
+        <PracticeCta topicId={null} topicName={null} />
       </div>
     </div>
   );

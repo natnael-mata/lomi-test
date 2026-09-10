@@ -944,6 +944,16 @@ export const en = {
       'Ranks are counted across everyone. Anyone who has chosen not to appear keeps ' +
       'their place, so the numbers can skip.',
     boardEmpty: 'Nobody has scored yet. Answer a question and you are first.',
+    /*
+     * The board is empty of *rows*, not of people (T-269).
+     *
+     * `rows` leaves out anybody not listed, so a hidden student who has scored
+     * empties the list while still holding a rank — and `boardEmpty` then told
+     * them nobody had scored, directly above a card saying they were first.
+     * This says what is actually true, and the rank card below fills in the
+     * rest.
+     */
+    boardNobodyListed: 'Nobody on this board has chosen to appear yet.',
     yourRank: (rank: number) =>
       `You are ${rank}${rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'}`,
     notListed: 'You are not shown on the board. Your rank is still yours to see.',

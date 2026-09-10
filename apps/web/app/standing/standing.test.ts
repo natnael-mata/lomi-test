@@ -109,6 +109,39 @@ describe('the standing screen (T-190…T-194)', () => {
     expect(standing).toContain('c.standing.showMe');
   });
 
+  /**
+   * "Nobody has scored" is only true when nobody has, including you (T-269).
+   *
+   * `rows` excludes anybody not listed, so a hidden student who has answered
+   * something empties the list while still holding a rank — and the screen
+   * printed "Nobody has scored yet. Answer a question and you are first."
+   * directly above "You are 1st · 100% · 6 of 6". Two adjacent sentences
+   * contradicting each other, on the screen whose whole job is to tell somebody
+   * where they stand.
+   */
+  it('does not claim nobody has scored to a student who has', () => {
+    expect(boardSurfaces).toContain('board.you ? c.standing.boardNobodyListed');
+    // The two messages say different things.
+    expect(en.standing.boardNobodyListed).not.toBe(en.standing.boardEmpty);
+    expect(en.standing.boardNobodyListed.toLowerCase()).not.toContain('nobody has scored');
+  });
+
+  /**
+   * DESIGN.md: "every statement ends in a practice action" (T-269).
+   *
+   * Every analytics view honoured that except this one. `/standing` ended on a
+   * privacy toggle, so the only thing a student could *do* here was hide
+   * themselves — and on a fresh account the single control on the whole screen
+   * was "Hide me from the board", the least useful option available and also
+   * the loudest.
+   */
+  it('ends in a practice action, like every other statement', () => {
+    expect(standing).toContain('<PracticeCta');
+    const cta = standing.lastIndexOf('<PracticeCta');
+    const toggle = standing.lastIndexOf('c.standing.hideMe');
+    expect(cta, 'the action belongs after the privacy toggle').toBeGreaterThan(toggle);
+  });
+
   it('never renders a legal name on the board (T-193)', () => {
     for (const forbidden of ['verifiedName', 'legalName', 'fullName', 'userId']) {
       expect(boardSurfaces, forbidden).not.toContain(forbidden);
