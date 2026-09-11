@@ -418,6 +418,10 @@ enum AuditAction {
   WEIGHTS_DERIVED
   WEIGHT_OVERRIDDEN
   WEIGHT_OVERRIDE_CLEARED
+  /// T-269: the sitting date a whole programme's study plan counts down to.
+  /// One date for everybody in the field, so a wrong one is wrong for all of
+  /// them — and the daily target it produces looks authoritative either way.
+  EXAM_DATE_SET
   EXAM_BUILT
   DEVICES_RESET
   ACCOUNT_DEACTIVATED

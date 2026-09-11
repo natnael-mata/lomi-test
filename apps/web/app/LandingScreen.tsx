@@ -114,7 +114,10 @@ const FAQ = [
   ],
   [
     'What does “beaten 62%” mean?',
-    'It counts the questions you answered correctly and could explain — not lucky guesses. The total is the number of questions in your track, and we show it, so you can check the figure yourself.',
+    // Names the figure, because the app does. A student who has been taught the
+    // word here meets it again on `/progress` instead of two unexplained
+    // percentages — coverage, and the readiness beside it.
+    'That is your coverage. It counts the questions you answered correctly and could explain — not lucky guesses. The total is the number of questions in your track, and we show it, so you can check the figure yourself. Readiness is the other figure: how you are doing on the questions you have tried, weighted by each topic’s share of past papers.',
   ],
   [
     'Is the free tier really free?',
@@ -230,7 +233,22 @@ export function LandingScreen() {
             [
               'Honest numbers',
               'Every figure can be checked',
-              'Your readiness is a count of questions you have beaten, out of a total we show you. Nothing is estimated.',
+              /*
+               * This described coverage and called it readiness (T-269).
+               *
+               * The product uses the two words for two different figures, and
+               * says so on `/progress`: coverage is "how much of the whole exam
+               * you have beaten" — a plain count out of a stated total —
+               * while readiness is "how you are doing on the questions you have
+               * tried", a mean weighted by each topic's share of past papers.
+               * The sentence here defined readiness using coverage's
+               * definition, so a student arrived having been taught the wrong
+               * one and met both figures on the same screen.
+               *
+               * Coverage is the honest-numbers claim anyway: it is the one that
+               * is a count of things out of a total we print.
+               */
+              'Coverage is a count of questions you have beaten, out of a total we show you. Nothing is estimated.',
             ],
           ].map(([eyebrow, title, body]) => (
             <div key={title} className="card flex flex-col gap-2">

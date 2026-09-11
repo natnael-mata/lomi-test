@@ -3,6 +3,7 @@ import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nes
 import { AdminGuard } from '../auth/staff.guard';
 import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
 import { WeightsService, type EffectiveWeight } from './weights.service';
+import { TaxonomyService } from './taxonomy.service';
 
 /**
  * Topic weights (T-134, T-134a).
@@ -58,5 +59,35 @@ export class AdminWeightsController {
   @Delete('topics/:topicId')
   clear(@Req() req: AuthedRequest, @Param('topicId') topicId: string): Promise<EffectiveWeight[]> {
     return this.weights.clearOverride(topicId, req.auth?.userId ?? '');
+  }
+}
+
+/**
+ * The programme's own settings, beside its weights (T-269).
+ *
+ * Its own controller rather than another route on the weights one: the weights
+ * controller is mounted at `admin/fields/:fieldId/weights`, and the exam date
+ * is a fact about the field rather than about its weighting. Same guards, same
+ * `/admin` prefix, so the route inventory test keeps holding.
+ */
+@Controller('admin/fields/:fieldId')
+@UseGuards(SessionGuard, AdminGuard)
+export class AdminFieldController {
+  constructor(private readonly taxonomy: TaxonomyService) {}
+
+  /**
+   * Sets or clears the sitting this programme counts down to.
+   *
+   * `null` clears. That has to stay possible — a date entered against the wrong
+   * programme is worse than no date, because the daily target it produces looks
+   * every bit as authoritative as a correct one.
+   */
+  @Post('exam-date')
+  setExamDate(
+    @Req() req: AuthedRequest,
+    @Param('fieldId') fieldId: string,
+    @Body() body: { examDate?: unknown },
+  ): Promise<{ examDate: string | null }> {
+    return this.taxonomy.setExamDate(fieldId, body?.examDate ?? null, req.auth?.userId ?? '');
   }
 }

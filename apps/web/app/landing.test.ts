@@ -62,6 +62,21 @@ describe('the landing page (T-269)', () => {
     expect(landing).toContain("<Icon name=\"plus\"");
   });
 
+  /**
+   * The two figures keep their own meanings (T-269).
+   *
+   * `/progress` distinguishes them in as many words — coverage is "how much of
+   * the whole exam you have beaten", readiness is "how you are doing on the
+   * questions you have tried" — and this page defined *readiness* using
+   * coverage's definition. A student arrived taught the wrong one and then met
+   * both figures on the same screen.
+   */
+  it('does not define readiness as a count of questions beaten', () => {
+    const claim = /(\w+) is a count of questions you have beaten/.exec(landing)?.[1];
+    expect(claim, 'the honest-numbers claim has moved').toBeTruthy();
+    expect(claim!.toLowerCase()).toBe('coverage');
+  });
+
   /** No invented facts, which is this product's whole position. */
   it('states no contact detail that has not been supplied', () => {
     expect(landing).not.toMatch(/\+251\s*9\d/);

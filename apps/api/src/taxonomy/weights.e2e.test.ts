@@ -275,4 +275,80 @@ describe('topic weights (T-134, T-134a)', () => {
       expect(topic.weightPct, `${topic.name} is unweighted`).not.toBeNull();
     }
   });
+
+  /**
+   * The exam date, which nothing could set (T-269).
+   *
+   * `Field.examDate` has existed since the schema was written. `daysUntil`
+   * computes from it, `planFor` turns it into "answer this many a day", and the
+   * landing page sells that as step three of four — "the app works out how many
+   * a day you need to reach 80% before your exam, and recalculates it every
+   * morning". With no route able to write the column, that promise resolved to
+   * `/progress` saying "No exam date is set yet, so there is no daily target to
+   * work out", for every programme, permanently.
+   */
+  describe('setting the exam date (T-269)', () => {
+    const setDate = (examDate: unknown) =>
+      request(app.getHttpServer())
+        .post(`/admin/fields/${fieldId}/exam-date`)
+        .set(staff.auth)
+        .send({ examDate });
+
+    it('writes the date the countdown reads', async () => {
+      const res = await setDate('2027-06-14');
+      expect(res.status).toBe(201);
+
+      const field = await prisma.field.findUniqueOrThrow({ where: { id: fieldId } });
+      expect(field.examDate).not.toBeNull();
+      // Stored as a plain calendar day at UTC midnight: a sitting is a date,
+      // not an instant, and a timezone shift puts a countdown a day out.
+      expect(field.examDate!.toISOString()).toBe('2027-06-14T00:00:00.000Z');
+    });
+
+    /* A date on the wrong programme is worse than none — the daily target it
+       produces looks exactly as authoritative as a correct one. */
+    it('can be cleared', async () => {
+      await setDate('2027-06-14');
+      const res = await setDate(null);
+      expect(res.status).toBe(201);
+      expect(res.body.examDate).toBeNull();
+
+      const field = await prisma.field.findUniqueOrThrow({ where: { id: fieldId } });
+      expect(field.examDate).toBeNull();
+    });
+
+    /* `2027` typed where `2026` was meant divides the bank over four hundred
+       days and tells the whole programme to answer one question a day. */
+    it('refuses a year that is obviously a typo', async () => {
+      const res = await setDate('2099-06-14');
+      expect(res.status).toBe(400);
+      expect(res.body.message.toLowerCase()).toContain('year');
+    });
+
+    it('refuses something that is not a date', async () => {
+      const res = await setDate('next June');
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('BAD_DATE');
+    });
+
+    /** One date governs every student in the field, so who set it is recorded. */
+    it('records who set it', async () => {
+      await setDate('2027-06-14');
+      const entry = await prisma.auditLog.findFirst({
+        where: { action: 'EXAM_DATE_SET', entityId: fieldId },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(entry).not.toBeNull();
+      expect(entry!.actorId).toBe(staff.userId);
+      expect(entry!.detail).toContain('2027-06-14');
+      await setDate(null);
+    });
+
+    it('is refused to a student', async () => {
+      await request(app.getHttpServer())
+        .post(`/admin/fields/${fieldId}/exam-date`)
+        .send({ examDate: '2027-06-14' })
+        .expect(401);
+    });
+  });
 });

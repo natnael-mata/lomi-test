@@ -1297,6 +1297,19 @@ export const en = {
     switchProgramme: 'Programme to weight',
     weightsScope: (name: string) =>
       `These weights shape every mock paper generated for ${name}, and nothing outside it.`,
+
+    /*
+     * The sitting date, which nothing could set until T-269.
+     *
+     * The copy says what it governs, because it governs a lot: the study plan
+     * divides the questions a student has left by the days remaining, so one
+     * wrong date gives a whole programme a wrong daily target that looks
+     * exactly as authoritative as a right one.
+     */
+    examDateLabel: 'Exam date for this programme',
+    examDateGoverns: (name: string) =>
+      `Every ${name} student's daily target counts down to this date.`,
+    examDateNone: 'No date set, so no student in this programme has a daily target.',
     publishedBankSays: (published: number, derived: number) =>
       `${published} published · bank says ${derived}%`,
     weightLabel: (topic: string) => `Weight for ${topic}, whole percent`,

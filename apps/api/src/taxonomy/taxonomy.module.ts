@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 
 import { AuditModule } from '../audit/audit.module';
-import { AdminWeightsController } from './admin-weights.controller';
+import { AdminFieldController, AdminWeightsController } from './admin-weights.controller';
 import { TaxonomyService } from './taxonomy.service';
 import { WeightsService } from './weights.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [AdminWeightsController],
+  controllers: [AdminWeightsController, AdminFieldController],
   providers: [TaxonomyService, WeightsService],
   exports: [TaxonomyService, WeightsService],
 })

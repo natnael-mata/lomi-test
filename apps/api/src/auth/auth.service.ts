@@ -123,6 +123,14 @@ export interface FieldOption {
   slug: string;
   chosen: boolean;
   /**
+   * The sitting this programme counts down to, or null (T-269).
+   *
+   * Not sensitive — a national exam date is public — and it has to reach the
+   * client because the one screen that can set it needs to show what it is now.
+   * The study plan reads the same column server-side.
+   */
+  examDate: string | null;
+  /**
    * How many published questions are behind it.
    *
    * **A programme can be published and still be empty**, and three of them were:
@@ -1084,7 +1092,7 @@ export class AuthService {
     const fields = await this.prisma.field.findMany({
       where: { isPublished: true },
       orderBy: { name: 'asc' },
-      select: { id: true, name: true, slug: true, maxGrade: true },
+      select: { id: true, name: true, slug: true, maxGrade: true, examDate: true },
     });
 
     /*
@@ -1117,10 +1125,13 @@ export class AuthService {
     });
     const byField = new Map(counts.map((c) => [c.fieldId, c._count._all]));
 
-    return fields.map((f) => ({
+    return fields.map(({ examDate, ...f }) => ({
       ...f,
       chosen: f.id === user?.fieldId,
       questionCount: byField.get(f.id) ?? 0,
+      // Serialised here rather than spread, so the wire carries a string and
+      // not whatever the driver hands back for a DateTime.
+      examDate: examDate === null ? null : examDate.toISOString(),
     }));
   }
 

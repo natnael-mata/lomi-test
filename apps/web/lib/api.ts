@@ -168,6 +168,13 @@ export interface FieldOption {
   name: string;
   slug: string;
   chosen: boolean;
+  /**
+   * The sitting this programme counts down to, or null (T-269).
+   *
+   * Not sensitive — a national exam date is public — and the one screen that
+   * can set it needs to show what it is now.
+   */
+  examDate: string | null;
   /** Published questions behind it. Zero means listed but not yet practisable. */
   questionCount: number;
   /**
@@ -1241,6 +1248,20 @@ export const api = {
     call<EffectiveWeight[]>(`/admin/fields/${fieldId}/weights/derive`, {
       method: 'POST',
       body: '{}',
+    }),
+
+  /**
+   * Sets the sitting a programme counts down to, or clears it (T-269).
+   *
+   * `Field.examDate` drives the whole study plan — the remaining questions
+   * divided by the days left — and nothing in the product could write it, so
+   * `/progress` told every student "No exam date is set yet, so there is no
+   * daily target to work out", permanently.
+   */
+  adminSetExamDate: (fieldId: string, examDate: string | null): Promise<{ examDate: string | null }> =>
+    call(`/admin/fields/${fieldId}/exam-date`, {
+      method: 'POST',
+      body: JSON.stringify({ examDate }),
     }),
 
   adminOverrideWeight: (

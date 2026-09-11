@@ -34,6 +34,8 @@ export function WeightEditor() {
   const [rows, setRows] = useState<EffectiveWeight[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
+  /** The field's sitting date as `YYYY-MM-DD`, or '' for none (T-269). */
+  const [examDate, setExamDate] = useState('');
   const [draft, setDraft] = useState({ weightPct: '', reason: '' });
 
   useEffect(() => {
@@ -58,6 +60,7 @@ export function WeightEditor() {
         if (cancelled) return;
         setFields(mine);
         setFieldId(first);
+        setExamDate(mine.find((f) => f.id === first)?.examDate?.slice(0, 10) ?? '');
         setRows(weights);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -97,7 +100,33 @@ export function WeightEditor() {
   const switchTo = async (id: string): Promise<void> => {
     setEditing(null);
     setFieldId(id);
+    // The date belongs to the programme, so it changes with it. Leaving it put
+    // would show one field's sitting under another field's name.
+    setExamDate(fields.find((f) => f.id === id)?.examDate?.slice(0, 10) ?? '');
     await run(() => api.adminWeights(id));
+  };
+
+  /**
+   * Writes the sitting date, or clears it.
+   *
+   * Its own handler rather than `run`, which exists to swallow a weights
+   * response — this returns the saved date, and the two have no reason to share
+   * a shape. The local value is kept so the field does not jump back while the
+   * request is in flight; the list is updated too, so switching away and back
+   * shows what was actually saved.
+   */
+  const saveExamDate = async (value: string): Promise<void> => {
+    if (!fieldId) return;
+    setExamDate(value);
+    try {
+      const saved = await api.adminSetExamDate(fieldId, value || null);
+      setFields((all) =>
+        all.map((f) => (f.id === fieldId ? { ...f, examDate: saved.examDate } : f)),
+      );
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    }
   };
 
   if (error && rows.length === 0) {
@@ -150,6 +179,40 @@ export function WeightEditor() {
           no statement of what they govern — and they govern every mock paper the
           programme generates. */}
       {current && <p className="text-caption text-ink-2">{c.admin.weightsScope(current.name)}</p>}
+
+      {/*
+        The sitting this programme counts down to (T-269).
+
+        **Nothing in the product could set it.** `Field.examDate` has existed
+        since the schema was written, the study plan divides the remaining
+        questions by the days left, and the landing page sells that as step
+        three of four — "the app works out how many a day you need to reach 80%
+        before your exam, and recalculates it every morning". With no control
+        anywhere, `/progress` answered "No exam date is set yet, so there is no
+        daily target to work out" for every student, permanently.
+
+        Here rather than on its own screen because this is already the page
+        about one programme, and it is the same operator: somebody who sets a
+        field's weights is somebody who knows when its exam is.
+
+        Clearing is deliberately as easy as setting. A date against the wrong
+        programme is worse than none — the daily target it produces looks every
+        bit as authoritative as a correct one.
+      */}
+      {fieldId && (
+        <label className="flex flex-col gap-1">
+          <span className="text-caption text-ink-2">{c.admin.examDateLabel}</span>
+          <input
+            type="date"
+            className="border-border bg-surface text-body min-h-11 max-w-[16rem] rounded-xl border px-3"
+            value={examDate}
+            onChange={(e) => void saveExamDate(e.target.value)}
+          />
+          <span className="text-caption text-ink-2">
+            {examDate ? c.admin.examDateGoverns(current?.name ?? '') : c.admin.examDateNone}
+          </span>
+        </label>
+      )}
 
       {/*
        * The rows beside the sum, from `lg`.
