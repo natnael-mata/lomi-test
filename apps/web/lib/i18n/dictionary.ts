@@ -729,8 +729,20 @@ export const en = {
     // is what a marker does; this is the student reading their own answers.
     readThisPaper: 'Read this paper',
     sittingsEmpty: 'No mock papers sat yet.',
-    fromAnswers: (pct: number, answered: number) =>
-      `${pct}% from ${answered} answer${answered === 1 ? '' : 's'}`,
+    /*
+     * The count, and not the percentage again (T-269).
+     *
+     * This read "40% from 5 answers", and the readiness rows a few centimetres
+     * above already print "Depreciation 40% · 25% share of past papers" — so
+     * every topic's score appeared twice on one screen, and an audit read the
+     * whole section as a duplicate list.
+     *
+     * It is not a duplicate; it carries the one fact the rows above cannot,
+     * which is how much each score rests on. Saying only that is what makes the
+     * section earn its place.
+     */
+    fromAnswers: (answered: number) =>
+      `from ${answered} answer${answered === 1 ? '' : 's'}`,
     thinEvidence: 'too few to be sure',
     unansweredInMocks: (count: number) =>
       `${count} mock question${count === 1 ? '' : 's'} ${count === 1 ? 'was' : 'were'} ` +
@@ -894,6 +906,21 @@ export const en = {
 
     points: 'Points',
     pointsFrom: 'from every award you have earned',
+    /*
+     * What points are not (T-269).
+     *
+     * Points are the largest figure on this screen and the board beside them
+     * ranks by something else entirely — questions beaten — so the biggest
+     * number is not the number anybody is ranked on. An audit put it plainly:
+     * "the biggest number on the screen is not the number the board uses", and
+     * User M showed it at its starkest, reading POINTS 0 next to "You are 1st ·
+     * 100% · 6 of 6".
+     *
+     * Both figures stay, because they measure two things a student genuinely
+     * wants: turning up, and getting things right. What was missing was the
+     * sentence saying which is which.
+     */
+    pointsNotRanked: 'Points are for turning up. The board ranks by questions beaten.',
     streak: 'Days practised',
     streakNever: 'No days yet. The first one counts from today.',
     streakDays: (days: number) => `${days} day${days === 1 ? '' : 's'}`,

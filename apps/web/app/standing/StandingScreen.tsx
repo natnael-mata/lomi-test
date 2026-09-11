@@ -147,6 +147,17 @@ export function StandingScreen() {
                 : c.standing.toNextTier(standing.pointsToNextTier, TIER_NAMES[standing.tier])}
             </p>
 
+            {/*
+              Which of the two figures on this screen the board actually uses.
+
+              Points are the largest number here and the board beside them ranks
+              by questions beaten, so the biggest figure is not the one anybody
+              is ranked on — and nothing said so. The pair reads worst on an
+              account like User M's: POINTS 0, beside "You are 1st · 100% ·
+              6 of 6". Both are true and they measure different things.
+            */}
+            <p className="text-caption text-ink-2">{c.standing.pointsNotRanked}</p>
+
             <div className="bg-surface-2 rounded-card p-3">
               <span className="text-caption text-ink-2 uppercase">{c.standing.streak}</span>
               {/* No "you lost your streak" branch exists, because the streak has no

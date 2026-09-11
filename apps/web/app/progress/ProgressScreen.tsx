@@ -241,7 +241,7 @@ export function ProgressScreen() {
                   >
                     <span className="text-ink">{t.topicName}</span>
                     <span className="num">
-                      {c.progress.fromAnswers(t.scorePct!, t.answered)}
+                      {c.progress.fromAnswers(t.answered)}
                       {t.answered < 3 ? ` · ${c.progress.thinEvidence}` : ''}
                     </span>
                   </li>

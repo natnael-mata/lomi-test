@@ -135,6 +135,20 @@ describe('the standing screen (T-190…T-194)', () => {
    * was "Hide me from the board", the least useful option available and also
    * the loudest.
    */
+  /**
+   * The biggest number says what it is not (T-269).
+   *
+   * Points are the largest figure on this screen, and the board beside them
+   * ranks by questions beaten — so the number a student's eye lands on is not
+   * the one they are ranked on, and nothing said so. It reads worst on an
+   * account like User M's: POINTS 0, beside "You are 1st · 100% · 6 of 6".
+   */
+  it('says that points are not what the board ranks by', () => {
+    expect(standing).toContain('c.standing.pointsNotRanked');
+    expect(en.standing.pointsNotRanked.toLowerCase()).toContain('board ranks');
+    expect(en.standing.pointsNotRanked.toLowerCase()).toContain('beaten');
+  });
+
   it('ends in a practice action, like every other statement', () => {
     expect(standing).toContain('<PracticeCta');
     const cta = standing.lastIndexOf('<PracticeCta');
