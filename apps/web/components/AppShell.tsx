@@ -54,7 +54,7 @@ const DATA_ROUTES = ['/progress', '/standing'];
  * product — wrapping either in the product's own navigation would be a lie
  * about where somebody is.
  */
-const UNFRAMED = ['/design', '/dev-login', '/signin'];
+const UNFRAMED = ['/design', '/dev-login', '/signin', '/dev-viewport'];
 
 /**
  * Routes that are unframed by EXACT match.
