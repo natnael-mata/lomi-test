@@ -24,7 +24,7 @@ do not edit by hand.
 | Phase 11 — Engagement (V2)                       | 11/11 | 100% | ✅ complete |
 | Phase 13 — The screens the API was missing       | 9/9   | 100% | ✅ complete |
 | Phase 14 — Oversight — done                      | 4/4   | 100% | ✅ complete |
-| Phase 12 — Hardening & launch                    | 16/18 | 89%  | 2 left      |
+| Phase 12 — Hardening & launch                    | 18/19 | 95%  | 1 left      |
 
 <!-- progress:end -->
 
@@ -3287,7 +3287,7 @@ could reach.
 
 ---
 
-## Phase 12 — Hardening & launch — 2 left
+## Phase 12 — Hardening & launch — 1 left
 
 - [x] **T-199a** Verify the focus ring with real keyboard input on every interactive element.
       DESIGN.md requires a 2px brand outline at 2px offset. It is **present and exact in the
@@ -3726,12 +3726,52 @@ could reach.
 - [ ] **T-212** Seed the pilot content: the three launch fields fully reviewed.
       **Test:** ≥1 `PUBLISHED` question per topic, all field weights summing to 100.
 
-  > **The owner is uploading the spreadsheets** (2026-08-17), at `/admin/import`, using the 16
+  > **The owner is uploading the spreadsheets** (2026-08-17), at `/admin/import`, using the
   > columns in `docs/question_import_template.csv`. No developer is needed for that half.
   >
   > **The second half had no screen until T-231**, which is now built: `/admin/review` lists every
   > draft with the gate's own blockers, sends one into review, and publishes or bounces it. No
   > shell access, no developer.
+  >
+  > **The path was walked end to end on 2026-09-16** — template posted to the real import
+  > endpoint, 7 read, 7 taken, 0 rejected, then read back out of the review queue with the gate's
+  > blockers attached. Nothing here is waiting on code. Three things are worth knowing before the
+  > real spreadsheets arrive, because each one costs an afternoon to discover:
+  >
+  > 1. **22 columns, not 16.** Six optional ones were appended (`source_grade`, `concept_line`,
+  >    and a `why_wrong_*` per option). A file may still stop at `status` and import — it just
+  >    lands with more blockers on it.
+  > 2. **A CALCULATION question cannot be published straight from a CSV.** There is no column for
+  >    the worked steps, and the gate refuses a calculation without them (T-114), so a reviewer
+  >    adds them in `/admin/review`. That is deliberate — the steps are the product — but at
+  >    volume it is the expensive part, so write the concept line and why-wrongs into the
+  >    spreadsheet where they can be typed once rather than in the review screen one at a time.
+  > 3. **A topic with no weight blocks publishing.** `/admin/weights` → Recompute from the bank
+  >    after the import, then check the sum reads 100.
+
+- [x] **T-212a** Give the import template rows that show the right shape.
+      Five of the seven samples failed the gate, and the two kinds of failure were different:
+      the Accounting rows are calculations missing their steps, which a CSV cannot carry — but
+      they were *also* missing concept lines and why-wrongs, which are columns that exist. A
+      template whose own examples cannot be published teaches the wrong shape to whoever copies
+      it, and it is the file the owner is told to copy.
+      **Test:** import the template; at least one row reports `READY`, and the calculation rows
+      are blocked only by the thing a spreadsheet genuinely cannot supply.
+
+  > Done 2026-09-16. The template now spans the four states an importer meets, on purpose:
+  >
+  > | Row | After import | What it demonstrates |
+  > | --- | --- | --- |
+  > | `CS-0001` | `READY` | a CONCEPT question complete from the CSV alone — publishable with no reviewer edit |
+  > | `AF-0003`, `AF-0004` | one blocker | a CALCULATION as complete as a spreadsheet can make it; only the worked steps remain |
+  > | `AF-0001`, `AF-0002`, `AF-0005` | concept line filled, why-wrongs not | the middle state, and the work the review screen is for |
+  > | `GEO-0001` | seven blockers | the deliberate stub — no answer key, no explanation, unweighted topic |
+  >
+  > The concept lines and why-wrongs added are each derivable from that row's own worked
+  > explanation; nothing was invented. The three rows still missing why-wrongs need the author,
+  > not a developer — their explanations are truncated in the source and state the distractor
+  > reasoning for only some options, and writing a confident wrong answer into the file that
+  > teaches the format is the one mistake this product cannot make.
 
 ---
 
