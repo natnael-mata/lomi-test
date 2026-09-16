@@ -10,6 +10,7 @@
  */
 import { useEffect, useState } from 'react';
 
+import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { PracticeCta } from '../../components/PracticeCta';
 import { ReadinessStatement } from '../../components/ReadinessStatement';
@@ -44,6 +45,18 @@ export function ProgressScreen() {
    * which is the honest rendering of a figure that does not exist.
    */
   const [coverage, setCoverage] = useState<CoverageView | null>(null);
+  /**
+   * Bumped to re-run the load, which is what Try again presses (T-269).
+   *
+   * A counter rather than an extracted loader: everything this screen fetches
+   * happens in one effect with four dependent calls, and pulling that apart to
+   * add a button is a larger change than the button is worth.
+   */
+  const [attempt, setAttempt] = useState(0);
+  const reload = (): void => {
+    setError(null);
+    setAttempt((n) => n + 1);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +95,7 @@ export function ProgressScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   /*
    * A condition the student can fix, with the control that fixes it.
@@ -105,8 +118,14 @@ export function ProgressScreen() {
 
   if (error) {
     return (
-      <Card data-state="error">
+      <Card data-state="error" className="flex flex-col gap-3">
         <p className="text-body">{error}</p>
+        {/* The same remedy `/practice` and `/standing` offer. One failure was
+            being answered three different ways, and on two of the three the
+            student had to work out for themselves that reloading might help. */}
+        <Button variant="ghost" className="self-start" onClick={() => void reload()}>
+          {c.common.tryAgain}
+        </Button>
       </Card>
     );
   }

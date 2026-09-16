@@ -25,11 +25,66 @@ const here = dirname(fileURLToPath(import.meta.url));
 const landing = stripComments(readFileSync(resolve(here, 'LandingScreen.tsx'), 'utf8'));
 
 describe('the landing page (T-269)', () => {
-  /* THE regression. `Todo` rendered unconditionally. */
-  it('renders editorial notes in development only', () => {
-    expect(landing).toContain("process.env.NODE_ENV !== 'development'");
+  /**
+   * THE regression, and its second draft.
+   *
+   * `Todo` first rendered unconditionally, so the public page carried six
+   * dashed-red editorial notes. Gating on `NODE_ENV` was the obvious fix and
+   * still wrong: QA tests the dev server, so "hidden in production" meant
+   * visible in every environment anybody actually looks at — and the same six
+   * came back as reported findings a round later.
+   *
+   * The default is the finished page everywhere. The outstanding list is opt-in.
+   */
+  it('hides editorial notes unless they are explicitly asked for', () => {
+    expect(landing).toContain("process.env.NEXT_PUBLIC_SHOW_TODOS !== '1'");
+    expect(landing).not.toContain('NODE_ENV');
     const todo = landing.slice(landing.indexOf('function Todo'), landing.indexOf('function Head'));
     expect(todo).toContain('return null');
+  });
+
+  /**
+   * Every FAQ row is the same kind of thing.
+   *
+   * The household question sat outside the list as a bare `<div>` styled like
+   * the six above it — same border, same padding, same type — with its answer
+   * printed inline and no disclosure marker. It read as a row that invites a
+   * tap and does nothing, which is what it was: special-cased because it
+   * carried a placeholder, then never converted when the rest became
+   * collapsible.
+   */
+  it('keeps every FAQ row in one list, with one behaviour', () => {
+    expect(landing).toContain('Can I share one account with a friend?');
+    // Not rendered outside `FAQ.map`, which is what made it inert.
+    const faqSection = landing.slice(landing.indexOf('id="faq"'), landing.indexOf('id="contact"'));
+    expect(faqSection).not.toContain('Two devices can be signed in at once.');
+  });
+
+  /**
+   * The primary button goes where the copy points.
+   *
+   * It linked to `/signin` — a phone-and-password form — under recruitment copy
+   * promising free questions and no card, so a first-time visitor's one press
+   * landed on a password they had never set.
+   */
+  it('sends the hero CTA to sign-up, not sign-in', () => {
+    const hero = landing.slice(0, landing.indexOf('id="how"'));
+    expect(hero).toContain('href="/signup"');
+  });
+
+  /**
+   * Nothing looks chosen unless it can be.
+   *
+   * One track card and one price card were filled brand yellow among pale
+   * siblings, on a section headed "Choose the exam you are sitting" — and all
+   * seven were inert `<div>`s. A card that reads as selected and cannot be
+   * selected is a trap on the page whose whole job is picking one.
+   */
+  it('makes the emphasised cards pressable, and says why they are emphasised', () => {
+    const tracks = landing.slice(landing.indexOf('id="tracks"'), landing.indexOf('id="faq"'));
+    expect(tracks).not.toContain('<div\n              key={name}');
+    expect(tracks).toContain('most students');
+    expect(tracks).toContain('best value');
   });
 
   /**

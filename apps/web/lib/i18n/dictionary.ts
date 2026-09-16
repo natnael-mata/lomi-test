@@ -125,7 +125,17 @@ export const en = {
     community: 'Ask',
     checkout: 'Access',
 
+    /*
+     * Two navigations, two names (T-269).
+     *
+     * The bar and the pill are the same six destinations in two shapes, and
+     * both carried `aria-label="Main"` — so the markup holds two identically
+     * named navigation landmarks at once. Only one is ever visible, so assistive
+     * tech sees one at a time and nothing is broken, but a landmark list with
+     * "Main" twice in it is a smell, and it costs nothing to say which is which.
+     */
     main: 'Main',
+    mainBottom: 'Main, bottom bar',
     accessUntil: (date: string) => `Access until ${date}`,
   },
 
@@ -534,8 +544,18 @@ export const en = {
     newCode: 'Get a new code',
     starting: 'Getting your code…',
 
-    // The signed-out home. Three lines are the whole onboarding story.
-    valueTitle: 'Ready for the Exit Exam',
+    /*
+     * The signed-out home. Three lines are the whole onboarding story.
+     *
+     * **Track-neutral, because this page serves five tracks** (T-269). It read
+     * "Ready for the Exit Exam" while the fine print at the foot of the same
+     * screen said "For school tracks and university exit exams alike" — so a
+     * Grade 6 parent signing their child in was told they were ready for a
+     * university exam, on a product where school tracks are the pricing
+     * decision that got its own migration. Nothing here knows which track the
+     * visitor is on yet; the heading should not pretend otherwise.
+     */
+    valueTitle: 'Ready for your exam',
     valueBody:
       'Practise real questions with full explanations, sit timed mocks, and see exactly which ' +
       'topics to study next.',

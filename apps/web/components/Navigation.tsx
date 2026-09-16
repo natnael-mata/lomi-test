@@ -157,7 +157,10 @@ export function TopMark() {
 export function BottomBar({ pathname }: { pathname: string }) {
   return (
     <nav
-      aria-label={c.nav.main}
+      // Named apart from the pill's landmark. Both are "Main" navigation and
+      // both are in the markup at once, so two identically labelled landmarks
+      // show up in a landmark list even though only one is ever visible.
+      aria-label={c.nav.mainBottom}
       // The phone bar stays edge-to-edge: a floating card at the bottom of a
       // 390px screen costs 32px of width the question stem needs, and the
       // safe-area inset already keeps it clear of the home indicator.

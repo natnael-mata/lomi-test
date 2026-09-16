@@ -18,6 +18,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { TierBadge } from '../../components/TierBadge';
 import { StatedFigure } from '../../components/StatedFigure';
@@ -105,7 +106,24 @@ export function StandingScreen() {
     return <p className="text-body text-ink-2">{c.standing.working}</p>;
   }
   if (phase.kind === 'error') {
-    return <p className="text-body">{c.standing.couldNotLoad}</p>;
+    /*
+     * A message and a way out of it (T-269).
+     *
+     * This was the sentence alone. `/practice` offers a Try again button in the
+     * same situation and `/progress` did not either, so the product answered
+     * one failure three different ways — and on two of the three the only
+     * remedy was for the student to work out that reloading might help. The
+     * copy already says "nothing is lost"; the button is what makes that
+     * actionable rather than reassuring.
+     */
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-body">{c.standing.couldNotLoad}</p>
+        <Button variant="ghost" className="self-start" onClick={() => void load()}>
+          {c.common.tryAgain}
+        </Button>
+      </div>
+    );
   }
 
   const { standing, ledger, board } = phase;

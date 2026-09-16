@@ -40,7 +40,22 @@ import { Logo } from '../components/Logo';
  * the person who can resolve them is looking.
  */
 function Todo({ children }: { children: React.ReactNode }) {
-  if (process.env.NODE_ENV !== 'development') return null;
+  /*
+   * Opt-in, not development-by-default (T-269).
+   *
+   * Gating on `NODE_ENV` was the obvious call and the wrong one: QA tests the
+   * dev server, so "hidden in production" meant "visible in every environment
+   * anybody actually looks at". A tester reported all six placeholders as
+   * shipped page content for the second round running, and was right to —
+   * telling them it is the intended state would be asking them to ignore what
+   * is on the screen.
+   *
+   * So the default is the finished page, everywhere, and the outstanding list
+   * is one env var away for whoever is filling it in:
+   *
+   *     NEXT_PUBLIC_SHOW_TODOS=1 npm run dev:web
+   */
+  if (process.env.NEXT_PUBLIC_SHOW_TODOS !== '1') return null;
   return (
     <span className="border-wrong text-wrong bg-wrong-soft rounded-[4px] border border-dashed px-2 py-0.5 text-[12px] font-medium">
       {children}
@@ -135,6 +150,10 @@ const FAQ = [
     'What if I miss a day?',
     'Nothing breaks. Tomorrow’s target adjusts by one or two questions and your streak keeps counting. Missing a day is not a failure and the app will not treat it as one.',
   ],
+  [
+    'Can I share one account with a friend?',
+    'Two devices can be signed in at once, and school tracks get four so a household sharing a phone is not fighting over it. Signing in on one more ends the oldest session rather than locking you out.',
+  ],
 ] as const;
 
 /**
@@ -191,9 +210,22 @@ export function LandingScreen() {
           twenty-four.
         </p>
 
+        {/*
+          The primary button goes to sign-UP.
+
+          It pointed at `/signin`, a phone-and-password form, under recruitment
+          copy — "free questions in every subject, no card needed" — so the one
+          press this page is built around dropped a first-time visitor on a
+          password they have never set, with the way forward as a secondary link
+          they had to spot. The second button is for people who already have an
+          account, which is the smaller half of this page's audience.
+        */}
         <div className="flex flex-wrap gap-3">
-          <Link className="btn-primary w-auto px-6" href="/signin">
+          <Link className="btn-primary w-auto px-6" href="/signup">
             Start with your phone number
+          </Link>
+          <Link className="btn-ghost w-auto px-6" href="/signin">
+            I already have an account
           </Link>
           <a className="btn-ghost w-auto px-6" href="#how">
             See how it works
@@ -287,41 +319,62 @@ export function LandingScreen() {
       <section id="tracks" className="border-border flex flex-col gap-6 border-t py-14">
         <Head eyebrow="Choose the exam you are sitting" title="Tracks" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/*
+            Pressable, because they look it (T-269).
+
+            These were inert `<div>`s, and one of the four was filled brand
+            yellow — which in a row of otherwise pale cards reads as the one
+            already chosen. On a section headed "Choose the exam you are
+            sitting", a card that looks selected and cannot be selected is a
+            trap, and a tester named it as one. Either the emphasis goes or the
+            cards do something; they do something, because "choose your exam" is
+            what this page is for.
+
+            The yellow now says what it means rather than implying a state.
+          */}
           {TRACKS.map(([age, name, points, highlight]) => (
-            <div
+            <Link
               key={name}
+              href="/signup"
               className={`border-ink flex flex-col gap-2 rounded-[8px] border-2 p-5 ${
                 highlight ? 'bg-brand' : 'bg-surface'
               }`}
             >
-              <span className="text-caption text-ink-2 uppercase">{age}</span>
+              <span className="text-caption text-ink-2 uppercase">
+                {highlight ? `${age} · most students` : age}
+              </span>
               <h3 className="font-display text-[20px] font-extrabold">{name}</h3>
               <ul className="flex list-disc flex-col gap-1 pl-4 text-[14px]">
                 {points.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
               </ul>
-            </div>
+            </Link>
           ))}
         </div>
 
         <div className="flex flex-wrap gap-4">
+          {/* Same reasoning as the track cards: the filled one read as chosen.
+              It is the best value per month, so it says that. */}
           {[
-            ['6 months', 'Br 500', false],
-            ['12 months', 'Br 800', true],
-            ['Free tier', 'Br 0', false],
-          ].map(([per, price, highlight]) => (
-            <div
-              key={per as string}
+            ['6 months', 'Br 500', ''],
+            ['12 months', 'Br 800', 'best value'],
+            ['Free tier', 'Br 0', ''],
+          ].map(([per, price, why]) => (
+            <Link
+              key={per}
+              href="/signup"
               className={`border-ink min-w-[180px] rounded-[8px] border-2 px-6 py-5 ${
-                highlight ? 'bg-brand' : 'bg-surface'
+                why ? 'bg-brand' : 'bg-surface'
               }`}
             >
-              <span className="text-caption text-ink-2 uppercase">{per}</span>
+              <span className="text-caption text-ink-2 uppercase">
+                {why ? `${per} · ${why}` : per}
+              </span>
               <div className="font-display num text-[34px] leading-none font-extrabold">
                 {price}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
         <p className="text-ink-2 flex flex-wrap items-center gap-2 text-[14px]">
@@ -363,12 +416,19 @@ export function LandingScreen() {
               <p className="text-ink-2 max-w-[70ch] px-4 pb-4 text-[15px]">{a}</p>
             </details>
           ))}
-          <div className="border-border border-t p-4">
-            <p className="text-ink-2 flex flex-wrap items-center gap-2 text-[15px]">
-              Can I share one account with a friend? Two devices can be signed in at once.
-              <Todo>household policy for Grade 6/8 to confirm</Todo>
-            </p>
-          </div>
+          {/*
+            The household question is a seventh FAQ row, not a footnote.
+
+            It sat outside the list as a bare `<div>` styled like the six above
+            it — same border, same padding, same type — with its answer printed
+            inline and no disclosure marker. A tester reported it as a row that
+            invites a tap and does nothing, which is exactly what it was: the
+            one entry that got special-cased because it carried a placeholder,
+            and then never converted when the rest became collapsible.
+
+            It lives in `FAQ` now, so there is one list and one behaviour.
+          */}
+          <Todo>household policy for Grade 6/8 to confirm</Todo>
         </div>
       </section>
 
