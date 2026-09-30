@@ -141,7 +141,20 @@ function Item({ destination, active }: { destination: Destination; active: boole
 export function TopMark() {
   return (
     <div className="flex px-4 pt-4 lg:hidden">
-      <a href="/home" aria-label={c.nav.home} className="rounded-control inline-flex">
+      {/*
+        A 44px target around a 34px mark (T-269).
+
+        The link wrapped the logo with no padding, so it inherited the mark's
+        34px and sat under DESIGN.md's touch floor on every screen at every
+        width — the layout sweep found it 33 times, which is one mistake seen
+        from 33 angles. The mark stays 34px because that is the drawing; the
+        thing a thumb has to hit is the anchor around it.
+      */}
+      <a
+        href="/home"
+        aria-label={c.nav.home}
+        className="rounded-control inline-flex min-h-11 min-w-11 items-center justify-center"
+      >
         <Logo size={34} />
       </a>
     </div>
@@ -232,7 +245,9 @@ export function SideRail({ pathname }: { pathname: string }) {
       <a
         href="/home"
         aria-label={c.nav.home}
-        className="rounded-control flex shrink-0 justify-center lg:justify-start lg:px-2"
+        // 44px of target around a 34px mark, the same as `TopMark`. The pill's
+        // own row is 44px, so this only ever adds width.
+        className="rounded-control flex min-h-11 min-w-11 shrink-0 items-center justify-center lg:justify-start lg:px-2"
       >
         {/*
           The glyph alone where there is no room for the wordmark beside it —

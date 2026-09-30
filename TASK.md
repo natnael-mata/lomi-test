@@ -99,9 +99,9 @@ These are unresolved in the source documents. Tasks that need them are marked `B
 
 | #   | Decision                                                           | Status                                                                                     |
 | --- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| D1  | Product name                                                       | ✅ **Lomi-Test**                                                                           |
-| D2  | Plan structure                                                     | ✅ **Duration-based: 6-month and 12-month**, measured from purchase                        |
-| D3  | Price                                                              | ✅ **6 months = Br 500 · 12 months = Br 800**                                              |
+| D1  | Product name                                                       | ✅ **Lomi-Exams** — renamed from Lomi-Test; the repo keeps the old slug                    |
+| D2  | Plan structure                                                     | ✅ **Duration-based**, from purchase. Exit exam picks 6 or 12; a school track gets one year |
+| D3  | Price                                                              | ✅ **Exit exam: 6 months Br 500 · 12 months Br 800. School tracks: Br 300/year, one plan** |
 | D4  | Exam config                                                        | ✅ **100 questions · 180 minutes.** Per-question budget: **60s concept, 180s calculation** |
 | D5  | Blueprint weights                                                  | ✅ **No official blueprint exists.** Use derived weights — see below                       |
 | D6  | verify.et credentials + which response field authorises activation | ✅ **Decided 2026-08-10: not doing verify.et.** Manual settlement is the permanent path    |

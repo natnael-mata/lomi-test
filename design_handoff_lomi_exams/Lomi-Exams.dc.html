@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lomi-Exams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#F8FAFC;font-family:Inter,-apple-system,'Segoe UI',Roboto,sans-serif;color:#1E293B;-webkit-font-smoothing:antialiased}
+a{color:#A16207;text-decoration:none}a:hover{color:#854D0E;text-decoration:underline}
+button,input,select{font-family:inherit}
+@keyframes lt-float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-16px) rotate(6deg)}}
+@keyframes lt-spin{to{transform:rotate(360deg)}}
+@keyframes lt-marquee{to{transform:translateX(-50%)}}
+@keyframes lt-fill{0%{width:0}35%,100%{width:62%}}
+@keyframes lt-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+
+<sc-if value="{{ is.landing }}" hint-placeholder-val="{{ true }}">
+<div style="background:#fff;min-height:100vh;display:flex;flex-direction:column">
+<div style="position:relative;overflow:hidden;background-color:#0F172A;background-image:radial-gradient(rgb(255 255 255/.09) 1.2px,transparent 1.7px);background-size:24px 24px;color:#fff">
+<div aria-hidden="true" style="position:absolute;inset:0;pointer-events:none;z-index:0">{{ heroShapes }}</div>
+<header style="position:relative;z-index:2;max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:32px;padding:20px clamp(16px,5vw,64px)">
+<button onClick="{{ go.landing }}" style="display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;color:#fff;cursor:pointer"><svg width="34" height="34" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path><circle r="7" fill="#FEF08A"></circle></svg><span style="font:800 20px Outfit;letter-spacing:-.01em">Lomi<span style="color:#94A3B8">-Exams</span></span></button>
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}">
+<nav style="display:flex;gap:28px;font:500 15px Inter;color:#CBD5E1"><a href="#how" style="color:#CBD5E1">How it works</a><a href="#features" style="color:#CBD5E1">Features</a><a href="#pricing" style="color:#CBD5E1">Pricing</a></nav>
+</sc-if>
+<div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+<button onClick="{{ go.signin }}" style="background:none;border:0;color:#fff;font:600 15px Inter;padding:12px 8px;cursor:pointer">Sign in</button>
+<button onClick="{{ go.signup }}" style="min-height:44px;padding:0 20px;border:0;border-radius:999px;background:#FACC15;color:#0F172A;font:700 15px Inter;cursor:pointer" style-hover="background:#EAB308">Start free</button>
+</div>
+</header>
+
+<div style="position:relative;z-index:1;max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,500px),1fr));gap:clamp(32px,5vw,56px);padding:clamp(32px,6vw,72px) clamp(16px,5vw,64px) 0;align-items:end">
+<div style="display:flex;flex-direction:column;gap:24px;padding-bottom:clamp(8px,6vw,88px)">
+<span style="align-self:flex-start;display:flex;align-items:center;gap:8px;border:1px solid rgb(255 255 255/.18);border-radius:999px;padding:6px 14px 6px 8px;font:500 14px Inter;color:#E2E8F0">{{ liveDot }}<span style="background:#FACC15;color:#0F172A;border-radius:999px;padding:2px 8px;font:700 12px Inter">2026</span>Updated for this year's blueprints</span>
+<h1 style="margin:0;font-family:Outfit;font-weight:800;font-size:clamp(40px,6vw,80px);line-height:1.04;letter-spacing:-.035em;text-wrap:balance">Walk into your exit exam <span style="color:#FACC15">already knowing</span> you'll pass.</h1>
+<p style="margin:0;font-size:clamp(17px,1.6vw,20px);line-height:1.6;color:#CBD5E1;max-width:560px;text-wrap:pretty">Practice your department's blueprint question by question, see the working behind every answer, and sit full mocks on an exam-day screen.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<button onClick="{{ go.signup }}" style="min-height:56px;padding:0 28px;border:0;border-radius:999px;background:#FACC15;color:#0F172A;font:700 17px Inter;display:flex;align-items:center;gap:8px;cursor:pointer" style-hover="background:#EAB308">Start practicing free<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+<a href="#pricing" style="min-height:56px;padding:0 24px;border:1.5px solid rgb(255 255 255/.3);border-radius:999px;color:#fff;font:600 17px Inter;display:flex;align-items:center;text-decoration:none">See plans</a>
+</div>
+<span style="font:500 14px Inter;color:#94A3B8">Phone sign-up · 20 free questions a day · plans from 300 ETB</span>
+</div>
+<div style="position:relative;padding-top:clamp(24px,4vw,64px)">
+<div style="background:#F8FAFC;border-radius:20px 20px 0 0;padding:clamp(16px,2.5vw,28px);display:flex;flex-direction:column;gap:16px;color:#1E293B;box-shadow:0 -20px 60px rgb(0 0 0/.35)">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font:700 20px Outfit">Good evening, Hana</span><span style="margin-left:auto;border:1px solid #E2E8F0;background:#fff;border-radius:999px;padding:5px 12px;font:600 13px Inter">Accounting &amp; Finance</span></div>
+<div style="background:#1E293B;color:#fff;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:flex-end;justify-content:space-between"><div style="display:flex;align-items:baseline;gap:8px"><span style="font:800 56px/56px Outfit;letter-spacing:-.03em">43</span><span style="font:700 17px Outfit;color:#CBD5E1">days left</span></div><div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font:800 32px Outfit;color:#FACC15">62%</span><span style="font:500 13px Inter;color:#CBD5E1">ready</span></div></div>
+<div style="position:relative;height:10px;border-radius:999px;background:rgb(255 255 255/.14)">{{ heroBar }}<div style="position:absolute;left:60%;top:-5px;bottom:-5px;width:2px;background:#fff"></div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:14px">
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px"><span style="font:700 16px Outfit">Focus topics</span>
+<div style="display:flex;justify-content:space-between;font:600 14px Inter"><span>Auditing</span><span style="color:#C2410C">48%</span></div>
+<div style="display:flex;justify-content:space-between;font:600 14px Inter"><span>Cost accounting</span><span style="color:#C2410C">54%</span></div>
+<div style="display:flex;justify-content:space-between;font:600 14px Inter"><span>Fin. management</span><span style="color:#C2410C">58%</span></div></div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font:700 16px Outfit">Mock scores</span><svg width="100%" height="64" viewBox="0 0 200 70" preserveAspectRatio="none"><polyline points="6,58 70,44 134,32 194,14" fill="none" stroke="#A16207" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline></svg><span style="font:600 14px Inter;color:#4D7C0F">48% → 67%</span></div>
+</div>
+</div>
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;right:-24px;top:-8px;width:310px;background:#fff;color:#1E293B;border-radius:16px;padding:16px;box-shadow:0 24px 48px rgb(0 0 0/.35);display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:8px"><span style="font:800 16px Outfit">Question 16</span><span style="font:600 11px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">Process costing</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:1.5px solid #4D7C0F;background:#ECFCCB;font:500 15px Inter"><span style="width:24px;height:24px;border-radius:999px;background:#4D7C0F;color:#fff;display:grid;place-items:center;font:700 12px Inter">C</span><span style="flex:1">10,800 units</span></div>
+<span style="font:500 13px ui-monospace,Menlo,monospace;color:#3F6212;background:#FEF9C3;border-radius:8px;padding:8px 10px">9,000 + (3,000 × 60%) = 10,800</span>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+
+<div style="border-bottom:1px solid #E2E8F0;padding:24px clamp(16px,5vw,64px);display:flex;align-items:center;gap:32px;max-width:1280px;margin:0 auto;width:100%">
+<sc-if value="{{ bp.notMobile }}" hint-placeholder-val="{{ true }}"><span style="font:600 13px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B;flex:none">Blueprints for</span></sc-if>
+<div style="flex:1;min-width:0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">{{ fieldMarquee }}</div>
+</div>
+
+<section id="how" style="max-width:1280px;margin:0 auto;width:100%;padding:clamp(56px,8vw,96px) clamp(16px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:32px">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+<div style="display:flex;flex-direction:column;gap:8px;border-top:2px solid #1E293B;padding-top:20px"><span style="font-family:Outfit;font-weight:800;font-size:clamp(48px,5vw,68px);line-height:1;letter-spacing:-.03em">{{ s.n }}</span><span style="font:500 17px/26px Inter;color:#475569">{{ s.l }}</span></div>
+</sc-for>
+</section>
+
+<section id="features" style="max-width:1280px;margin:0 auto;width:100%;padding:0 clamp(16px,5vw,64px) clamp(64px,9vw,112px);display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 40px">
+<h2 style="margin:0;font-family:Outfit;font-weight:800;font-size:clamp(32px,4vw,56px);line-height:1.07;letter-spacing:-.025em;max-width:720px;text-wrap:balance">Everything between you and a pass mark</h2>
+<span style="font:400 18px/28px Inter;color:#475569;max-width:400px">One app from your first practice question to the morning of the exam.</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px">
+<div style="background:#FEF9C3;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px;min-height:280px">
+<span style="font:700 24px/30px Outfit">Worked solutions</span><span style="font:400 16px/25px Inter;color:#475569">Every step shown, plus why each wrong option tempted you.</span>
+<div style="margin-top:auto;background:#fff;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;font:500 13px ui-monospace,Menlo,monospace;color:#334155"><span>1 · 2,000 + 10,000 − 3,000 = 9,000</span><span>2 · 3,000 × 60% = 1,800</span><span style="color:#3F6212;font-weight:700">3 · 9,000 + 1,800 = 10,800</span></div>
+</div>
+<div style="background:#F1F5F9;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px;min-height:280px">
+<span style="font:700 24px/30px Outfit">Daily study plan</span><span style="font:400 16px/25px Inter;color:#475569">A set number of questions a day, weakest and heaviest topics first.</span>
+<div style="margin-top:auto;background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:14px"><svg width="56" height="56" viewBox="0 0 84 84"><circle cx="42" cy="42" r="36" fill="none" stroke="#F1F5F9" stroke-width="9"></circle><circle cx="42" cy="42" r="36" fill="none" stroke="#FACC15" stroke-width="9" stroke-linecap="round" stroke-dasharray="135.7 226.2" transform="rotate(-90 42 42)"></circle></svg><div style="display:flex;flex-direction:column"><span style="font:800 20px Outfit">15 / 25</span><span style="font:400 13px Inter;color:#64748B">10 to go today</span></div></div>
+</div>
+<div style="background:#F1F5F9;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px;min-height:280px">
+<span style="font:700 24px/30px Outfit">Readiness by topic</span><span style="font:400 16px/25px Inter;color:#475569">See which topics are still under the pass-safe line.</span>
+<div style="margin-top:auto;background:#fff;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px">
+<div style="position:relative;height:8px;border-radius:999px;background:#F1F5F9"><div style="position:absolute;left:0;top:0;bottom:0;width:71%;border-radius:999px;background:#FACC15"></div><div style="position:absolute;left:60%;top:-4px;bottom:-4px;width:2px;background:#64748B"></div></div>
+<div style="position:relative;height:8px;border-radius:999px;background:#F1F5F9"><div style="position:absolute;left:0;top:0;bottom:0;width:48%;border-radius:999px;background:#C2410C"></div><div style="position:absolute;left:60%;top:-4px;bottom:-4px;width:2px;background:#64748B"></div></div>
+<div style="position:relative;height:8px;border-radius:999px;background:#F1F5F9"><div style="position:absolute;left:0;top:0;bottom:0;width:66%;border-radius:999px;background:#FACC15"></div><div style="position:absolute;left:60%;top:-4px;bottom:-4px;width:2px;background:#64748B"></div></div>
+</div>
+</div>
+<div style="background:#F1F5F9;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px;min-height:240px">
+<span style="font:700 24px/30px Outfit">Exam-day countdown</span><span style="font:400 16px/25px Inter;color:#475569">Your plan paces itself to the date of your sitting.</span>
+<span style="margin-top:auto;font:800 56px/56px Outfit;letter-spacing:-.03em">43 <span style="font-size:20px;color:#64748B">days</span></span>
+</div>
+<div style="background:#F1F5F9;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px;min-height:240px">
+<span style="font:700 24px/30px Outfit">Streaks and points</span><span style="font:400 16px/25px Inter;color:#475569">Points for first-try correct answers keep the habit going.</span>
+<div style="margin-top:auto;display:flex;gap:6px;flex-wrap:wrap"><span style="width:30px;height:30px;border-radius:999px;background:#FACC15"></span><span style="width:30px;height:30px;border-radius:999px;background:#FACC15"></span><span style="width:30px;height:30px;border-radius:999px;background:#FACC15"></span><span style="width:30px;height:30px;border-radius:999px;background:#FACC15"></span><span style="width:30px;height:30px;border-radius:999px;border:1.5px solid #CBD5E1"></span><span style="width:30px;height:30px;border-radius:999px;border:1.5px solid #CBD5E1"></span><span style="width:30px;height:30px;border-radius:999px;border:1.5px solid #CBD5E1"></span></div>
+</div>
+<div style="background:#1E293B;color:#fff;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:14px;min-height:240px">
+<span style="font:700 24px/30px Outfit">Works on any phone</span><span style="font:400 16px/25px Inter;color:#CBD5E1">Runs in the browser, light on data, nothing to install.</span>
+<button onClick="{{ go.signup }}" style="margin-top:auto;align-self:flex-start;background:none;border:0;padding:0;font:600 15px Inter;color:#FACC15;display:flex;align-items:center;gap:6px;cursor:pointer">Create a free account<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+</div>
+</div>
+</section>
+
+<section style="background:#0F172A;color:#fff">
+<div style="max-width:1280px;margin:0 auto;padding:clamp(56px,8vw,104px) clamp(16px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(32px,5vw,72px);align-items:center">
+<div style="display:flex;flex-direction:column;gap:20px">
+<span style="font:600 13px Inter;letter-spacing:.08em;text-transform:uppercase;color:#FACC15">Exam simulator</span>
+<h2 style="margin:0;font-family:Outfit;font-weight:800;font-size:clamp(32px,4vw,52px);line-height:1.08;letter-spacing:-.025em">Rehearse the real sitting</h2>
+<p style="margin:0;font:400 18px/29px Inter;color:#CBD5E1">A 100-question grid, flags, a live timer and a submit review. By exam day, the screen is the least surprising part.</p>
+<div style="display:flex;flex-direction:column;gap:12px;font:500 16px Inter;color:#E2E8F0">
+<span style="display:flex;gap:10px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FACC15" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>Keyboard shortcuts like the lab PCs</span>
+<span style="display:flex;gap:10px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FACC15" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>Results broken down by topic</span>
+<span style="display:flex;gap:10px;align-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FACC15" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>Review every answer after you submit</span>
+</div>
+</div>
+<div style="background:#F8FAFC;border-radius:16px;overflow:hidden;color:#1E293B;box-shadow:0 30px 60px rgb(0 0 0/.4)">
+<div style="height:52px;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;gap:12px;padding:0 20px"><span style="font:700 15px Outfit">Mock exit exam 5</span><span style="margin-left:auto;border:1px solid #E2E8F0;border-radius:8px;padding:5px 10px;font:700 16px Inter;font-variant-numeric:tabular-nums">{{ timeLeft }}</span></div>
+<div style="padding:24px;display:flex;flex-direction:column;gap:12px"><span style="font:800 20px Outfit">Question 23 <span style="font:500 13px Inter;color:#64748B">of 100</span></span><span style="font:500 15px/24px Inter">Under IAS 2 Inventories, which cost formula is not permitted?</span>
+<div style="padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:10px;background:#fff;font:400 14px Inter">A · First-in, first-out</div>
+<div style="padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:10px;background:#fff;font:400 14px Inter">B · Weighted average cost</div>
+<div style="padding:10px 12px;border:1.5px solid #A16207;border-radius:10px;background:#FEF9C3;font:600 14px Inter">C · Last-in, first-out</div>
+</div>
+</div>
+</div>
+</section>
+
+<section id="pricing" style="max-width:1280px;margin:0 auto;width:100%;padding:clamp(56px,8vw,112px) clamp(16px,5vw,64px);display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:12px;max-width:720px"><h2 style="margin:0;font-family:Outfit;font-weight:800;font-size:clamp(32px,4vw,56px);line-height:1.07;letter-spacing:-.025em">Start free. Pay once per exam cycle.</h2><span style="font:400 18px/29px Inter;color:#475569">20 free questions every day with full explanations. Plans run from 300 to 500 ETB per field and last until your exam day.</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:20px;align-items:stretch">
+<sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+<div style="position:relative;border:2px solid {{ p.cardBd }};background:{{ p.cardBg }};color:{{ p.cardFg }};border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font:700 20px Outfit">{{ p.name }}</span><sc-if value="{{ p.tag }}" hint-placeholder-val="{{ false }}"><span style="background:#FACC15;color:#0F172A;border-radius:999px;padding:3px 10px;font:700 12px Inter">{{ p.tag }}</span></sc-if></div>
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font:800 56px/56px Outfit;letter-spacing:-.03em">{{ p.price }}</span><span style="font:700 17px Outfit;color:{{ p.subFg }}">ETB / field</span></div>
+<div style="display:flex;flex-direction:column;gap:10px;font:500 15px/22px Inter">
+<sc-for list="{{ p.feat }}" as="ft" hint-placeholder-count="3"><span style="display:flex;gap:10px;align-items:flex-start"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{ p.checkFg }}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M4 12.5l5 5L20 6.5"></path></svg>{{ ft }}</span></sc-for>
+</div>
+<button onClick="{{ p.choose }}" style="margin-top:auto;min-height:52px;border:0;border-radius:999px;background:{{ p.btnBg }};color:{{ p.btnFg }};font:700 16px Inter;cursor:pointer">Choose {{ p.name }}</button>
+</div>
+</sc-for>
+</div>
+<span style="font:500 14px Inter;color:#64748B">Pay with telebirr, CBE Birr or card. Fayda ID is checked once at purchase.</span>
+</section>
+
+<section style="position:relative;overflow:hidden;background-color:#FACC15;background-image:radial-gradient(rgb(15 23 42/.14) 1.2px,transparent 1.7px);background-size:22px 22px">
+<div aria-hidden="true" style="position:absolute;right:-60px;top:-70px;pointer-events:none;opacity:.5">{{ ctaSlice }}</div>
+<div style="position:relative;max-width:1280px;margin:0 auto;padding:clamp(56px,8vw,96px) clamp(16px,5vw,64px);display:flex;flex-wrap:wrap;align-items:center;gap:24px 48px">
+<h2 style="margin:0;font-family:Outfit;font-weight:800;font-size:clamp(34px,5vw,64px);line-height:1.04;letter-spacing:-.03em;color:#0F172A;flex:1 1 420px;text-wrap:balance">Your first 20 questions are on us.</h2>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<button onClick="{{ go.signup }}" style="min-height:58px;padding:0 30px;border:0;border-radius:999px;background:#0F172A;color:#fff;font:700 17px Inter;cursor:pointer">Start practicing free</button>
+<a href="#pricing" style="min-height:58px;padding:0 26px;border:2px solid #0F172A;border-radius:999px;color:#0F172A;font:700 17px Inter;display:flex;align-items:center;text-decoration:none">See plans</a>
+</div>
+</div>
+</section>
+
+<footer style="background:#0F172A;color:#94A3B8">
+<div style="max-width:1280px;margin:0 auto;padding:56px clamp(16px,5vw,64px) 32px;display:flex;flex-direction:column;gap:40px">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px"><span style="display:flex;align-items:center;gap:8px;font:800 20px Outfit;color:#fff"><svg width="28" height="28" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path></svg><span>Lomi<span style="color:#94A3B8">-Exams</span></span></span><span style="font:400 14px/22px Inter;max-width:260px">Ethiopian university exit exam preparation.</span></div>
+<div style="display:flex;flex-direction:column;gap:10px;font:400 14px Inter"><span style="font:600 13px Inter;color:#fff">Product</span><span>Practice</span><span>Mock exams</span><span>Pricing</span></div>
+<div style="display:flex;flex-direction:column;gap:10px;font:400 14px Inter"><span style="font:600 13px Inter;color:#fff">Fields</span><span>Accounting &amp; Finance</span><span>Management</span><span>All 42 fields</span></div>
+<div style="display:flex;flex-direction:column;gap:10px;font:400 14px Inter"><span style="font:600 13px Inter;color:#fff">Help</span><span>Contact on Telegram</span><span>Terms</span><span>Privacy</span></div>
+</div>
+<span style="font:400 13px Inter;border-top:1px solid #1E293B;padding-top:24px">© 2026 Lomi-Exams</span>
+</div>
+</footer>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.auth }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:grid;grid-template-columns:{{ authCols }};background:#fff">
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;overflow:hidden;background-color:#0F172A;background-image:radial-gradient(rgb(255 255 255/.09) 1.2px,transparent 1.7px);background-size:24px 24px;color:#fff;padding:48px;display:flex;flex-direction:column;gap:24px">
+<div aria-hidden="true" style="position:absolute;right:-90px;bottom:-90px;opacity:.35;pointer-events:none">{{ ctaSlice }}</div>
+<button onClick="{{ go.landing }}" style="display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;color:#fff;cursor:pointer;align-self:flex-start"><svg width="34" height="34" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path><circle r="7" fill="#FEF08A"></circle></svg><span style="font:800 20px Outfit">Lomi<span style="color:#94A3B8">-Exams</span></span></button>
+<h2 style="position:relative;margin:auto 0 0;font:800 44px/48px Outfit;letter-spacing:-.03em;max-width:460px">Every question, <span style="color:#FACC15">fully explained.</span></h2>
+<p style="position:relative;margin:0;font:400 17px/27px Inter;color:#CBD5E1;max-width:440px">Blueprint practice, timed mocks and a readiness score for your department's exit exam.</p>
+</div>
+</sc-if>
+<div style="display:flex;flex-direction:column;padding:clamp(24px,5vw,56px) clamp(20px,5vw,48px);min-height:100vh">
+<div style="width:100%;max-width:420px;margin:0 auto;flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;align-items:center;gap:8px">
+<button onClick="{{ go.landing }}" aria-label="Back" style="width:44px;height:44px;margin-left:-10px;border:0;background:none;display:grid;place-items:center;color:#1E293B;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:8px;font:800 17px Outfit"><svg width="26" height="26" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path></svg><span>Lomi<span style="color:#64748B">-Exams</span></span></span></sc-if>
+</div>
+
+<sc-if value="{{ is.signup }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px Inter;color:#64748B">Step 1 of 2</span><h1 style="margin:0;font:800 30px/36px Outfit">Create your account</h1><span style="font:400 15px Inter;color:#475569">Practice free. No card needed.</span></div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter">Full name<input value="Hana Tesfaye" style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;padding:0 14px;font:400 16px Inter;color:#1E293B;outline-color:#A16207"></label>
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter">Phone number<span style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;padding:0 14px;display:flex;align-items:center;gap:10px"><span style="color:#64748B;border-right:1px solid #E2E8F0;padding-right:10px;font:500 16px Inter">+251</span><input value="911 234 482" inputmode="numeric" style="flex:1;min-width:0;border:0;outline:0;font:400 16px Inter;color:#1E293B"></span><span style="font:400 13px Inter;color:#64748B">We'll text a 6-digit code to this number.</span></label>
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter">Password<input type="password" value="lomiexams" style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;padding:0 14px;font:400 16px Inter;outline-color:#A16207"><span style="font:400 13px Inter;color:#64748B">At least 8 characters.</span></label>
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter"><span>Email <span style="font-weight:400;color:#64748B">(optional)</span></span><input placeholder="you@example.com" style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;padding:0 14px;font:400 16px Inter;outline-color:#A16207"></label>
+<div style="display:flex;gap:10px;align-items:flex-start;font:400 14px/21px Inter;color:#475569"><span style="width:20px;height:20px;flex:none;border-radius:5px;background:#FACC15;display:grid;place-items:center;margin-top:1px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1E293B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg></span><span>I agree to the <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</span></div>
+</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:14px">
+<button onClick="{{ go.verify }}" style="min-height:52px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 16px Inter;cursor:pointer" style-hover="background:#EAB308">Send code</button>
+<span style="text-align:center;font:400 14px Inter;color:#475569">Already have an account? <a href="#" onClick="{{ go.signin }}" style="font-weight:600">Sign in</a></span>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.verify }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px Inter;color:#64748B">Step 2 of 2</span><h1 style="margin:0;font:800 30px/36px Outfit">Enter the code</h1><span style="font:400 15px/23px Inter;color:#475569">Sent to <b style="color:#1E293B">+251 911 234 482</b>. <a href="#" onClick="{{ go.signup }}" style="font-weight:600">Change</a></span></div>
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+<sc-for list="{{ otp }}" as="d" hint-placeholder-count="6"><span style="height:58px;border:{{ d.bd }};border-radius:8px;display:grid;place-items:center;font:700 26px Outfit;background:{{ d.bg }}">{{ d.v }}</span></sc-for>
+</div>
+<div style="display:flex;justify-content:space-between;font:400 14px Inter;color:#64748B"><span>Didn't get it?</span><span style="font-variant-numeric:tabular-nums">Resend in 0:42</span></div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:14px">
+<button onClick="{{ go.onboard }}" style="min-height:52px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 16px Inter;cursor:pointer" style-hover="background:#EAB308">Verify and continue</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.signin }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:6px"><h1 style="margin:0;font:800 30px/36px Outfit">Welcome back</h1><span style="font:400 15px Inter;color:#475569">43 days to exam day. Keep going.</span></div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter">Phone or email<input value="0911 234 482" style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;padding:0 14px;font:400 16px Inter;outline-color:#A16207"></label>
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter"><span style="display:flex;justify-content:space-between">Password<a href="#" style="font-weight:600">Forgot?</a></span><input type="password" value="lomiexams" style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;padding:0 14px;font:400 16px Inter;outline-color:#A16207"></label>
+</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:14px">
+<button onClick="{{ go.today }}" style="min-height:52px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 16px Inter;cursor:pointer" style-hover="background:#EAB308">Sign in</button>
+<span style="text-align:center;font:400 14px Inter;color:#475569">New to Lomi-Exams? <a href="#" onClick="{{ go.signup }}" style="font-weight:600">Create an account</a></span>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.onboard }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:600 13px Inter;color:#64748B">Set up your plan</span><h1 style="margin:0;font:800 30px/36px Outfit">What are you sitting?</h1></div>
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font:600 14px Inter">Your field</span>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+<sc-for list="{{ fields }}" as="fd" hint-placeholder-count="8"><button onClick="{{ fd.pick }}" style="min-height:56px;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid {{ fd.bd }};background:{{ fd.bg }};color:#1E293B;cursor:pointer;display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/18px Inter">{{ fd.name }}</span><span style="font:400 12px Inter;color:#64748B">{{ fd.q }} questions</span></button></sc-for>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:10px"><span style="font:600 14px Inter">Questions per day</span>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<sc-for list="{{ goals }}" as="g" hint-placeholder-count="3"><button onClick="{{ g.pick }}" style="min-height:64px;border-radius:10px;border:1.5px solid {{ g.bd }};background:{{ g.bg }};color:#1E293B;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:800 20px Outfit">{{ g.n }}</span><span style="font:400 12px Inter;color:#64748B">{{ g.l }}</span></button></sc-for>
+</div></div>
+<div style="padding:14px;border-radius:12px;background:#F1F5F9;display:flex;align-items:center;gap:12px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg><span style="font:400 14px/21px Inter;color:#334155">Exam day: <b>Thursday, November 12</b>. That's 43 days, so your plan covers every topic at least twice.</span></div>
+<button onClick="{{ go.today }}" style="margin-top:auto;min-height:52px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 16px Inter;cursor:pointer" style-hover="background:#EAB308">Build my plan</button>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.app }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:flex;background:#F8FAFC">
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}">
+<aside style="position:sticky;top:0;height:100vh;width:240px;flex:none;background:#fff;border-right:1px solid #E2E8F0;padding:24px 16px;display:flex;flex-direction:column;gap:28px">
+<button onClick="{{ go.landing }}" style="display:flex;align-items:center;gap:8px;padding:0 8px;background:none;border:0;cursor:pointer;color:#1E293B"><svg width="30" height="30" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path><circle r="7" fill="#FEF08A"></circle></svg><span style="font:800 18px Outfit">Lomi<span style="color:#64748B">-Exams</span></span></button>
+<nav style="display:flex;flex-direction:column;gap:4px">
+<sc-for list="{{ nav }}" as="n" hint-placeholder-count="5"><button onClick="{{ n.go }}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;border:0;background:{{ n.bg }};color:{{ n.fg }};font:600 14px Inter;cursor:pointer;text-align:left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ n.d }}"></path></svg>{{ n.label }}</button></sc-for>
+</nav>
+<div style="margin-top:auto;border:1px solid #E2E8F0;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px">
+<span style="font:600 13px Inter;color:{{ accessFg }}">{{ accessLabel }}</span>
+<span style="font:400 13px/18px Inter;color:#64748B">{{ accessSub }}</span>
+<sc-if value="{{ notPaid }}" hint-placeholder-val="{{ true }}"><button onClick="{{ go.plans }}" style="min-height:40px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 13px Inter;cursor:pointer">See plans · from 300 ETB</button></sc-if>
+</div>
+</aside>
+</sc-if>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}">
+<header style="position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;gap:10px;padding:12px clamp(16px,4vw,32px)">
+<svg width="28" height="28" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path></svg>
+<span style="font:800 17px Outfit">{{ pageTitle }}</span>
+<span style="margin-left:auto;display:flex;align-items:center;gap:4px;font:600 13px Inter;color:#A16207"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3.2 5 5 5 9a5 5 0 0 1-10 0c0-2 .9-3.6 2-5.1.6 1.1 1.4 2 2.4 2.1C11.2 7.2 11.2 5 12 3z"></path></svg>9</span>
+<button onClick="{{ go.account }}" aria-label="Account" style="width:40px;height:40px;border-radius:999px;border:0;background:#FEF9C3;color:#A16207;font:700 14px Inter;cursor:pointer">H</button>
+</header>
+</sc-if>
+
+<main style="flex:1;width:100%;max-width:1160px;margin:0 auto;padding:clamp(16px,3vw,40px) clamp(16px,4vw,40px) {{ mainPadBottom }};display:flex;flex-direction:column;gap:24px">
+
+<sc-if value="{{ is.today }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}">
+<header style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/16px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">Thursday, October 1</span><span style="font:700 28px/34px Outfit">Good evening, Hana</span></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:12px"><span style="border:1px solid #E2E8F0;background:#fff;border-radius:999px;padding:6px 12px;font:600 13px Inter;color:#334155">{{ fieldName }}</span><button onClick="{{ go.account }}" style="width:38px;height:38px;border-radius:999px;border:0;background:#FEF9C3;color:#A16207;font:700 14px Inter;cursor:pointer">H</button></div>
+</header>
+</sc-if>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:20px">
+<section style="background:#1E293B;color:#fff;border-radius:16px;padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:22px">
+<span style="font:600 12px/16px Inter;letter-spacing:.06em;text-transform:uppercase;color:#CBD5E1">Exit exam · {{ fieldName }}</span>
+<div style="display:flex;align-items:flex-end;gap:12px 32px;flex-wrap:wrap">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:Outfit;font-weight:800;font-size:clamp(56px,7vw,88px);line-height:.9;letter-spacing:-.03em">43</span><span style="font:700 20px Outfit;color:#CBD5E1">days left</span></div>
+<span style="font:500 15px/22px Inter;color:#E2E8F0">Thu, Nov 12 · 8:30 AM</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:600 14px Inter;color:#E2E8F0">Readiness</span><span style="font:800 28px/34px Outfit;color:#FACC15">62%</span></div>
+<div style="position:relative;height:10px;border-radius:999px;background:rgb(255 255 255/.14)"><div style="position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:999px;background:#FACC15"></div><div style="position:absolute;left:60%;top:-5px;bottom:-5px;width:2px;background:#fff"></div></div>
+<span style="font:400 14px/20px Inter;color:#CBD5E1">Just above the 60% pass-safe line. 3 topics are still below it.</span>
+</div>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font:700 18px Outfit">Today's plan</span><span style="background:#F1F5F9;border-radius:999px;padding:4px 10px;font:600 12px Inter;color:#334155">Week 9 of 15</span></div>
+<div style="display:flex;align-items:center;gap:16px">
+<div style="position:relative;width:76px;height:76px;flex:none"><svg width="76" height="76" viewBox="0 0 84 84"><circle cx="42" cy="42" r="36" fill="none" stroke="#F1F5F9" stroke-width="8"></circle><circle cx="42" cy="42" r="36" fill="none" stroke="#FACC15" stroke-width="8" stroke-linecap="round" stroke-dasharray="135.7 226.2" transform="rotate(-90 42 42)"></circle></svg><div style="position:absolute;inset:0;display:grid;place-items:center;font:800 18px Outfit">15/25</div></div>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 15px Inter">10 questions to go</span><span style="font:400 14px Inter;color:#64748B">About 25 minutes</span></div>
+</div>
+<div style="display:flex;flex-direction:column;border-top:1px solid #E2E8F0">
+<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #E2E8F0;font:500 14px Inter"><span style="flex:1">Process costing</span><span style="color:#64748B">6/10</span></div>
+<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #E2E8F0;font:500 14px Inter"><span style="flex:1">Audit evidence</span><span style="color:#64748B">5/8</span></div>
+<div style="display:flex;gap:12px;padding:10px 0;font:500 14px Inter"><span style="flex:1">VAT and turnover tax</span><span style="color:#4D7C0F">Done 4/4</span></div>
+</div>
+<button onClick="{{ go.practice }}" style="margin-top:auto;min-height:50px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 15px Inter;cursor:pointer" style-hover="background:#EAB308">Continue with process costing</button>
+</section>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:20px;align-items:start">
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font:700 18px Outfit">Topics by exam weight</span><button onClick="{{ go.progress }}" style="background:none;border:0;padding:0;font:600 13px Inter;color:#A16207;cursor:pointer">All 9 topics</button></div>
+<sc-for list="{{ topTopics }}" as="t" hint-placeholder-count="5">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px">
+<div style="flex:1 1 170px;display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/18px Inter">{{ t.name }}</span><span style="font:400 12px Inter;color:#64748B">{{ t.weight }}% of exam</span></div>
+<div style="flex:2 1 160px;display:flex;align-items:center;gap:12px"><div style="flex:1;position:relative;height:10px;border-radius:999px;background:#F1F5F9"><div style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;width:{{ t.pct }};background:{{ t.fill }}"></div><div style="position:absolute;left:60%;top:-5px;bottom:-5px;width:2px;background:#64748B"></div></div><span style="width:44px;text-align:right;font:700 14px Inter;color:{{ t.fg }}">{{ t.acc }}%</span></div>
+</div>
+</sc-for>
+<button onClick="{{ go.practice }}" style="align-self:flex-start;min-height:44px;padding:0 16px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 14px Inter;cursor:pointer">Practice the 3 focus topics</button>
+</section>
+<div style="display:flex;flex-direction:column;gap:20px">
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font:700 18px Outfit">Mock scores</span><span style="background:#ECFCCB;color:#4D7C0F;border-radius:999px;padding:3px 10px;font:600 12px Inter">+6 since Mock 3</span></div>
+<svg width="100%" viewBox="0 0 340 130"><line x1="24" y1="62" x2="316" y2="62" stroke="#64748B" stroke-dasharray="3 4" opacity=".6"></line><text x="316" y="56" text-anchor="end" font-size="10" fill="#64748B" font-family="Inter">pass-safe 60%</text><polyline points="24,90 121,75 219,62 316,48" fill="none" stroke="#A16207" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline><circle cx="24" cy="90" r="4" fill="#fff" stroke="#A16207" stroke-width="2"></circle><circle cx="121" cy="75" r="4" fill="#fff" stroke="#A16207" stroke-width="2"></circle><circle cx="219" cy="62" r="4" fill="#fff" stroke="#A16207" stroke-width="2"></circle><circle cx="316" cy="48" r="6" fill="#A16207"></circle><text x="24" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="#64748B" font-family="Inter">48%</text><text x="121" y="65" text-anchor="middle" font-size="11" font-weight="700" fill="#64748B" font-family="Inter">55%</text><text x="219" y="52" text-anchor="middle" font-size="11" font-weight="700" fill="#64748B" font-family="Inter">61%</text><text x="316" y="34" text-anchor="end" font-size="13" font-weight="800" fill="#A16207" font-family="Inter">67%</text><text x="24" y="122" text-anchor="middle" font-size="10.5" fill="#64748B" font-family="Inter">Mock 1</text><text x="121" y="122" text-anchor="middle" font-size="10.5" fill="#64748B" font-family="Inter">Mock 2</text><text x="219" y="122" text-anchor="middle" font-size="10.5" fill="#64748B" font-family="Inter">Mock 3</text><text x="316" y="122" text-anchor="end" font-size="10.5" fill="#64748B" font-family="Inter">Mock 4</text></svg>
+<button onClick="{{ go.mocks }}" style="align-self:flex-start;background:none;border:0;padding:0;font:600 14px Inter;color:#A16207;cursor:pointer">Mock 5 opens Saturday, 9:00 AM</button>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:36px;height:36px;flex:none;border-radius:8px;background:#FEF9C3;color:#A16207;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3.2 5 5 5 9a5 5 0 0 1-10 0c0-2 .9-3.6 2-5.1.6 1.1 1.4 2 2.4 2.1C11.2 7.2 11.2 5 12 3z"></path></svg></span><div style="display:flex;flex-direction:column"><span style="font:700 17px/22px Outfit">9 study days in a row</span><span style="font:400 13px Inter;color:#64748B">1,240 points · +36 today</span></div></div>
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
+<sc-for list="{{ week }}" as="d" hint-placeholder-count="7"><div style="display:flex;flex-direction:column;align-items:center;gap:6px"><span style="width:28px;height:28px;border-radius:999px;background:{{ d.bg }};border:1.5px solid {{ d.bd }}"></span><span style="font:600 12px Inter;color:#64748B">{{ d.l }}</span></div></sc-for>
+</div>
+</section>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.practice }}" hint-placeholder-val="{{ false }}">
+<div style="width:100%;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:8px"><button onClick="{{ go.today }}" style="background:none;border:0;padding:8px 8px 8px 0;display:flex;align-items:center;gap:4px;font:600 14px Inter;color:#1E293B;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Today's plan</button><span style="margin-left:auto;font:600 14px Inter;color:#64748B">{{ pNum }} of 25</span></div>
+<div style="height:4px;border-radius:999px;background:#E2E8F0"><div style="height:100%;border-radius:999px;background:#FACC15;width:{{ pPct }}"></div></div>
+</div>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font:800 24px/30px Outfit">Question {{ pNum }}</span><span style="font:600 12px/16px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">{{ pq.topic }}</span><span style="margin-left:auto;display:flex;align-items:center;gap:5px;font:500 13px Inter;color:#64748B"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3 2"></path></svg>{{ pq.time }}</span></div>
+<p style="margin:0;font-size:clamp(17px,1.8vw,20px);font-weight:500;line-height:1.6;text-wrap:pretty">{{ pq.stem }}</p>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ pOpts }}" as="o" hint-placeholder-count="4">
+<button onClick="{{ o.pick }}" style="min-height:56px;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid {{ o.bd }};background:{{ o.bg }};text-align:left;cursor:pointer;color:#1E293B;transition:background-color 200ms ease-out,border-color 200ms ease-out"><span style="width:30px;height:30px;flex:none;border-radius:999px;display:grid;place-items:center;font:700 13px Inter;background:{{ o.chipBg }};color:{{ o.chipFg }}">{{ o.l }}</span><span style="flex:1;font:400 16px/24px Inter">{{ o.t }}</span><span style="font:700 13px Inter;color:{{ o.markFg }}">{{ o.mark }}</span></button>
+</sc-for>
+</div>
+<sc-if value="{{ pAnswered }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="padding:14px 16px;border-radius:12px;background:{{ verdictBg }};font:700 16px Inter;color:{{ verdictFg }}">{{ verdictLabel }}</div>
+<div style="padding:16px;border-radius:12px;background:#FEF9C3;display:flex;flex-direction:column;gap:4px"><span style="font:600 12px/16px Inter;letter-spacing:.06em;text-transform:uppercase;color:#A16207">What was tested</span><span style="font:500 16px/24px Inter">{{ pq.concept }}</span></div>
+<div style="padding:16px;border-radius:12px;background:#fff;border:1px solid #E2E8F0;display:flex;flex-direction:column;gap:12px">
+<span style="font:600 12px/16px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">Worked solution</span>
+<sc-for list="{{ pq.steps }}" as="st" hint-placeholder-count="3"><div style="display:flex;gap:10px"><span style="width:24px;height:24px;flex:none;border-radius:999px;background:{{ st.chipBg }};color:{{ st.chipFg }};display:grid;place-items:center;font:700 12px Inter">{{ st.n }}</span><div style="display:flex;flex-direction:column;gap:6px;font:400 16px/24px Inter;min-width:0">{{ st.text }}<span style="background:{{ st.fBg }};border-radius:6px;padding:4px 10px;font:500 14px ui-monospace,Menlo,monospace;color:{{ st.fFg }};overflow-wrap:anywhere">{{ st.f }}</span></div></div></sc-for>
+</div>
+<div style="padding:16px;border-radius:12px;background:#fff;border:1px solid #E2E8F0;display:flex;flex-direction:column;gap:14px">
+<sc-for list="{{ pq.why }}" as="w" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 12px/16px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">Why {{ w.l }} is wrong</span><span style="font:400 16px/24px Inter;color:#334155">{{ w.t }}</span></div></sc-for>
+</div>
+</div>
+</sc-if>
+<div style="position:sticky;bottom:{{ stickyBottom }};padding:12px 0;background:#F8FAFC">
+<button onClick="{{ nextPractice }}" style="width:100%;min-height:52px;border:0;border-radius:8px;background:{{ nextBg }};color:{{ nextFg }};font:600 16px Inter;cursor:pointer">{{ nextLabel }}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.mocks }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:4px"><h1 style="margin:0;font:800 clamp(26px,3vw,32px)/1.2 Outfit">Mock exams</h1><span style="font:400 15px Inter;color:#475569">100 questions · 3 hours · graded against the 50% pass mark</span></div>
+<section style="background:#1E293B;color:#fff;border-radius:16px;padding:clamp(20px,3vw,32px);display:flex;flex-wrap:wrap;align-items:center;gap:20px 32px">
+<div style="flex:1 1 280px;display:flex;flex-direction:column;gap:6px"><span style="font:600 12px Inter;letter-spacing:.06em;text-transform:uppercase;color:#FACC15">Next up</span><span style="font:800 28px/34px Outfit">Mock exit exam 5</span><span style="font:400 15px/23px Inter;color:#CBD5E1">Set aside 3 hours somewhere quiet. You can't pause once you start.</span></div>
+<button onClick="{{ startExam }}" style="min-height:52px;padding:0 28px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 16px Inter;cursor:pointer" style-hover="background:#EAB308">Start mock 5</button>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;overflow:hidden">
+<div style="padding:18px 24px;border-bottom:1px solid #E2E8F0;font:700 18px Outfit">Past mocks</div>
+<sc-for list="{{ mocks }}" as="m" hint-placeholder-count="4">
+<button onClick="{{ go.results }}" style="width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding:16px 24px;border:0;border-bottom:1px solid #E2E8F0;background:#fff;text-align:left;cursor:pointer;color:#1E293B" style-hover="background:#F8FAFC">
+<span style="flex:1 1 160px;display:flex;flex-direction:column;gap:2px"><span style="font:600 15px Inter">Mock {{ m.n }}</span><span style="font:400 13px Inter;color:#64748B">{{ m.date }} · {{ m.time }} used</span></span>
+<span style="flex:1 1 160px;display:flex;align-items:center;gap:12px"><span style="flex:1;height:8px;border-radius:999px;background:#F1F5F9;position:relative"><span style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;width:{{ m.pct }};background:#FACC15"></span></span><span style="font:800 18px Outfit;width:48px;text-align:right">{{ m.score }}%</span></span>
+<span style="font:600 14px Inter;color:#A16207">Review</span>
+</button>
+</sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{ is.results }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px"><button onClick="{{ go.mocks }}" style="background:none;border:0;padding:8px 8px 8px 0;display:flex;align-items:center;gap:4px;font:600 14px Inter;color:#1E293B;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Mock exams</button></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px">
+<section style="background:#1E293B;color:#fff;border-radius:16px;padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:18px">
+<span style="font:600 12px Inter;letter-spacing:.06em;text-transform:uppercase;color:#CBD5E1">{{ resultTitle }} · submitted</span>
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:Outfit;font-weight:800;font-size:clamp(64px,8vw,96px);line-height:.9;letter-spacing:-.03em;color:#FACC15">{{ resultScore }}</span><span style="font:700 22px Outfit;color:#CBD5E1">/ 100</span></div>
+<span style="align-self:flex-start;background:#ECFCCB;color:#3F6212;border-radius:999px;padding:4px 12px;font:700 13px Inter">Above the 50% pass mark</span>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="display:flex;flex-direction:column"><span style="font:800 22px Outfit">{{ resultScore }}</span><span style="font:500 12px Inter;color:#CBD5E1">Correct</span></div>
+<div style="display:flex;flex-direction:column"><span style="font:800 22px Outfit">{{ resultWrong }}</span><span style="font:500 12px Inter;color:#CBD5E1">Wrong</span></div>
+<div style="display:flex;flex-direction:column"><span style="font:800 22px Outfit">2:41</span><span style="font:500 12px Inter;color:#CBD5E1">Time used</span></div>
+</div>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<span style="font:700 18px Outfit">Score by topic</span>
+<sc-for list="{{ resultTopics }}" as="t" hint-placeholder-count="5">
+<div style="display:flex;align-items:center;gap:12px"><span style="flex:1 1 0;min-width:0;font:500 14px/18px Inter">{{ t.name }}</span><span style="flex:1 1 0;position:relative;height:8px;border-radius:999px;background:#F1F5F9"><span style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;width:{{ t.pct }};background:{{ t.fill }}"></span></span><span style="width:52px;text-align:right;font:700 14px Inter;color:{{ t.fg }}">{{ t.frac }}</span></div>
+</sc-for>
+</section>
+</div>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;overflow:hidden">
+<div style="padding:18px 24px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font:700 18px Outfit">Questions you missed</span><span style="margin-left:auto;font:500 14px Inter;color:#64748B">{{ resultWrong }} to review</span></div>
+<sc-for list="{{ missed }}" as="q" hint-placeholder-count="4">
+<button onClick="{{ go.practice }}" style="width:100%;display:flex;align-items:flex-start;gap:14px;padding:16px 24px;border:0;border-bottom:1px solid #E2E8F0;background:#fff;text-align:left;cursor:pointer;color:#1E293B" style-hover="background:#F8FAFC">
+<span style="font:800 16px Outfit;width:44px;flex:none">Q{{ q.n }}</span>
+<span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font:500 15px/22px Inter">{{ q.stem }}</span><span style="font:400 13px Inter;color:#64748B">{{ q.topic }} · you chose {{ q.you }}, answer {{ q.ans }}</span></span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{ is.progress }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:4px"><h1 style="margin:0;font:800 clamp(26px,3vw,32px)/1.2 Outfit">Progress</h1><span style="font:400 15px Inter;color:#475569">{{ fieldName }} · 1,386 questions answered</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px">
+<sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4"><div style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:4px"><span style="font:800 34px/40px Outfit;color:{{ k.fg }}">{{ k.v }}</span><span style="font:500 14px Inter;color:#64748B">{{ k.l }}</span></div></sc-for>
+</div>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font:700 18px Outfit">Readiness by topic</span><span style="font:600 12px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">vs 60% pass-safe</span></div>
+<sc-for list="{{ allTopics }}" as="t" hint-placeholder-count="9">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px">
+<div style="flex:1 1 220px;display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/18px Inter">{{ t.name }}</span><span style="font:400 12px Inter;color:#64748B">{{ t.weight }}% of exam · {{ t.answered }} answered</span></div>
+<div style="flex:2 1 200px;display:flex;align-items:center;gap:12px"><div style="flex:1;position:relative;height:10px;border-radius:999px;background:#F1F5F9"><div style="position:absolute;left:0;top:0;bottom:0;border-radius:999px;width:{{ t.pct }};background:{{ t.fill }}"></div><div style="position:absolute;left:60%;top:-5px;bottom:-5px;width:2px;background:#64748B"></div></div><span style="width:44px;text-align:right;font:700 14px Inter;color:{{ t.fg }}">{{ t.acc }}%</span></div>
+</div>
+</sc-for>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap"><span style="font:700 18px Outfit">Last 5 weeks</span><span style="font:500 13px Inter;color:#64748B">Darker = more questions</span></div>
+<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;max-width:420px">
+<sc-for list="{{ heat }}" as="c" hint-placeholder-count="35"><span style="aspect-ratio:1;border-radius:6px;background:{{ c }}"></span></sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{ is.account }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h1 style="margin:0;font:800 clamp(26px,3vw,32px)/1.2 Outfit">Account</h1>
+<div style="margin-left:auto;display:flex;border:1px solid #CBD5E1;border-radius:999px;padding:3px"><sc-for list="{{ langs }}" as="lg" hint-placeholder-count="2"><button onClick="{{ lg.pick }}" style="min-height:36px;padding:0 14px;border:0;border-radius:999px;background:{{ lg.bg }};color:{{ lg.fg }};font:600 13px Inter;cursor:pointer">{{ lg.l }}</button></sc-for></div></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px;align-items:start">
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:14px"><span style="width:52px;height:52px;border-radius:999px;background:#FEF9C3;color:#A16207;display:grid;place-items:center;font:800 20px Outfit">H</span><div style="display:flex;flex-direction:column"><span style="font:700 17px Outfit">Hana Tesfaye</span><span style="font:400 14px Inter;color:#64748B">+251 911 234 482</span></div></div>
+<label style="display:flex;flex-direction:column;gap:6px;font:600 14px Inter">Display name<span style="font:400 13px Inter;color:#64748B">Shown on the leaderboard instead of your real name.</span><span style="display:flex;gap:8px"><input value="lemon_hana" style="flex:1;min-width:0;min-height:44px;border:1px solid #CBD5E1;border-radius:8px;padding:0 12px;font:400 15px Inter;outline-color:#A16207"><button style="min-height:44px;padding:0 16px;border:0;border-radius:8px;background:#1E293B;color:#fff;font:600 14px Inter;cursor:pointer">Save</button></span></label>
+<span style="font:500 13px Inter;color:{{ faydaFg }}">{{ faydaLabel }}</span>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<span style="font:700 18px Outfit">Your access</span>
+<div style="border-radius:12px;background:{{ accessBoxBg }};padding:16px;display:flex;flex-direction:column;gap:4px"><span style="font:700 16px Inter;color:{{ accessFg }}">{{ accessLabel }}</span><span style="font:400 14px Inter;color:#475569">{{ accessSub }}</span></div>
+<button onClick="{{ go.plans }}" style="min-height:48px;border:0;border-radius:8px;background:{{ plansBtnBg }};color:{{ plansBtnFg }};font:600 15px Inter;cursor:pointer">{{ plansBtnLabel }}</button>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 18px Outfit">Devices</span><span style="font:400 13px/19px Inter;color:#64748B">Two devices max. On a shared lab computer, log out here when you leave.</span></div>
+<sc-for list="{{ devices }}" as="dv" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:12px;border:1px solid #E2E8F0;border-radius:12px;padding:12px 14px"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font:600 14px Inter">{{ dv.name }}</span><span style="font:400 12px Inter;color:#64748B">{{ dv.seen }}</span></span><sc-if value="{{ dv.current }}" hint-placeholder-val="{{ true }}"><span style="background:#FEF9C3;color:#A16207;border-radius:999px;padding:3px 10px;font:700 11px Inter">This device</span></sc-if><sc-if value="{{ dv.other }}" hint-placeholder-val="{{ false }}"><button onClick="{{ dv.revoke }}" style="min-height:36px;padding:0 12px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 13px Inter;cursor:pointer">Log out</button></sc-if></div></sc-for>
+</section>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px">
+<button onClick="{{ go.admin }}" style="min-height:48px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 15px Inter;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">Staff: open admin console</button>
+<button onClick="{{ go.landing }}" style="min-height:48px;border:0;border-radius:8px;background:#FEE2E2;color:#B91C1C;font:600 15px Inter;cursor:pointer">Sign out</button>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.plans }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:6px;max-width:680px"><h1 style="margin:0;font:800 clamp(26px,3.4vw,40px)/1.15 Outfit;letter-spacing:-.02em">Unlock {{ fieldName }}</h1><span style="font:400 16px/25px Inter;color:#475569">One payment covers you until exam day on November 12. Pick the plan that fits how you study.</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px">
+<sc-for list="{{ plans }}" as="p" hint-placeholder-count="3">
+<button onClick="{{ p.select }}" style="text-align:left;border:2px solid {{ p.selBd }};background:{{ p.selBg }};border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:14px;cursor:pointer;color:#1E293B">
+<div style="display:flex;align-items:center;gap:10px;width:100%"><span style="width:22px;height:22px;flex:none;border-radius:999px;border:2px solid {{ p.radioBd }};display:grid;place-items:center"><span style="width:10px;height:10px;border-radius:999px;background:{{ p.radioDot }}"></span></span><span style="font:700 18px Outfit">{{ p.name }}</span><sc-if value="{{ p.tag }}" hint-placeholder-val="{{ false }}"><span style="margin-left:auto;background:#FACC15;color:#0F172A;border-radius:999px;padding:3px 10px;font:700 12px Inter">{{ p.tag }}</span></sc-if></div>
+<div style="display:flex;align-items:baseline;gap:6px"><span style="font:800 40px/40px Outfit;letter-spacing:-.02em">{{ p.price }}</span><span style="font:600 15px Inter;color:#64748B">ETB</span></div>
+<div style="display:flex;flex-direction:column;gap:8px;font:400 14px/20px Inter;color:#334155"><sc-for list="{{ p.feat }}" as="ft" hint-placeholder-count="3"><span style="display:flex;gap:8px;align-items:flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D7C0F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M4 12.5l5 5L20 6.5"></path></svg>{{ ft }}</span></sc-for></div>
+</button>
+</sc-for>
+</div>
+<section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="font:700 18px Outfit">Pay with</span>
+<sc-for list="{{ methods }}" as="pm" hint-placeholder-count="4"><button onClick="{{ pm.pick }}" style="min-height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:12px;border:1.5px solid {{ pm.bd }};background:{{ pm.bg }};cursor:pointer;color:#1E293B;text-align:left"><span style="width:20px;height:20px;flex:none;border-radius:999px;border:2px solid {{ pm.radioBd }};display:grid;place-items:center"><span style="width:8px;height:8px;border-radius:999px;background:{{ pm.dot }}"></span></span><span style="flex:1;display:flex;flex-direction:column"><span style="font:600 15px Inter">{{ pm.name }}</span><span style="font:400 12px Inter;color:#64748B">{{ pm.sub }}</span></span></button></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#F8FAFC;border-radius:12px;padding:20px">
+<span style="font:700 18px Outfit">Summary</span>
+<div style="display:flex;justify-content:space-between;font:500 15px Inter"><span>{{ selPlan.name }} · {{ fieldName }}</span><span>{{ selPlan.price }} ETB</span></div>
+<div style="display:flex;justify-content:space-between;font:400 14px Inter;color:#64748B"><span>Access until</span><span>Nov 12, 2026</span></div>
+<div style="border-top:1px solid #E2E8F0;padding-top:12px;display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 15px Inter">Total</span><span style="font:800 28px Outfit">{{ selPlan.price }} ETB</span></div>
+<span style="font:400 13px/19px Inter;color:#64748B">Your Fayda ID is checked once during payment so each account belongs to one student.</span>
+<sc-if value="{{ notPaid }}" hint-placeholder-val="{{ true }}"><button onClick="{{ pay }}" style="min-height:52px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 16px Inter;cursor:pointer" style-hover="background:#EAB308">Pay {{ selPlan.price }} ETB with {{ selMethod.name }}</button></sc-if>
+<sc-if value="{{ paid }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;align-items:center;gap:8px;padding:14px;border-radius:10px;background:#ECFCCB;color:#3F6212;font:700 15px Inter"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>Payment confirmed. {{ selPlan.name }} is active.</div><button onClick="{{ go.today }}" style="min-height:48px;border:0;border-radius:8px;background:#1E293B;color:#fff;font:600 15px Inter;cursor:pointer">Back to today</button></div></sc-if>
+</div>
+</section>
+</sc-if>
+
+</main>
+</div>
+
+<sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}">
+<nav style="position:fixed;left:0;right:0;bottom:0;z-index:10;border-top:1px solid #E2E8F0;background:#fff;display:grid;grid-template-columns:repeat(5,1fr);padding:6px 4px calc(10px + env(safe-area-inset-bottom))">
+<sc-for list="{{ nav }}" as="n" hint-placeholder-count="5"><button onClick="{{ n.go }}" style="min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:none;font:600 11px Inter;color:{{ n.tabFg }};cursor:pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ n.d }}"></path></svg>{{ n.label }}</button></sc-for>
+</nav>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.exam }}" hint-placeholder-val="{{ false }}">
+<div style="position:relative;height:100vh;display:flex;flex-direction:column;background:#F8FAFC">
+<header style="flex:none;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;gap:12px;padding:10px clamp(12px,3vw,28px);min-height:60px">
+<button onClick="{{ openConfirm }}" aria-label="Exit" style="width:40px;height:40px;border:0;background:none;display:grid;place-items:center;color:#1E293B;cursor:pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<div style="display:flex;flex-direction:column;min-width:0"><span style="font:700 16px/20px Outfit">Mock exit exam 5</span><span style="font:400 13px Inter;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ answeredCount }} of 100 answered</span></div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:8px;border:1px solid #E2E8F0;border-radius:8px;padding:6px 12px;font:700 clamp(16px,2vw,20px) Inter;font-variant-numeric:tabular-nums;color:{{ timerColor }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3 2"></path></svg>{{ timeLeft }}</div>
+</header>
+<div style="flex:1;min-height:0;display:flex">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<div style="flex:1;overflow:auto;padding:clamp(20px,4vw,40px) clamp(16px,5vw,64px)">
+<div style="max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<span style="font:800 clamp(22px,2.6vw,28px)/1.2 Outfit">Question {{ qNum }}</span>
+<span style="font:500 14px Inter;color:#64748B">of 100 · {{ q.topic }}</span>
+<button onClick="{{ toggleFlag }}" style="margin-left:auto;min-height:44px;padding:0 14px;border-radius:8px;border:1px solid {{ flagBd }};background:{{ flagBg }};color:{{ flagFg }};font:600 14px Inter;display:flex;align-items:center;gap:6px;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4h11l-1.5 4L16 12H5"></path></svg>{{ flagLabel }}</button>
+</div>
+<p style="margin:0;font-size:clamp(17px,1.8vw,20px);font-weight:500;line-height:1.6;text-wrap:pretty;user-select:none">{{ q.stem }}</p>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ examOpts }}" as="o" hint-placeholder-count="4">
+<button onClick="{{ o.pick }}" style="min-height:58px;display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:12px;border:1.5px solid {{ o.bd }};background:{{ o.bg }};text-align:left;cursor:pointer;color:#1E293B"><span style="width:30px;height:30px;flex:none;border-radius:999px;display:grid;place-items:center;font:700 14px Inter;background:{{ o.chipBg }};color:{{ o.chipFg }}">{{ o.l }}</span><span style="font:400 16px/24px Inter;user-select:none">{{ o.t }}</span></button>
+</sc-for>
+</div>
+</div>
+</div>
+<footer style="flex:none;border-top:1px solid #E2E8F0;background:#fff;display:flex;flex-direction:column;gap:10px;padding:12px clamp(12px,5vw,64px) calc(12px + env(safe-area-inset-bottom))">
+<sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;display:grid;grid-template-columns:repeat(10,1fr);gap:4px">
+<sc-for list="{{ decade }}" as="c" hint-placeholder-count="10"><button onClick="{{ c.go }}" style="position:relative;height:34px;padding:0;border-radius:6px;border:1.5px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font:600 12px Inter;cursor:pointer">{{ c.n }}<sc-if value="{{ c.flag }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:999px;background:#C2410C"></span></sc-if></button></sc-for>
+</div><button onClick="{{ toggleGrid }}" aria-label="All questions" style="width:44px;height:34px;flex:none;border:1px solid #CBD5E1;border-radius:6px;background:#fff;display:grid;place-items:center;cursor:pointer;color:#1E293B"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"></path></svg></button></div>
+</sc-if>
+<div style="display:flex;align-items:center;gap:8px">
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}"><span style="font:400 13px Inter;color:#64748B">← → move · A–D answer · F flag</span></sc-if>
+<button onClick="{{ prev }}" style="margin-left:auto;min-height:48px;padding:0 16px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 15px Inter;display:flex;align-items:center;gap:6px;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>Previous</button>
+<sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openConfirm }}" style="min-height:48px;padding:0 14px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 15px Inter;cursor:pointer">Submit</button></sc-if>
+<button onClick="{{ next }}" style="min-height:48px;padding:0 18px;border:0;border-radius:8px;background:#1E293B;color:#fff;font:600 15px Inter;display:flex;align-items:center;gap:6px;cursor:pointer">Next<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+</div>
+</footer>
+</div>
+<sc-if value="{{ bp.desktop }}" hint-placeholder-val="{{ true }}"><aside style="width:340px;flex:none;background:#fff;border-left:1px solid #E2E8F0;padding:24px;display:flex;flex-direction:column;gap:18px;overflow:auto">
+<div style="display:flex;align-items:center;gap:8px"><span style="font:700 17px Outfit">All questions</span><sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toggleGrid }}" style="margin-left:auto;min-height:40px;padding:0 12px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;font:600 13px Inter;cursor:pointer;color:#1E293B">Close</button></sc-if></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="background:#F8FAFC;border-radius:8px;padding:10px;display:flex;flex-direction:column"><span style="font:800 22px Outfit">{{ answeredCount }}</span><span style="font:500 12px Inter;color:#64748B">Answered</span></div>
+<div style="background:#F8FAFC;border-radius:8px;padding:10px;display:flex;flex-direction:column"><span style="font:800 22px Outfit">{{ blankCount }}</span><span style="font:500 12px Inter;color:#64748B">Blank</span></div>
+<div style="background:#F8FAFC;border-radius:8px;padding:10px;display:flex;flex-direction:column"><span style="font:800 22px Outfit;color:#C2410C">{{ flagCount }}</span><span style="font:500 12px Inter;color:#64748B">Flagged</span></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px">
+<sc-for list="{{ cells }}" as="c" hint-placeholder-count="100"><button onClick="{{ c.go }}" style="position:relative;aspect-ratio:1;min-height:24px;padding:0;border-radius:5px;border:1.5px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font:600 11px Inter;cursor:pointer">{{ c.n }}<sc-if value="{{ c.flag }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:999px;background:#C2410C"></span></sc-if></button></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;font:500 12px Inter;color:#64748B"><span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:#FACC15"></span>Answered</span><span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:#F1F5F9"></span>Blank</span><span style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:999px;background:#C2410C"></span>Flagged</span></div>
+<button onClick="{{ openConfirm }}" style="margin-top:auto;min-height:50px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 15px Inter;cursor:pointer" style-hover="background:#EAB308">Review and submit</button>
+</aside></sc-if><sc-if value="{{ gridOverlay }}" hint-placeholder-val="{{ false }}"><aside style="position:absolute;left:0;right:0;bottom:0;top:60px;z-index:15;background:#fff;padding:20px clamp(16px,5vw,40px);display:flex;flex-direction:column;gap:16px;overflow:auto">
+<div style="display:flex;align-items:center;gap:8px"><span style="font:700 17px Outfit">All questions</span><sc-if value="{{ bp.notDesktop }}" hint-placeholder-val="{{ false }}"><button onClick="{{ toggleGrid }}" style="margin-left:auto;min-height:40px;padding:0 12px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;font:600 13px Inter;cursor:pointer;color:#1E293B">Close</button></sc-if></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<div style="background:#F8FAFC;border-radius:8px;padding:10px;display:flex;flex-direction:column"><span style="font:800 22px Outfit">{{ answeredCount }}</span><span style="font:500 12px Inter;color:#64748B">Answered</span></div>
+<div style="background:#F8FAFC;border-radius:8px;padding:10px;display:flex;flex-direction:column"><span style="font:800 22px Outfit">{{ blankCount }}</span><span style="font:500 12px Inter;color:#64748B">Blank</span></div>
+<div style="background:#F8FAFC;border-radius:8px;padding:10px;display:flex;flex-direction:column"><span style="font:800 22px Outfit;color:#C2410C">{{ flagCount }}</span><span style="font:500 12px Inter;color:#64748B">Flagged</span></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px">
+<sc-for list="{{ cells }}" as="c" hint-placeholder-count="100"><button onClick="{{ c.go }}" style="position:relative;aspect-ratio:1;min-height:24px;padding:0;border-radius:5px;border:1.5px solid {{ c.bd }};background:{{ c.bg }};color:{{ c.fg }};font:600 11px Inter;cursor:pointer">{{ c.n }}<sc-if value="{{ c.flag }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:999px;background:#C2410C"></span></sc-if></button></sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;font:500 12px Inter;color:#64748B"><span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:#FACC15"></span>Answered</span><span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:#F1F5F9"></span>Blank</span><span style="display:flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:999px;background:#C2410C"></span>Flagged</span></div>
+<button onClick="{{ openConfirm }}" style="margin-top:auto;min-height:50px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 15px Inter;cursor:pointer" style-hover="background:#EAB308">Review and submit</button>
+</aside></sc-if>
+</div>
+<sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeConfirm }}" style="position:absolute;inset:0;z-index:20;background:rgb(15 23 42/.5);display:grid;place-items:center;padding:16px">
+<div onClick="{{ stop }}" style="width:100%;max-width:420px;background:#fff;border-radius:16px;padding:24px;box-shadow:0 8px 24px rgb(11 17 32/.12);display:flex;flex-direction:column;gap:12px">
+<span style="font:700 20px Outfit">Submit your exam?</span>
+<p style="margin:0;font:400 15px/24px Inter;color:#475569">You've answered <b style="color:#1E293B">{{ answeredCount }}</b> of 100. <span style="color:#C2410C">{{ blankCount }} are blank</span> and {{ flagCount }} are flagged. You have {{ timeLeft }} left.</p>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+<button onClick="{{ closeConfirm }}" style="flex:1 1 140px;min-height:48px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 15px Inter;cursor:pointer">Keep working</button>
+<button onClick="{{ submitExam }}" style="flex:1 1 140px;min-height:48px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 15px Inter;cursor:pointer">Submit exam</button>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ is.admin }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;background:#F8FAFC;display:flex;flex-direction:column">
+<header style="background:#0F172A;color:#fff;display:flex;align-items:center;gap:16px;padding:12px clamp(16px,4vw,40px);flex-wrap:wrap">
+<span style="display:flex;align-items:center;gap:8px;font:800 17px Outfit"><svg width="28" height="28" viewBox="-100 -100 200 200"><circle r="94" fill="#EAB308"></circle><circle r="80" fill="#FEF08A"></circle><path d="M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z" fill="#FACC15" stroke="#FEF08A" stroke-width="9" stroke-linejoin="round"></path></svg>Lomi-Exams <span style="font:600 12px Inter;background:rgb(255 255 255/.12);border-radius:999px;padding:3px 8px;color:#CBD5E1">Admin</span></span>
+<nav style="display:flex;gap:4px;overflow-x:auto;order:3;width:{{ adminNavWidth }}"><sc-for list="{{ adminTabs }}" as="at" hint-placeholder-count="3"><button onClick="{{ at.go }}" style="min-height:40px;padding:0 14px;border:0;border-radius:8px;background:{{ at.bg }};color:{{ at.fg }};font:600 14px Inter;cursor:pointer;white-space:nowrap">{{ at.label }}</button></sc-for></nav>
+<button onClick="{{ go.account }}" style="margin-left:auto;min-height:40px;padding:0 14px;border:1px solid rgb(255 255 255/.25);border-radius:8px;background:none;color:#fff;font:600 13px Inter;cursor:pointer">Back to app</button>
+</header>
+<main style="flex:1;width:100%;max-width:1200px;margin:0 auto;padding:clamp(16px,3vw,32px) clamp(16px,4vw,40px);display:flex;flex-direction:column;gap:20px">
+
+<sc-if value="{{ admin.review }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:2px"><h1 style="margin:0;font:800 26px/32px Outfit">Review queue</h1><span style="font:400 14px Inter;color:#64748B">Oldest first · {{ queueCount }} waiting · you can't publish your own questions</span></div>
+<sc-if value="{{ reviewMsg }}" hint-placeholder-val="{{ false }}"><div style="padding:12px 14px;border-radius:10px;background:#ECFCCB;color:#3F6212;font:600 14px Inter">{{ reviewMsg }}</div></sc-if>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ queue }}" as="rq" hint-placeholder-count="4"><button onClick="{{ rq.open }}" style="text-align:left;border:1.5px solid {{ rq.bd }};background:{{ rq.bg }};border-radius:12px;padding:14px;cursor:pointer;color:#1E293B;display:flex;flex-direction:column;gap:4px"><span style="font:500 14px/20px Inter">{{ rq.stem }}</span><span style="font:400 12px Inter;color:#64748B">{{ rq.meta }}</span></button></sc-for>
+<sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid #E2E8F0;background:#fff;border-radius:12px;padding:20px;font:400 14px Inter;color:#64748B;text-align:center">Queue is empty.</div></sc-if>
+</div>
+<sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+<div style="grid-column:span {{ reviewSpan }};background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:14px">
+<span style="font:600 12px Inter;letter-spacing:.06em;text-transform:uppercase;color:#64748B">{{ sel.meta }}</span>
+<p style="margin:0;font:500 18px/28px Inter">{{ sel.stem }}</p>
+<sc-for list="{{ sel.opts }}" as="o" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;border:1.5px solid {{ o.bd }};background:{{ o.bg }};font:400 15px Inter"><span style="width:26px;height:26px;flex:none;border-radius:999px;background:{{ o.chipBg }};color:{{ o.chipFg }};display:grid;place-items:center;font:700 12px Inter">{{ o.l }}</span>{{ o.t }}</div></sc-for>
+<div style="padding:14px;border-radius:12px;background:#FEF9C3;display:flex;flex-direction:column;gap:4px"><span style="font:600 12px Inter;letter-spacing:.06em;text-transform:uppercase;color:#A16207">Concept</span><span style="font:500 15px/23px Inter">{{ sel.concept }}</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<button onClick="{{ publish }}" style="min-height:44px;padding:0 20px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 14px Inter;cursor:pointer">Publish</button>
+<input placeholder="Note to the writer…" style="flex:1 1 200px;min-height:44px;border:1px solid #CBD5E1;border-radius:8px;padding:0 12px;font:400 14px Inter;outline-color:#A16207">
+<button onClick="{{ bounce }}" style="min-height:44px;padding:0 16px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 14px Inter;cursor:pointer">Send back</button>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ admin.payments }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:2px"><h1 style="margin:0;font:800 26px/32px Outfit">Payments</h1><span style="font:400 14px Inter;color:#64748B">Manual receipts. Aim to approve within 2 hours in launch season.</span></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px">
+<sc-for list="{{ payKpis }}" as="k" hint-placeholder-count="3"><div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:2px"><span style="font:800 26px Outfit">{{ k.v }}</span><span style="font:500 13px Inter;color:#64748B">{{ k.l }}</span></div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ payments }}" as="py" hint-placeholder-count="4"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px">
+<div style="flex:1 1 220px;display:flex;flex-direction:column;gap:2px"><span style="font:600 15px Inter">{{ py.name }} · {{ py.phone }}</span><span style="font:400 13px Inter;color:#64748B">{{ py.plan }} · {{ py.amount }} ETB · ref {{ py.ref }} · {{ py.when }}</span></div>
+<sc-if value="{{ py.pending }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:8px"><button onClick="{{ py.approve }}" style="min-height:40px;padding:0 16px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 14px Inter;cursor:pointer">Approve</button><button onClick="{{ py.reject }}" style="min-height:40px;padding:0 14px;border:1px solid #CBD5E1;border-radius:8px;background:#fff;color:#1E293B;font:600 14px Inter;cursor:pointer">Reject</button></div></sc-if>
+<sc-if value="{{ py.done }}" hint-placeholder-val="{{ false }}"><span style="border-radius:999px;padding:4px 12px;font:700 12px Inter;background:{{ py.stBg }};color:{{ py.stFg }}">{{ py.status }}</span></sc-if>
+</div></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ admin.structure }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:2px"><h1 style="margin:0;font:800 26px/32px Outfit">Structure</h1><span style="font:400 14px Inter;color:#64748B">Fields, courses and blueprint weights. A field can go live only when its weights add up to 100%.</span></div><button style="margin-left:auto;min-height:44px;padding:0 16px;border:0;border-radius:8px;background:#FACC15;color:#1E293B;font:600 14px Inter;cursor:pointer">Add field</button></div>
+<sc-for list="{{ structure }}" as="sf" hint-placeholder-count="3"><section style="background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px"><span style="font:700 17px Outfit">{{ sf.name }}</span><span style="border-radius:999px;padding:3px 10px;font:600 12px Inter;background:{{ sf.wBg }};color:{{ sf.wFg }}">{{ sf.wLabel }}</span><span style="border-radius:999px;padding:3px 10px;font:600 12px Inter;background:{{ sf.pBg }};color:{{ sf.pFg }}">{{ sf.pLabel }}</span><span style="margin-left:auto;font:500 13px Inter;color:#64748B">{{ sf.q }} questions</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ sf.topics }}" as="tp" hint-placeholder-count="5"><span style="background:#F1F5F9;border-radius:999px;padding:4px 10px;font:500 13px Inter;color:#334155">{{ tp }}</span></sc-for></div>
+</section></sc-for>
+</sc-if>
+
+</main>
+</div>
+</sc-if>
+
+<sc-if value="{{ showJumper }}" hint-placeholder-val="{{ true }}">
+<label style="position:fixed;right:12px;bottom:{{ jumperBottom }};z-index:50;display:flex;align-items:center;gap:8px;background:#0F172A;color:#fff;border-radius:999px;padding:6px 6px 6px 14px;font:600 12px Inter;box-shadow:0 8px 24px rgb(11 17 32/.25)">Screen<select key="{{ screen }}" defaultValue="{{ screen }}" onChange="{{ jump }}" style="min-height:32px;border:0;border-radius:999px;padding:0 10px;font:600 13px Inter;background:#FACC15;color:#0F172A;cursor:pointer"><sc-for list="{{ screenList }}" as="sl" hint-placeholder-count="14"><option value="{{ sl.id }}" selected="{{ sl.sel }}">{{ sl.label }}</option></sc-for></select></label>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;landing&quot;,&quot;signup&quot;,&quot;verify&quot;,&quot;signin&quot;,&quot;onboard&quot;,&quot;today&quot;,&quot;practice&quot;,&quot;mocks&quot;,&quot;exam&quot;,&quot;results&quot;,&quot;progress&quot;,&quot;account&quot;,&quot;plans&quot;,&quot;admin&quot;],&quot;default&quot;:&quot;landing&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showScreenJumper&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const LETTERS = ['A', 'B', 'C', 'D'];
+const DURATION = 10800;
+const FIELDS = [
+  { id: 'acc', name: 'Accounting & Finance', q: 2140 }, { id: 'mgmt', name: 'Management', q: 1860 },
+  { id: 'eco', name: 'Economics', q: 1520 }, { id: 'cs', name: 'Computer Science', q: 1980 },
+  { id: 'nur', name: 'Nursing', q: 2310 }, { id: 'civ', name: 'Civil Engineering', q: 1640 },
+  { id: 'law', name: 'Law', q: 1420 }, { id: 'pha', name: 'Pharmacy', q: 1290 },
+];
+const TOPICS = [
+  { name: 'Financial accounting', weight: 18, acc: 71, answered: 248 },
+  { name: 'Cost & management accounting', weight: 14, acc: 54, answered: 196 },
+  { name: 'Auditing', weight: 12, acc: 48, answered: 170 },
+  { name: 'Financial management', weight: 10, acc: 58, answered: 142 },
+  { name: 'Taxation', weight: 10, acc: 66, answered: 150 },
+  { name: 'Accounting information systems', weight: 9, acc: 74, answered: 118 },
+  { name: 'Public finance', weight: 9, acc: 63, answered: 120 },
+  { name: 'Business law', weight: 9, acc: 69, answered: 124 },
+  { name: 'Economics for accountants', weight: 9, acc: 61, answered: 118 },
+];
+const PLANS = [
+  { id: 'starter', name: 'Starter', price: 300, feat: ['Full question bank for your field', 'Worked solution for every question', 'Practice by topic'] },
+  { id: 'standard', name: 'Standard', price: 400, tag: 'Most chosen', feat: ['Everything in Starter', 'Unlimited timed mocks', 'Readiness score by topic'] },
+  { id: 'full', name: 'Full prep', price: 500, feat: ['Everything in Standard', 'Daily study plan to exam day', 'Mock review by topic', 'Priority help on Telegram'] },
+];
+const METHODS = [
+  { id: 'telebirr', name: 'telebirr', sub: 'Approve on your phone' },
+  { id: 'cbe', name: 'CBE Birr', sub: 'Approve on your phone' },
+  { id: 'card', name: 'Card', sub: 'Visa or Mastercard via Chapa' },
+  { id: 'receipt', name: 'Bank transfer', sub: 'Upload a receipt · approved within 2 hours' },
+];
+const PRACTICE = [
+  { topic: 'Cost accounting · Process costing', time: '2:00', correct: 'C',
+    stem: 'Kebede Manufacturing uses the weighted-average method. Beginning WIP was 2,000 units (40% complete for conversion), 10,000 units were started, and ending WIP is 3,000 units (60% complete). What are the equivalent units for conversion costs?',
+    opts: ['9,000', '10,000', '10,800', '12,000'],
+    concept: 'Weighted-average equivalent units = units completed + (ending WIP × % complete).',
+    steps: [['Units completed and transferred out', '2,000 + 10,000 − 3,000 = 9,000'], ['Equivalent units in ending WIP', '3,000 × 60% = 1,800'], ['Add them. Beginning WIP % is ignored under weighted-average.', '9,000 + 1,800 = 10,800 → C']],
+    why: [['A', 'Counts only completed units and drops the 1,800 equivalent units still in process.'], ['B', '10,000 is the FIFO answer. It removes the 800 units of work already done on beginning WIP.'], ['D', 'Treats every unit in process as 100% complete.']] },
+  { topic: 'Auditing · Audit evidence', time: '1:30', correct: 'B',
+    stem: 'Which audit evidence is generally the most reliable?',
+    opts: ['A copy of an invoice held by the client', 'A bank confirmation sent directly to the auditor', 'Verbal explanation from the finance manager', 'An internally prepared reconciliation'],
+    concept: 'Evidence from independent external sources, received directly by the auditor, is more reliable than client-held or internal evidence.',
+    steps: [['Rank sources: external direct > external via client > internal > oral.', 'Bank → auditor directly'], ['The bank confirmation never passes through the client.', 'Highest reliability → B']],
+    why: [['A', 'External in origin but held by the client, so it could be altered.'], ['C', 'Oral evidence is the weakest and needs corroboration.'], ['D', 'Internally prepared, so it depends on the client\'s controls.']] },
+];
+const EXAM_Q = [
+  { topic: 'Financial accounting · Inventories', stem: 'Under IAS 2 Inventories, which cost formula is not permitted?', opts: ['First-in, first-out (FIFO)', 'Weighted average cost', 'Last-in, first-out (LIFO)', 'Specific identification'] },
+  { topic: 'Financial management · Ratios', stem: 'Alem PLC has a current ratio of 2.5 and a quick ratio of 1.5. Current liabilities are Br 400,000, and inventory is the only current asset excluded from quick assets. What is the inventory balance?', opts: ['Br 200,000', 'Br 400,000', 'Br 600,000', 'Br 1,000,000'] },
+  { topic: 'Cost accounting · Classification', stem: 'Which of the following is a period cost for a manufacturing company?', opts: ['Direct materials used', 'Depreciation on factory equipment', 'Sales commissions', 'Direct labor wages'] },
+];
+const NAV = [
+  { id: 'today', label: 'Today', d: 'M3 11l9-8 9 8M5 10v10h14V10' },
+  { id: 'practice', label: 'Practice', d: 'M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2zM8 7h7' },
+  { id: 'mocks', label: 'Mocks', d: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3 2' },
+  { id: 'progress', label: 'Progress', d: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
+  { id: 'account', label: 'Account', d: 'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM4 21c1.5-4 5-5 8-5s6.5 1 8 5' },
+];
+const SCREENS = [
+  ['landing', 'Landing'], ['signup', 'Sign up'], ['verify', 'Verify phone'], ['signin', 'Sign in'], ['onboard', 'Onboarding'],
+  ['today', 'Today'], ['practice', 'Practice'], ['mocks', 'Mocks'], ['exam', 'Mock exam'], ['results', 'Mock results'],
+  ['progress', 'Progress'], ['account', 'Account'], ['plans', 'Plans & payment'], ['admin', 'Admin'],
+];
+const QUEUE = [
+  { id: 1, stem: 'Which of the following is not an objective of a statutory audit?', meta: 'Accounting · Auditing · by Selam W.', opts: ['Express an opinion on the financial statements', 'Detect all fraud in the entity', 'Report on compliance with standards', 'Assess going concern'], correct: 1, concept: 'An audit gives reasonable, not absolute, assurance. Detecting all fraud is outside its objective.' },
+  { id: 2, stem: 'The marginal propensity to consume is 0.8. What is the spending multiplier?', meta: 'Economics · Macroeconomics · by Dawit A.', opts: ['0.8', '1.25', '4', '5'], correct: 3, concept: 'Multiplier = 1 ÷ (1 − MPC) = 1 ÷ 0.2 = 5.' },
+  { id: 3, stem: 'Which data structure uses FIFO ordering?', meta: 'Computer Science · Data structures · by Meron T.', opts: ['Stack', 'Queue', 'Binary tree', 'Hash table'], correct: 1, concept: 'A queue removes items in the order they were added: first in, first out.' },
+  { id: 4, stem: 'VAT in Ethiopia is charged at what standard rate?', meta: 'Accounting · Taxation · by Selam W.', opts: ['10%', '12%', '15%', '18%'], correct: 2, concept: 'The standard VAT rate under the VAT Proclamation is 15%.' },
+];
+const PAYMENTS = [
+  { id: 1, name: 'Abel Girma', phone: '0912 ••• 301', plan: 'Standard', amount: 400, ref: 'FT24Q7H2', when: '12 min ago' },
+  { id: 2, name: 'Tigist Mulu', phone: '0944 ••• 118', plan: 'Full prep', amount: 500, ref: 'FT24Q6Z9', when: '38 min ago' },
+  { id: 3, name: 'Yonas Bekele', phone: '0911 ••• 772', plan: 'Starter', amount: 300, ref: 'FT24Q5K1', when: '1 h ago' },
+  { id: 4, name: 'Liya Haile', phone: '0920 ••• 045', plan: 'Standard', amount: 400, ref: 'FT24Q3M4', when: '1 h 40 min ago' },
+];
+
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const answers = {};
+    for (let i = 0; i < 22; i++) if (i !== 6 && i !== 14) answers[i] = LETTERS[(i * 3) % 4];
+    this.state = {
+      screen: p.startScreen || 'landing', w: typeof window !== 'undefined' ? window.innerWidth : 1280,
+      pIdx: 0, chosen: null, field: 'acc', goal: 25,
+      idx: 22, answers, flags: { 8: true, 17: true }, remaining: 6432, confirm: false, gridOpen: false,
+      plan: 'standard', method: 'telebirr', paid: true, lang: 'en', devices: 2,
+      adminTab: 'review', sel: 0, reviewed: {}, reviewMsg: '', pay: {},
+    };
+  }
+  componentDidMount() {
+    this.onResize = () => this.setState({ w: window.innerWidth });
+    window.addEventListener('resize', this.onResize);
+    this.tick = setInterval(() => this.setState(s => ({ remaining: Math.max(0, s.remaining - 1) })), 1000);
+    this.onKey = e => {
+      if (this.state.screen !== 'exam') return;
+      const t = e.target;
+      if (t && (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName))) return;
+      if (this.state.confirm) { if (e.key === 'Escape') this.setState({ confirm: false }); return; }
+      const k = e.key.toLowerCase();
+      if (e.key === 'ArrowRight') this.goQ(this.state.idx + 1);
+      else if (e.key === 'ArrowLeft') this.goQ(this.state.idx - 1);
+      else if (k === 'f') this.toggleFlag();
+      else { let i = 'abcd'.indexOf(k); if (i < 0) i = '1234'.indexOf(k); if (i >= 0 && k.length === 1) this.pickExam(LETTERS[i]); }
+    };
+    window.addEventListener('keydown', this.onKey);
+  }
+  componentWillUnmount() { clearInterval(this.tick); window.removeEventListener('keydown', this.onKey); window.removeEventListener('resize', this.onResize); }
+  to(screen) { this.setState({ screen, confirm: false, gridOpen: false }); if (typeof window !== 'undefined') window.scrollTo(0, 0); }
+  goQ(i) { this.setState({ idx: Math.max(0, Math.min(99, i)), gridOpen: this.state.w >= 1024 ? this.state.gridOpen : false }); }
+  toggleFlag() { this.setState(s => { const f = { ...s.flags }; if (f[s.idx]) delete f[s.idx]; else f[s.idx] = true; return { flags: f }; }); }
+  pickExam(l) { this.setState(s => ({ answers: { ...s.answers, [s.idx]: l } })); }
+
+  motion(mobile) {
+    const key = mobile ? 'm' : 'd';
+    this._m = this._m || {};
+    if (this._m[key]) return this._m[key];
+    const h = React.createElement;
+    const slice = (size) => h('svg', { width: size, height: size, viewBox: '-100 -100 200 200' },
+      h('circle', { r: 94, fill: '#EAB308' }), h('circle', { r: 80, fill: '#FEF08A' }),
+      h('path', { d: 'M0 0 L0 -70 A70 70 0 0 1 70 0Z M0 0 L70 0 A70 70 0 0 1 0 70Z M0 0 L0 70 A70 70 0 0 1 -70 0Z M0 0 L-70 0 A70 70 0 0 1 0 -70Z', fill: '#FACC15', stroke: '#FEF08A', strokeWidth: 9, strokeLinejoin: 'round' }));
+    const check = (size, color) => h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 3, strokeLinecap: 'round', strokeLinejoin: 'round' }, h('path', { d: 'M4 12.5l5 5L20 6.5' }));
+    const chip = (t, bg, fg) => h('span', { style: { display: 'grid', placeItems: 'center', width: 44, height: 44, borderRadius: 999, background: bg, color: fg, font: '700 17px Inter', boxShadow: '0 8px 20px rgb(0 0 0/.3)' } }, t);
+    const pill = (t) => h('span', { style: { display: 'inline-flex', padding: '8px 14px', borderRadius: 999, background: 'rgb(250 204 21/.14)', color: '#FACC15', font: '700 14px Inter', border: '1px solid rgb(250 204 21/.35)', whiteSpace: 'nowrap' } }, t);
+    const place = (items) => items.map((it, i) => h('div', { key: i, style: { position: 'absolute', left: it.x, top: it.y, opacity: it.o, animation: 'lt-float ' + it.d + 's ease-in-out ' + (-i * 1.7) + 's infinite' } },
+      it.spin ? h('div', { style: { animation: 'lt-spin ' + it.spin + 's linear infinite' } }, it.el) : it.el));
+    const fields = ['Accounting & Finance', 'Management', 'Economics', 'Computer Science', 'Nursing', 'Civil Engineering', 'Law', 'Pharmacy', 'Marketing', 'Electrical Engineering', 'Midwifery', '+31 more'];
+    this._m[key] = {
+      heroShapes: mobile ? place([
+        { el: slice(90), x: '72%', y: '6%', o: .3, d: 11, spin: 50 },
+        { el: check(28, '#FACC15'), x: '84%', y: '30%', o: .5, d: 8 },
+        { el: slice(60), x: '-6%', y: '52%', o: .25, d: 12, spin: 40 },
+      ]) : place([
+        { el: slice(150), x: -50, y: '58%', o: .28, d: 12, spin: 60 },
+        { el: slice(64), x: '47%', y: '8%', o: .55, d: 9, spin: 40 },
+        { el: check(46, '#FACC15'), x: '41%', y: '19%', o: .45, d: 8 },
+        { el: check(30, '#84CC16'), x: '6%', y: '16%', o: .55, d: 10 },
+        { el: chip('A', '#1E293B', '#CBD5E1'), x: '44%', y: '82%', o: .9, d: 7 },
+        { el: chip('C', '#4D7C0F', '#fff'), x: '49%', y: '66%', o: .9, d: 9 },
+        { el: pill('+10 pts'), x: '33%', y: '92%', o: .9, d: 8 },
+      ]),
+      ctaSlice: h('div', { style: { animation: 'lt-spin 50s linear infinite' } }, slice(260)),
+      liveDot: h('span', { style: { width: 8, height: 8, borderRadius: 999, background: '#84CC16', marginLeft: 4, animation: 'lt-pulse 1.8s ease-in-out infinite' } }),
+      heroBar: h('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: '62%', borderRadius: 999, background: '#FACC15', animation: 'lt-fill 6s cubic-bezier(.2,.7,.2,1) infinite' } }),
+      fieldMarquee: h('div', { style: { display: 'flex', width: 'max-content', animation: 'lt-marquee 40s linear infinite' } },
+        [...fields, ...fields].map((t, i) => h('span', { key: i, style: { display: 'flex', alignItems: 'center', gap: 32, paddingRight: 32, font: '700 18px Outfit', color: i % fields.length === 0 ? '#1E293B' : '#94A3B8', whiteSpace: 'nowrap' } }, t,
+          h('span', { style: { width: 7, height: 7, borderRadius: 999, background: '#FACC15' } })))),
+    };
+    return this._m[key];
+  }
+
+  renderVals() {
+    const s = this.state;
+    const w = s.w;
+    const mobile = w < 640, desktop = w >= 1024;
+    const bp = { mobile, desktop, notMobile: !mobile, notDesktop: !desktop, tablet: !mobile && !desktop };
+    const scr = s.screen;
+    const appScreens = ['today', 'practice', 'mocks', 'results', 'progress', 'account', 'plans'];
+    const is = {
+      landing: scr === 'landing', auth: ['signup', 'verify', 'signin', 'onboard'].includes(scr),
+      signup: scr === 'signup', verify: scr === 'verify', signin: scr === 'signin', onboard: scr === 'onboard',
+      app: appScreens.includes(scr), exam: scr === 'exam', admin: scr === 'admin',
+    };
+    appScreens.forEach(k => { is[k] = scr === k; });
+    const go = {};
+    SCREENS.forEach(([id]) => { go[id] = (e) => { if (e && e.preventDefault) e.preventDefault(); this.to(id); }; });
+    const activeNav = scr === 'results' ? 'mocks' : scr === 'plans' ? 'account' : scr;
+    const nav = NAV.map(n => {
+      const on = n.id === activeNav;
+      return { ...n, go: () => this.to(n.id), bg: on ? '#FEF9C3' : 'transparent', fg: on ? '#A16207' : '#64748B', tabFg: on ? '#A16207' : '#64748B' };
+    });
+    const field = FIELDS.find(f => f.id === s.field) || FIELDS[0];
+    const plan = PLANS.find(p => p.id === s.plan);
+
+    const topicRow = t => { const f = t.acc < 60; return { ...t, pct: t.acc + '%', fill: f ? '#C2410C' : '#FACC15', fg: f ? '#C2410C' : '#1E293B' }; };
+
+    // practice
+    const pq0 = PRACTICE[s.pIdx % PRACTICE.length];
+    const chosen = s.chosen;
+    const pOpts = pq0.opts.map((t, i) => {
+      const l = LETTERS[i];
+      let st = 'default';
+      if (chosen) st = l === pq0.correct ? 'correct' : l === chosen ? 'wrong' : 'default';
+      const m = { default: ['#E2E8F0', '#fff', '#F1F5F9', '#475569'], correct: ['#4D7C0F', '#ECFCCB', '#4D7C0F', '#fff'], wrong: ['#DC2626', '#FEE2E2', '#DC2626', '#fff'] }[st];
+      return { l, t, bd: m[0], bg: m[1], chipBg: m[2], chipFg: m[3], mark: st === 'correct' ? 'Correct' : st === 'wrong' ? 'Your answer' : '', markFg: st === 'correct' ? '#4D7C0F' : '#DC2626', pick: () => { if (!this.state.chosen) this.setState({ chosen: l }); } };
+    });
+    const right = chosen === pq0.correct;
+    const pq = {
+      ...pq0,
+      steps: pq0.steps.map((st, i, arr) => { const last = i === arr.length - 1; return { n: i + 1, text: st[0], f: st[1], chipBg: last ? '#4D7C0F' : '#F1F5F9', chipFg: last ? '#fff' : '#475569', fBg: last ? '#ECFCCB' : '#F1F5F9', fFg: last ? '#3F6212' : '#334155' }; }),
+      why: pq0.why.map(x => ({ l: x[0], t: x[1] })),
+    };
+    const pNum = 16 + s.pIdx;
+
+    // exam
+    const r = s.remaining, hh = Math.floor(r / 3600), mm = Math.floor((r % 3600) / 60), ss = r % 60;
+    const frac = r / DURATION;
+    const q = EXAM_Q[s.idx % 3];
+    const picked = s.answers[s.idx];
+    const examOpts = q.opts.map((t, i) => { const on = picked === LETTERS[i]; return { l: LETTERS[i], t, bd: on ? '#A16207' : '#E2E8F0', bg: on ? '#FEF9C3' : '#fff', chipBg: on ? '#FACC15' : '#F1F5F9', chipFg: on ? '#1E293B' : '#475569', pick: () => this.pickExam(LETTERS[i]) }; });
+    const cells = Array.from({ length: 100 }, (_, i) => { const cur = i === s.idx, done = !!s.answers[i]; return { n: i + 1, flag: !!s.flags[i], go: () => this.goQ(i), bd: cur ? '#A16207' : 'transparent', bg: cur ? '#fff' : done ? '#FACC15' : '#F1F5F9', fg: cur ? '#A16207' : done ? '#1E293B' : '#64748B' }; });
+    const d0 = Math.floor(s.idx / 10) * 10;
+    const answeredCount = Object.keys(s.answers).length;
+    const flagged = !!s.flags[s.idx];
+    const showGridPanel = desktop || s.gridOpen;
+    const gridPanelStyle = desktop
+      ? 'width:340px;flex:none;background:#fff;border-left:1px solid #E2E8F0;padding:24px;display:flex;flex-direction:column;gap:18px;overflow:auto'
+      : 'position:absolute;left:0;right:0;bottom:0;top:60px;z-index:15;background:#fff;padding:20px clamp(16px,5vw,40px);display:flex;flex-direction:column;gap:16px;overflow:auto';
+
+    const heat = Array.from({ length: 35 }, (_, i) => { const v = (i * 37 + 11) % 10; return i > 31 ? '#F1F5F9' : v < 2 ? '#F1F5F9' : v < 5 ? '#FEF08A' : v < 8 ? '#FACC15' : '#A16207'; });
+
+    const plans = PLANS.map(p => {
+      const hi = p.id === 'standard', sel = p.id === s.plan;
+      return {
+        ...p, tag: p.tag || '',
+        cardBd: hi ? '#0F172A' : '#E2E8F0', cardBg: hi ? '#0F172A' : '#fff', cardFg: hi ? '#fff' : '#1E293B', subFg: hi ? '#CBD5E1' : '#64748B', checkFg: hi ? '#FACC15' : '#4D7C0F',
+        btnBg: hi ? '#FACC15' : '#1E293B', btnFg: hi ? '#0F172A' : '#fff',
+        choose: () => this.setState({ plan: p.id, paid: false, screen: 'signup' }),
+        select: () => this.setState({ plan: p.id, paid: false }),
+        selBd: sel ? '#A16207' : '#E2E8F0', selBg: sel ? '#FEF9C3' : '#fff', radioBd: sel ? '#A16207' : '#CBD5E1', radioDot: sel ? '#A16207' : 'transparent',
+      };
+    });
+    const methods = METHODS.map(m => { const on = m.id === s.method; return { ...m, pick: () => this.setState({ method: m.id }), bd: on ? '#A16207' : '#E2E8F0', bg: on ? '#FEF9C3' : '#fff', radioBd: on ? '#A16207' : '#CBD5E1', dot: on ? '#A16207' : 'transparent' }; });
+
+    // admin
+    const queue = QUEUE.filter(x => !s.reviewed[x.id]);
+    const sel = queue[Math.min(s.sel, queue.length - 1)] || null;
+    const adminTabs = [['review', 'Review queue'], ['payments', 'Payments'], ['structure', 'Structure']].map(([id, label]) => ({ label, go: () => this.setState({ adminTab: id }), bg: s.adminTab === id ? '#FACC15' : 'transparent', fg: s.adminTab === id ? '#0F172A' : '#CBD5E1' }));
+    const act = (kind) => { if (!sel) return; this.setState(st => ({ reviewed: { ...st.reviewed, [sel.id]: kind }, sel: 0, reviewMsg: kind === 'pub' ? 'Published. It is now live for students.' : 'Sent back to the writer with your note.' })); };
+    const payments = PAYMENTS.map(p => {
+      const st = s.pay[p.id];
+      return { ...p, pending: !st, done: !!st, status: st === 'ok' ? 'Approved' : 'Rejected', stBg: st === 'ok' ? '#ECFCCB' : '#FEE2E2', stFg: st === 'ok' ? '#3F6212' : '#B91C1C',
+        approve: () => this.setState(x => ({ pay: { ...x.pay, [p.id]: 'ok' } })), reject: () => this.setState(x => ({ pay: { ...x.pay, [p.id]: 'no' } })) };
+    });
+    const pendingCount = payments.filter(p => p.pending).length;
+    const structure = [
+      { name: 'Accounting & Finance', q: 2140, sum: 100, pub: true, topics: TOPICS.map(t => t.name + ' · ' + t.weight + '%') },
+      { name: 'Economics', q: 1520, sum: 100, pub: true, topics: ['Microeconomics · 16%', 'Macroeconomics · 16%', 'Econometrics · 12%', 'Development economics · 12%', '+6 more'] },
+      { name: 'Midwifery', q: 640, sum: 82, pub: false, topics: ['Antenatal care · 20%', 'Labour & delivery · 22%', 'Postnatal care · 18%', 'Neonatal care · 22%'] },
+    ].map(f => { const ok = f.sum === 100; return { ...f, wLabel: ok ? 'Weights 100%' : 'Weights ' + f.sum + '% · ' + (100 - f.sum) + '% unassigned', wBg: ok ? '#ECFCCB' : '#FFEDD5', wFg: ok ? '#3F6212' : '#C2410C', pLabel: f.pub ? 'Live' : 'Draft', pBg: f.pub ? '#ECFCCB' : '#F1F5F9', pFg: f.pub ? '#3F6212' : '#475569' }; });
+
+    const pageTitles = { today: 'Today', practice: 'Practice', mocks: 'Mocks', results: 'Mock 4 results', progress: 'Progress', account: 'Account', plans: 'Plans' };
+    const showJumper = this.props.showScreenJumper ?? true;
+
+    return {
+      ...this.motion(mobile),
+      bp, is, go, nav, screen: scr,
+      pageTitle: pageTitles[scr] || '',
+      mainPadBottom: desktop ? '48px' : '104px',
+      stickyBottom: desktop ? '0px' : '76px',
+      jumperBottom: is.app && !desktop ? '84px' : is.exam && !desktop ? '150px' : '16px',
+      authCols: desktop ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr)',
+      adminNavWidth: mobile ? '100%' : 'auto',
+      showJumper,
+      screenList: SCREENS.map(([id, label]) => ({ id, label, sel: id === scr })),
+      jump: e => this.to(e.target.value),
+      stats: [
+        { n: '12,400', l: 'questions, each with a worked solution and a reason for every wrong option' },
+        { n: '42', l: 'fields, weighted to the official Ministry of Education blueprint' },
+        { n: '100 q / 3 h', l: 'full mocks, timed and graded like exam day' },
+      ],
+      plans, methods, selPlan: plan, selMethod: METHODS.find(m => m.id === s.method),
+      paid: s.paid, notPaid: !s.paid,
+      pay: () => this.setState({ paid: true }),
+      accessLabel: s.paid ? plan.name + ' · active' : 'Free plan',
+      accessSub: s.paid ? field.name + ' · until Nov 12, 2026' : '20 questions a day with full explanations',
+      accessFg: s.paid ? '#4D7C0F' : '#1E293B',
+      accessBoxBg: s.paid ? '#ECFCCB' : '#F1F5F9',
+      plansBtnLabel: s.paid ? 'Change plan' : 'See plans · from 300 ETB',
+      plansBtnBg: s.paid ? '#fff' : '#FACC15', plansBtnFg: '#1E293B',
+      faydaLabel: s.paid ? 'Fayda ID verified' : 'Fayda ID is checked when you buy a plan',
+      faydaFg: s.paid ? '#4D7C0F' : '#64748B',
+      otp: ['4', '8', '2', '9', '1', '6'].map((v, i) => ({ v, bd: i === 5 ? '2px solid #A16207' : '1px solid #CBD5E1', bg: i === 5 ? '#FEF9C3' : '#fff' })),
+      fields: FIELDS.map(f => { const on = f.id === s.field; return { ...f, q: f.q.toLocaleString(), pick: () => this.setState({ field: f.id }), bd: on ? '#A16207' : '#E2E8F0', bg: on ? '#FEF9C3' : '#fff' }; }),
+      goals: [[15, 'Light'], [25, 'Steady'], [40, 'Intense']].map(([n, l]) => { const on = n === s.goal; return { n, l, pick: () => this.setState({ goal: n }), bd: on ? '#A16207' : '#E2E8F0', bg: on ? '#FEF9C3' : '#fff' }; }),
+      fieldName: field.name,
+      topTopics: TOPICS.slice(0, 5).map(topicRow),
+      allTopics: TOPICS.map(topicRow),
+      week: ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((l, i) => ({ l, bg: i < 4 ? '#FACC15' : '#fff', bd: i < 4 ? '#FACC15' : i === 4 ? '#A16207' : '#E2E8F0' })),
+      pq, pOpts, pNum, pPct: (pNum / 25 * 100) + '%', pAnswered: !!chosen,
+      verdictLabel: right ? 'Correct. +10 points' : 'Not quite. The answer is ' + pq0.correct + '.',
+      verdictBg: right ? '#ECFCCB' : '#FEE2E2', verdictFg: right ? '#3F6212' : '#B91C1C',
+      nextLabel: chosen ? 'Next question' : 'Choose an answer',
+      nextBg: chosen ? '#FACC15' : '#E2E8F0', nextFg: chosen ? '#1E293B' : '#64748B',
+      nextPractice: () => { if (this.state.chosen) this.setState(x => ({ chosen: null, pIdx: x.pIdx + 1 })); },
+      mocks: [[4, 67, 'Sep 26', '2:41'], [3, 61, 'Sep 13', '2:52'], [2, 55, 'Aug 30', '2:58'], [1, 48, 'Aug 16', '3:00']].map(([n, score, date, time]) => ({ n, score, date, time, pct: score + '%' })),
+      startExam: () => this.to('exam'),
+      resultTitle: 'Mock 4', resultScore: 67, resultWrong: 33,
+      resultTopics: [['Financial accounting', 14, 18], ['Cost & mgmt accounting', 8, 14], ['Auditing', 6, 12], ['Financial management', 6, 10], ['Taxation', 7, 10], ['Other topics', 26, 36]].map(([name, a, b]) => { const p = Math.round(a / b * 100); return { name, frac: a + '/' + b, pct: p + '%', fill: p < 60 ? '#C2410C' : '#FACC15', fg: p < 60 ? '#C2410C' : '#1E293B' }; }),
+      missed: [
+        { n: 7, stem: 'Under IAS 2 Inventories, which cost formula is not permitted?', topic: 'Financial accounting', you: 'B', ans: 'C' },
+        { n: 18, stem: 'Which audit evidence is generally the most reliable?', topic: 'Auditing', you: 'A', ans: 'B' },
+        { n: 31, stem: 'What are the equivalent units for conversion costs under weighted-average?', topic: 'Cost accounting', you: 'B', ans: 'C' },
+        { n: 44, stem: 'Which of the following is a period cost for a manufacturing company?', topic: 'Cost accounting', you: 'B', ans: 'C' },
+      ],
+      kpis: [{ v: '62%', l: 'Readiness', fg: '#A16207' }, { v: '67%', l: 'Latest mock', fg: '#1E293B' }, { v: '9', l: 'Day streak', fg: '#1E293B' }, { v: '3', l: 'Topics below 60%', fg: '#C2410C' }],
+      heat,
+      langs: [['en', 'English'], ['am', 'አማርኛ']].map(([id, l]) => ({ l, pick: () => this.setState({ lang: id }), bg: s.lang === id ? '#1E293B' : 'transparent', fg: s.lang === id ? '#fff' : '#475569' })),
+      devices: [{ name: 'Android browser', seen: 'Active now', current: true, other: false }, { name: 'Windows browser · lab PC', seen: 'Last seen Sep 29, 4:12 PM', current: false, other: true, revoke: () => this.setState({ devices: 1 }) }].slice(0, s.devices),
+      timeLeft: `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`,
+      timerColor: frac <= 0.05 ? '#DC2626' : frac <= 0.2 ? '#C2410C' : '#1E293B',
+      q, qNum: s.idx + 1, examOpts, cells, decade: cells.slice(d0, d0 + 10),
+      answeredCount, blankCount: 100 - answeredCount, flagCount: Object.keys(s.flags).length,
+      flagLabel: flagged ? 'Flagged' : 'Flag',
+      flagBd: flagged ? '#C2410C' : '#CBD5E1', flagBg: flagged ? '#FFEDD5' : '#fff', flagFg: flagged ? '#C2410C' : '#475569',
+      toggleFlag: () => this.toggleFlag(), prev: () => this.goQ(s.idx - 1), next: () => this.goQ(s.idx + 1),
+      gridOverlay: !desktop && s.gridOpen, toggleGrid: () => this.setState(x => ({ gridOpen: !x.gridOpen })),
+      confirmOpen: s.confirm, openConfirm: () => this.setState({ confirm: true }), closeConfirm: () => this.setState({ confirm: false }),
+      submitExam: () => this.to('results'), stop: e => e.stopPropagation(),
+      admin: { review: s.adminTab === 'review', payments: s.adminTab === 'payments', structure: s.adminTab === 'structure' },
+      adminTabs, queueCount: queue.length, queueEmpty: queue.length === 0, hasSel: !!sel,
+      reviewSpan: desktop ? 2 : 1,
+      queue: queue.map((x, i) => ({ stem: x.stem, meta: x.meta, open: () => this.setState({ sel: i, reviewMsg: '' }), bd: sel && sel.id === x.id ? '#A16207' : '#E2E8F0', bg: sel && sel.id === x.id ? '#FEF9C3' : '#fff' })),
+      sel: sel ? { meta: sel.meta, stem: sel.stem, concept: sel.concept, opts: sel.opts.map((t, i) => { const c = i === sel.correct; return { l: LETTERS[i], t, bd: c ? '#4D7C0F' : '#E2E8F0', bg: c ? '#ECFCCB' : '#fff', chipBg: c ? '#4D7C0F' : '#F1F5F9', chipFg: c ? '#fff' : '#475569' }; }) } : { meta: '', stem: '', concept: '', opts: [] },
+      publish: () => act('pub'), bounce: () => act('back'), reviewMsg: s.reviewMsg,
+      payKpis: [{ v: String(pendingCount), l: 'Receipts waiting' }, { v: '38 min', l: 'Average approval time' }, { v: '142,800 ETB', l: 'This week' }],
+      payments, structure,
+    };
+  }
+}
+</script>
+</body>
+</html>
