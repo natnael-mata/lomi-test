@@ -1,68 +1,81 @@
 ---
 name: Lomi
-description: Exit-exam prep on cream paper under a lemon marker — warm to open, exact underneath.
+description: Exit-exam prep on a white sheet over cool slate, marked in lemon yellow.
 colors:
-  # Lomi v1. Single theme — there are no dark-* entries, by decision (owner,
-  # 2026-08-20). Every value is measured; see components/contrast.test.ts.
-  brand: '#FFE95C' # lemon. A FILL — 1.23:1 on cream, so it never sets text.
-  brand-hover: '#F7DD3C'
-  brand-soft: '#FFF6C4' # selected option, active nav, your own row
-  on-brand: '#1A3300' # ink on lemon, 11.24:1
-  correct: '#0F5F63' # teal, NOT green: the ink is green
-  correct-soft: '#DDF0F0'
-  wrong: '#A3300F' # terracotta darkened from #CB5521 (4.14 -> 6.74)
-  wrong-soft: '#FBE0D6'
-  pending: '#4A4A46' # pencil. Pending is not failure, so it has no hue.
-  pending-soft: '#EDEBE4'
-  reward: '#6B2D78' # plum — the lemon is spoken for
-  reward-fill: '#F6D0FF'
-  on-reward: '#1A3300'
-  on-state: '#FCFAF5' # cream, for text on any SOLID state fill
-  bg: '#FCFAF5' # cream paper
-  surface: '#FFFFFF'
-  surface-2: '#F1EFE8'
-  border: '#DFDBD0' # hairline. Never text.
-  ink: '#1A3300' # forest, 13.27:1 on bg
-  ink-2: '#46603A' # 6.72:1 on bg
+  # Lomi-Exams, from the 2026-10-01 handoff. Single theme — there are no dark-*
+  # entries, by decision (owner, 2026-08-20). Every value is measured; see
+  # components/contrast.test.ts, which rejected three of the handoff's own.
+  brand: '#FACC15' # lemon yellow. A FILL — 1.7:1 on white, so it never sets text.
+  brand-hover: '#EAB308'
+  brand-soft: '#FEF9C3' # selected option, active nav, your own row
+  brand-pale: '#FEF08A' # the logo's pith
+  on-brand: '#1E293B' # slate on yellow
+  link: '#A16207' # the one readable brand-family TEXT colour, 5.4:1 on white
+  link-hover: '#854D0E'
+  correct: '#4D7C0F' # olive. Green is available now: the ink is slate, not forest.
+  correct-soft: '#ECFCCB'
+  correct-deep: '#3F6212' # correct set ON its own wash
+  wrong: '#B91C1C' # the handoff's DARK red — its #DC2626 is 3.95:1 on the wash
+  wrong-bright: '#DC2626' # fills and icons, which sit on white
+  wrong-soft: '#FEE2E2'
+  pending: '#C2410C' # burnt orange — a topic under the pass mark
+  pending-soft: '#FFEDD5'
+  reward: '#3F6212' # points and streaks must be READ; the handoff greens are 2–3:1
+  reward-fill: '#ECFCCB'
+  on-reward: '#1E293B'
+  on-state: '#FFFFFF' # text on any SOLID state fill
+  bg: '#F8FAFC' # the ground
+  surface: '#FFFFFF' # a card laid on it
+  surface-2: '#F1F5F9'
+  border: '#E2E8F0' # hairline. Never text.
+  border-input: '#CBD5E1'
+  border-strong: '#94A3B8'
+  ink: '#1E293B' # slate, 13.9:1 on the ground
+  ink-2: '#475569'
+  ink-3: '#64748B' # eyebrows and muted captions
+  ink-deep: '#0F172A' # hero, footer and exam-band grounds — a surface, not a mode
+  accent: '#84CC16' # charts and the mark, where nothing has to be read
+  leaf: '#65A30D'
 typography:
   display:
-    fontFamily: "Archivo, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Outfit, system-ui, sans-serif"
     fontSize: '2.125rem'
     fontWeight: 800
     lineHeight: '2.5rem'
     letterSpacing: '-0.03em'
   title:
-    fontFamily: "Archivo, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Outfit, system-ui, sans-serif"
     fontSize: '1.5rem'
     fontWeight: 700
     lineHeight: '1.875rem'
     letterSpacing: '-0.02em'
   stem:
-    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: '1.1875rem'
     fontWeight: 600
     lineHeight: '1.8125rem'
   body:
-    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: '1rem'
     fontWeight: 400
     lineHeight: '1.625rem'
   label:
-    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: '0.9375rem'
     fontWeight: 600
     lineHeight: '1.25rem'
   caption:
-    fontFamily: "Inter, 'Noto Sans Ethiopic', system-ui, sans-serif"
+    fontFamily: "Inter, system-ui, sans-serif"
     fontSize: '0.8125rem'
     fontWeight: 600
     lineHeight: '1.125rem'
     letterSpacing: '0.04em'
 rounded:
-  control: '12px'
-  card: '16px'
-  panel: '24px'
-  full: '999px'
+  control: '8px' # buttons in the app
+  option: '12px' # options and list items
+  card: '16px' # app cards
+  panel: '20px' # landing feature tiles
+  full: '999px' # pills and landing CTAs
 spacing:
   xs: '4px'
   sm: '8px'
@@ -408,23 +421,30 @@ headline figure is their weighted mean. Every statement ends in a practice actio
 
 ### Navigation
 
-Bottom bar on phones: **six** labelled destinations, 56px, with the active item's icon
-sitting in a Brand Soft pill and its label in brand colour. Labels are never hidden. Desktop
-moves the same six to a left rail.
+Bottom bar below 1024px: **five** labelled destinations, 56px, with the active item's icon
+sitting in a Brand Soft pill and its label in ink at 600. Labels are never hidden. Desktop
+moves the same five to a sidebar.
 
-> **This said five until 2026-08-25**, when Ask joined it. The number was never the rule —
-> what the rule protects is that every destination keeps a readable label, because "a student
-> who has to recognise five glyphs is a student who presses the wrong one" is just as true of
-> six. At 375px six items are 62px each, which holds a 13px label without truncation; the
-> layout sweep measures it at every width and fails on an overflow or a target under 44px.
-> If a seventh is ever proposed, that is the check to run — and the answer is probably no.
+The five are **Today, Practice, Mocks, Progress, Account**.
 
-The rail has two widths. A tablet gets it **compact at 104px** — icon above a 13px label,
-each destination an 88px block, the wordmark dropped and the glyph kept. A desktop gets it
-**full at 232px** — icon beside a 15px label, the wordmark restored, and a footer carrying
-when access runs out and the theme switch. Compacting rather than dropping to icons is the
-point: "labels are never hidden" survives the narrower rail, because a student who has to
-recognise five glyphs is a student who presses the wrong one.
+> **This said six until 2026-10-01.** It was five, then Ask joined, and the redesign returns
+> it to five by folding three destinations into screens rather than deleting them: Access
+> into Account, Standing onto Progress, Ask onto Today. The number was never the rule — what
+> the rule protects is that every destination keeps a readable label — but six items on a
+> 375px screen was the limit this section already warned about, and the redesign spends that
+> room on a hub instead.
+>
+> **Dropping a destination from the bar must not orphan its route.** All three screens are
+> built, and a built screen nothing links to is a defect this product has shipped twice:
+> `/exam/review` existed for weeks with no way back to it, and `/home` was reachable only by
+> typing the URL. `layout-measure.test.ts` asserts each one is still linked from the screen
+> that absorbed it.
+
+The sidebar is **240px, sticky, from 1024px**: the logo, the five destinations as rows with
+the icon beside a 15px label, and an access card at the foot carrying when access runs out.
+Below 1024px it is replaced by a **sticky top bar** — the mark and the page's own name — plus
+the fixed bottom bar, and the content takes about 104px of bottom clearance so the last
+control on a screen is never under the tabs.
 
 The active item takes the Brand Soft pill on both rails; on the bottom bar the pill sits
 behind the **icon only**, since a filled cell in a 56px bar reads as a button rather than as

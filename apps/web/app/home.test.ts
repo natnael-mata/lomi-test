@@ -50,7 +50,10 @@ describe('the home screen (T-198)', () => {
    */
   it('reaches every student surface from the navigation', () => {
     const hrefs = new Set(DESTINATIONS.map((d) => d.href));
-    for (const href of ['/practice', '/exam', '/progress', '/standing', '/checkout', '/community']) {
+    // The five the redesign puts in the bar. The three it took out — Access,
+    // Standing and Ask — are checked in `layout-measure.test.ts`, which asserts
+    // each is still linked from the screen that absorbed it.
+    for (const href of ['/today', '/practice', '/mocks', '/progress', '/account']) {
       expect(hrefs, href).toContain(href);
     }
   });

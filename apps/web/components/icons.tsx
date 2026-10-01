@@ -18,21 +18,19 @@ import type { ReactNode } from 'react';
 
 /** Stroked paths. The default: 2px, round caps, no fill. */
 const STROKE: Record<string, ReactNode> = {
-  /* The five destinations, in nav order. */
-  practise: <path d="M16.5 3.5l4 4L7 21l-4.5 1L3 17.5z" />,
-  mock: (
-    <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </>
-  ),
-  progress: <path d="M5 20v-8M12 20V4M19 20v-5" />,
-  standing: (
-    <>
-      <circle cx="12" cy="9" r="5" />
-      <path d="M8.5 13.5L7 21l5-3 5 3-1.5-7.5" />
-    </>
-  ),
+  /*
+   * The five destinations, redrawn from the 2026-10-01 handoff.
+   *
+   * Taken from the prototype's own path data rather than redrawn by eye, so the
+   * glyph in the bottom bar is the glyph in the design file. They keep this
+   * file's conventions — 24px grid, 2px stroke, round caps, no fill — because
+   * those are what make a set look like a set.
+   */
+  today: <path d="M3 11l9-8 9 8M5 10v10h14V10" />,
+  practise: <path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2zM8 7h7" />,
+  mock: <path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3 2" />,
+  progress: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+  account: <path d="M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM4 21c1.5-4 5-5 8-5s6.5 1 8 5" />,
   access: (
     <>
       <circle cx="8" cy="16" r="4" />
@@ -40,7 +38,6 @@ const STROKE: Record<string, ReactNode> = {
     </>
   ),
 
-  /* Verdicts. Never shown without the word beside them. */
   /*
    * A speech bubble, for the community.
    *

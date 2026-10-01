@@ -13,16 +13,16 @@
  *
  * The navigation comes from the same place for the same reason: five
  * destinations, and no page gets to opt out or disagree. Which *shape* those
- * five take is the responsive question, and it is answered in `Navigation.tsx`;
- * what is decided here is only how much room the furniture needs — 104px of
- * rail on a tablet, 232px on a desktop, and clearance at the bottom of a phone
- * so the last control on every screen is not underneath the bar.
+ * five take is the responsive question, answered in `Navigation.tsx`; what is
+ * decided here is only how much room the furniture needs — a 240px sidebar from
+ * `lg`, and 104px of clearance at the foot of a phone so the last control on
+ * every screen is not underneath the tabs.
  */
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { AdminBar } from './AdminBar';
-import { BottomBar, SideRail, TopMark } from './Navigation';
+import { BottomBar, DESTINATIONS, SideRail, TopBar, isActive } from './Navigation';
 
 /** Admin is permitted real tables and the room to show them. */
 const ADMIN_MEASURE = 'max-w-[1200px]';
@@ -96,34 +96,64 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <>
+    /*
+      Sidebar beside content from `lg`, stacked below it (handoff § App shell).
+      
+      A flex row rather than a grid: the sidebar is a fixed 240px and the main
+      column takes what is left, which is one line of CSS in a row and three in
+      a grid. `min-w-0` on the column because a flex child defaults to its
+      content's width, and one unbroken question stem would otherwise widen the
+      page rather than wrap.
+    */
+    <div className="flex min-h-dvh">
       <SideRail pathname={pathname} />
-      {/* Below `lg` the pill is gone, and with it the only link to `/home` and
-          the only brand mark on screen. This carries both. */}
-      <TopMark />
-      <BottomBar pathname={pathname} />
 
-      {/*
-        Room for the furniture, and the switch is at `lg` (T-269).
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar title={titleFor(pathname)} />
+        <BottomBar pathname={pathname} />
 
-        The nav moved from the left edge to the top (handoff 3a), so the offset
-        it reserves moved with it. It then had to move again: the top pill now
-        appears only from `lg`, because between 640 and 1023px it could not hold
-        six destinations *and* the account block — so that whole band kept the
-        bottom bar and needs the bottom clearance, not the top offset.
-      */}
-      <div className="pb-24 lg:pt-24 lg:pb-0">
-        <main
-          className={`mx-auto flex min-h-dvh flex-col p-4 sm:p-6 lg:py-10 ${
-            DATA_ROUTES.some((p) => pathname.startsWith(p)) ? DATA_MEASURE : STUDENT_MEASURE
-          }`}
-        >
-          {children}
-        </main>
+        {/* 104px of bottom clearance below `lg`, for the 56px bar plus its
+            safe area — the handoff's number, and it is what stops the last
+            control on every screen sitting under the tabs. */}
+        <div className="pb-26 lg:pb-0">
+          <main
+            className={`mx-auto flex w-full flex-col p-4 sm:p-6 lg:px-10 lg:py-8 ${
+              DATA_ROUTES.some((p) => pathname.startsWith(p)) ? DATA_MEASURE : STUDENT_MEASURE
+            }`}
+          >
+            {children}
+          </main>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
+
+/**
+ * What the phone's top bar calls this screen.
+ *
+ * Derived from the route rather than passed down, because every page would
+ * otherwise have to remember to declare it and the one that forgot would show
+ * the previous screen's name. The fallback is the product, which is true of any
+ * screen this does not know about.
+ */
+function titleFor(pathname: string): string {
+  const named = DESTINATIONS.find((d) => isActive(pathname, d.href));
+  if (named) return named.label;
+  for (const [prefix, title] of Object.entries(OTHER_TITLES)) {
+    if (pathname.startsWith(prefix)) return title;
+  }
+  return 'Lomi-Exams';
+}
+
+/** Screens outside the five destinations that still need a name up top. */
+const OTHER_TITLES: Record<string, string> = {
+  '/exam': 'Mock exam',
+  '/checkout': 'Plans',
+  '/community': 'Ask',
+  '/standing': 'Standing',
+  '/choose': 'Your programme',
+};
 
 /** Exported for the test that holds the measures to DESIGN.md. */
 export const MEASURES = {

@@ -85,21 +85,43 @@ describe('the measures come from DESIGN.md (§ Layout)', () => {
 
 describe('navigation matches DESIGN.md (§ Navigation)', () => {
   it('finds the rule it is enforcing', () => {
-    expect(design).toMatch(/six\*\* labelled destinations/i);
-    expect(design).toMatch(/desktop moves the same six to a left rail/i);
+    expect(design).toMatch(/five\*\* labelled destinations/i);
+    expect(design).toMatch(/desktop moves the same five to a sidebar/i);
   });
 
   /*
-   * Six, and the count is pinned rather than left to drift.
+   * Five, and the count is pinned rather than left to drift.
    *
-   * It was five until Ask joined. The number is not the rule — a readable label
-   * on every destination is — but an unpinned count is how a navigation grows a
-   * seventh and an eighth item nobody argued for. Changing it means changing
-   * DESIGN.md, which is the argument.
+   * It was five until Ask joined, then six, and the 2026-10-01 redesign brings
+   * it back to five: Today, Practice, Mocks, Progress, Account. The number is
+   * not the rule — a readable label on every destination is — but an unpinned
+   * count is how a navigation grows a sixth and a seventh nobody argued for.
+   * Changing it means changing DESIGN.md, which is the argument.
    */
-  it('has exactly six destinations', () => {
-    expect(DESTINATIONS).toHaveLength(6);
-    expect(new Set(DESTINATIONS.map((d) => d.href)).size).toBe(6);
+  it('has exactly five destinations', () => {
+    expect(DESTINATIONS).toHaveLength(5);
+    expect(new Set(DESTINATIONS.map((d) => d.href)).size).toBe(5);
+  });
+
+  /**
+   * Dropping a destination from the bar must not orphan its route.
+   *
+   * Access, Standing and Ask left the bar in the redesign — Access into
+   * Account, Standing onto Progress, Ask onto Today. All three screens are
+   * built, and a built screen nothing links to is the defect this product has
+   * already shipped twice: `/exam/review` existed for weeks with no way back to
+   * it, and `/home` was reachable only by typing the URL.
+   */
+  it('still links the screens it took out of the bar', () => {
+    const linked = [
+      ['/checkout', 'app/account/page.tsx'],
+      ['/standing', 'app/progress/ProgressScreen.tsx'],
+      ['/community', 'app/HomeScreen.tsx'],
+    ] as const;
+    for (const [href, file] of linked) {
+      const source = readFileSync(resolve(here, '..', file), 'utf8');
+      expect(source, `nothing links to ${href}`).toContain(href);
+    }
   });
 
   /**

@@ -116,9 +116,21 @@ export const en = {
      */
     home: 'Lomi-Exams home',
     signedInAs: 'Signed in as',
-    practice: 'Practise',
-    exam: 'Mock',
+    /*
+     * Five destinations, down from six (redesign, 2026-10-01).
+     *
+     * Today replaces the hub, Mocks replaces Mock, and Account absorbs Access.
+     * Standing and Ask leave the bar — their routes stay and stay linked, from
+     * Progress and from Today — because six icons on a 375px screen was already
+     * the limit DESIGN.md warned about, and the bar is for the five places a
+     * student goes daily.
+     */
+    today: 'Today',
+    practice: 'Practice',
+    mocks: 'Mocks',
     progress: 'Progress',
+    account: 'Account',
+    exam: 'Mock',
     standing: 'Standing',
     // "Ask", not "Community" — it says what you do there, and it is shorter,
     // which matters in a six-item bar on a phone.
@@ -135,6 +147,12 @@ export const en = {
      * "Main" twice in it is a smell, and it costs nothing to say which is which.
      */
     main: 'Main',
+    /* The sidebar's access card. Says what a student asks this product most. */
+    accessLabel: 'Access until',
+    manage: 'Manage plan',
+    freePlan: 'Free plan',
+    freePlanBody: 'Ten free questions',
+    seePlans: 'See plans',
     mainBottom: 'Main, bottom bar',
     accessUntil: (date: string) => `Access until ${date}`,
   },
