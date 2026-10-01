@@ -1,69 +1,56 @@
 /**
- * The lemon, drawn (T-269).
+ * The lemon slice, drawn (T-270).
  *
  * The geometry lives in `lemon-mark.mjs` because the app icons and the favicon
  * are rasterised from the same paths by a Node script with no build step. This
  * file is only the React face of it.
  *
- * **Ink is `currentColor`.** Inside the nav tile the mark inherits
- * `text-on-brand`; on cream it inherits the surrounding ink. One fewer colour
- * to keep in step, and it means the mark cannot end up the wrong green on a
- * surface somebody adds later.
- *
- * The mint and the cream come from the theme's custom properties with the
- * literal as a fallback, so a token change reaches the mark without an edit
- * here — and the mark still draws if it is ever rendered outside the app's
- * stylesheet, which is exactly what the icon script does.
+ * **Every colour is the mark's own, not the interface's.** Unlike the previous
+ * mark — which took `currentColor` so it inherited ink from whatever sat around
+ * it — a lemon slice is three specific colours in a fixed relationship, and
+ * inheriting any of them would turn it into a monochrome disc. They come from
+ * the theme's custom properties with the literal as a fallback, so a token
+ * change reaches the mark and the mark still draws when rendered outside the
+ * app's stylesheet, which is exactly what the icon script does.
  */
 import {
-  BODY,
-  BODY_TILT,
-  CHECK,
-  CHECK_INK_WIDTH,
-  CHECK_MINT_WIDTH,
-  GLINT,
-  LEAF_LEFT,
-  LEAF_RIGHT,
-  LEAVES_MIN_PX,
+  CENTER_R,
+  FLESH_R,
   MARK_COLORS,
-  NUB_LEFT,
-  NUB_RIGHT,
-  STEM,
+  PITH_R,
+  RIND_R,
+  WEDGES,
+  WEDGE_STROKE,
 } from './lemon-mark.mjs';
 
-const MINT = `var(--color-correct-soft, ${MARK_COLORS.mint})`;
-const CREAM = `var(--color-surface, ${MARK_COLORS.cream})`;
-const LEMON = `var(--color-brand, ${MARK_COLORS.lemon})`;
+const RIND = `var(--color-brand-hover, ${MARK_COLORS.rind})`;
+const PITH = `var(--color-brand-pale, ${MARK_COLORS.pith})`;
+const FLESH = `var(--color-brand, ${MARK_COLORS.flesh})`;
+
+/** Below this the centre dot is one pixel, so it is dropped. */
+export const CENTER_DOT_MIN_PX = 24;
 
 export interface LemonMarkProps {
   size?: number | undefined;
   /**
-   * Draw the leaves.
+   * Draw the pith dot at the centre.
    *
-   * Defaults to the design's own rule — off below 24px, where two 3px leaves
-   * are four grey pixels and a suggestion, while the fruit and the check still
-   * read.
+   * Defaults to size — at 20px square the dot is about one device pixel and
+   * reads as a smudge where the four wedges meet, rather than as the detail it
+   * is at 34px and above.
    */
-  leaves?: boolean | undefined;
-  /**
-   * Fill the body with brand yellow.
-   *
-   * Off inside the nav tile: the tile already is the fruit, and a second yellow
-   * on top of it only thickens the outline.
-   */
-  filled?: boolean | undefined;
+  centerDot?: boolean | undefined;
   className?: string | undefined;
 }
 
-export function LemonMark({ size = 24, leaves, filled = true, className }: LemonMarkProps) {
-  const withLeaves = leaves ?? size >= LEAVES_MIN_PX;
+export function LemonMark({ size = 24, centerDot, className }: LemonMarkProps) {
+  const withDot = centerDot ?? size >= CENTER_DOT_MIN_PX;
 
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 24 24"
-      fill="none"
+      viewBox="-100 -100 200 200"
       className={className}
       /*
        * Decoration, unconditionally — the same rule `icons.tsx` states. The
@@ -73,61 +60,21 @@ export function LemonMark({ size = 24, leaves, filled = true, className }: Lemon
        */
       aria-hidden="true"
     >
-      <g transform={BODY_TILT}>
-        <path d={NUB_RIGHT} stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-        <path d={NUB_LEFT} stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" />
-        <ellipse
-          cx={BODY.cx}
-          cy={BODY.cy}
-          rx={BODY.rx}
-          ry={BODY.ry}
-          fill={filled ? LEMON : 'none'}
-          stroke="currentColor"
-          strokeWidth={1.5}
-        />
-        <path d={GLINT} stroke={CREAM} strokeWidth={1.3} strokeLinecap="round" />
-      </g>
-
-      {withLeaves ? (
-        <>
-          <path
-            d={LEAF_LEFT}
-            fill={MINT}
-            stroke="currentColor"
-            strokeWidth={1.35}
-            strokeLinejoin="round"
-          />
-          <path
-            d={LEAF_RIGHT}
-            fill={MINT}
-            stroke="currentColor"
-            strokeWidth={1.35}
-            strokeLinejoin="round"
-          />
-          <path d={STEM} stroke="currentColor" strokeWidth={1.45} strokeLinecap="round" />
-        </>
-      ) : null}
-
-      {/*
-        Last, so it sits over the fruit rather than under the glint — and twice,
-        ink then mint. Mint alone is 1.2:1 on the yellow tile and the check
-        disappears into the fruit; the ink underlay is what keeps it a check at
-        every size and on every ground.
-      */}
+      <circle r={RIND_R} fill={RIND} />
+      <circle r={PITH_R} fill={PITH} />
+      {/* One path for all four wedges, so the pith between them is a single
+          stroke and meets cleanly at the centre. */}
       <path
-        d={CHECK}
-        stroke="currentColor"
-        strokeWidth={CHECK_INK_WIDTH}
-        strokeLinecap="round"
+        d={WEDGES}
+        fill={FLESH}
+        stroke={PITH}
+        strokeWidth={WEDGE_STROKE}
         strokeLinejoin="round"
       />
-      <path
-        d={CHECK}
-        stroke={MINT}
-        strokeWidth={CHECK_MINT_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {withDot ? <circle r={CENTER_R} fill={PITH} /> : null}
     </svg>
   );
 }
+
+/** Exported so the icon script and the tests agree on the flesh radius. */
+export { FLESH_R };

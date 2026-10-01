@@ -47,14 +47,14 @@ const OUT = join(WEB, 'public', 'brand');
  * regenerate rarely enough that stale is the default state unless the mark they
  * draw is the same object the app draws, which it now is.
  */
-const BRAND = MARK_COLORS.lemon;
+const GROUND = MARK_COLORS.pith;
 
 const ICONS = [
-  { name: 'lomi-test-192.png', size: 192, maskable: false },
-  { name: 'lomi-test-512.png', size: 512, maskable: false },
-  { name: 'lomi-test-maskable-512.png', size: 512, maskable: true },
+  { name: 'lomi-exams-192.png', size: 192, maskable: false },
+  { name: 'lomi-exams-512.png', size: 512, maskable: false },
+  { name: 'lomi-exams-maskable-512.png', size: 512, maskable: true },
   // iOS ignores the manifest and reads this one. 180 is the size it asks for.
-  { name: 'lomi-test-apple-180.png', size: 180, maskable: true },
+  { name: 'lomi-exams-apple-180.png', size: 180, maskable: true },
 ];
 
 const DEBUG_PORT = 9334;
@@ -63,28 +63,31 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /**
  * The mark, as a page exactly `size` square.
  *
- * `maskable` drops the corner radius and shrinks the glyph into the safe zone
- * a launcher will not crop — the spec's guidance is that everything inside the
+ * `maskable` drops the corner radius and shrinks the mark into the safe zone a
+ * launcher will not crop — the spec's guidance is that everything inside the
  * middle 80% survives, and 60% leaves room for a circular mask too.
+ *
+ * **No tile behind it any more.** Every previous mark was a glyph that needed a
+ * yellow ground; a slice is already a yellow circle, so a square behind it was
+ * a box around a picture of a lemon. The icons are drawn on the pale pith
+ * instead, which keeps a light ground for the launchers that want one without
+ * boxing the mark.
  */
 function page(size, maskable) {
   const radius = maskable ? 0 : Math.round(size * 0.22);
-  const glyph = Math.round(size * (maskable ? 0.42 : 0.56));
+  const glyph = Math.round(size * (maskable ? 0.6 : 0.82));
   return `<!doctype html><meta charset="utf-8"><style>
     html, body { margin: 0; padding: 0; background: transparent; }
     .mark {
       width: ${size}px; height: ${size}px; border-radius: ${radius}px;
-      background: ${BRAND};
+      background: ${GROUND};
       display: flex; align-items: center; justify-content: center;
     }
   </style><div class="mark">${lemonMarkSvg({
     size: glyph,
-    // Every icon here is 180px or larger, so the leaves are always well past
-    // the size at which they stop resolving. The favicon is the small case and
-    // it is `app/icon.svg`, not this.
-    leaves: true,
-    // The tile is the fruit; a second yellow on top only thickens the outline.
-    filled: false,
+    // Every icon here is 180px or larger, so the centre dot resolves easily.
+    // The favicon is the small case and it has its own drawing below.
+    centerDot: true,
   })}</div>`;
 }
 
@@ -125,22 +128,18 @@ class Cdp {
 }
 
 /**
- * The favicon: the tile and the check, and nothing else.
+ * The favicon: the slice, with the centre dot dropped.
  *
- * **The fruit does not survive a browser tab.** This used to be the full mark
- * with the leaves dropped, on the design's own rule ("favicon 20px — leaves
- * drop, check stays"). Dropping the leaves was right and not enough: at 16–20px
- * the body's outline, its two nubs and the check are four strokes inside twenty
- * pixels, and they merge. An audit rendered it at real size and reported what
- * survives as "a yellow square with a dark smudge" — not a lemon, and not a
- * check either.
+ * **The whole fruit did not survive a browser tab.** The previous mark was a
+ * lemon with leaves and a check through it, and at 16–20px its outline, two
+ * nubs and the check were four strokes inside twenty pixels — an audit rendered
+ * it at real size and reported "a yellow square with a dark smudge". It needed
+ * a second, simpler drawing just for this size.
  *
- * So the smallest size gets its own drawing rather than a shrunk one. What is
- * left is the half that carries the meaning: a single bold check on the lemon
- * tile, one colour, nothing crossing it. The fruit is the name and the check is
- * the product, and at this size only one of them can be legible.
- *
- * Ink on lemon at 11.24:1, so it holds on a light or dark tab strip.
+ * A slice needs no such compromise, which is the quiet argument for it: four
+ * solid wedges with a thick pith cross between them is a shape that survives
+ * being one twelfth of its design size. Only the 7-unit centre dot goes, since
+ * at 16px it is a single pixel sitting where the cross already meets.
  *
  * SVG rather than another PNG: a tab icon is the smallest thing the brand is
  * ever drawn at, and a rasterised 192px square scaled to 16 is where a mark
@@ -148,10 +147,7 @@ class Cdp {
  * behind it for anything that cannot read SVG.
  */
 function faviconSvg() {
-  return `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="7" fill="${BRAND}"/>
-  <path d="M8 16.8 L13.4 22.2 L24 9.8" fill="none" stroke="${MARK_COLORS.ink}" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>`;
+  return lemonMarkSvg({ size: 32, centerDot: false });
 }
 
 async function main() {
@@ -159,7 +155,7 @@ async function main() {
 
   const favicon = join(OUT, 'lomi-favicon.svg');
   writeFileSync(favicon, faviconSvg());
-  console.log(`${'lomi-favicon.svg'.padEnd(30)} 32px  tile and check only`);
+  console.log(`${'lomi-favicon.svg'.padEnd(30)} 32px  slice, no centre dot`);
 
   const profile = mkdtempSync(join(tmpdir(), 'lomi-icons-'));
   const chrome = spawn(

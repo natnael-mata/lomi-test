@@ -41,10 +41,10 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'en',
     categories: ['education'],
     icons: [
-      { src: '/brand/lomi-test-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/brand/lomi-test-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/brand/lomi-exams-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/brand/lomi-exams-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       {
-        src: '/brand/lomi-test-maskable-512.png',
+        src: '/brand/lomi-exams-maskable-512.png',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',

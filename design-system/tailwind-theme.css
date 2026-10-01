@@ -1,5 +1,5 @@
 /* ============================================================================
-   Lomi v1 — Tailwind v4 theme.  Replaces Deresegn v3.
+   Lomi-Exams — Tailwind v4 theme.  Replaces Lomi v1 (cream and forest).
    Paste into apps/web/app/globals.css. Tailwind v4 is CSS-first: this @theme
    block IS the config, so tailwind.config.ts is not needed for tokens.
 
@@ -10,77 +10,109 @@
      --text-stem        -> text-stem
      --ease-spring      -> ease-spring
 
-   The world is a cream page under a lemon marker: paper ground, forest ink,
-   and the lemon spent sparingly. Lomi means lemon, so the palette is the name.
+   The world is a white sheet on a cool grey page, marked in lemon yellow, with
+   slate ink. Lomi means lemon, so the brand is still the name — what changed
+   with the 2026-10-01 handoff is the ground it sits on: warm cream became cool
+   slate, which is what lets the yellow read as a highlighter rather than as the
+   paper itself.
+
+   THE TOKEN NAMES ARE DELIBERATELY UNCHANGED. Every value in this block moved;
+   not one name did. `bg-brand` still means "the brand fill", it is simply
+   yellow now — so the redesign is a change of palette rather than a rewrite of
+   every component that referenced one.
 
    SINGLE THEME, by decision (owner, 2026-08-20). There is no dark counterpart
-   and no `.dark` class: paper is one object, and a dark sheet of paper is a
-   different one. The Mini App inherits this theme rather than forcing its own.
+   and no `.dark` class. The dark surfaces in this design — the hero, the
+   footer, the exam band — are a *surface*, `--color-ink-deep`, not a mode.
    ============================================================================ */
 
 @import 'tailwindcss';
 
 @theme {
   /* ---- brand ------------------------------------------------------------
-     The lemon is a FILL and never sets text: on cream it measures 1.23:1.
-     `bg-brand` + `text-on-brand` is the only correct pairing. Anything that
-     needs an ACCENT IN TEXT uses ink with weight, over `bg-brand-soft` —
-     there is no readable lemon. A darkened amber was tried and rejected: no
-     value clears 4.5:1 while staying 45 deg from both the forest ink (89 deg)
-     and the terracotta of `wrong` (13 deg). The lemon sits between them on the
-     wheel, so an amber accent would read as an error state. */
-  --color-brand: #ffe95c; /* fill only — buttons, logo, the marker   */
-  --color-brand-hover: #f7dd3c;
-  --color-brand-soft: #fff6c4; /* selected option, active nav, your own row */
-  --color-on-brand: #1a3300; /* ink on lemon, 11.24:1                   */
+     The yellow is a FILL and still never sets text: #facc15 on white is 1.7:1.
+     `bg-brand` + `text-on-brand` is the only correct pairing.
+
+     What is new is that an accent in TEXT now has an answer. On cream there was
+     none — every amber sat within 45 deg of both the forest ink and the
+     terracotta of `wrong`, so it read as an error. Against slate ink and a red
+     `wrong`, #a16207 is 5.4:1 on white and unmistakably not a failure state, so
+     links and primary text on light finally have a brand-family colour. */
+  --color-brand: #facc15; /* fill only — buttons, logo, the marker   */
+  --color-brand-hover: #eab308;
+  --color-brand-soft: #fef9c3; /* selected option, active nav, your own row */
+  --color-on-brand: #1e293b;
+  /* The one readable brand-family text colour. The yellow itself is a fill —
+     #facc15 on white is 1.7:1 — so an accent IN TEXT uses this amber instead,
+     which is 5.4:1 on white and carries links and primary text on light. */
+  --color-link: #a16207;
+  --color-link-hover: #854d0e;
+  --color-brand-pale: #fef08a; /* the logo's pith, and hero highlights    */
 
   /* ---- semantic state — never remapped, not even inside Telegram ---------
      Each state clears 4.5:1 on bg, on surface AND on its own soft fill, and
      sits at least 60 deg of hue from the ink and from every other state. */
-  /* MINT is the redesign's fill for correct, selected and the active nav pill
-     — one colour doing all three, so "chosen" and "right" look like the same
-     family. It is a FILL: ink sits on it at 11.64:1 and it never sets text.
-     `--color-correct` stays a readable teal for the places a verdict is a WORD
-     rather than a fill (a chip label, "Correct, over time"), because mint as
-     text is 1.14:1 on the ground. */
-  --color-correct: #0f5f63; /* TEAL, not green: the ink IS green.      */
-  --color-correct-soft: #d5f5c2; /* mint — selected, correct, active nav    */
-  /* The handoff specifies #cb5521 and this stays darkened, deliberately.
-     Measured against the new ground it is 3.79:1, on a card 4.14:1 and on its
-     own wash 3.54:1 — all under the 4.5 this product holds itself to, and this
-     is the colour that carries "you got it wrong" to a fifteen-year-old reading
-     on a cheap phone in daylight. The hue is the design's; the lightness is the
-     one that can be read. */
-  --color-wrong: #a3300f; /* terracotta, darkened from #cb5521       */
-  --color-wrong-soft: #f8e5db; /* terracotta wash, from the handoff       */
-  --color-pending: #4a4a46; /* pencil. Pending is not failure, so it   */
-  --color-pending-soft: #edebe4; /* gets no alarm colour: 8.53 on bg        */
-  --color-reward: #6b2d78; /* plum — the lemon is spoken for          */
-  --color-reward-fill: #f6d0ff; /* reward fill — pairs with on-reward      */
-  --color-on-reward: #1a3300; /* ink on the fill, 10.14:1                */
+  /* Correct is olive green on a pale lime wash. It can be green now: the ink
+     is slate rather than forest, so green no longer collides with body text —
+     which is the whole reason the previous palette had to make "correct" teal.
 
-  /* Cream, for text sitting ON a solid state fill. Ink fails there (1.5–2.0);
-     this clears 6.7:1 on all four. Previously such sites borrowed
-     `--color-on-brand` because it happened to be white — a coupling that only
-     held while the brand was dark. */
-  --color-on-state: #fcfaf5;
+     `--color-correct` is the readable one, for a verdict written as a WORD;
+     `--color-correct-soft` is the fill behind a right answer, and
+     `--color-correct-deep` is that word set ON the fill. */
+  --color-correct: #4d7c0f; /* olive — readable as a word, 4.9:1       */
+  --color-correct-soft: #ecfccb; /* the fill behind a right answer          */
+  /* Wrong is red, and `pending` is no longer pencil grey — the handoff gives
+     it burnt orange, which is what a topic below the pass mark is drawn in.
+     That is a real change of meaning: grey said "not yet", orange says "look at
+     this one". Both still pair a colour with a word or an icon, never alone. */
+  /* **The handoff's DARK red, not its bright one.** It specifies #dc2626 with
+     "(dark #b91c1c)" beside it, and the contrast audit settles which belongs
+     here: #dc2626 on its own wash is 3.95:1, under the 4.5 this product holds
+     itself to — and a red word on a red wash is how every wrong answer and
+     every failed check is drawn. Taking the dark value as the token fixes two
+     dozen call sites at once instead of asking each to remember. The bright one
+     stays for fills and icons, which sit on white. */
+  --color-wrong: #b91c1c;
+  --color-wrong-bright: #dc2626;
+  --color-wrong-soft: #fee2e2;
+  --color-pending: #c2410c; /* burnt orange — a topic under the mark   */
+  --color-pending-soft: #ffedd5;
+  /* Points, tiers and streaks, and it has to be readable as TEXT — which the
+     handoff's two greens are not: #84cc16 is 2.0:1 on white and #65a30d 3.1:1.
+     This is the deep olive the handoff gives for correct-on-its-own-wash: 6.4:1
+     on white, 7.4:1 under white. The lighter pair survive as `accent` and
+     `leaf`, for charts and the mark, where nothing has to be read. */
+  --color-reward: #3f6212;
+  --color-reward-fill: #ecfccb;
+  --color-on-reward: #1e293b;
 
-  /* ---- neutrals: warm paper, so they belong to the lemon ----------------
-     Not grey. Pencil Gray (#b6b6b6) and Whisper Gray (#f1f1f1) from the source
-     style are 1.94:1 and 1.08:1 on cream, so they exist here as hairlines
-     only and must never set text. */
-  /* The redesign separates GROUND from SURFACE (handoff bundle, 2026-08-23).
-     The page is a slightly deeper cream and a card is the pale sheet laid on
-     it, so a card reads as an object without a shadow — the design has exactly
-     one shadow in it and it is on the floating nav. Previously the page was the
-     paler of the two and cards were pure white, which made every card edge
-     depend on the hairline alone. */
-  --color-bg: #f3f0e8; /* the ground — cream paper                */
-  --color-surface: #fcfaf5; /* a paler sheet laid on it                */
-  --color-surface-2: #efece2; /* wells, chips, code, skeletons           */
-  --color-border: #b6b6b6; /* hairline, 1px. Never text.              */
-  --color-ink: #1a3300; /* forest, 13.27:1 on bg                   */
-  --color-ink-2: #46603a; /* captions, 6.72:1 on bg                  */
+  /* White, for text sitting ON a solid state fill — olive, red or orange. Ink
+     fails on all three. Kept as its own token rather than borrowing
+     `--color-on-brand`, which is now dark: that coupling broke the moment the
+     brand became a light yellow. */
+  --color-on-state: #ffffff;
+
+  /* ---- neutrals: cool slate, so the yellow is the only warm thing ---------
+     The ground is the tinted sheet and a card is pure white laid on it, which
+     is the inverse of the cream world and is what gives a card its edge without
+     leaning on the hairline.
+
+     Three inks, not two: text, secondary, and a muted third for eyebrows and
+     captions. `--color-ink-deep` is the near-black behind the hero, the footer
+     and the exam band — a surface, never a mode. */
+  --color-bg: #f8fafc; /* the ground — cool tinted sheet          */
+  --color-surface: #ffffff; /* a card, laid on it                      */
+  --color-surface-2: #f1f5f9; /* wells, chips, code, skeletons           */
+  --color-border: #e2e8f0; /* hairline, 1px. Never text.              */
+  --color-ink: #1e293b; /* slate, 13.9:1 on the ground             */
+  --color-ink-2: #475569;
+  --color-ink-3: #64748b; /* muted — eyebrows, captions on white      */
+  --color-ink-deep: #0f172a; /* hero and footer grounds                 */
+  --color-border-input: #cbd5e1; /* inputs sit a step darker than a card    */
+  --color-border-strong: #94a3b8;
+  --color-correct-deep: #3f6212; /* correct text on its own soft fill       */
+  --color-accent: #84cc16; /* the leaf, for charts and the logo mark  */
+  --color-leaf: #65a30d;
 
   /* ---- type ------------------------------------------------------------- */
   /* The `var(--font-*)` indirection is what lets the app SELF-HOST these
@@ -88,17 +120,16 @@
      CSS variable, so naming 'Gabarito' directly here would silently fall back
      to system-ui while looking correct in the stack. The literal name is kept
      as the var's default, so this file still works pasted anywhere. */
-  --font-display: var(--font-display-face, 'Archivo'), system-ui, sans-serif;
+  --font-display: var(--font-display-face, 'Outfit'), system-ui, sans-serif;
   --font-sans:
     var(--font-body-face, 'Inter'), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  /* The mark — the letter in the logo square, and nothing else. It was a Ge'ez
-     glyph set
-     in Noto Sans Ethiopic and needed its own stack because the body face has no
-     Ge'ez coverage. English only since 2026-08-20, so it is Latin and the
-     display face already covers it. Kept as a named token rather than inlined:
+  /* The wordmark beside the slice, and nothing else. It was a Ge'ez glyph set in
+     Noto Sans Ethiopic and needed its own stack because the body face has no
+     Ge'ez coverage; English only since 2026-08-20, so the display face covers
+     it. Kept as a named token rather than inlined:
      the mark is the one element that must look identical on every device, and a
      token is where that intention stays visible. */
-  --font-mark: var(--font-display-face, 'Archivo'), system-ui, sans-serif;
+  --font-mark: var(--font-display-face, 'Outfit'), system-ui, sans-serif;
 
   --text-display: 2.125rem; /* 34px — countdown, score, readiness      */
   --text-display--line-height: 2.5rem;
@@ -137,9 +168,9 @@
      object on the page; an outer frame and the floating nav are rounder still
      because they hold the objects. Cards moved 8 → 12 and panels 14 → 16 so
      the three steps are actually distinguishable at arm's length. */
-  --radius-control: 6px; /* buttons, inputs                               */
-  --radius-card: 12px; /* cards, option rows, sheets, wells             */
-  --radius-panel: 16px; /* outer frames, the floating nav, modals        */
+  --radius-control: 8px; /* buttons, inputs                               */
+  --radius-card: 16px; /* cards, option rows, sheets, wells             */
+  --radius-panel: 20px; /* outer frames, the floating nav, modals        */
   --radius-full: 999px; /* chips, badges, avatars, progress tracks       */
 
   /* ---- elevation: every shadow carries an offset AND a blur --------------

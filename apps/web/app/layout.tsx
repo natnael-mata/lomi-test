@@ -11,13 +11,14 @@ import { fontVariables } from './fonts';
 
 export const metadata: Metadata = {
   /*
-   * The Amharic name rides on the default title only (T-201, D1).
+   * The bare name on the default, the template everywhere else.
    *
-   * `ሎሚ` is how students say it out loud, so it belongs where somebody meets the
-   * product — a shared link, a browser tab on the home screen. Page titles use
-   * the template instead, because "Practice · Lomi-Exams" truncates to
-   * nothing useful in a tab strip, and a name that only ever appears cut in half
-   * is not a name.
+   * A page title reads "Practice · Lomi-Exams", which truncates to something
+   * useful in a tab strip; the default is what a shared link or a home-screen
+   * shortcut shows, and there the product's own name is the whole point.
+   *
+   * This carried `ሎሚ` until the move to English only — the exam is set in
+   * English and so is the product.
    */
   title: {
     default: 'Lomi-Exams',
@@ -28,21 +29,20 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'Lomi-Exams', statusBarStyle: 'default' },
   icons: {
     /*
-     * The SVG first, and it is a different drawing.
+     * The SVG first, because a tab renders it at 16–20px.
      *
-     * A tab renders this at 16–20px. Dropping the leaves there was the brand
-     * handoff's own rule and still not enough — the body outline, its two nubs
-     * and the check are four strokes inside twenty pixels and they merge, which
-     * an audit reported as "a yellow square with a dark smudge". The smallest
-     * size therefore has its own drawing: the tile and one bold check, no
-     * fruit. The 192px PNG stays behind it for anything that cannot read SVG,
-     * and is what a bookmark or a shortcut takes.
+     * The previous mark — a whole lemon with leaves and a check — needed a
+     * second, simpler drawing at this size: an audit rendered it at 16px and
+     * reported "a yellow square with a dark smudge". The slice needs no such
+     * compromise; it is the same drawing with the centre dot dropped, which is
+     * one pixel at tab size. The 192px PNG stays behind it for anything that
+     * cannot read SVG, and is what a bookmark or a shortcut takes.
      */
     icon: [
       { url: '/brand/lomi-favicon.svg', type: 'image/svg+xml' },
-      { url: '/brand/lomi-test-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/brand/lomi-exams-192.png', sizes: '192x192', type: 'image/png' },
     ],
-    apple: [{ url: '/brand/lomi-test-apple-180.png', sizes: '180x180', type: 'image/png' }],
+    apple: [{ url: '/brand/lomi-exams-apple-180.png', sizes: '180x180', type: 'image/png' }],
   },
   description:
     'Exit-exam preparation for Ethiopian university students — every answer fully explained.',
@@ -55,15 +55,16 @@ export const viewport: Viewport = {
    * The colour a phone paints its own chrome, matched to the app's ground
    * rather than to the brand (T-202).
    *
-   * Installed, this is the band above the content; setting it to Brand Violet
-   * would put a violet bar over a screen whose rule is that violet means the
-   * primary action. Per-scheme, because the ground is re-derived in dark rather
-   * than dimmed, and one value would be wrong in one of them.
+   * Installed, this is the band above the content; setting it to the brand
+   * yellow would put a yellow bar over a screen whose rule is that yellow means
+   * the primary action.
+   *
+   * One value, not a pair. It listed a light and a dark colour from the days
+   * this product had two themes — and the pair outlived the themes by a month,
+   * which is how a phone ended up able to paint a chrome colour for a mode the
+   * app cannot render. `--color-bg`.
    */
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F6F6FB' },
-    { media: '(prefers-color-scheme: dark)', color: '#101018' },
-  ],
+  themeColor: '#f8fafc',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
