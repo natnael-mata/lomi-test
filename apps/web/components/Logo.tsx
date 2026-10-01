@@ -20,20 +20,33 @@ export interface LogoProps {
   size?: number | undefined;
   /** The Latin wordmark beside the glyph. Dropped where the rail is compact. */
   wordmark?: boolean | undefined;
+  /**
+   * Set on an `ink-deep` band — the hero and the footer.
+   *
+   * Not a dark mode: this product has one theme, and those bands are dark
+   * *surfaces* on a light page. What they need is the other pair of inks, because
+   * `ink` is 1.1:1 and the muted `ink-3` is 3.4:1 on near-black. A prop rather
+   * than a `className` override so the two halves of the wordmark cannot be
+   * recoloured one at a time, which is how a half-grey logo ships.
+   */
+  onDark?: boolean | undefined;
   className?: string | undefined;
 }
 
-export function Logo({ size = 34, wordmark = false, className }: LogoProps) {
+export function Logo({ size = 34, wordmark = false, onDark = false, className }: LogoProps) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className ?? ''}`}>
       {/* No tile. The slice is its own shape — see the note above. */}
       <LemonMark size={size} className="shrink-0" />
       {wordmark ? (
-        <span className="font-display text-[20px] font-extrabold -tracking-[0.01em]">
+        <span
+          className={`font-display text-[20px] font-extrabold -tracking-[0.01em] ${
+            onDark ? 'text-on-deep' : ''
+          }`}
+        >
           {NAME}
-          {/* The muted half. `ink-3` on light; a caller over `ink-deep` passes
-              its own class, because #64748b on near-black is 3.4:1. */}
-          <span className="text-ink-3">{SUFFIX}</span>
+          {/* The half that says which Lomi, one step down from the other. */}
+          <span className={onDark ? 'text-on-deep-3' : 'text-ink-3'}>{SUFFIX}</span>
         </span>
       ) : null}
     </span>

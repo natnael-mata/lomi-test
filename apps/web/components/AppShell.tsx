@@ -69,12 +69,21 @@ const UNFRAMED_EXACT = new Set(['/']);
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
 
-  /* The public landing page: no rail, no bottom bar, and a wider measure than a
-     student screen because it is read like a page rather than worked through
-     like a task. Showing a stranger five destinations they cannot open is the
-     same mistake the sign-in screen is unframed to avoid. */
+  /*
+    The public landing page: no rail, no bottom bar, and **no measure here**.
+
+    It used to get `mx-auto max-w-[1080px] px-5` from this branch, like any other
+    unframed screen. The redesign's landing alternates between light sections at
+    a reading measure and full-bleed dark bands — the hero, the exam band, the
+    footer — and a band capped at 1080px with page padding either side is a card,
+    not a band. So this is the one route whose horizontal frame belongs to the
+    screen rather than to the shell: see `LandingScreen`'s `MEASURE`.
+
+    Showing a stranger five destinations they cannot open is still the mistake
+    this branch exists to avoid, and that part is unchanged.
+  */
   if (UNFRAMED_EXACT.has(pathname)) {
-    return <main className="mx-auto flex min-h-dvh max-w-[1080px] flex-col px-5">{children}</main>;
+    return <main className="flex min-h-dvh flex-col">{children}</main>;
   }
 
   if (UNFRAMED.some((p) => pathname.startsWith(p))) {
@@ -157,6 +166,7 @@ const OTHER_TITLES: Record<string, string> = {
 
 /** Exported for the test that holds the measures to DESIGN.md. */
 export const MEASURES = {
+  /** Owned by `LandingScreen` now, per the branch above — stated, not applied. */
   landing: 'max-w-[1080px]',
   unframedExact: [...UNFRAMED_EXACT],
   student: STUDENT_MEASURE,

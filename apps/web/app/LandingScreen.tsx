@@ -23,6 +23,7 @@
 import Link from 'next/link';
 
 import { Icon } from '../components/icons';
+import { LemonMark } from '../components/LemonMark';
 import { Logo } from '../components/Logo';
 
 /**
@@ -63,20 +64,155 @@ function Todo({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** A section heading and its eyebrow, set the same way everywhere on this page. */
+/**
+ * A section heading and its eyebrow, set the same way everywhere on this page.
+ *
+ * **The poster tracking is gone** (redesign handoff, § Type). It used to be
+ * `uppercase` at `+0.04em`, on the argument that marketing is the one surface
+ * where wide caps belong. The handoff sets every heading in the display face at
+ * negative tracking, title case, and the eyebrow carries the caps — so the page
+ * had two heading voices, one here and one in the hero. The eyebrow keeps the
+ * caps because that is what makes it read as a label rather than a first line.
+ */
 function Head({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div className="flex flex-col gap-2">
       <span className="text-caption text-ink-2 uppercase">{eyebrow}</span>
-      {/* Marketing is the one surface where the source style's poster tracking
-          belongs; in product the display face is set tight. */}
-      <h2 className="font-display text-[clamp(26px,3.6vw,42px)] leading-[1.08] font-extrabold tracking-[0.04em] uppercase">
+      <h2 className="font-display max-w-[24ch] text-[clamp(26px,3.6vw,42px)] leading-[1.08] font-extrabold tracking-[-0.025em] text-balance">
         {title}
       </h2>
     </div>
   );
 }
 
+/**
+ * The hero's floating slices — decoration, desktop only.
+ *
+ * `aria-hidden`, `pointer-events-none`, and `hidden lg:block`: on a 375px screen
+ * these would sit under the headline and spend the one screen a stranger gives
+ * this page on ornament. The `--delay` on each is why they do not rise and fall
+ * in lockstep, which reads as one object rather than three.
+ */
+function FloatingShapes() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden lg:block">
+      {SHAPES.map(([top, right, size, delay, spin]) => (
+        <span
+          key={delay}
+          /* 60%, not the 25% this first shipped at. A yellow at a quarter
+             opacity over near-black is olive, and the wedge strokes then read as
+             a crosshair — three smudges that look like a rendering fault rather
+             than decoration. Past about half it is plainly a lemon slice again,
+             which is the only state worth having. */
+          className={`animate-float absolute opacity-60 ${spin ? 'motion-safe:[&>svg]:animate-spin-slow' : ''}`}
+          style={{ top, right, animationDelay: delay }}
+        >
+          <LemonMark size={size} />
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Where the three sit, how big, and how far out of step.
+ *
+ * `[top, right, size, delay, spin]`. Right-anchored so they trail off the edge
+ * the composite is on rather than crowding the headline.
+ */
+const SHAPES = [
+  ['8%', '6%', 72, '0s', true],
+  ['62%', '2%', 44, '-3s', false],
+  ['34%', '46%', 32, '-6s', false],
+] as const;
+
+/**
+ * The hero's product composite — **an illustration, not a reading.**
+ *
+ * The handoff draws a slab of live-looking product here: days to the exam, a
+ * readiness percentage, a trend across recent mocks. There is no session on this
+ * page to read any of that from, and this product's whole argument is that it
+ * does not print a number it cannot defend — so a composite that *looked* live
+ * would be the first dishonest thing a visitor saw.
+ *
+ * It is therefore built as a picture and labelled as one: the caption says
+ * "Sample", the whole thing is `aria-hidden` so a screen reader is not read
+ * figures about a student who does not exist, and the sentence above it is where
+ * the actual claim lives. Desktop only — at 390px the hero is the headline.
+ */
+function HeroComposite() {
+  return (
+    <div aria-hidden="true" className="relative hidden lg:block">
+      <div className="bg-surface rounded-panel text-ink shadow-hero flex flex-col gap-5 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col items-center">
+            <span className="text-caption text-ink-2 uppercase">Days to your exam</span>
+            <span className="font-display num text-[44px] leading-none font-extrabold">43</span>
+          </div>
+          <span className="bg-brand-soft text-on-brand text-caption rounded-full px-3 py-1.5">
+            Sample
+          </span>
+        </div>
+
+        {/* The readiness bar. `--fill-to` is what the `fill` keyframe animates
+            to, so the bar and the figure beside it can never disagree. */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-ink-2 text-[14px] font-semibold">Readiness</span>
+            <span className="num text-ink text-[14px] font-semibold">62%</span>
+          </div>
+          <div className="bg-surface-2 h-2.5 overflow-hidden rounded-full">
+            <div
+              className="bg-brand animate-fill h-full rounded-full"
+              style={{ '--fill-to': '62%', width: '62%' } as React.CSSProperties}
+            />
+          </div>
+        </div>
+
+        {/* Recent mocks. Bars rather than a line: five readings is not a trend
+            line, and drawing one would claim smoothness that is not there. */}
+        <div className="flex flex-col gap-2">
+          <span className="text-ink-2 text-[14px] font-semibold">Last five mocks</span>
+          <div className="flex items-end gap-2">
+            {MOCK_TREND.map((pct, i) => (
+              <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
+                {/*
+                  Pixels, not a percentage.
+
+                  `height: 38%` here resolves against the column, which is a flex
+                  item with no definite height — so every bar computed to zero
+                  and the card shipped with five numbers under an empty space.
+                  `TRACK` is the 100% mark in pixels, which has a height whatever
+                  the parent does.
+                */}
+                <div
+                  className={`w-full rounded-t-[6px] ${i === MOCK_TREND.length - 1 ? 'bg-brand' : 'bg-brand-pale'}`}
+                  style={{ height: `${Math.round((pct / 100) * TRACK)}px` }}
+                />
+                <span className="num text-ink-3 text-[11px]">{pct}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Five sample mock scores, rising. Illustration — see `HeroComposite`. */
+const MOCK_TREND = [38, 44, 52, 57, 62] as const;
+
+/** What 100% is worth in pixels, for the bars above. */
+const TRACK = 96;
+
+/**
+ * The four steps, in the order a student does them.
+ *
+ * Step 03's promise — "works out how many a day you need" — is real: the daily
+ * target comes from `planFor`, which divides the questions left by the days to
+ * the exam date. It was a claim with nothing behind it until an admin could set
+ * that date (T-269).
+ */
 const STEPS = [
   [
     '01',
@@ -98,6 +234,63 @@ const STEPS = [
     'Sit a full mock',
     '100 questions in 180 minutes, the same shape as the real paper. Every sitting is kept so you can watch the line move.',
   ],
+] as const;
+
+/**
+ * The marquee of tracks.
+ *
+ * **Names, not question counts.** The handoff's marquee carries a count beside
+ * each field — "Accounting & Finance 2,140" — and those are sample data. This
+ * product has not got 2,140 Accounting questions and PRODUCT.md is explicit
+ * that no figure may be printed that cannot be defended. A name is true; a
+ * number next to it would be the first invented claim on the page.
+ */
+const MARQUEE = [
+  'Accounting & Finance',
+  'Computer Science',
+  'Public Health',
+  'Grade 12 Natural',
+  'Grade 12 Social',
+  'Grade 8',
+  'Grade 6',
+] as const;
+
+/**
+ * Three figures, and every one is checkable.
+ *
+ * The handoff puts three big numbers here and fills them with scale — students
+ * enrolled, questions banked, fields covered. This product has no cohort and
+ * says so a few sections down, so those numbers would be the one thing on the
+ * page a reader could catch us inventing.
+ *
+ * These are facts about the product's shape instead: the mock is genuinely 100
+ * questions in 180 minutes (D4), the free tier is genuinely ten questions with
+ * the full explanation, and every published question genuinely carries a worked
+ * solution because `publish-gate.ts` refuses one that does not.
+ */
+const STATS = [
+  ['100', 'questions in a mock', 'Three hours, the shape of the real paper'],
+  ['10', 'free questions', 'Full explanations, no card needed'],
+  ['100%', 'answers explained', 'A question without its reasoning cannot be published'],
+] as const;
+
+/** The six tiles. Each one is a thing the product does, not a thing we claim. */
+const FEATURES = [
+  [
+    'Every answer explained',
+    'A one-sentence idea, the worked solution, and why each wrong option tempted you.',
+  ],
+  [
+    'Timed mocks',
+    '100 questions in 180 minutes, marked at the end, kept so you can watch the line move.',
+  ],
+  [
+    'Readiness by topic',
+    'Weighted by each topic\u2019s share of past papers, so you study what the paper is made of.',
+  ],
+  ['A plan to exam day', 'How many questions a day to reach 80%, recalculated every morning.'],
+  ['Built for your phone', 'A 16px floor, 44px targets, and no download you did not ask for.'],
+  ['Pay the way you pay', 'telebirr, CBE Birr, card, or a bank transfer with the reference.'],
 ] as const;
 
 const TRACKS = [
@@ -184,126 +377,240 @@ const CONTACTS: readonly { label: string; value: string | null; todo: string; wh
   },
 ];
 
+/**
+ * The reading measure, applied per section rather than by the shell.
+ *
+ * `AppShell` used to wrap this page in `max-w-[1080px] px-5` like any other
+ * unframed screen. The redesign alternates light sections at this measure with
+ * full-bleed dark bands, and a band inside a 1080px padded box is a card. So the
+ * shell hands `/` the full width and each section says which it is: `MEASURE`
+ * for the ones that are read, `BAND` for the three that are dark.
+ */
+const MEASURE = 'mx-auto w-full max-w-[1080px] px-5';
+
+/** A full-bleed dark band. Its own contents still sit on `MEASURE`. */
+const BAND = 'bg-ink-deep text-on-deep w-full px-5';
+
+/**
+ * The footer's two link columns.
+ *
+ * **Only routes that exist.** The handoff's footer carries Pricing, Blog,
+ * Careers, Press and a Privacy policy; this product has one page of each of the
+ * first five and none of the last, and a footer link to a 404 is the same broken
+ * promise as a dead social chip. Every href below is a route in this app or an
+ * anchor on this page, and `layout-measure.test.ts` holds that.
+ */
+const FOOTER_COLUMNS: readonly (readonly [string, readonly (readonly [string, string])[]])[] = [
+  [
+    'The product',
+    [
+      ['How it works', '#how'],
+      ['Tracks', '#tracks'],
+      ['Plans and prices', '#plans'],
+      ['Questions people ask', '#faq'],
+    ],
+  ],
+  [
+    'Get started',
+    [
+      ['Create an account', '/signup'],
+      ['Sign in', '/signin'],
+      ['Talk to a person', '#contact'],
+    ],
+  ],
+];
+
 /** Where the product actually has an account. Empty until it does. */
 const SOCIALS: readonly { name: string; href: string }[] = [];
 
 export function LandingScreen() {
   return (
     <div className="flex flex-col">
-      {/* ---------------------------------------------------------- hero */}
-      <section className="flex flex-col gap-8 py-14">
-        <Logo size={38} wordmark />
+      {/*
+        ---------------------------------------------------------------- hero
 
-        <h1 className="font-display max-w-[16ch] text-[clamp(32px,5.4vw,60px)] leading-[1.06] font-extrabold tracking-[0.03em] uppercase text-balance">
-          The shortcuts are closed. The{' '}
-          <mark className="bg-brand text-ink rounded-[10px] px-1">questions</mark> are open.
-        </h1>
+        A dark dotted ground, per the handoff. `ink-deep` is a SURFACE here, not
+        a dark mode — this product has one theme and the hero is simply a dark
+        object on a light page, the way the exam band and the footer are.
+      */}
+      <section className={`${BAND} relative overflow-hidden py-16 sm:py-24`}>
+        {/* The dot grid. `aria-hidden` and pointer-events-none: it is texture,
+            and a screen reader reading a background is noise. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-100"
+          style={{
+            backgroundImage:
+              'radial-gradient(color-mix(in srgb, var(--color-on-deep) 9%, transparent) 1.2px, transparent 1.7px)',
+            backgroundSize: '24px 24px',
+          }}
+        />
 
-        <p className="text-ink-2 max-w-[54ch] text-[clamp(17px,2vw,20px)] leading-[1.6]">
-          Exams are watched far more closely than they used to be, and the old ways through them are
-          gone. What is still open is the bank the paper is drawn from — thousands of past
-          questions, every one explained. Work through it and you walk in ready, not hoping.
-        </p>
+        {/* Floating decoration — desktop only. On a phone it would sit under the
+            headline and steal the one screen a visitor gives this page. */}
+        <FloatingShapes />
 
-        <p className="text-ink-2 max-w-[48ch] text-[clamp(17px,2vw,20px)] leading-[1.6]">
-          Start in September and it is three questions a day. Leave it until May and it is
-          twenty-four.
-        </p>
+        <div className="relative mx-auto grid w-full max-w-[1080px] items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="flex flex-col items-start gap-7">
+            <Logo size={34} wordmark onDark />
 
-        {/*
-          The primary button goes to sign-UP.
+            <span className="border-on-deep/15 bg-on-deep/5 text-caption inline-flex items-center gap-2 rounded-full border px-3 py-1.5">
+              {/* The pulsing dot. Decoration beside a word, never the word. */}
+              <span
+                aria-hidden="true"
+                className="bg-accent animate-pulse-dot size-2 rounded-full"
+              />
+              2026 exam
+            </span>
 
-          It pointed at `/signin`, a phone-and-password form, under recruitment
-          copy — "free questions in every subject, no card needed" — so the one
-          press this page is built around dropped a first-time visitor on a
-          password they have never set, with the way forward as a secondary link
-          they had to spot. The second button is for people who already have an
-          account, which is the smaller half of this page's audience.
-        */}
-        <div className="flex flex-wrap gap-3">
-          <Link className="btn-primary w-auto px-6" href="/signup">
-            Start with your phone number
-          </Link>
-          <Link className="btn-ghost w-auto px-6" href="/signin">
-            I already have an account
-          </Link>
-          <a className="btn-ghost w-auto px-6" href="#how">
-            See how it works
-          </a>
+            <h1 className="font-display max-w-[16ch] text-[clamp(40px,6vw,80px)] leading-[1.04] font-extrabold tracking-[-0.035em] text-balance">
+              Walk into your exit exam <span className="text-brand">already knowing</span>{' '}
+              you&rsquo;ll pass.
+            </h1>
+
+            <p className="max-w-[48ch] text-[clamp(16px,2vw,19px)] leading-[1.6] text-on-deep-2">
+              Thousands of past questions, every one explained — the idea behind it, the worked
+              solution, and why each wrong option tempted you. Work through them and you walk in
+              ready, not hoping.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                className="bg-brand hover:bg-brand-hover text-on-brand inline-flex min-h-12 items-center rounded-full px-7 text-[16px] font-semibold"
+                href="/signup"
+              >
+                Start practising free
+              </Link>
+              <a
+                className="inline-flex min-h-12 items-center rounded-full border-on-deep/20 text-on-deep hover:bg-on-deep/5 border px-7 text-[16px] font-semibold"
+                href="#plans"
+              >
+                See plans
+              </a>
+            </div>
+
+            <p className="text-caption text-on-deep-3">
+              Ten free questions in every subject, explanations included. No card needed.
+            </p>
+          </div>
+
+          {/* The product composite. Decorative sample data on a public page —
+              there is no session here to read a real figure from, and inventing
+              one that looked live would be the dishonesty this product is built
+              against. It is drawn as an illustration and labelled as one. */}
+          <HeroComposite />
         </div>
-
-        <p className="text-caption text-ink-2 uppercase">
-          Free questions in every subject, with the full explanation. No card needed.
-        </p>
       </section>
 
-      {/* --------------------------------------------------------- about */}
-      <section className="border-border flex flex-col gap-6 border-t py-14">
-        <Head eyebrow="About Lomi-Exams" title="The explanation is the product" />
-        <p className="text-ink-2 max-w-[64ch] text-[17px] leading-[1.6]">
-          Tighter exam control is good news for anyone who prepares. It means the work counts again,
-          and the student who did it is no longer competing with someone who found a way round.
-        </p>
-        <p className="text-ink-2 max-w-[64ch] text-[17px] leading-[1.6]">
-          Most practice apps tell you the answer. Lomi-Exams tells you <em>why</em> — a one-sentence
-          idea, the worked solution, and a note on why each wrong option tempted you. A question
-          that cannot be explained is never published, and that rule is enforced in the code rather
-          than promised in an advert.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            [
-              'One rule',
-              'Never an answer we cannot defend',
-              'An unverified answer stays unpublished. A confidently wrong answer key is worse than a missing question.',
-            ],
-            [
-              'Built for your phone',
-              'Works on a slow connection',
-              'Save questions, answer them offline, sync when you have signal. Made for a five-inch Android, not a laptop.',
-            ],
-            [
-              'Honest numbers',
-              'Every figure can be checked',
-              /*
-               * This described coverage and called it readiness (T-269).
-               *
-               * The product uses the two words for two different figures, and
-               * says so on `/progress`: coverage is "how much of the whole exam
-               * you have beaten" — a plain count out of a stated total —
-               * while readiness is "how you are doing on the questions you have
-               * tried", a mean weighted by each topic's share of past papers.
-               * The sentence here defined readiness using coverage's
-               * definition, so a student arrived having been taught the wrong
-               * one and met both figures on the same screen.
-               *
-               * Coverage is the honest-numbers claim anyway: it is the one that
-               * is a count of things out of a total we print.
-               */
-              'Coverage is a count of questions you have beaten, out of a total we show you. Nothing is estimated.',
-            ],
-          ].map(([eyebrow, title, body]) => (
-            <div key={title} className="card flex flex-col gap-2">
-              <span className="text-caption text-ink-2 uppercase">{eyebrow}</span>
+      {/* ------------------------------------------------------- marquee */}
+      <section
+        aria-label="Exams covered"
+        className="border-border w-full overflow-hidden border-b py-5"
+        style={{
+          maskImage: 'linear-gradient(90deg, transparent, black 8%, black 92%, transparent)',
+        }}
+      >
+        {/* Duplicated so -50% lands exactly on the second copy and the loop has
+            no seam. The copy is `aria-hidden` — a screen reader should hear the
+            list once. */}
+        <div className="animate-marquee flex w-max gap-10">
+          {[0, 1].map((pass) => (
+            <ul
+              key={pass}
+              className="flex shrink-0 gap-10"
+              {...(pass === 1 ? { 'aria-hidden': 'true' as const } : {})}
+            >
+              {MARQUEE.map((name) => (
+                <li key={name} className="text-ink-3 text-[15px] font-semibold whitespace-nowrap">
+                  {name}
+                </li>
+              ))}
+            </ul>
+          ))}
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------- stats */}
+      <section className={`${MEASURE} grid gap-6 py-14 sm:grid-cols-3`}>
+        {STATS.map(([value, label, why]) => (
+          <div key={label} className="flex flex-col gap-1">
+            <span className="font-display num text-[clamp(36px,5vw,56px)] leading-none font-extrabold">
+              {value}
+            </span>
+            <span className="text-ink text-[16px] font-semibold">{label}</span>
+            <span className="text-ink-2 text-[14px] leading-[1.5]">{why}</span>
+          </div>
+        ))}
+      </section>
+
+      {/* ------------------------------------------------------ features */}
+      <section className={`${MEASURE} border-border flex flex-col gap-8 border-t py-14`}>
+        <Head eyebrow="What you get" title="The explanation is the product" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map(([title, body]) => (
+            <div
+              key={title}
+              className="border-border bg-surface flex flex-col gap-2 rounded-panel border p-6"
+            >
               <h3 className="font-display text-[18px] font-bold">{title}</h3>
-              <p className="text-ink-2 text-[14px] leading-[1.5]">{body}</p>
+              <p className="text-ink-2 text-[15px] leading-[1.55]">{body}</p>
             </div>
           ))}
         </div>
       </section>
 
+      {/* ------------------------------------------------ simulator band */}
+      <section className={`${BAND} flex flex-col gap-6 py-14 sm:py-20`}>
+        <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-6">
+          <span className="text-caption text-on-deep-3 uppercase">Exam simulator</span>
+          <h2 className="font-display max-w-[20ch] text-[clamp(28px,4vw,48px)] leading-[1.07] font-extrabold tracking-[-0.025em]">
+            Sit the paper before you sit the paper.
+          </h2>
+          <p className="max-w-[56ch] text-[17px] leading-[1.6] text-on-deep-2">
+            100 questions, 180 minutes, one clock. Flag what you want to come back to, jump the
+            grid, and get every answer explained the moment you submit — not a score and a shrug.
+          </p>
+          <div className="flex flex-wrap gap-6 pt-2">
+            {[
+              ['100', 'questions'],
+              ['180', 'minutes'],
+              ['1', 'clock, no pausing'],
+            ].map(([v, l]) => (
+              <div key={l} className="flex flex-col">
+                <span className="font-display num text-[32px] leading-none font-extrabold">
+                  {v}
+                </span>
+                <span className="text-on-deep-3 text-[14px]">{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ----------------------------------------------------------- how */}
-      <section id="how" className="border-border flex flex-col gap-6 border-t py-14">
+      <section
+        id="how"
+        className={`${MEASURE} border-border flex flex-col gap-6 border-t py-14 scroll-mt-4`}
+      >
         <Head eyebrow="Four steps · about two minutes" title="How to use it" />
-        <ol className="border-ink grid list-none gap-0 overflow-hidden rounded-[8px] border-2 p-0 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([n, title, body], i) => (
+        {/*
+          Four cards, not one slab.
+
+          This was a single `rounded-[8px] border-2` frame with 2px ink rules
+          between the steps — the heavy-border look the whole app carried before
+          the redesign. The handoff's object is a white card with a hairline and
+          a 16px radius, and four of them read as four steps rather than as one
+          table someone has drawn lines in.
+        */}
+        <ol className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map(([n, title, body]) => (
             <li
               key={n}
-              className={`bg-surface flex flex-col gap-2 p-5 ${
-                i < STEPS.length - 1 ? 'border-ink border-b-2 lg:border-r-2 lg:border-b-0' : ''
-              }`}
+              className="border-border bg-surface rounded-card flex flex-col gap-2 border p-5"
             >
-              <span className="text-caption text-ink-2">{n}</span>
+              <span className="bg-brand-soft text-on-brand num text-caption inline-flex size-7 items-center justify-center rounded-full">
+                {n}
+              </span>
               <h3 className="font-display text-[17px] font-bold">{title}</h3>
               <p className="text-ink-2 text-[14px] leading-[1.5]">{body}</p>
             </li>
@@ -316,7 +623,10 @@ export function LandingScreen() {
       </section>
 
       {/* -------------------------------------------------------- tracks */}
-      <section id="tracks" className="border-border flex flex-col gap-6 border-t py-14">
+      <section
+        id="tracks"
+        className={`${MEASURE} border-border flex flex-col gap-6 border-t py-14 scroll-mt-4`}
+      >
         <Head eyebrow="Choose the exam you are sitting" title="Tracks" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/*
@@ -336,8 +646,11 @@ export function LandingScreen() {
             <Link
               key={name}
               href="/signup"
-              className={`border-ink flex flex-col gap-2 rounded-[8px] border-2 p-5 ${
-                highlight ? 'bg-brand' : 'bg-surface'
+              className={`rounded-card flex flex-col gap-2 border p-5 ${
+                // The emphasised one gets the brand wash and a brand hairline,
+                // not a solid fill: a filled card in a row of pale ones reads as
+                // the one already chosen, which a tester reported as a trap.
+                highlight ? 'bg-brand-soft border-brand' : 'bg-surface border-border'
               }`}
             >
               <span className="text-caption text-ink-2 uppercase">
@@ -353,7 +666,7 @@ export function LandingScreen() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div id="plans" className="flex flex-wrap gap-4 scroll-mt-20">
           {/* Same reasoning as the track cards: the filled one read as chosen.
               It is the best value per month, so it says that. */}
           {[
@@ -364,8 +677,8 @@ export function LandingScreen() {
             <Link
               key={per}
               href="/signup"
-              className={`border-ink min-w-[180px] rounded-[8px] border-2 px-6 py-5 ${
-                why ? 'bg-brand' : 'bg-surface'
+              className={`rounded-card min-w-[180px] border px-6 py-5 ${
+                why ? 'bg-brand-soft border-brand' : 'bg-surface border-border'
               }`}
             >
               <span className="text-caption text-ink-2 uppercase">
@@ -385,9 +698,12 @@ export function LandingScreen() {
       </section>
 
       {/* ----------------------------------------------------------- faq */}
-      <section id="faq" className="border-border flex flex-col gap-6 border-t py-14">
+      <section
+        id="faq"
+        className={`${MEASURE} border-border flex flex-col gap-6 border-t py-14 scroll-mt-4`}
+      >
         <Head eyebrow="Questions people actually ask" title="FAQ" />
-        <div className="border-border bg-surface overflow-hidden rounded-[8px] border">
+        <div className="border-border bg-surface rounded-card overflow-hidden border">
           {/*
             Every question here has an answer, and now looks like it does.
 
@@ -403,7 +719,10 @@ export function LandingScreen() {
             here" before you press it.
           */}
           {FAQ.map(([q, a], i) => (
-            <details key={q} className={`group ${i < FAQ.length - 1 ? 'border-border border-b' : ''}`}>
+            <details
+              key={q}
+              className={`group ${i < FAQ.length - 1 ? 'border-border border-b' : ''}`}
+            >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-[16px] font-semibold">
                 {q}
                 <span
@@ -433,7 +752,10 @@ export function LandingScreen() {
       </section>
 
       {/* ------------------------------------------------------- contact */}
-      <section id="contact" className="border-border flex flex-col gap-6 border-t py-14">
+      <section
+        id="contact"
+        className={`${MEASURE} border-border flex flex-col gap-6 border-t py-14 scroll-mt-4`}
+      >
         <Head eyebrow="Contact us" title="Talk to a person" />
         {/*
           A card only exists once there is something on it to contact.
@@ -466,44 +788,91 @@ export function LandingScreen() {
         ))}
       </section>
 
-      {/* -------------------------------------------------------- footer */}
-      <footer className="border-ink flex flex-col gap-7 border-t-2 py-12">
-        <div className="border-ink max-w-[70ch] rounded-[8px] border-2 border-dashed p-5">
-          <span className="text-caption text-ink-2 uppercase">What we are not showing you</span>
-          <p className="text-ink-2 mt-2 text-[14px] leading-[1.55]">
-            No testimonials, no pass rates, no school logos. We have not run a cohort through an
-            exam yet, so we have no such numbers — and inventing them would break the only rule this
-            product has. When there is evidence it will appear here, with its method attached.
-          </p>
-        </div>
+      {/*
+        ---------------------------------------------------------------- footer
 
-        {/*
-          Social links appear when there are links.
+        Four columns on desktop, stacked below (redesign handoff, § Footer), on
+        the same `ink-deep` ground as the hero and the exam band — the page opens
+        and closes on the dark object.
 
-          These were three heavy bordered chips reading "Facebook link",
-          "TikTok link", "Telegram link" — buttons in every respect except
-          going anywhere. Three dead controls in a footer is a page that has
-          been abandoned, which is the opposite of what a footer is for.
-        */}
-        {SOCIALS.length > 0 ? (
-          <div className="flex flex-wrap gap-3">
-            {SOCIALS.map(({ name, href }) => (
-              <a
-                key={name}
-                href={href}
-                className="border-ink bg-surface inline-flex items-center gap-2 rounded-[6px] border-2 px-4 py-2 text-[14px] font-semibold"
-              >
-                {name}
-              </a>
+        **The honesty note stays, and stays first.** It was a dashed box in the
+        old footer saying what we are *not* showing: no testimonials, no pass
+        rates, no school logos, because we have not run a cohort through an exam
+        yet. The redesign has no slot for it, and it is the most important
+        paragraph on the page — PRODUCT.md's one rule, written where a sceptical
+        reader looks for the catch. So it gets the first column.
+      */}
+      <footer className={`${BAND} mt-14 py-14`}>
+        <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-10">
+          <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-4">
+              <Logo size={30} wordmark onDark />
+              <p className="text-on-deep-2 max-w-[40ch] text-[14px] leading-[1.55]">
+                No testimonials, no pass rates, no school logos. We have not run a cohort through an
+                exam yet, so we have no such numbers — and inventing them would break the only rule
+                this product has. When there is evidence it will appear here, with its method
+                attached.
+              </p>
+            </div>
+
+            {FOOTER_COLUMNS.map(([heading, links]) => (
+              <nav key={heading} aria-label={heading} className="flex flex-col gap-3">
+                <span className="text-caption text-on-deep-3 uppercase">{heading}</span>
+                <ul className="flex list-none flex-col gap-0 p-0">
+                  {links.map(([label, href]) => (
+                    <li key={href}>
+                      {/* 44px of target in a footer too. A 20px link in a stack
+                          of them is the one a thumb misses, and the layout sweep
+                          does not stop checking at the fold. */}
+                      <a
+                        href={href}
+                        className="text-on-deep-2 hover:text-on-deep -mx-1 inline-flex min-h-11 items-center px-1 text-[15px]"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             ))}
-          </div>
-        ) : (
-          <Todo>social links to add — Facebook, TikTok, Telegram</Todo>
-        )}
 
-        <div className="flex flex-col gap-2">
-          <span className="text-caption text-ink-2 uppercase">Lomi-Exams</span>
-          <p className="text-ink-2 max-w-[64ch] text-[14px] leading-[1.55]">
+            <div className="flex flex-col gap-3">
+              <span className="text-caption text-on-deep-3 uppercase">Elsewhere</span>
+              {/*
+                Social links appear when there are links.
+
+                These were three heavy bordered chips reading "Facebook link",
+                "TikTok link", "Telegram link" — buttons in every respect except
+                going anywhere. Three dead controls in a footer is a page that
+                has been abandoned, which is the opposite of what a footer is
+                for.
+              */}
+              {SOCIALS.length > 0 ? (
+                <ul className="flex list-none flex-col gap-0 p-0">
+                  {SOCIALS.map(({ name, href }) => (
+                    <li key={name}>
+                      <a
+                        href={href}
+                        className="text-on-deep-2 hover:text-on-deep -mx-1 inline-flex min-h-11 items-center px-1 text-[15px]"
+                      >
+                        {name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <>
+                  <p className="text-on-deep-2 max-w-[32ch] text-[14px] leading-[1.55]">
+                    Nowhere yet. When there is an account to follow it will be linked here rather
+                    than named without a link.
+                  </p>
+                  <Todo>social links to add — Facebook, TikTok, Telegram</Todo>
+                </>
+              )}
+            </div>
+          </div>
+
+          <p className="border-on-deep/10 text-on-deep-3 max-w-[64ch] border-t pt-6 text-[13px] leading-[1.6]">
             Everything here is in English, because the exam is in English — the questions, the
             worked solutions and the app itself. We do not publish your real name anywhere.
           </p>

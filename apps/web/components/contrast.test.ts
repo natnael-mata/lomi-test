@@ -118,6 +118,20 @@ const PAIRS: [fg: string, bg: string, where: string][] = [
   ['on-state', 'wrong', 'danger button label'],
   ['on-state', 'pending', 'label on a solid pending fill'],
   ['on-state', 'reward', 'label on a solid reward fill'],
+  /*
+   * The dark bands (redesign handoff, 2026-10-01).
+   *
+   * The hero, the exam-simulator band and the footer are `ink-deep` surfaces,
+   * not a dark mode — this product still has one theme. But they are read, so
+   * every ink that lands on them is audited here like any other pair, and
+   * `brand` is a legitimate FOREGROUND on exactly this one ground: #facc15 is
+   * 1.2:1 on cream and 11.7:1 on near-black. The "never a foreground" guard
+   * below is about the light surfaces, and stays.
+   */
+  ['on-deep', 'ink-deep', 'headings and links on a dark band'],
+  ['on-deep-2', 'ink-deep', 'prose on a dark band'],
+  ['on-deep-3', 'ink-deep', 'captions and meta on a dark band'],
+  ['brand', 'ink-deep', 'the emphasised phrase in the hero headline'],
 ];
 
 describe('contrast (T-099)', () => {

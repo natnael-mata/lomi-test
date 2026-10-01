@@ -126,10 +126,29 @@ describe('the landing page (T-269)', () => {
    * coverage's definition. A student arrived taught the wrong one and then met
    * both figures on the same screen.
    */
+  /*
+   * The anchor moved with the redesign, the rule did not.
+   *
+   * It used to match "`X` is a count of questions you have beaten" and assert
+   * that X was `coverage` — a sentence in an "about the numbers" section the
+   * redesign has no slot for. The FAQ row below was already carrying the same
+   * distinction in more words, so the prose was not re-added; the test now holds
+   * the row that survived, which is where a reader looks for it anyway.
+   *
+   * What must stay true: both figures are defined, and readiness is defined by
+   * *what you have tried* rather than by a count of the whole track.
+   */
   it('does not define readiness as a count of questions beaten', () => {
-    const claim = /(\w+) is a count of questions you have beaten/.exec(landing)?.[1];
-    expect(claim, 'the honest-numbers claim has moved').toBeTruthy();
-    expect(claim!.toLowerCase()).toBe('coverage');
+    const row = /That is your coverage\.[^']*/.exec(landing)?.[0];
+    expect(row, 'the honest-numbers FAQ row has moved').toBeTruthy();
+    // Coverage: correct AND explainable, out of a stated total.
+    expect(row).toContain('answered correctly');
+    expect(row).toContain('not lucky guesses');
+    // Readiness: the other figure, and over the tried set only.
+    expect(row).toContain('Readiness is the other figure');
+    expect(row).toContain('questions you have tried');
+    // Never the inverse — a readiness defined over the whole track IS coverage.
+    expect(landing).not.toMatch(/[Rr]eadiness[^.]*count of questions you have beaten/);
   });
 
   /** No invented facts, which is this product's whole position. */

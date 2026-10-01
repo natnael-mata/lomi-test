@@ -34,38 +34,41 @@ colors:
   ink-2: '#475569'
   ink-3: '#64748B' # eyebrows and muted captions
   ink-deep: '#0F172A' # hero, footer and exam-band grounds — a surface, not a mode
+  on-deep: '#FFFFFF' # headings and links ON a dark band
+  on-deep-2: '#CBD5E1' # prose on a dark band, 12.4:1
+  on-deep-3: '#94A3B8' # captions and meta on a dark band, 7.0:1
   accent: '#84CC16' # charts and the mark, where nothing has to be read
   leaf: '#65A30D'
 typography:
   display:
-    fontFamily: "Outfit, system-ui, sans-serif"
+    fontFamily: 'Outfit, system-ui, sans-serif'
     fontSize: '2.125rem'
     fontWeight: 800
     lineHeight: '2.5rem'
     letterSpacing: '-0.03em'
   title:
-    fontFamily: "Outfit, system-ui, sans-serif"
+    fontFamily: 'Outfit, system-ui, sans-serif'
     fontSize: '1.5rem'
     fontWeight: 700
     lineHeight: '1.875rem'
     letterSpacing: '-0.02em'
   stem:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: 'Inter, system-ui, sans-serif'
     fontSize: '1.1875rem'
     fontWeight: 600
     lineHeight: '1.8125rem'
   body:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: 'Inter, system-ui, sans-serif'
     fontSize: '1rem'
     fontWeight: 400
     lineHeight: '1.625rem'
   label:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: 'Inter, system-ui, sans-serif'
     fontSize: '0.9375rem'
     fontWeight: 600
     lineHeight: '1.25rem'
   caption:
-    fontFamily: "Inter, system-ui, sans-serif"
+    fontFamily: 'Inter, system-ui, sans-serif'
     fontSize: '0.8125rem'
     fontWeight: 600
     lineHeight: '1.125rem'
@@ -163,15 +166,19 @@ this is already enforced in the API, in `publish-gate.ts` — the design's job i
 rigour visible rather than hide it behind a pretty shell.
 
 The lemon leads because ሎሚ _means_ lemon: the palette is the name, not a colour chosen and
-then justified. Cream pith, forest leaf, lemon flesh. Neutrals are warm paper rather than
-grey, so nothing reads as unconsidered.
+then justified. The mark is a slice — rind, pith and flesh — and it is the only warm thing on
+screen. Everything around it is **cool slate**: a tinted ground with pure-white cards laid on
+it, so the yellow never has to compete for attention with a warm neutral.
 
-Keeping the brand out of the semantic range is still the rule, but this world enforces it
-differently. The ink is forest green, so **green cannot mean correct** — a conventional
-correct-green sits 13 degrees of hue from the ink and 2.12:1 against it, which makes a verdict
-indistinguishable from the paragraph around it. Correct is therefore teal, 93 degrees off.
-Pending is pencil rather than amber, because amber is the lemon's neighbour and because
-nothing provisional should carry an alarm colour at all.
+Keeping the brand out of the semantic range is still the rule, and the slate neutrals make it
+easier to keep than the cream world did. With a slate ink, **green is available again** — a
+conventional correct-green is 89 degrees off the ink instead of 13 — so correct is olive,
+incorrect is red, and pending is burnt orange. Pending is kept visibly distinct from incorrect
+because **pending is not failure**; nothing provisional carries the alarm colour.
+
+The near-black bands — the hero, the exam-simulator section, the footer — are a **surface, not
+a mode**. There is still one theme. Those three are dark objects on a light page, the same way
+a total bar is, and they have their own inks (see § Colors).
 
 **Key Characteristics:**
 
@@ -184,45 +191,63 @@ nothing provisional should carry an alarm colour at all.
 
 ## Colors
 
-A lemon brand that is a FILL ONLY, a semantic range that avoids green because the ink is
-green, over warm paper neutrals.
+A lemon brand that is a **fill only**, a semantic range on cool slate neutrals, and a
+near-black that is a _surface_ rather than a mode.
 
 ### Primary
 
-- **Lemon** (#FFE95C): the primary action, the logo mark, and the marker that highlights the
-  takeaway in a worked solution. **It never sets text.** On cream it measures 1.23:1. Pair it
-  with `on-brand` ink (11.24:1) and nothing else. A darkened amber accent was tried and
-  rejected: no value clears 4.5:1 while staying 45 degrees from both the forest ink and the
-  terracotta of _wrong_, so an amber label reads as an error. Where a brand-coloured label
-  used to go, use ink at 600 over Brand Soft.
-- **Brand Soft** (#FFF6C4): selected option fill, active navigation, the concept card behind
-  every explanation, and the student's own row in any list.
+- **Brand** (#FACC15): the primary action, the logo mark, the marker behind the takeaway in a
+  worked solution, and the active-nav pill. **It never sets text on a light ground** — 1.2:1 on
+  the page, 1.1:1 on a card. Pair it with `on-brand` ink (#1E293B, 11.3:1) and nothing else.
+  The one exception is a **dark band**, where #FACC15 on #0F172A is 11.7:1; that pair is
+  audited in `components/contrast.test.ts` like any other, and it is the only ground on which
+  the lemon may be a foreground.
+- **Brand Hover** (#EAB308) and **Brand Soft** (#FEF9C3) / **Brand Pale** (#FEF08A): the
+  pressed state, and the two washes. Brand Soft is the selected option, the active sidebar
+  row, the concept card behind every explanation, and the student's own row in a list.
+- **Link** (#A16207) / **Link Hover** (#854D0E): a text link, which is the one place a warm
+  hue has to be readable. Both clear 4.5:1 on the page and on a card.
 
 ### Secondary
 
-- **Correct** (#0F5F63): right answers, verified payments, positive deltas. **Teal, not
-  green** — the ink is forest green, so a green verdict reads as ordinary body copy (13 deg
-  of hue from the ink, 2.12:1 against it). Clears 4.5:1 on bg, on surface and on its own fill.
-- **Incorrect** (#A3300F): wrong answers, failed verification, the retire action. Terracotta,
-  darkened from the source style's #CB5521, which was 4.14:1 on cream and failed body text.
-- **Pending** (#4A4A46): awaiting verification, flagged questions, a payment in the queue.
-  **Pencil, not amber** — written but not yet inked. Achromatic, so it separates from every
-  hue at once, and distinct from incorrect because **pending is not failure**: nothing
-  provisional gets an alarm colour.
+- **Correct** (#4D7C0F text, #ECFCCB fill, #3F6212 on that fill): right answers, verified
+  payments, positive deltas. Olive rather than the brand yellow, and dark enough to read on
+  its own wash — the handoff's lighter green was 3.1:1 on it.
+- **Incorrect** (#B91C1C text, #DC2626 solid fill, #FEE2E2 wash): wrong answers, failed
+  verification, the retire action. The bright #DC2626 is a **fill only**: it measures 3.95:1 on
+  its own wash, so text over that wash uses the darker #B91C1C.
+- **Pending** (#C2410C text, #FFEDD5 wash): awaiting verification, flagged questions, a payment
+  in the queue. Distinct from incorrect because **pending is not failure** — nothing provisional
+  gets the alarm colour.
+- **On State** (#FFFFFF): text on _any_ solid state fill. `on-brand` is ink, so reusing it on a
+  saturated fill gives 1.5–2.0:1; this is the explicit token instead, and every solid fill is
+  audited against it.
 
 ### Tertiary
 
-- **Reward** (#6B2D78 text / #F6D0FF fill): streaks, points, badges. **Plum, because the
-  lemon is the brand** — a streak must never look like a primary action. The fill pairs with
-  **On Reward** (#1A3300).
+- **Reward** (#3F6212): streaks, points, badges. Deliberately the deep olive and not the lemon,
+  because a streak must never look like a primary action.
+- **Accent** (#84CC16) / **Leaf** (#65A30D): charts and the mark — places where nothing has to
+  be read.
 
 ### Neutral
 
-- **Ink** (#1A3300): all primary text. Forest, never pure black. 13.27:1 on cream.
-- **Ink 2** (#5B5B75): captions, metadata, secondary copy. Verified ≥4.5:1 on every ground.
-- **Background** (#F6F6FB) / **Surface** (#FFFFFF) / **Surface 2** (#F0F0F7): the three
-  ground levels. Surface 2 carries wells, step lists, chips and skeletons.
-- **Border** (#E3E3EF): 1px hairlines; option rows use 2px so their state reads at a glance.
+- **Ink** (#1E293B) / **Ink 2** (#475569) / **Ink 3** (#64748B): primary text, secondary copy,
+  and eyebrows. Cool slate, never pure black, so the lemon is the only warm thing on screen.
+- **Background** (#F8FAFC) / **Surface** (#FFFFFF) / **Surface 2** (#F1F5F9): the three ground
+  levels. The ground is the tinted sheet and a card is pure white laid on it, which is what
+  gives a card its edge without leaning on the hairline.
+- **Border** (#E2E8F0) hairline, **Border Input** (#CBD5E1), **Border Strong** (#94A3B8).
+  Borders are never text.
+
+### Dark bands
+
+The hero, the exam-simulator band and the footer are **#0F172A surfaces, not a dark mode**.
+This product has one theme; those three are dark objects on a light page, the way a total bar
+is. Text on them uses its own three inks — **On Deep** (#FFFFFF), **On Deep 2** (#CBD5E1),
+**On Deep 3** (#94A3B8) — because `ink` is 1.1:1 and `ink-3` is 3.4:1 down there. They are
+named for the ground rather than for a shade so nobody reaches for `border-strong` as "the grey
+one": it is the same hex, and what makes it legible here is the ground, not the value.
 
 ### Named Rules
 
@@ -230,32 +255,40 @@ green, over warm paper neutrals.
 a semantic colour is never used for a brand moment. A student must never have to work out
 whether the lemon means "selected" or "right".
 
-**The Yellow Is A Fill Rule.** Reward yellow never sets text and never takes white on top of
-it. Ink-on-yellow, in both themes, via the `on-reward` token.
+**The Yellow Is A Fill Rule.** The lemon never sets text on a light ground and never takes
+white on top of it. Ink-on-yellow, via the `on-brand` token. On a dark band it may set text,
+and only there.
 
 **The Icon And Word Rule.** Every state that matters — correct, incorrect, pending, flagged,
 verified, focus — carries an icon _and_ a word alongside its colour, so the system survives
 greyscale, colour blindness and a cheap screen in sunlight.
 
+**The Audited Pair Rule.** A foreground and a background that meet on screen are listed in
+`components/contrast.test.ts`. A pair that is not listed is one nobody has checked, and the
+stylesheet-side guard fails on any `bg-*`/`text-*` combination the audit has not seen.
+
 ## Typography
 
-**Display Font:** Archivo (with Noto Sans Ethiopic, system-ui)
-**Body Font:** Inter (with Noto Sans Ethiopic, system-ui)
+**Display Font:** Outfit (with system-ui)
+**Body Font:** Inter (with system-ui)
 
-Archivo stands in for Bricolage Grotesque, which the visual direction names but which is not
-obtainable here; `next/font/google` is banned, so a substituted grotesque beats a silent
-system-ui fallback. Swap it by dropping the woff2 into `apps/web/app/fonts/`.
+Both are variable, **self-hosted** from `apps/web/app/fonts/` via `next/font/local`, and that
+is not a preference. `next/font/google` is banned here: it fails closed to system-ui _and the
+build still succeeds_, so the product can ship in the wrong face with nothing red anywhere.
+The stylesheet names the faces through `var(--font-display-face, 'Outfit')` for the same
+reason — `next/font` generates a per-font family name, so writing the literal name in the
+stack would silently fall back while looking correct.
 
-**Character:** Archivo is a grotesque with real width and presence at heavy weights — it
-carries the numbers students care about (countdown, score, readiness) without feeling
-corporate. Inter is a highly legible modern UI face that holds up at 15–16px on a low-end
-Android screen, which is where nearly all of this product is actually read. Both are variable
-and self-hosted via `next/font`; no CDN, no layout shift.
+Outfit replaced Archivo with the 2026-10-01 handoff. It is a geometric sans that holds its
+shape at extrabold and at poster sizes, which is what the landing's headline and the figures
+students care about — countdown, score, readiness — are set in. Inter is a highly legible UI
+face that holds up at 15–16px on a low-end Android screen, which is where nearly all of this
+product is actually read.
 
 ### Hierarchy
 
-- **Display** (Archivo 800, 34/40, -0.03em): countdown, mock score, readiness. One per screen.
-- **Title** (Archivo 700, 24/30, -0.02em): screen titles.
+- **Display** (Outfit 800, 34/40, -0.03em): countdown, mock score, readiness. One per screen.
+- **Title** (Outfit 700, 24/30, -0.02em): screen titles.
 - **Stem** (Inter 600, 19/29): the question — the most-read text in the product.
 - **Body** (Inter 400, 16/26): options, explanations, prose. Never below 16px on mobile,
   never truncated, measure ≤70ch.
@@ -305,22 +338,24 @@ total nobody can verify is decoration, and this product cannot afford decorative
 
 ## Elevation & Depth
 
-Soft, real elevation. Every shadow carries both an offset and a blur, tinted with the
-forest-biased ink so it reads as depth on cream rather than grey fog. Lighter than Deresegn's
-throughout: paper does not float far off the page.
+Restrained, real elevation, tinted with the **deep slate** (#0F172A) — a green-biased shadow
+from the cream world reads as a stain on a cool ground. Light throughout: the ground is already
+tinted and a card is already pure white, so most of a card's edge is contrast and the shadow
+only has to say _on top of_.
 
 ### Shadow Vocabulary
 
-- **Card** (`0 1px 2px rgb(22 22 43 / .05), 0 6px 16px rgb(22 22 43 / .07)`): the default
-  resting surface for cards and tables.
-- **Lift** (`0 2px 4px rgb(22 22 43 / .06), 0 12px 28px rgb(22 22 43 / .10)`): device frames
-  and anything presented as being above the page.
-- **Panel** (`0 4px 8px rgb(22 22 43 / .07), 0 24px 48px rgb(22 22 43 / .16)`): the retire
-  modal, bottom sheets.
-- **Brand** (`0 2px 4px rgb(26 51 0 / .10), 0 8px 20px rgb(26 51 0 / .14)`): the primary
-  button only, so the main action is findable without hunting for it. **Ink-tinted, not
-  lemon** — a yellow glow under a yellow button is a halo rather than depth, and lemon at any
-  alpha disappears on cream.
+- **Card** (`0 1px 2px rgb(15 23 42 / .05)`): the default resting surface for cards and tables.
+  Paired with the 1px hairline, which does the separating.
+- **Lift** (`0 2px 4px … , 0 10px 24px rgb(15 23 42 / .09)`): device frames and anything
+  presented as being above the page.
+- **Panel** (`0 4px 8px … , 0 22px 44px rgb(15 23 42 / .14)`): the retire modal, bottom sheets.
+- **Hero** (`0 24px 60px -20px rgb(0 0 0 / .55)`): the landing composite floating on the dark
+  band, and only there. A white card on near-black separates by brightness already; the long
+  drop is what stops it reading as pasted on.
+- **Brand** (`0 2px 4px … , 0 8px 20px rgb(15 23 42 / .14)`): the primary button only, so the
+  main action is findable without hunting. **Ink-tinted, not lemon** — a yellow glow under a
+  yellow button is a halo rather than depth.
 
 ### Named Rules
 
@@ -329,40 +364,52 @@ nothing else. A screen with two brand shadows has two primary actions, which mea
 
 ## Shapes
 
-Generous, consistent rounding: **12px** on controls, inputs and option rows; **16px** on cards
-and wells; **24px** on sheets, modals and device frames; **full pills** on chips, badges,
-avatars, progress tracks and the letter badge inside an answer option.
+Three steps and a pill, and it is a **hierarchy rather than a set of preferences**: a button is
+the tightest because it is a control you press, a card is rounder because it is an object on
+the page, and an outer frame is rounder still because it holds the objects.
 
-Borders are 1px at rest. Option rows carry 2px so their selected, correct and wrong states are
-legible at arm's length on a cheap screen. Icons are 2px-stroke rounded-join outlines drawn on
-a 24px grid — never emoji, in any surface, including bot messages.
+**8px** on buttons, inputs and controls; **16px** on cards, option rows, wells and sheets;
+**20px** on outer frames, modals and the landing's feature tiles; **full pills** on chips,
+badges, avatars, progress tracks, the letter badge inside an answer option, and the landing's
+calls to action.
+
+Borders are 1px at rest, everywhere. The 2px ink borders the cream world used — on option rows,
+track cards and the landing's step list — are gone: the redesign's object is a white card with
+a hairline, and a page of 2px frames reads as a table somebody has drawn lines in. Option rows
+carry their state in the fill and the icon instead, which is what the Icon And Word Rule
+already required.
+
+Icons are 2px-stroke rounded-join outlines drawn on a 24px grid — never emoji, in any surface,
+including bot messages.
 
 ## The mark
 
-A whole lemon on a 24px grid: an oval body tilted 20° with a nub at each end of its long
-axis, a cream glint on the upper shoulder, twin mint leaves on a short stem, and **the
-answer screens' correct stroke laid across it** — mint over ink, the same gesture drawn over
-a correct option. The fruit is the name (ሎሚ *means* lemon) and the check is the product.
+**A lemon slice**, drawn on a `-100 -100 200 200` viewBox: a rind ring, a pith ring inside it,
+four flesh wedges separated by pith-coloured strokes, and a small centre dot. Rind #EAB308,
+pith #FEF08A, flesh #FACC15 — the three values the palette is named after, in the one place
+they can sit together without anything having to be read.
 
-It sits in the lemon rounded square everywhere the interface names itself: the navigation
-bar, sign-in, the admin bar, the app icons. Inside that tile the body is **unfilled** — the
-tile already is the fruit, and a second yellow on top only thickens the outline. Standing
-alone on cream it takes the brand fill.
+**There is no tile.** Every earlier mark sat inside a rounded yellow square because each needed
+a ground: a Ge'ez `ሎሚ` until 2026-08-20, then the letter `L`, then a whole lemon with a check
+drawn through it. A slice needs none — it is already a circle, already yellow, and already the
+shape of the thing it names, so a square behind it was a box around a picture of a lemon.
 
-**The check is drawn twice, ink under mint.** Mint alone is about 1.2:1 on the lemon tile
-and the check disappears into the fruit; the ink underlay is what keeps it a check on
-yellow, on cream, and at 20px.
-
-**The leaves come off below 24px.** At a 16–20px browser tab two 3px leaves are four grey
-pixels and a suggestion, while the fruit and the check still read — so the favicon is the
-leafless variant. `LemonMark` applies that threshold itself rather than leaving each caller
+**The centre dot comes off below 24px.** At a 16–20px browser tab it is one or two pixels of
+noise in the middle of the wedges, while the ring and the wedges still read — so the favicon is
+the dotless variant. `LemonMark` applies that threshold itself rather than leaving each caller
 to remember it.
 
-> The mark has been three things. A Ge'ez `ሎሚ` glyph until 2026-08-20 — the only thing in
-> the product needing Ge'ez coverage, at 198KB of font on every first load. Then the letter
-> `L`, honest about being a placeholder. Both were **text**, which is the failure worth
-> naming: a mark set in a typeface renders in whatever face the device substitutes, so it is
-> the one element guaranteed to differ on every phone. This one is drawn.
+**The wordmark is two-tone.** "Lomi" in ink and "-Exams" in the muted grey, because the product
+is Lomi and the rest says which Lomi. On a dark band both halves switch to the `on-deep` inks
+via the component's `onDark` prop rather than a caller-supplied class, so the two halves cannot
+be recoloured one at a time.
+
+> The mark has been four things. A Ge'ez `ሎሚ` glyph until 2026-08-20 — the only thing in the
+> product needing Ge'ez coverage, at 198KB of font on every first load. Then the letter `L`,
+> honest about being a placeholder. Then the whole fruit with a check through it. The first two
+> were **text**, which is the failure worth naming: a mark set in a typeface renders in whatever
+> face the device substitutes, so it is the one element guaranteed to differ on every phone.
+> This one is drawn.
 >
 > The geometry lives in `apps/web/components/lemon-mark.mjs`, imported by both the component
 > and the icon script. That is not tidiness. The script previously held its own copy —
@@ -373,8 +420,17 @@ to remember it.
 
 ### Buttons
 
-- **Primary:** brand fill, on-brand text, 12px radius, 52px minimum height, full width on
-  mobile, brand-tinted shadow. Presses to `scale(.985)`. Hover deepens to Brand Hover.
+- **Primary:** **ink fill**, `on-state` text, 8px radius, 52px minimum height, full width on
+  mobile. Presses to `scale(.98)`. Hover lightens to Ink 2.
+
+  > **Open, and deliberately so.** The frontmatter above still names a brand fill, because that
+  > is what the 2026-10-01 handoff draws and it is what the landing's calls to action already
+  > are. In the app the primary button has been ink since 2026-08-23, on the argument that the
+  > lemon is the _marker_ — pending pills, flags, the free-question count — and a marker that is
+  > also the primary button competes with itself on every screen. Both readings are defensible
+  > and the choice changes every screen at once, so it is made when the components are rebuilt,
+  > not inferred here. Until then the stylesheet is the fact and this note is the disagreement.
+
 - **Ghost:** surface fill with a 1px border; the manual-payment path and every secondary action.
 - **Danger:** Incorrect fill, no shadow. Exists only on emergency retire.
 - **Disabled:** Surface 2 fill, Ink 2 text, no shadow — and the label is replaced by the
@@ -383,7 +439,8 @@ to remember it.
 
 ### Answer option
 
-Full-width row, 56px minimum, 12px radius, 2px border, driven by a `data-state` attribute
+Full-width row, 56px minimum, **16px radius** (an option is a card you can press, not an
+input) and a **1px border**, driven by a `data-state` attribute
 (`default` / `selected` / `correct` / `wrong`) that mirrors `aria-checked`. A pill letter badge
 sits on the left and fills with the state colour. Correct and wrong states add an icon and a
 word ("Correct", "Yours"). The whole row is the target.
@@ -414,7 +471,7 @@ headline figure is their weighted mean. Every statement ends in a practice actio
 - **Card:** Surface, 16px radius, Card shadow, 16px padding. Never nested.
 - **Chip:** Surface 2, full pill, caption type. State chips take the soft fill and text colour
   of their state.
-- **Input:** Surface, 12px radius, 52px, with a visible caption label above — never a
+- **Input:** Surface, 8px radius, 52px, with a visible caption label above — never a
   placeholder standing in for a label. Focus takes the brand outline and border. Errors set
   `aria-invalid`, point at the message with `aria-describedby`, and the message names the cause
   _and_ the fix.

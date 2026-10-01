@@ -32,8 +32,18 @@ const blockAfter = (marker: string): string => {
 describe('reduced motion (T-100)', () => {
   const block = () => blockAfter('@media (prefers-reduced-motion: reduce)');
 
+  /*
+   * One block, not two. A second one is how half the rules end up in the half
+   * nobody edits.
+   *
+   * Counts `@media (prefers-reduced-motion` rather than the bare feature name:
+   * the landing's animation tokens carry a comment saying the global block
+   * disables them, and a comment that *mentions* the query is not a second
+   * declaration of it. Counting the name made writing that note a test failure,
+   * which is a test teaching people not to explain themselves.
+   */
   it('is declared exactly once', () => {
-    expect(THEME.split('prefers-reduced-motion').length - 1).toBe(1);
+    expect(THEME.split('@media (prefers-reduced-motion').length - 1).toBe(1);
   });
 
   // Global: a per-component opt-in is one someone forgets on the component that

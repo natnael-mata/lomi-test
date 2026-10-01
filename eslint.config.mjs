@@ -28,6 +28,11 @@ export default tseslint.config(
       // and a generated file in someone else's branch fails the parent's
       // baseline, which reads as "my change broke lint".
       '**/.claude/worktrees/**',
+      // The redesign handoff as it was delivered: a static HTML/CSS/JS mock-up,
+      // not source. It is kept for reference and is deliberately NOT built to
+      // this repo's rules — linting it reported 66 errors in somebody else's
+      // demo page as if they were ours, which is a baseline nobody can act on.
+      'design_handoff_lomi_exams/**',
     ],
   },
 
