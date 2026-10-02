@@ -441,6 +441,37 @@ the whole string, laid transparently over six presentational boxes, which keeps 
 paste and password managers working. Its focus ring is drawn on the boxes, since an invisible
 field shows an invisible ring.
 
+## Onboarding
+
+One screen, `/choose`, and it is also how a programme is **changed** — which is why it opens
+with the current one selected rather than blank.
+
+The programmes are a two-up grid of pressable tiles with the question count under each name,
+not a stack of radio rows: a vertical list of eight asks somebody to read down it, a grid asks
+them to look. **Real radios underneath, `sr-only` rather than removed** — buttons would cost
+the group one tab stop, arrow-key movement, and "radio group, 3 of 8" in a screen reader.
+
+A programme with no published questions is **shown, dimmed, and labelled** "Being written".
+Hiding it would say we do not cover that exam at all; three were published and empty, and
+choosing one put a student behind the field gate with every screen working and nothing in it.
+
+Two things the handoff asks for that are not built, each because the product already answers
+the question differently:
+
+- **No "questions per day" picker.** The daily target is derived — `planFor` divides the
+  questions left by the days to the sitting and recalculates every morning, which is the
+  promise the landing page makes. A chooser would contradict it and would need a field the API
+  does not have.
+- **The exam-day note states only what is known.** The handoff writes "Exam day: Thursday,
+  November 12. That's 43 days, so your plan covers every topic at least twice" as settled fact.
+  The date is read from the selected field's `examDate` and most programmes have none, so a
+  programme without one says so and names it as ours to fix; the coverage claim is dropped
+  entirely, because the plan does not exist until the choice is saved.
+
+The retaker question is asked only where there is an exit exam to have sat — `maxGrade` is
+non-null exactly for the school tracks — and nothing is sent for those, so `isRetaker` stays
+unset rather than recording a `false` from somebody nobody asked.
+
 ## Components
 
 ### Buttons

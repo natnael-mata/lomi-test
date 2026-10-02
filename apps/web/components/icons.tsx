@@ -17,7 +17,7 @@
 import type { ReactNode } from 'react';
 
 /** Stroked paths. The default: 2px, round caps, no fill. */
-const STROKE: Record<string, ReactNode> = {
+const STROKE = {
   /*
    * The five destinations, redrawn from the 2026-10-01 handoff.
    *
@@ -88,6 +88,14 @@ const STROKE: Record<string, ReactNode> = {
   ),
 
   /* Movement and theme. */
+  /* The sitting date, on the programme chooser. Straight from the handoff's
+     own onboarding note rather than redrawn by eye. */
+  calendar: (
+    <>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+    </>
+  ),
   chevronRight: <path d="M9 5l7 7-7 7" />,
   chevronLeft: <path d="M15 5l-7 7 7 7" />,
   sun: (
@@ -97,19 +105,31 @@ const STROKE: Record<string, ReactNode> = {
     </>
   ),
   moon: <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" />,
-};
+} satisfies Record<string, ReactNode>;
 
 /**
  * Filled paths. Only Telegram, and only because Telegram's mark is a solid
  * shape — drawing it as an outline would make it a paper plane rather than
  * *the* paper plane a student recognises on their home screen.
  */
-const FILLED: Record<string, ReactNode> = {
+const FILLED = {
   telegram: (
     <path d="M21.5 3.4L2.9 10.6c-1.1.4-1 1.9.1 2.2l4.6 1.4 1.8 5.5c.3 1 1.6 1.2 2.3.4l2.5-2.7 4.7 3.4c.8.6 2 .2 2.2-.8l2.6-14.9c.2-1.1-.9-2-2.2-1.7z" />
   ),
-};
+} satisfies Record<string, ReactNode>;
 
+/*
+ * `satisfies`, not an annotation.
+ *
+ * Both maps were declared `Record<string, ReactNode>`, which widens every key
+ * to `string` — so `IconName` was `string`, and `<Icon name="calendar" />`
+ * typechecked cleanly against a set that had no calendar in it and rendered
+ * nothing at all. The whole point of the type is to make a missing glyph a
+ * build error; it had been accepting anything since the file was written.
+ *
+ * `satisfies` keeps the value check (every entry is a ReactNode) and keeps the
+ * literal keys, which is what the union below needs.
+ */
 export type IconName = keyof typeof STROKE | keyof typeof FILLED;
 
 export interface IconProps {
@@ -148,7 +168,11 @@ export function Icon({ name, size = 20, strokeWidth = 2, className }: IconProps)
       focusable="false"
       {...(className === undefined ? {} : { className })}
     >
-      {filled ? FILLED[name] : STROKE[name]}
+      {/* One lookup per map, each narrowed to its own keys. `name` is the union
+          of both, so neither map can be indexed by it directly — and widening
+          them back to `Record<string, ReactNode>` to make that go away is the
+          hole this file just closed. */}
+      {filled ? FILLED[name as keyof typeof FILLED] : STROKE[name as keyof typeof STROKE]}
     </svg>
   );
 }

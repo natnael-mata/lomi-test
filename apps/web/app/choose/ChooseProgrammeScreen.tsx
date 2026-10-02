@@ -18,8 +18,9 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
-import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
+import { Icon } from '../../components/icons';
+import { day } from '../../lib/dates';
 import { ApiError, api, type FieldOption } from '../../lib/api';
 import { copy } from '../../lib/i18n';
 
@@ -109,66 +110,102 @@ export function ChooseProgrammeScreen() {
    */
   const isSchoolTrack = phase.fields.find((field) => field.id === chosen)?.maxGrade != null;
 
+  /** The sitting this programme counts down to, once one is picked. */
+  const selected = phase.fields.find((field) => field.id === chosen) ?? null;
+
   return (
-    <div className="flex flex-col gap-5">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-title">{c.choose.title}</h1>
+    <div className="flex flex-col gap-7">
+      <header className="flex flex-col gap-1.5">
+        <span className="text-caption text-ink-3 uppercase">{c.choose.setUp}</span>
+        <h1 className="font-display text-[clamp(26px,4vw,32px)] leading-[1.15] font-extrabold tracking-[-0.025em]">
+          {c.choose.title}
+        </h1>
         {/* Says it is reversible, because a first-run choice that looks
             permanent is one people stall on. */}
-        <p className="text-body text-ink-2">{c.choose.intro}</p>
+        <p className="text-ink-2 text-[15px] leading-[1.55]">{c.choose.intro}</p>
       </header>
 
       {phase.fields.length === 0 ? (
         <p className="text-body text-ink-2">{c.choose.none}</p>
       ) : (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="sr-only">{c.choose.title}</legend>
-          {phase.fields.map((field) => {
-            /*
-             * Listed, and honest about whether it can be sat.
-             *
-             * `isPublished` says we mean to offer a subject; it does not say
-             * there is anything in it. Three programmes were published and
-             * empty, and choosing one put a student behind the field gate with
-             * every screen working and nothing to show — practice reported
-             * "nothing left to practise today" about a bank that had never held
-             * a question.
-             *
-             * Shown rather than hidden: a student whose subject is listed but
-             * unfinished has learned something true. Dropping it from the list
-             * would say we do not cover their exam at all.
-             */
-            const ready = field.questionCount > 0;
-            return (
-              <label
-                key={field.id}
-                className={[
-                  'rounded-card flex min-h-[56px] items-center gap-3 p-4',
-                  ready ? 'bg-surface-2' : 'bg-surface-2 opacity-60',
-                ].join(' ')}
-                data-selected={field.id === chosen}
-                data-ready={ready}
-              >
-                <input
-                  type="radio"
-                  name="field"
-                  value={field.id}
-                  checked={field.id === chosen}
-                  disabled={!ready}
-                  onChange={() => setChosen(field.id)}
-                />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-body">{field.name}</span>
-                  <span className="text-caption text-ink-2">
-                    {ready
-                      ? c.choose.questionsAvailable(field.questionCount)
-                      : c.choose.notReadyWhy}
+        /*
+          A grid of cards, not a stack of radio rows (handoff § Onboarding).
+
+          The handoff draws the programmes as a two-up grid of pressable tiles
+          with the question count under each name, which is the right shape for
+          a set of eight peers: a vertical list of eight asks somebody to read
+          down it, and a grid asks them to look.
+
+          Still real radios underneath. The input is `sr-only` rather than
+          removed, so the group is one tab stop, arrow keys move within it, and
+          a screen reader hears a radio group — none of which a row of buttons
+          gives you for free, and all of which the previous list had.
+        */
+        <fieldset className="flex flex-col gap-3 border-0 p-0">
+          <legend className="text-ink mb-1 text-[14px] font-semibold">
+            {c.choose.fieldLegend}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {phase.fields.map((field) => {
+              /*
+               * Listed, and honest about whether it can be sat.
+               *
+               * `isPublished` says we mean to offer a subject; it does not say
+               * there is anything in it. Three programmes were published and
+               * empty, and choosing one put a student behind the field gate with
+               * every screen working and nothing to show — practice reported
+               * "nothing left to practise today" about a bank that had never held
+               * a question.
+               *
+               * Shown rather than hidden: a student whose subject is listed but
+               * unfinished has learned something true. Dropping it from the list
+               * would say we do not cover their exam at all.
+               */
+              const ready = field.questionCount > 0;
+              const picked = field.id === chosen;
+              return (
+                <label
+                  key={field.id}
+                  className={[
+                    'rounded-card flex min-h-[72px] cursor-pointer flex-col justify-center gap-1 border p-4',
+                    'transition-[background-color,border-color]',
+                    picked
+                      ? 'border-link bg-brand-soft border-2'
+                      : 'border-border bg-surface hover:border-border-strong',
+                    ready ? '' : 'cursor-not-allowed opacity-60',
+                  ].join(' ')}
+                  data-selected={picked}
+                  data-ready={ready}
+                >
+                  <input
+                    type="radio"
+                    name="field"
+                    className="sr-only"
+                    value={field.id}
+                    checked={picked}
+                    disabled={!ready}
+                    onChange={() => setChosen(field.id)}
+                  />
+                  <span className="text-ink text-[16px] font-semibold">{field.name}</span>
+                  <span className="text-ink-2 flex items-center gap-2 text-[13px]">
+                    {ready ? (
+                      <span className="num">
+                        {c.choose.questionsAvailable(field.questionCount)}
+                      </span>
+                    ) : (
+                      <Chip tone="pending">{c.choose.notReady}</Chip>
+                    )}
                   </span>
-                </span>
-                {!ready && <Chip tone="pending">{c.choose.notReady}</Chip>}
-              </label>
-            );
-          })}
+                </label>
+              );
+            })}
+          </div>
+          {/* The "being written" programmes explain themselves once, under the
+              grid, rather than repeating the same sentence inside every empty
+              tile. */}
+          {phase.fields.some((field) => field.questionCount === 0) ? (
+            <p className="text-ink-3 text-[13px]">{c.choose.notReadyWhy}</p>
+          ) : null}
         </fieldset>
       )}
 
@@ -186,33 +223,70 @@ export function ChooseProgrammeScreen() {
         than being recorded as a false everybody was never asked about.
       */}
       {isSchoolTrack ? null : (
-      <Card as="section" className="flex flex-col gap-2">
-        <h2 className="text-caption text-ink-2 uppercase">{c.choose.retakerQuestion}</h2>
-        <div className="flex flex-col gap-2">
-          {[
-            { value: false, label: c.choose.retakerNo },
-            { value: true, label: c.choose.retakerYes },
-          ].map((option) => (
-            <label
-              key={String(option.value)}
-              className="bg-surface-2 rounded-card flex min-h-[52px] items-center gap-3 p-3"
-            >
-              <input
-                type="radio"
-                name="retaker"
-                checked={retaker === option.value}
-                onChange={() => setRetaker(option.value)}
-              />
-              <span className="text-body">{option.label}</span>
-            </label>
-          ))}
-        </div>
-        {/* Why it is asked, since it changes nothing they can see. A question
-            with no visible consequence reads as data collection unless the
-            reason is given. */}
-        <p className="text-caption text-ink-2">{c.choose.retakerWhy}</p>
-      </Card>
+        <fieldset className="flex flex-col gap-3 border-0 p-0">
+          <legend className="text-ink mb-1 text-[14px] font-semibold">
+            {c.choose.retakerQuestion}
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { value: false, label: c.choose.retakerNo },
+              { value: true, label: c.choose.retakerYes },
+            ].map((option) => (
+              <label
+                key={String(option.value)}
+                className={[
+                  'rounded-card flex min-h-[56px] cursor-pointer items-center gap-3 border p-4',
+                  retaker === option.value
+                    ? 'border-link bg-brand-soft border-2'
+                    : 'border-border bg-surface hover:border-border-strong',
+                ].join(' ')}
+              >
+                <input
+                  type="radio"
+                  name="retaker"
+                  className="sr-only"
+                  checked={retaker === option.value}
+                  onChange={() => setRetaker(option.value)}
+                />
+                <span className="text-ink text-[15px] font-semibold">{option.label}</span>
+              </label>
+            ))}
+          </div>
+          {/* Why it is asked, since it changes nothing they can see. A question
+              with no visible consequence reads as data collection unless the
+              reason is given. */}
+          <p className="text-ink-3 text-[13px]">{c.choose.retakerWhy}</p>
+        </fieldset>
       )}
+
+      {/*
+        The sitting date, and only when there is one.
+
+        The handoff prints "Exam day: Thursday, November 12. That's 43 days, so
+        your plan covers every topic at least twice" as settled fact. Both halves
+        are assumptions: most programmes here have no `examDate` set, and the
+        plan does not exist until this screen is saved. So the date is read from
+        the field the student actually picked, the coverage claim is dropped, and
+        a programme with no date says so — naming it as ours to fix rather than
+        leaving a blank where a countdown should be.
+      */}
+      {selected ? (
+        <div className="border-border bg-surface rounded-card text-ink-2 flex items-start gap-3 border p-4 text-[14px] leading-[1.55]">
+          <span className="text-ink-3 shrink-0 pt-0.5">
+            <Icon name="calendar" size={20} />
+          </span>
+          {selected.examDate ? (
+            <span>
+              <span className="text-ink font-semibold">
+                {c.choose.examDayLabel}: {day(selected.examDate)}.
+              </span>{' '}
+              {c.choose.examDayIn(daysUntil(selected.examDate))}
+            </span>
+          ) : (
+            <span>{c.choose.examDayUnset}</span>
+          )}
+        </div>
+      ) : null}
 
       <button
         type="button"
@@ -224,4 +298,17 @@ export function ChooseProgrammeScreen() {
       </button>
     </div>
   );
+}
+
+/**
+ * Whole days from today to a sitting, counted in the browser's own zone.
+ *
+ * Both sides floored to midnight first. Subtracting the raw instants makes "in
+ * 43 days" flip to 42 at whatever hour of the afternoon the student opens the
+ * app, which is a countdown that disagrees with itself between two taps.
+ */
+function daysUntil(iso: string): number {
+  const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const DAY = 24 * 60 * 60 * 1000;
+  return Math.round((midnight(new Date(iso)) - midnight(new Date())) / DAY);
 }

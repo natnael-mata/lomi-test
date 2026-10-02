@@ -88,6 +88,7 @@ export const en = {
     notReady: 'Being written',
     notReadyWhy: 'No questions in this programme yet. Pick another for now.',
     questionsAvailable: (count: number) => `${count} question${count === 1 ? '' : 's'} ready`,
+    setUp: 'Set up your plan',
     title: 'Which programme are you sitting?',
     intro: 'This decides every question you practise. You can change it later.',
     working: 'Loading programmes…',
@@ -99,6 +100,27 @@ export const en = {
     retakerNo: 'No, this is my first time',
     retakerWhy:
       'It changes nothing about your questions today. We ask so we can help retakers better later.',
+
+    /*
+     * The exam-day note (redesign handoff, § Onboarding).
+     *
+     * The handoff writes it as settled fact — "Exam day: Thursday, November 12.
+     * That's 43 days, so your plan covers every topic at least twice" — on a
+     * screen where nothing has been chosen yet and, for most programmes here,
+     * where no date has been set. So it renders only when the selected field
+     * actually carries one, and the sentence about coverage is dropped: it is a
+     * claim about a plan that does not exist until the choice is saved.
+     */
+    examDayLabel: 'Exam day',
+    examDayIn: (days: number) =>
+      days <= 0
+        ? 'That date has passed — tell us if it has moved.'
+        : `That is ${days} day${days === 1 ? '' : 's'} away. Your daily target is worked out from it, and again every morning.`,
+    // Said plainly rather than left blank, and it names who can fix it. A
+    // missing date is not the student's problem to solve.
+    examDayUnset:
+      'No sitting date is set for this programme yet. Everything else works; the daily target starts once there is one.',
+    fieldLegend: 'Your programme',
 
     confirm: 'Start practising',
     saving: 'Saving…',
