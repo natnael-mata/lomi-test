@@ -54,7 +54,25 @@ const DATA_ROUTES = ['/progress', '/standing'];
  * product — wrapping either in the product's own navigation would be a lie
  * about where somebody is.
  */
-const UNFRAMED = ['/design', '/dev-login', '/signin', '/dev-viewport'];
+const UNFRAMED = [
+  '/design',
+  '/dev-login',
+  '/signin',
+  /*
+   * Sign-up and reset were NOT in this list, and should have been from the day
+   * they were built.
+   *
+   * Both rendered inside the full student frame: a 240px sidebar listing Today,
+   * Practice, Mocks, Progress and Account, plus a five-tab bottom bar, shown to
+   * somebody who does not have an account yet or cannot get into the one they
+   * have. Every one of those five is a sign-in wall. It is the exact mistake the
+   * comment above describes, and `/signin` being in the list is what hid it —
+   * the one auth screen anybody looks at was already correct.
+   */
+  '/signup',
+  '/reset',
+  '/dev-viewport',
+];
 
 /**
  * Routes that are unframed by EXACT match.

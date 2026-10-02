@@ -221,6 +221,16 @@ export const en = {
    * - **Expiry is a rule, not a fault.** Nothing here implies the student broke
    *   something by being slow.
    */
+  /** The frame the three doors share. See `AuthShell`. */
+  auth: {
+    back: 'Back',
+    // "Step 2 of 3", not the handoff's 2 of 2. Its sign-up collects a name, an
+    // email and a password on one screen and then verifies; ours is phone,
+    // code, password, because the server's register flow is three calls and
+    // this redesign changes the interface, not the API.
+    step: (n: number, of: number) => `Step ${n} of ${of}`,
+  },
+
   codeFlow: {
     phoneLabel: 'Your phone number',
     phoneHint: 'The number this phone uses. We send a code to it.',
@@ -234,8 +244,15 @@ export const en = {
     // leaving them waiting for an SMS that is not coming.
     notSentYet: (phone: string) =>
       `We have not sent another code to ${phone} yet. If one arrived earlier, it still works.`,
+    codeTitle: 'Enter the code',
     codeLabel: 'The six-digit code',
     codeHint: 'It arrives by SMS and lasts ten minutes.',
+    // The number, and the way to correct it. Without this a typo in the number
+    // is a dead end — the code goes to a handset nobody is holding, and the
+    // only way back is the browser's own back button.
+    sentToShort: (phone: string) => `Sent to ${phone}.`,
+    changeNumber: 'Change',
+    noCodeYet: 'Didn’t get it?',
     continue: 'Continue',
     checking: 'Checking…',
     resend: 'Send another code',
@@ -267,9 +284,20 @@ export const en = {
     signUp: {
       title: 'Create your account',
       intro: 'Your phone number is your username. No email, no forms.',
-      passwordLabel: 'Choose a password',
+      passwordTitle: 'Choose a password',
+      passwordLabel: 'Password',
       finish: 'Create my account',
-      lostNumber: 'No code yet? It can take a minute on a slow network.',
+      /*
+       * Not "no code yet?" — the line directly above it already asks that.
+       *
+       * It read "No code yet? It can take a minute on a slow network", sitting
+       * under "Didn't get it? Send another code in 55s". Two sentences about
+       * the same wait, and the one with the live countdown is the useful one.
+       * What this says instead is the thing the resend control cannot: that the
+       * delay is the network, not the account, and that nothing is lost by
+       * waiting.
+       */
+      lostNumber: 'On a slow network an SMS can take a minute. Nothing is lost while you wait.',
     },
 
     reset: {
@@ -277,7 +305,8 @@ export const en = {
       // Deliberately says nothing about whether the number is registered.
       // Confirming would make this a directory of who has an account here.
       intro: 'Type your number and we will send a code to it.',
-      passwordLabel: 'Choose a new password',
+      passwordTitle: 'Choose a new password',
+      passwordLabel: 'New password',
       finish: 'Save and sign in',
       // The one real dead end in this flow, so it gets a route out rather than
       // an apology. A student who has lost the number cannot prove anything by
@@ -332,11 +361,13 @@ export const en = {
     userL: 'User L',
     userLNote: 'Grade 6, 4 of 6, chose to appear — the junior board, with somebody on it.',
     userM: 'User M',
-    userMNote: 'Grade 6, all 6 beaten, never asked about the board — on no board, and still ranked.',
+    userMNote:
+      'Grade 6, all 6 beaten, never asked about the board — on no board, and still ranked.',
     userN: 'User N',
     userNNote: 'Grade 8, 2 of 4, chose to appear — the other half of the junior band.',
     userO: 'User O',
-    userONote: 'Grade 12 Social, 3 of 4 — the half of Grade 12 that Natural must never be measured on.',
+    userONote:
+      'Grade 12 Social, 3 of 4 — the half of Grade 12 that Natural must never be measured on.',
     admin: 'Admin',
     adminNote: "Sees the admin pages and can settle User B's payment.",
     provider: 'Provider',
@@ -548,35 +579,32 @@ export const en = {
     signInBroken: 'We could not reach the server. Your password is fine — try again in a moment.',
     tooMany: (seconds: number) =>
       `Too many attempts on this number. Try again in ${plainDuration(seconds)}.`,
-    orTelegram: 'Or sign in with Telegram',
-    title: 'Sign in with Telegram',
-    intro:
-      'No passwords, no forms. Open Telegram, press Start, and this page signs you in by itself.',
-    open: 'Open Telegram',
-    beforeYouApprove: 'Before you approve',
-    checkCode: (bot: string) =>
-      `${bot} will ask you to confirm this sign-in. Check it shows this code before you press ` +
-      'approve — if the numbers differ, somebody else asked, and you should decline.',
-    waiting: 'Waiting for Telegram — this page checks by itself',
-    expiresIn: (clock: string) => `Code expires in ${clock}`,
-    newCode: 'Get a new code',
-    starting: 'Getting your code…',
-
     /*
-     * The signed-out home. Three lines are the whole onboarding story.
+     * Thirteen Telegram sign-in strings were removed here with the redesign.
      *
-     * **Track-neutral, because this page serves five tracks** (T-269). It read
-     * "Ready for the Exit Exam" while the fine print at the foot of the same
-     * screen said "For school tracks and university exit exams alike" — so a
-     * Grade 6 parent signing their child in was told they were ready for a
-     * university exam, on a product where school tracks are the pricing
-     * decision that got its own migration. Nothing here knows which track the
-     * visitor is on yet; the heading should not pretend otherwise.
+     * `orTelegram`, `title`, `intro`, `open`, `beforeYouApprove`, `checkCode`,
+     * `waiting`, `expiresIn`, `newCode`, `starting`, `continue`, `signedIn` and
+     * `goPractise` described the pairing flow that T-263 replaced with a phone
+     * and a password. Every one had been unreferenced since, and `title` and
+     * `intro` in particular still said "No passwords, no forms" — directly
+     * above a password field, had anything rendered them.
+     *
+     * Dead copy is not harmless. It is the first thing found by anyone
+     * searching the dictionary for what this screen says, and it describes a
+     * door that is not there.
      */
-    valueTitle: 'Ready for your exam',
-    valueBody:
-      'Practise real questions with full explanations, sit timed mocks, and see exactly which ' +
-      'topics to study next.',
+    /*
+     * The heading on the sign-in door.
+     *
+     * It was "Ready for your exam", itself a repair: the original read "Ready
+     * for the Exit Exam" while the fine print at the foot of the same screen
+     * said "For school tracks and university exit exams alike", so a Grade 6
+     * parent signing their child in was told they were ready for a university
+     * exam. Track-neutrality is still the rule and "Welcome back" keeps it for
+     * free — this door is for somebody who already has an account, and the
+     * pitch belongs on the landing page they came through.
+     */
+    welcomeTitle: 'Welcome back',
     /*
      * Rewritten for the phone-first door (T-263).
      *
@@ -590,25 +618,34 @@ export const en = {
      * not built. When it is, step 2 changes and not before — promising a code
      * that never arrives is the worse half of this trade.
      */
-    step1: 'Sign in with your phone number and the password you chose.',
-    step2: 'New here? Sign up with your number — we send a code to confirm it.',
-    step3: 'Your first 10 questions are free — explanations included.',
-    continue: 'Continue with Telegram',
+    /*
+     * `step1`, `step2` and `step3` are gone with the explainer card.
+     *
+     * Three sentences under the sign-in form: the first described the form
+     * directly above it, the second is what the "Create an account" link says,
+     * and only the third — ten free questions — was news. That one is on the
+     * landing page, several times, where somebody deciding reads it. A
+     * returning student does not need the pitch between their password and the
+     * button.
+     */
     // Named tracks went stale the moment there were seven of them, and "one
     // plan covers every programme" went stale when school tracks got their own
     // Br 300 price. What survives both is the range the product spans, said
     // without implying one price or one plan across it.
     coverage: 'For school tracks and university exit exams alike.',
 
-    signedIn: 'You are signed in.',
-    goPractise: 'Start practising',
-    // Names the fix. The bot token being unset is an operator's problem, and
-    // the student reading this can do nothing about it — so it says who can.
-    notConfigured:
-      'Telegram sign-in is not switched on for this server yet. Nothing is wrong with your ' +
-      'account — tell whoever runs this copy of Lomi-Exams.',
-    couldNotStart:
-      'The sign-in code could not be fetched. Nothing is lost — try again in a moment.',
+    /*
+     * The subtitle under "Welcome back", and it is deliberately not the
+     * handoff's.
+     *
+     * The handoff writes "43 days to exam day. Keep going." — on the SIGNED-OUT
+     * screen, where there is no student, no chosen track and therefore no exam
+     * date. It is the hero composite's sample figure printed as if it were this
+     * reader's. This says the one thing that is true of everybody standing at
+     * this door.
+     */
+    welcomeBody: 'Pick up where you left off.',
+    newHere: 'New to Lomi-Exams?',
   },
 
   exam: {
@@ -779,8 +816,7 @@ export const en = {
      * which is how much each score rests on. Saying only that is what makes the
      * section earn its place.
      */
-    fromAnswers: (answered: number) =>
-      `from ${answered} answer${answered === 1 ? '' : 's'}`,
+    fromAnswers: (answered: number) => `from ${answered} answer${answered === 1 ? '' : 's'}`,
     thinEvidence: 'too few to be sure',
     unansweredInMocks: (count: number) =>
       `${count} mock question${count === 1 ? '' : 's'} ${count === 1 ? 'was' : 'were'} ` +
@@ -1125,8 +1161,7 @@ export const en = {
       intro: 'A student reported each of these. One report is one opinion — read the post.',
       loading: 'Loading the queue…',
       couldNotLoad: 'The queue could not be loaded. Nothing has changed — try again.',
-      waiting: (count: number) =>
-        count === 0 ? 'Nothing waiting' : `${count} waiting`,
+      waiting: (count: number) => (count === 0 ? 'Nothing waiting' : `${count} waiting`),
       // Not a congratulation: an empty queue is the ordinary state.
       empty: 'No reports are waiting.',
       isHidden: 'Hidden',
@@ -1270,7 +1305,8 @@ export const en = {
       needsReason: 'Say why first — this is written to the record with your name.',
       // Never "nobody matched". A search that could not run has found nothing
       // out about the data, and saying otherwise hides the real problem.
-      searchFailed: 'That search could not run. You may not have permission, or the server is down.',
+      searchFailed:
+        'That search could not run. You may not have permission, or the server is down.',
       devicesReset: 'Devices reset. They can sign in again on a new phone.',
       accountClosed: 'Account closed. It can be reopened by whoever runs the server.',
       alreadyClosed: 'Already closed',

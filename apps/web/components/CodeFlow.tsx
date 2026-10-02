@@ -20,8 +20,10 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { AuthShell } from './AuthShell';
 import { Button } from './Button';
 import { Card } from './Card';
+import { CodeInput } from './CodeInput';
 import { Input } from './Input';
 import { ApiError, api } from '../lib/api';
 import { copy } from '../lib/i18n';
@@ -197,7 +199,10 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
        */
       window.location.assign(purpose === 'register' ? '/choose' : '/home');
     } catch (e) {
-      if (e instanceof ApiError && (e.body as { error?: string } | undefined)?.error === 'WEAK_PASSWORD') {
+      if (
+        e instanceof ApiError &&
+        (e.body as { error?: string } | undefined)?.error === 'WEAK_PASSWORD'
+      ) {
         setProblem(c.codeFlow.weakPassword);
         setBusy(false);
         return;
@@ -211,15 +216,57 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
     }
   };
 
-  return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-title">{words.title}</h1>
-        <p className="text-body text-ink-2">{words.intro}</p>
-      </header>
+  /*
+   * The heading changes with the step, the frame does not.
+   *
+   * It was one `<h1>` with one sentence under it for all three screens, so
+   * "Create your account / Your phone number is your username" sat above a
+   * six-digit code field and above a password field alike. The step is the one
+   * thing a person in the middle of this needs to know, and it was the one
+   * thing not said.
+   */
+  const heading =
+    step.kind === 'phone'
+      ? { title: words.title, subtitle: <>{words.intro}</>, n: 1 }
+      : step.kind === 'code'
+        ? {
+            title: c.codeFlow.codeTitle,
+            n: 2,
+            subtitle: (
+              <>
+                {step.sent ? c.codeFlow.sentToShort(step.phone) : c.codeFlow.notSentYet(step.phone)}{' '}
+                {/* The typo escape. Without it a wrong digit in the number is a
+                    dead end: the code goes to a handset nobody is holding and
+                    the only way back is the browser's own back button. */}
+                <button
+                  type="button"
+                  className="text-link hover:text-link-hover font-semibold underline"
+                  onClick={() => {
+                    setStep({ kind: 'phone' });
+                    setCode('');
+                    setRefusal(null);
+                    setProblem(null);
+                  }}
+                >
+                  {c.codeFlow.changeNumber}
+                </button>
+              </>
+            ),
+          }
+        : { title: words.passwordTitle, subtitle: <>{c.codeFlow.passwordHint}</>, n: 3 };
 
+  return (
+    <AuthShell
+      // Back to sign-in, not to the landing page: both of these doors are
+      // reached from there, and somebody who opened the wrong one wants the
+      // other one, not the marketing.
+      back="/signin"
+      step={c.auth.step(heading.n, 3)}
+      title={heading.title}
+      subtitle={heading.subtitle}
+    >
       {step.kind === 'phone' && (
-        <Card as="section" className="flex flex-col gap-3">
+        <section className="flex flex-col gap-4">
           <Input
             label={c.codeFlow.phoneLabel}
             hint={c.codeFlow.phoneHint}
@@ -228,24 +275,23 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
             autoComplete="tel"
             onChange={(e) => setPhone(e.target.value)}
           />
-          <Button disabled={busy || phone.trim().length < 9} onClick={() => void askForCode(phone.trim())}>
+          <Button
+            disabled={busy || phone.trim().length < 9}
+            onClick={() => void askForCode(phone.trim())}
+          >
             {busy ? c.codeFlow.sending : c.codeFlow.sendCode}
           </Button>
-        </Card>
+        </section>
       )}
 
       {step.kind === 'code' && (
-        <Card as="section" className="flex flex-col gap-3">
-          <p className="text-body">
-            {step.sent ? c.codeFlow.sentTo(step.phone) : c.codeFlow.notSentYet(step.phone)}
-          </p>
-          <Input
+        <section className="flex flex-col gap-4">
+          <CodeInput
             label={c.codeFlow.codeLabel}
             hint={c.codeFlow.codeHint}
             value={code}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            disabled={busy}
+            onChange={setCode}
           />
 
           <Button
@@ -259,25 +305,38 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
             A live countdown, never a dead button.
             "Wait" with no number is indistinguishable from broken, and the
             student presses it again — which is the traffic this is protecting.
+
+            A link now rather than a full-width ghost button: it was the same
+            size and shape as Continue, directly beneath it, so the screen
+            offered two equal buttons where only one is the way forward.
           */}
-          <Button
-            variant="ghost"
-            disabled={busy || cooldown > 0}
-            onClick={() => void askForCode(step.phone)}
-          >
-            {cooldown > 0 ? c.codeFlow.resendIn(cooldown) : c.codeFlow.resend}
-          </Button>
+          <p className="text-ink-2 flex flex-wrap items-center justify-center gap-1 text-[15px]">
+            {c.codeFlow.noCodeYet}
+            {cooldown > 0 ? (
+              <span className="num text-ink-3 inline-flex min-h-11 items-center px-1 font-semibold">
+                {c.codeFlow.resendIn(cooldown)}
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                className="text-link hover:text-link-hover inline-flex min-h-11 items-center px-1 font-semibold disabled:opacity-60"
+                onClick={() => void askForCode(step.phone)}
+              >
+                {c.codeFlow.resend}
+              </button>
+            )}
+          </p>
 
           {/* The number they no longer have. Without this the flow is a wall. */}
-          <p className="text-caption text-ink-2">{words.lostNumber}</p>
-        </Card>
+          <p className="text-caption text-ink-3 text-center">{words.lostNumber}</p>
+        </section>
       )}
 
       {step.kind === 'password' && (
-        <Card as="section" className="flex flex-col gap-3">
+        <section className="flex flex-col gap-4">
           <Input
             label={words.passwordLabel}
-            hint={c.codeFlow.passwordHint}
             value={password}
             type="password"
             autoComplete="new-password"
@@ -286,7 +345,7 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
           <Button disabled={busy || password.length < 8} onClick={() => void finish()}>
             {busy ? c.codeFlow.saving : words.finish}
           </Button>
-        </Card>
+        </section>
       )}
 
       {/*
@@ -325,7 +384,7 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
       )}
 
       {problem && <p className="text-body text-wrong">{problem}</p>}
-    </div>
+    </AuthShell>
   );
 }
 

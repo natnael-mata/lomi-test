@@ -27,7 +27,6 @@
 import { useState } from 'react';
 
 import { Button } from './Button';
-import { Card } from './Card';
 import { Input } from './Input';
 import { ApiError, api } from '../lib/api';
 import { copy } from '../lib/i18n';
@@ -78,7 +77,15 @@ export function PasswordSignIn() {
   };
 
   return (
-    <Card as="section" data-password-sign-in="" className="flex flex-col gap-4">
+    /*
+      No card.
+
+      The form was wrapped in one, on a screen whose entire content is the form
+      — so the card had nothing to separate it from, and a white card on a white
+      page at 440px is a border for its own sake. DESIGN.md's rule is already
+      that "a card is never used merely to put a border round a paragraph".
+    */
+    <section data-password-sign-in="" className="flex flex-col gap-4">
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
@@ -86,24 +93,40 @@ export function PasswordSignIn() {
           void submit();
         }}
       >
-        <div className="flex flex-col gap-1">
-          <Input
-            label={c.signIn.phoneLabel}
-            name="phone"
-            type="tel"
-            // `tel` brings up the number pad, and `username` is what a password
-            // manager needs to offer the right entry — the field is the username
-            // even though the word never appears on screen.
-            autoComplete="username"
-            inputMode="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-          <span className="text-caption text-ink-2">{c.signIn.phoneHint}</span>
-        </div>
+        <Input
+          label={c.signIn.phoneLabel}
+          hint={c.signIn.phoneHint}
+          name="phone"
+          type="tel"
+          // `tel` brings up the number pad, and `username` is what a password
+          // manager needs to offer the right entry — the field is the username
+          // even though the word never appears on screen.
+          autoComplete="username"
+          inputMode="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
 
         <Input
-          label={c.signIn.passwordLabel}
+          /*
+            "Forgot?" rides the label (handoff § Sign in).
+
+            It was at the foot of the form beside "Create an account", two links
+            of equal weight for two completely different people — one who has an
+            account and cannot get in, one who has none. Next to the field it is
+            about, it is an answer to the question the field just raised.
+          */
+          label={
+            <span className="flex items-center justify-between gap-3">
+              {c.signIn.passwordLabel}
+              <a
+                href="/reset"
+                className="text-link hover:text-link-hover -my-2 -mr-1 inline-flex min-h-11 items-center px-1 font-semibold"
+              >
+                {c.signIn.forgotPassword}
+              </a>
+            </span>
+          }
           name="password"
           type="password"
           autoComplete="current-password"
@@ -122,34 +145,28 @@ export function PasswordSignIn() {
         </Button>
 
         {/*
-          The two ways out of this screen, and until now there were none.
+          The way out for somebody with no account.
 
-          A student who could not sign in had nowhere to go: no account yet, or
-          a forgotten password, and both dead-ended here. Phone-and-password
-          makes the second more likely than the Telegram pairing it replaced —
-          a forgotten password used to be impossible — so the reset link is not
-          a nicety, it is the other half of the door.
-        */}
-        {/*
-          `min-h-11` and vertical padding, not bare text.
+          Both ways out used to be here, side by side and identical in weight: a
+          forgotten password and no account at all, two different people told
+          the same thing twice. "Forgot?" has moved up to the field it is about,
+          which leaves this one sentence doing one job.
 
-          As plain 18px links these were the two smallest tap targets in the
-          product — on the one screen a locked-out student has to use, on a
-          phone, probably in a hurry. The layout sweep failed them at all three
-          widths, which is exactly what it is for.
+          `min-h-11` and padding rather than bare text, because as a plain
+          inline link this was among the smallest tap targets in the product —
+          on the one screen a locked-out student has to use, on a phone,
+          probably in a hurry. The layout sweep failed it at all three widths.
         */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-ink-2 flex flex-wrap items-center justify-center gap-1 text-[15px]">
+          {c.signIn.newHere}
           <a
-            href="/reset"
-            className="text-caption text-ink-2 flex min-h-11 items-center px-1 underline"
+            href="/signup"
+            className="text-link hover:text-link-hover inline-flex min-h-11 items-center px-1 font-semibold"
           >
-            {c.signIn.forgotPassword}
-          </a>
-          <a href="/signup" className="text-caption flex min-h-11 items-center px-1 underline">
             {c.signIn.noAccount}
           </a>
-        </div>
+        </p>
       </form>
-    </Card>
+    </section>
   );
 }

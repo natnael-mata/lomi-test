@@ -196,7 +196,19 @@ const AUDIT = `(() => {
   // rows are "full-width with the entire row as the target", and the native
   // radio inside one is a 13px dot on a 56px row — measuring the dot reports a
   // failure against the pattern the document asks for.
-  const targetHeight = (el) => (el.closest('label') ?? el).getBoundingClientRect().height;
+  //
+  // **The LARGER of the two, not the label unconditionally.** The label rule was
+  // written for a control smaller than its row, and silently inverted on the
+  // opposite case: sign-in's "Forgot your password?" sits inside the password
+  // field's 28px label and overflows it with negative margins, so the link is a
+  // real 44px target and this reported 28px three times over. Taking the max
+  // keeps the radio-in-a-row case and stops a small label shrinking a big
+  // control.
+  const targetHeight = (el) => {
+    const own = el.getBoundingClientRect().height;
+    const label = el.closest('label');
+    return label ? Math.max(own, label.getBoundingClientRect().height) : own;
+  };
 
   for (const el of document.querySelectorAll('button, a, [role="radio"], input:not([type="hidden"])')) {
     const style = getComputedStyle(el);

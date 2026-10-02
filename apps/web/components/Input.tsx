@@ -3,11 +3,18 @@
 /**
  * A labelled text input (T-095).
  *
- * DESIGN.md: surface fill, 12px radius, 52px, **a visible caption label above —
- * never a placeholder standing in for a label**. A placeholder disappears the
- * moment someone types, so a student who looks away mid-form has no way back to
- * what the field was for; it is also invisible to a screen reader as a label and
+ * DESIGN.md: surface fill, 8px radius, 52px, **a visible label above — never a
+ * placeholder standing in for a label**. A placeholder disappears the moment
+ * someone types, so a student who looks away mid-form has no way back to what
+ * the field was for; it is also invisible to a screen reader as a label and
  * fails contrast at almost every implementation.
+ *
+ * **The label is sentence case, 14px, in the full ink** (redesign handoff,
+ * 2026-10-01). It was the uppercase 13px caption style, shared with eyebrows and
+ * table meta — so a field label and a section's throwaway kicker were set
+ * identically, and the thing you have to read to fill the form in was the
+ * quieter of the two. The caption style stays where it belongs, on eyebrows and
+ * meta; a label is content.
  *
  * Errors set `aria-invalid`, point at the message with `aria-describedby`, and
  * the message names the cause **and** the fix. "Invalid phone" tells somebody
@@ -36,7 +43,7 @@ export function Input({ label, error, hint, className, ...rest }: InputProps) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-caption text-ink-2 uppercase">
+      <label htmlFor={id} className="text-ink block text-[14px] font-semibold">
         {label}
       </label>
       <input
@@ -49,11 +56,11 @@ export function Input({ label, error, hint, className, ...rest }: InputProps) {
         {...rest}
       />
       {invalid ? (
-        <p id={errorId} className="text-caption text-wrong" role="alert">
+        <p id={errorId} className="text-wrong text-[13px]" role="alert">
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-caption text-ink-2">
+        <p id={hintId} className="text-ink-2 text-[13px]">
           {hint}
         </p>
       ) : null}

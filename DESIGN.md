@@ -416,6 +416,31 @@ be recoloured one at a time.
 > `#5b4be0` violet and an Ethiopic `@font-face` — and stayed broken for three weeks after the
 > palette changed, because app icons are regenerated about twice a year.
 
+## The three doors
+
+Sign in, sign up and reset share one frame — `AuthShell`: a back arrow, the mark, an optional
+step label, a heading and one sentence. They were drifting apart before it existed (sign-in
+centred its logo and set a `text-title`; the code flow had no mark and no way back at all),
+which is three slightly different front doors to one product.
+
+**440px, not the 640px student measure.** A form of three fields at 640px on a laptop is three
+very wide fields, and a wide text input reads as a place to write a paragraph.
+
+**Every door is unframed.** No sidebar, no bottom bar. Five destinations shown to somebody who
+cannot reach any of them is an invitation to five sign-in walls — `/signup` and `/reset` were
+missing from that list until the redesign, and `/signin` being in it is what hid the gap.
+
+**Sign-up and reset are three steps, not the handoff's two.** Phone, code, password: the
+server's register flow is three calls, and this redesign changes the interface, not the API.
+The step label says so on every screen.
+
+**The six-digit code is six boxes over one input.** Six separate fields is the usual build and
+the one that breaks — paste fills one box, `autocomplete="one-time-code"` has nothing single to
+attach to, and a screen reader announces six unlabelled fields. There is one real input holding
+the whole string, laid transparently over six presentational boxes, which keeps SMS autofill,
+paste and password managers working. Its focus ring is drawn on the boxes, since an invisible
+field shows an invisible ring.
+
 ## Components
 
 ### Buttons
@@ -471,7 +496,8 @@ headline figure is their weighted mean. Every statement ends in a practice actio
 - **Card:** Surface, 16px radius, Card shadow, 16px padding. Never nested.
 - **Chip:** Surface 2, full pill, caption type. State chips take the soft fill and text colour
   of their state.
-- **Input:** Surface, 8px radius, 52px, with a visible caption label above — never a
+- **Input:** Surface, 8px radius, 52px, with a visible label above — sentence case, 14px,
+  full ink — never a
   placeholder standing in for a label. Focus takes the brand outline and border. Errors set
   `aria-invalid`, point at the message with `aria-describedby`, and the message names the cause
   _and_ the fix.
