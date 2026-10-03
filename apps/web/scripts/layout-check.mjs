@@ -43,7 +43,7 @@ const ROUTES = [
   { path: '/', as: 'userc' },
   // The signed-in hub, which is a different page from `/` and was not measured
   // at all until it started carrying per-student state.
-  { path: '/home', as: 'userc' },
+  { path: '/today', as: 'userc' },
   { path: '/practice', as: 'userc' },
   { path: '/community', as: 'userc' },
   { path: '/exam', as: 'userc' },

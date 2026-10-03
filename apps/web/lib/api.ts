@@ -1163,7 +1163,13 @@ export const api = {
 
   standing: (): Promise<StandingView> => call<StandingView>('/me/standing'),
 
-  pointsLedger: (): Promise<LedgerRow[]> => call<LedgerRow[]>('/me/points'),
+  /*
+   * `limit` is the server's own query parameter (1–200, default 50). Today asks
+   * for the maximum, because it reads the last seven days off this page and a
+   * short page would draw active days as empty.
+   */
+  pointsLedger: (limit?: number): Promise<LedgerRow[]> =>
+    call<LedgerRow[]>(limit === undefined ? '/me/points' : `/me/points?limit=${limit}`),
 
   leaderboard: (): Promise<LeaderboardView> => call<LeaderboardView>('/me/leaderboard'),
 
@@ -1194,8 +1200,7 @@ export const api = {
    * ADMIN only. Oldest first, because a report that has waited longest is the
    * one most likely to have been abandoned.
    */
-  moderationQueue: (): Promise<ReportedPost[]> =>
-    call<ReportedPost[]>('/admin/community/reports'),
+  moderationQueue: (): Promise<ReportedPost[]> => call<ReportedPost[]>('/admin/community/reports'),
 
   /** Everything currently hidden. Where Restore is reachable from. */
   hiddenPosts: (): Promise<HiddenPost[]> => call<HiddenPost[]>('/admin/community/hidden'),
@@ -1258,7 +1263,10 @@ export const api = {
    * `/progress` told every student "No exam date is set yet, so there is no
    * daily target to work out", permanently.
    */
-  adminSetExamDate: (fieldId: string, examDate: string | null): Promise<{ examDate: string | null }> =>
+  adminSetExamDate: (
+    fieldId: string,
+    examDate: string | null,
+  ): Promise<{ examDate: string | null }> =>
     call(`/admin/fields/${fieldId}/exam-date`, {
       method: 'POST',
       body: JSON.stringify({ examDate }),

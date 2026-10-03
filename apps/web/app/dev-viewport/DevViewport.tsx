@@ -18,7 +18,7 @@
  * Usage:
  *
  *     /dev-viewport?w=390&path=/practice
- *     /dev-viewport?w=768&path=/home
+ *     /dev-viewport?w=768&path=/today
  *
  * The frame is the *only* thing on the page and carries no chrome of its own,
  * so a screenshot of it is a screenshot of the app at that width. Measurements
@@ -36,7 +36,7 @@ import { useState } from 'react';
 const PRESETS = [360, 390, 640, 768, 1023, 1024, 1280, 1440];
 
 const DEFAULT_WIDTH = 390;
-const DEFAULT_PATH = '/home';
+const DEFAULT_PATH = '/today';
 
 /** A query value inside sane bounds, or the fallback. */
 function bounded(raw: string | null, fallback: number): number {

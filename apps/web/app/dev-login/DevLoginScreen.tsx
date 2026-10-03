@@ -133,13 +133,13 @@ export function DevLoginScreen() {
         return;
       }
       /*
-       * `/home`, not `/`.
+       * `/today`, not `/`.
        *
        * `/` is the marketing page and greets a signed-in student with "Start
        * with your phone number", so a sign-in that had just worked looked like
        * one that had not.
        */
-      window.location.assign('/home');
+      window.location.assign('/today');
     } catch {
       setState({ kind: 'error', message: c.devLogin.noServer });
     }

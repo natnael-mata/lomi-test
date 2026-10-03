@@ -99,7 +99,7 @@ export function StaffOnly({
           {/* Somewhere to go. The refusals QA found were a single grey sentence
               on an otherwise empty page with no navigation on it at all — a dead
               end in a product the person is a paying student of. */}
-          <a href="/home" className="btn-primary self-start">
+          <a href="/today" className="btn-primary self-start">
             {c.staff.refusedHome}
           </a>
         </Card>

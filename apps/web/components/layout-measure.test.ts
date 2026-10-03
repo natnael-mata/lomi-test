@@ -66,7 +66,8 @@ describe('the measures come from DESIGN.md (§ Layout)', () => {
   });
 
   it('applies the data measure to exactly the screens made of figures', () => {
-    expect(MEASURES.dataRoutes).toEqual(['/progress', '/standing']);
+    // Today joined in the redesign: it is a dashboard of figures, not prose.
+    expect(MEASURES.dataRoutes).toEqual(['/today', '/progress', '/standing']);
     // Practice, exam and checkout are prose and must keep the reading measure.
     for (const prose of ['/practice', '/exam', '/checkout']) {
       expect(MEASURES.dataRoutes, `${prose} is read, not scanned`).not.toContain(prose);
@@ -116,7 +117,7 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
     const linked = [
       ['/checkout', 'app/account/page.tsx'],
       ['/standing', 'app/progress/ProgressScreen.tsx'],
-      ['/community', 'app/HomeScreen.tsx'],
+      ['/community', 'app/today/TodayScreen.tsx'],
     ] as const;
     for (const [href, file] of linked) {
       const source = readFileSync(resolve(here, '..', file), 'utf8');

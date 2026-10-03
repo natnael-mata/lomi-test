@@ -149,7 +149,7 @@ export function AdminBar({ pathname }: { pathname: string }) {
         */}
         <div className="ml-auto flex items-center gap-1">
           <a
-            href="/home"
+            href="/today"
             className="text-ink-2 hover:text-ink text-caption rounded-control inline-flex min-h-11 items-center px-3"
           >
             {c.admin.nav.backToApp}

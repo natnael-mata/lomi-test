@@ -1,11 +1,14 @@
 /**
- * The front door (T-198).
+ * Today, the signed-in hub (T-198, redesigned 2026-10-01).
  *
- * This screen replaced the Phase 0 scaffold, which was still shipping "Screens
+ * This was `home.test.ts`, guarding `HomeScreen`. The hub moved to `/today` in
+ * the redesign and `/home` redirects there; every rule below was written about
+ * the hub rather than about an address, so they moved with it.
+ *
+ * The screen replaced the Phase 0 scaffold, which was still shipping "Screens
  * land from Phase 4 onward" and a row of design-system probes to anybody who
  * opened the deployed site. Most of what is checked here is that it cannot
- * regress to that: the scaffold is gone, every real surface is reachable, and
- * the links survive without JavaScript.
+ * regress to that, and that each figure it shows comes from the API.
  */
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -13,15 +16,15 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { stripComments } from '../lib/strip-comments';
-import { DESTINATIONS } from '../components/Navigation';
-import { en } from '../lib/i18n/dictionary';
+import { stripComments } from '../../lib/strip-comments';
+import { DESTINATIONS } from '../../components/Navigation';
+import { en } from '../../lib/i18n/dictionary';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const screen = stripComments(readFileSync(resolve(here, 'HomeScreen.tsx'), 'utf8'));
+const screen = stripComments(readFileSync(resolve(here, 'TodayScreen.tsx'), 'utf8'));
 const page = readFileSync(resolve(here, 'page.tsx'), 'utf8');
 
-describe('the home screen (T-198)', () => {
+describe('Today, the hub (T-198)', () => {
   it('still has code left after the comments are stripped', () => {
     expect(screen).toContain('c.home.goCheckout');
     expect(screen.length).toBeGreaterThan(1200);
@@ -75,13 +78,91 @@ describe('the home screen (T-198)', () => {
    * They were Practise, Mock exam, Progress, Where you stand and Get full
    * access — the same five the navigation bar carries directly above, in the
    * same order, minus Ask. A menu printed twice on one screen, the second copy
-   * incomplete. What only this screen can say is what is true of *this* student
-   * today, so that is what is left.
+   * incomplete.
+   *
+   * **Restated for the redesign.** This used to forbid any `href="/progress"`
+   * at all. The handoff's topic block ends in "All 9 topics →", which is a
+   * contextual link from a summary to its detail, not a tile in a second menu —
+   * and forbidding the literal would only have taught the code to hide the
+   * href in a variable, which is the guard passing on silence. So the rule is
+   * now the thing it meant: no list of destinations, and no destination linked
+   * more than once.
    */
   it('does not reprint the navigation bar as body content', () => {
-    for (const href of ['/practice', '/exam', '/progress', '/standing']) {
-      expect(screen, `${href} is already one tap away in the bar`).not.toContain(`href="${href}"`);
+    expect(screen).not.toContain('DESTINATIONS');
+    expect(screen).not.toMatch(/c\.nav\./);
+    for (const href of ['/practice', '/exam', '/mocks', '/progress', '/standing', '/account']) {
+      const links = screen.split(`href="${href}"`).length - 1;
+      expect(links, `${href} linked ${links} times`).toBeLessThanOrEqual(1);
     }
+  });
+
+  /**
+   * Every figure has a source (redesign).
+   *
+   * The handoff's Today is full of numbers, and the risk in rebuilding it is
+   * copying one. These are the reads each block depends on; and the phrases
+   * below are the handoff's sample figures that have no source here, which must
+   * never appear as literals.
+   */
+  it('reads every figure from the API', () => {
+    for (const call of [
+      'api.coverage(',
+      'api.readiness(',
+      'api.practiceSummary(',
+      'api.trend(',
+      'api.standing(',
+      'api.pointsLedger(',
+    ]) {
+      expect(screen, call).toContain(call);
+    }
+    for (const invented of [
+      'Week 9',
+      'of 15',
+      '25 minutes',
+      'opens Saturday',
+      '43',
+      '62%',
+      '1,240',
+    ]) {
+      expect(screen, `handoff sample "${invented}" copied in`).not.toContain(invented);
+    }
+  });
+
+  /**
+   * One failing endpoint does not blank the page.
+   *
+   * Six reads feed six blocks; `Promise.all` would let a slow leaderboard take
+   * down the countdown.
+   */
+  it('settles its reads independently', () => {
+    expect(screen).toContain('Promise.allSettled');
+  });
+
+  /**
+   * The streak is never "in a row".
+   *
+   * `streakDays` is a count of distinct days, ever, and nothing subtracts from
+   * it (T-191). The handoff's "9 study days in a row" would tell somebody who
+   * missed a day that their number is wrong, or about to be taken.
+   */
+  it('does not call the study-day count consecutive', () => {
+    for (const n of [1, 9]) {
+      expect(en.today.streak(n).toLowerCase()).not.toContain('in a row');
+    }
+    expect(en.today.streakWhy.toLowerCase()).not.toContain('ends');
+  });
+
+  /**
+   * The week row is drawn only when the ledger page covers the week.
+   *
+   * Each answer earns ledger rows, so a full page can stop days short of a
+   * week — and the days past it would be drawn as empty although they were
+   * studied.
+   */
+  it('omits the week rather than drawing it from a short page', () => {
+    expect(screen).toContain('LEDGER_PAGE');
+    expect(screen).toMatch(/if \(!complete\) return null/);
   });
 
   /**

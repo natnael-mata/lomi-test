@@ -465,6 +465,92 @@ export const en = {
     claimWaiting: (txRef: string) => `Your transfer ${txRef} is with our team to be checked.`,
   },
 
+  /*
+   * Today — the hub (redesign handoff, 2026-10-01, § Today).
+   *
+   * Every figure on that screen is read from the API: the countdown from
+   * coverage, the ring from today's practice summary over the daily target, the
+   * topic bars from readiness, the mock bars from the trend, the streak from
+   * standing. Where the handoff prints a number nothing can supply — "Week 9 of
+   * 15", "About 25 minutes", "Mock 5 opens Saturday" — it is not printed.
+   */
+  today: {
+    greeting: (hour: number, name: string | null) => {
+      const part = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+      return name ? `Good ${part}, ${name}` : `Good ${part}`;
+    },
+
+    // The hero. Coverage, not readiness — see `TodayScreen`.
+    daysLeft: (days: number) => (days === 1 ? 'day left' : 'days left'),
+    examToday: 'Your exam is today.',
+    examPassed: 'The date set for this exam has passed.',
+    noDate: 'No sitting date is set for this programme yet.',
+    coverage: 'Coverage',
+    coverageLine: (beaten: number, total: number, toTarget: number, target: number) =>
+      toTarget === 0
+        ? `${beaten} of ${total} beaten — past the ${target}% target.`
+        : `${beaten} of ${total} beaten. ${toTarget} more to reach ${target}%.`,
+
+    // Today's plan.
+    planTitle: "Today's plan",
+    /*
+     * The ring's caption, by state.
+     *
+     * "Done" is said as done and not as "0 to go": a student who has hit the
+     * target should be told so in words, because a zero next to a full ring
+     * still reads as a number to check.
+     */
+    toGo: (n: number) => `${n} question${n === 1 ? '' : 's'} to go`,
+    doneToday: 'Done for today',
+    doneTodayWhy: 'Anything more is ahead of pace.',
+    answeredToday: (n: number) => (n === 0 ? 'Nothing answered yet today' : `${n} answered today`),
+    noTarget: 'There is no daily target until a sitting date is set.',
+    continueWith: (topic: string) => `Continue with ${topic}`,
+
+    // Topics by exam weight.
+    topicsTitle: 'Topics by exam weight',
+    allTopics: (n: number) => `All ${n} topics`,
+    // "Share of past papers", never "% of exam": D5, and `copy.test.ts`.
+    weightOf: (pct: number) => `${pct}% of past papers`,
+    notTried: 'Not tried yet',
+    noneTried: 'Answer a few questions and each topic shows how you are doing on it.',
+    belowLine: (n: number, line: number) =>
+      n === 0
+        ? `Every topic you have tried is above ${line}%.`
+        : `${n} topic${n === 1 ? ' is' : 's are'} below ${line}% — that is where today's questions come from.`,
+
+    // Mocks.
+    mocksTitle: 'Mock scores',
+    sinceLast: (delta: number, label: string) =>
+      delta === 0
+        ? `Level with ${label}`
+        : `${delta > 0 ? '+' : '−'}${Math.abs(delta)} since ${label}`,
+    sitAMock: 'Sit a mock',
+
+    /*
+     * The streak — and it is NOT "in a row".
+     *
+     * The handoff writes "9 study days in a row". This product's streak is a
+     * count of distinct days the student showed up, ever, and nothing
+     * subtracts from it (T-191, `engagement.service.ts`: "Nothing subtracts from
+     * it"). Calling it "in a row" would tell somebody who missed Tuesday that
+     * their 9 is a lie, or that it is about to be taken away — the punishment
+     * the design rules out.
+     */
+    streak: (days: number) =>
+      days === 0 ? 'No study days yet' : `${days} study day${days === 1 ? '' : 's'}`,
+    points: (total: number, today: number | null) =>
+      today !== null && today > 0
+        ? `${total.toLocaleString('en')} points · +${today} today`
+        : `${total.toLocaleString('en')} points`,
+    streakWhy: 'Every day you show up counts. A missed day never takes one away.',
+    weekLabel: 'The last seven days',
+    weekDayDone: (label: string) => `${label}: studied`,
+    weekDayOpen: (label: string) => `${label}: no activity`,
+
+    couldNotLoad: 'Part of this page did not load. Everything you have answered is safe.',
+  },
+
   practice: {
     title: 'Practise',
     /*

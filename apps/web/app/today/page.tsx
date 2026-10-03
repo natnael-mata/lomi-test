@@ -1,13 +1,13 @@
-import { redirect } from 'next/navigation';
+import { TodayScreen } from './TodayScreen';
+
+export const metadata = { title: 'Today' };
 
 /**
- * Today — the hub (redesign step 6).
+ * Today — the hub a signed-in student lands on (redesign step 6).
  *
- * A redirect until that step builds it. The navigation names five destinations
- * and this is the first of them, so it has to go *somewhere* real from the
- * moment the bar ships: a tab that 404s is worse than a tab that is honest
- * about being the old screen for a few commits.
+ * It replaced `/home`, which redirects here so that a bookmark, a link in an
+ * old SMS or a browser's autocomplete does not end at a 404. See `TodayScreen`.
  */
-export default function TodayPage(): never {
-  redirect('/home');
+export default function TodayPage() {
+  return <TodayScreen />;
 }

@@ -1,16 +1,13 @@
-import { HomeScreen } from '../HomeScreen';
-
-export const metadata = { title: 'Home' };
+import { redirect } from 'next/navigation';
 
 /**
- * The signed-in hub.
+ * The old hub's address, kept as a redirect to Today.
  *
- * It was the root route until 2026-08-20, when the public landing page took `/`.
- * The two audiences were always different — `HomeScreen`'s own docstring says a
- * visitor here is "a student with an exam coming, not a prospect to be
- * persuaded" — and serving one page to both meant a stranger's first sight of
- * the product was a hub of five destinations they could not open.
+ * `/home` was where every sign-in landed for two months. Dropping the route
+ * outright would send each of those bookmarks, autocompletes and old links to
+ * a 404 — the "dropping a destination must not orphan its route" rule, applied
+ * to an address rather than a tab.
  */
-export default function Home() {
-  return <HomeScreen />;
+export default function Home(): never {
+  redirect('/today');
 }

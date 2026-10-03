@@ -195,9 +195,9 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
        * asked to type that password on the very next screen.
        *
        * `/choose` for a new account — a student with no programme cannot
-       * practise — and `/home` for a reset, where everything is already set up.
+       * practise — and `/today` for a reset, where everything is already set up.
        */
-      window.location.assign(purpose === 'register' ? '/choose' : '/home');
+      window.location.assign(purpose === 'register' ? '/choose' : '/today');
     } catch (e) {
       if (
         e instanceof ApiError &&

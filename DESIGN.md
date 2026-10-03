@@ -318,8 +318,11 @@ above a heading than below it.
 characters — the question stem, the concept line, the worked solution. It does not apply to a
 screen whose content is numbers: readiness and standing are a headline figure, a weighted
 table and a trend, and at 640px on a 1512px laptop they used 42% of the width and scrolled
-1254px for content that fits one screen. Those two set to a **960px data measure** instead.
-Practice, exam and checkout keep 640px, because what a student reads there is sentences.
+1254px for content that fits one screen. Those two set to a **960px data measure** instead,
+and Today joined them in the redesign — a countdown, a coverage meter, a daily ring, weighted
+topic bars, mock bars and a week of dots, laid on the handoff's 360px card minimum, which at
+640px is one column of cards stacked down a laptop with half the window empty. Practice, exam
+and checkout keep 640px, because what a student reads there is sentences.
 
 Screens are composed of **cards on a tinted ground** rather than full-bleed sections, which
 gives the surface its modern feel and lets a stressed reader see where one idea ends. Cards
@@ -471,6 +474,31 @@ the question differently:
 The retaker question is asked only where there is an exit exam to have sat — `maxGrade` is
 non-null exactly for the school tracks — and nothing is sent for those, so `isRetaker` stays
 unset rather than recording a `false` from somebody nobody asked.
+
+## Today
+
+The hub a signed-in student lands on, at `/today` (`/home` redirects there). **Every figure is
+read, none is drawn**: the countdown and coverage meter from `coverage`, the ring from today's
+practice summary over the derived `perDay`, the topic bars from `readiness`, the mock bars from
+`trend`, the study days and points from `standing` and the ledger. Each block fails on its
+own — six independent reads, settled independently — so a dropped request for the mock trend
+cannot blank the countdown.
+
+**The hero is coverage, not readiness.** The handoff leads with "Readiness 62%" against a 60%
+line. T-256 made coverage the headline because it is a count a student can check ("412 of
+1,240 beaten"); readiness is a weighted mean they cannot. Readiness keeps the job it is good at,
+the per-topic bars and their 60% line — pending orange below it, never the wrong red, because a
+topic under the line is unfinished rather than failed.
+
+Not built, because nothing can supply them: "Week 9 of 15", "About 25 minutes", a per-topic
+split of the daily target, and "Mock 5 opens Saturday" (mocks are on demand). Mock scores stay
+**bars**, per T-138 — a line implies values between sittings, and there are none.
+
+**The study-day count is never "in a row".** It is a count of distinct days a student showed
+up, and nothing subtracts from it. The week of dots is drawn only when the ledger page provably
+covers all seven days; each answer earns ledger rows, so a busy student's page can stop days
+short, and the days past it would otherwise be drawn as empty although they were studied. A day
+off is an outline, never a red dot.
 
 ## Components
 

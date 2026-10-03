@@ -46,7 +46,7 @@ export function PasswordSignIn() {
       await api.signInWithPassword(phone, password);
       // A full load rather than a client route: the session cookie has just
       // changed, and every screen behind this one reads it on mount.
-      window.location.assign('/home');
+      window.location.assign('/today');
     } catch (error) {
       const status = error instanceof ApiError ? error.status : 0;
       if (status === 429) {

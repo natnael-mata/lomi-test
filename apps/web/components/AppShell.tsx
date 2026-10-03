@@ -41,8 +41,16 @@ const STUDENT_MEASURE = 'max-w-[640px]';
  * student is reading their own single result, not scanning a register.
  */
 const DATA_MEASURE = 'max-w-[960px]';
-/** The screens whose content is figures rather than sentences. */
-const DATA_ROUTES = ['/progress', '/standing'];
+/**
+ * The screens whose content is figures rather than sentences.
+ *
+ * `/today` joined with the redesign: it is a countdown, a coverage meter, a
+ * daily ring, weighted topic bars, mock bars and a week of dots — no running
+ * text at all — and the handoff lays its cards on a 360px minimum, which at
+ * 640px means one column of cards stacked down a laptop screen with the right
+ * half of the window empty.
+ */
+const DATA_ROUTES = ['/today', '/progress', '/standing'];
 
 /**
  * Screens that are deliberately outside the frame.
