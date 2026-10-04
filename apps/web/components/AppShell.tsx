@@ -49,8 +49,11 @@ const DATA_MEASURE = 'max-w-[960px]';
  * text at all — and the handoff lays its cards on a 360px minimum, which at
  * 640px means one column of cards stacked down a laptop screen with the right
  * half of the window empty.
+ *
+ * A mock's results joined with step 8: a score card beside the score by topic,
+ * then a list. At 640px the two cards could not sit side by side.
  */
-const DATA_ROUTES = ['/today', '/progress', '/standing'];
+const DATA_ROUTES = ['/today', '/progress', '/standing', '/exam/review'];
 
 /**
  * Screens that are deliberately outside the frame.
@@ -90,7 +93,17 @@ const UNFRAMED = [
  * from every screen. The landing page is the only member and probably always
  * will be, which is why this is a set rather than a second prefix list.
  */
-const UNFRAMED_EXACT = new Set(['/']);
+const UNFRAMED_EXACT = new Set([
+  '/',
+  /*
+   * The exam simulator (redesign, § Mock exam): a full screen of its own, with
+   * its own header carrying the clock and its own footer carrying Previous and
+   * Next. Five tabs under a three hour paper are five ways to wander off it, and
+   * the handoff draws it without them. Exact, so `/exam/review/…` keeps the
+   * frame: a result is somewhere to go next from.
+   */
+  '/exam',
+]);
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? '/';
@@ -183,6 +196,8 @@ function titleFor(pathname: string): string {
 
 /** Screens outside the five destinations that still need a name up top. */
 const OTHER_TITLES: Record<string, string> = {
+  // Before '/exam': these are prefixes, checked in order.
+  '/exam/review': 'Results',
   '/exam': 'Mock exam',
   '/checkout': 'Plans',
   '/community': 'Ask',

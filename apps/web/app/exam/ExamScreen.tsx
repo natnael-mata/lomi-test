@@ -13,12 +13,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnswerOptionGroup } from '../../components/AnswerOptionGroup';
 import type { OptionLabel } from '../../components/AnswerOption';
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { Chip } from '../../components/Chip';
+import { Icon } from '../../components/icons';
 import { CodeBlock } from '../../components/CodeBlock';
 import { ExamTimer } from '../../components/ExamTimer';
 import { JumpGrid } from '../../components/JumpGrid';
-import { ExamReview } from './ExamReview';
 import {
   applyQueue,
   dequeue,
@@ -56,6 +54,8 @@ export function ExamScreen() {
   const [saving, setSaving] = useState(false);
   /** Whether the submit button has been pressed with questions still blank. */
   const [confirming, setConfirming] = useState(false);
+  /** The question grid on a phone, opened above the question. */
+  const [gridOpen, setGridOpen] = useState(false);
   /** The paper on offer and any sitting already open, read before starting. */
   const [preview, setPreview] = useState<ExamPreview | null>(null);
   /** Set when the preview was refused, so the splash stops saying "preparing". */
@@ -184,7 +184,7 @@ export function ExamScreen() {
     const code = e instanceof ApiError ? e.code : null;
     setPhase({
       kind: 'error',
-      message: e instanceof Error ? e.message : 'Something went wrong.',
+      message: e instanceof Error ? e.message : c.exam.didNotGoThrough,
       code,
     });
   };
@@ -197,12 +197,9 @@ export function ExamScreen() {
         setManifest(shape);
         applyClock(next.clock);
         if (shape.clock.state === 'closed') {
-          setSittingId(id);
+          // Already marked. Its results have their own page now.
           setPhase({ kind: 'closed', result: null });
-          void api.examResult(id).then(
-            (result) => setPhase({ kind: 'closed', result }),
-            () => undefined,
-          );
+          window.location.assign(`/exam/review/${id}`);
           return;
         }
         setPhase({ kind: 'sitting' });
@@ -321,16 +318,15 @@ export function ExamScreen() {
    * way every time. If the fetch fails the screen still says the sitting ended
    * rather than showing an error over answers that were saved perfectly well.
    */
+  /*
+   * The results have their own page (redesign, § Results), so a closed paper
+   * goes there rather than rendering them in place. One address for a result
+   * means the one Mocks links to, the one a refresh lands on, and the one a
+   * student is sent to the moment they submit are the same page.
+   */
   const showResult = async (): Promise<void> => {
-    if (!sittingId) {
-      setPhase({ kind: 'closed', result: null });
-      return;
-    }
-    try {
-      setPhase({ kind: 'closed', result: await api.examResult(sittingId) });
-    } catch {
-      setPhase({ kind: 'closed', result: null });
-    }
+    setPhase({ kind: 'closed', result: null });
+    if (sittingId) window.location.assign(`/exam/review/${sittingId}`);
   };
 
   const submit = async (): Promise<void> => {
@@ -343,220 +339,418 @@ export function ExamScreen() {
     }
   };
 
-  if (phase.kind === 'idle') {
+  /*
+   * Starting and resuming without a second press (redesign, § Mocks).
+   *
+   * The Mocks screen's button is the decision, and it arrives here as
+   * `?start=1`; making the student confirm it again on a second screen is a
+   * click spent on the way into a three hour paper. An open paper resumes on a
+   * plain visit too: its clock is already running on the server, and every
+   * second spent on a "resume" card is a second off the paper. A plain visit
+   * with nothing open still shows the card, because nothing should start a
+   * clock on its own because somebody typed an address.
+   */
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStarted.current || phase.kind !== 'idle') return;
+    if (preview === null && !previewFailed) return;
+    const asked = new URLSearchParams(window.location.search).get('start') === '1';
+    if (!asked && !preview?.open) return;
+    autoStarted.current = true;
+    // The address goes back to plain `/exam`, so a refresh resumes rather than
+    // asking to start again.
+    window.history.replaceState(null, '', '/exam');
+    void start();
+    // `start` is recreated every render and deliberately not a dependency;
+    // the ref is what makes this run once.
+  }, [preview, previewFailed, phase.kind]);
+
+  /*
+   * The keyboard (handoff: "← → to move, A to D or 1 to 4 to answer, F to
+   * flag"). Ignored with a modifier held, inside anything editable, while the
+   * confirmation is up, and for any key a focused control has already handled:
+   * the answer options use the arrows to move between themselves, and call
+   * `preventDefault` when they do.
+   */
+  useEffect(() => {
+    if (phase.kind !== 'sitting' || confirming || !item || !sittingId) return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      const key = event.key.toLowerCase();
+      const letter = { a: 'A', b: 'B', c: 'C', d: 'D', '1': 'A', '2': 'B', '3': 'C', '4': 'D' }[
+        key
+      ];
+      if (key === 'arrowleft' && item.position > 1) {
+        event.preventDefault();
+        void goTo(sittingId, item.position - 1);
+      } else if (key === 'arrowright' && item.position < item.totalQuestions) {
+        event.preventDefault();
+        void goTo(sittingId, item.position + 1);
+      } else if (letter && item.question.options.some((o) => o.label === letter)) {
+        event.preventDefault();
+        void save({ chosenLabel: letter });
+      } else if (key === 'f') {
+        event.preventDefault();
+        void save({ isFlagged: !item.flagged });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  if (phase.kind === 'idle' || phase.kind === 'loading') {
     /*
-     * The paper described before it is entered, and an open one said out loud.
-     *
-     * QA left a sitting half-finished, came back, and met the same "Start the
-     * mock" splash with nothing indicating their answers still existed — while
-     * `/practice` was refusing them *because* it was open. Two screens
-     * disagreeing about whether a paper is open, and the one that was right was
-     * the one they were not looking at. They assumed the paper was gone.
-     *
-     * `preview` is null only until the first load returns; the numbers come from
-     * the paper that was actually built rather than from a sentence about the
-     * product's intentions.
+     * Before the paper: reached by typing `/exam` with nothing open, or while
+     * the paper is being fetched. Said in the simulator's own frame, with the
+     * way back to Mocks, since this route has no navigation.
      */
     const open = preview?.open ?? null;
+    const waiting = phase.kind === 'loading' || (preview === null && !previewFailed);
     return (
-      <Card data-state="idle" className="flex flex-col gap-2">
-        <h1 className="text-title">{open ? c.exam.resumeTitle : c.exam.title}</h1>
-        <p className="text-body text-ink-2">
-          {preview
-            ? open
-              ? c.exam.resumeBody(open.answeredCount, preview.totalQuestions)
-              : c.exam.intro(preview.totalQuestions, Math.round(preview.durationSec / 60))
-            : previewFailed
-              ? c.exam.title
-              : c.exam.preparing}
-        </p>
-        <Button className="mt-2" onClick={() => void start()}>
-          {open ? c.exam.resume(open.position) : c.exam.start}
-        </Button>
-      </Card>
-    );
-  }
-
-  if (phase.kind === 'loading') {
-    return (
-      <p data-state="loading" className="text-body text-ink-2 py-8 text-center">
-        {c.exam.preparing}
-      </p>
+      <div className="mx-auto flex w-full max-w-[560px] flex-col gap-6 px-4 py-8">
+        <a
+          href="/mocks"
+          className="text-ink hover:text-link -ml-2 inline-flex min-h-11 items-center gap-1 self-start px-2 text-[14px] font-semibold"
+        >
+          <Icon name="chevronLeft" size={18} />
+          {c.exam.backToMocks}
+        </a>
+        <section
+          data-state={phase.kind}
+          className="border-border bg-surface rounded-card flex flex-col gap-3 border p-6"
+        >
+          <h1 className="font-display text-[24px] font-extrabold">
+            {open ? c.exam.resumeTitle : c.exam.readyTitle}
+          </h1>
+          <p className="text-body text-ink-2">
+            {waiting
+              ? c.exam.preparing
+              : preview
+                ? open
+                  ? c.exam.resumeBody(open.answeredCount, preview.totalQuestions)
+                  : c.exam.intro(preview.totalQuestions, Math.round(preview.durationSec / 60))
+                : c.exam.title}
+          </p>
+          {waiting ? null : (
+            <Button className="mt-2" onClick={() => void start()}>
+              {open ? c.exam.resume(open.position) : c.exam.start}
+            </Button>
+          )}
+        </section>
+      </div>
     );
   }
 
   if (phase.kind === 'error') {
     return (
-      <Card data-state="error">
-        <p className="text-body">{phase.message}</p>
-        {phase.code === 'SUBSCRIPTION_REQUIRED' && (
-          <Button className="mt-4">{c.exam.seePlans}</Button>
-        )}
-      </Card>
+      <div className="mx-auto flex w-full max-w-[560px] flex-col gap-6 px-4 py-8">
+        <a
+          href="/mocks"
+          className="text-ink hover:text-link -ml-2 inline-flex min-h-11 items-center gap-1 self-start px-2 text-[14px] font-semibold"
+        >
+          <Icon name="chevronLeft" size={18} />
+          {c.exam.backToMocks}
+        </a>
+        <section
+          data-state="error"
+          className="border-border bg-surface rounded-card flex flex-col gap-4 border p-6"
+        >
+          <p className="text-body">{phase.message}</p>
+          {/* A link, and it goes somewhere. This was a `<Button>` with no
+              handler: "Get full access", pressed, did nothing at all. */}
+          {phase.code === 'SUBSCRIPTION_REQUIRED' && (
+            <a href="/checkout" className="btn-primary">
+              {c.exam.seePlans}
+            </a>
+          )}
+          {phase.code === 'FIELD_REQUIRED' && (
+            <a href="/choose" className="btn-primary">
+              {c.home.chooseProgramme}
+            </a>
+          )}
+        </section>
+      </div>
     );
   }
 
   if (phase.kind === 'closed') {
-    if (!phase.result) {
-      return (
-        <Card data-state="closed">
-          <h1 className="text-title">{c.exam.finished}</h1>
-          <p className="text-body text-ink-2 mt-2">{c.exam.answersRecorded}</p>
-        </Card>
-      );
-    }
-    return <ExamReview result={phase.result} />;
+    return (
+      <p data-state="closed" className="text-body text-ink-2 px-4 py-12 text-center">
+        {c.exam.openingResults}
+      </p>
+    );
   }
 
   if (!item || !manifest || !sittingId) return null;
-
-  // The grid shows the server's view with the outbox laid over it. Without this
-  // an answer made offline reads as unanswered, and the reasonable thing for a
-  // student to do about that is answer it a second time.
   const slots = applyQueue(manifest.slots, pending);
   const answeredCount = slots.filter((s) => s.answered).length;
+  const flaggedCount = slots.filter((s) => s.flagged).length;
+  const blankCount = manifest.totalQuestions - answeredCount;
+  const last = item.position >= item.totalQuestions;
 
-  return (
-    <div className="flex flex-col gap-4" data-state="sitting">
-      <header className="flex items-center justify-between gap-2">
-        <Chip>{c.exam.questionOf(item.position, item.totalQuestions)}</Chip>
-        <ExamTimer remainingSec={remaining} durationSec={durationRef.current} />
-      </header>
-
-      {/* The paper this one replaced, and what became of it. Without this a
-          fresh "Question 1 of 20" on a full clock reads as work thrown away. */}
-      {settledNotice !== null && (
-        <p className="text-caption text-ink-2" data-settled-previous>
-          {settledNotice}
-        </p>
-      )}
-
-      {/* Says the work is safe, because the alternative is a student who thinks
-          it is not and answers everything twice. It does not say "offline" —
-          what they need to know is the state of their answers, not the state of
-          the radio. */}
-      {pending.length > 0 && (
-        <p className="text-caption text-ink-2" data-pending-sync={pending.length}>
-          {pending.length === 1
-            ? '1 answer saved on this phone'
-            : `${pending.length} answers saved on this phone`}
-          , waiting to send. Keep going. They go up when the connection returns.
-        </p>
-      )}
-
-      <Card as="section">
-        <p className="text-stem" data-stem="">
-          {item.question.stem}
-        </p>
-        {item.question.codeBlock && (
-          <div className="mt-3">
-            <CodeBlock code={item.question.codeBlock} />
-          </div>
-        )}
-      </Card>
-
-      <AnswerOptionGroup
-        ariaLabel={item.question.stem}
-        choices={item.question.options.map((o) => ({
-          label: o.label as OptionLabel,
-          text: o.text,
-          state: item.chosenLabel === o.label ? 'selected' : 'default',
-        }))}
-        onSelect={(label) => void save({ chosenLabel: label })}
-      />
-
-      {/*
-        `title`, not `blockingReason`.
-
-        `blockingReason` replaces the button's visible label, which is right for
-        a primary action — "Choose an answer first" is more use than a greyed-out
-        "Check answer". It is wrong here: it turned Back into a button reading
-        "This is the first question", a full sentence where a one-word control
-        should be, which QA read as a sentence that looked pressable and did
-        nothing. On question 1 of 20 a greyed-out "Back" needs no explaining, and
-        the navigator above already says where you are.
-      */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          disabled={item.position <= 1}
-          title={item.position <= 1 ? c.exam.firstQuestion : undefined}
-          onClick={() => void goTo(sittingId, item.position - 1)}
+  /*
+   * The question navigator, with the counts and the way to submit.
+   *
+   * One component for both places it appears: the panel beside the paper on a
+   * desktop, and the panel a phone opens above the question. Two copies are how
+   * the counts on one end up disagreeing with the other.
+   */
+  const panel = (
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display text-[17px] font-bold">{c.exam.allQuestions}</h2>
+        <button
+          type="button"
+          className="btn-ghost w-auto px-4 lg:hidden"
+          onClick={() => setGridOpen(false)}
         >
-          {c.common.back}
-        </Button>
-        <Button
-          variant="ghost"
-          disabled={item.position >= item.totalQuestions}
-          title={item.position >= item.totalQuestions ? c.exam.lastQuestion : undefined}
-          onClick={() => void goTo(sittingId, item.position + 1)}
-        >
-          {c.common.next}
-        </Button>
+          {c.exam.hideQuestions}
+        </button>
       </div>
-
-      <Button
-        variant="ghost"
-        data-flag-toggle=""
-        aria-pressed={item.flagged}
-        onClick={() => void save({ isFlagged: !item.flagged })}
-      >
-        {item.flagged ? c.exam.unflag : c.exam.flag}
-      </Button>
-
+      <dl className="grid grid-cols-3 gap-2">
+        {[
+          [c.exam.countAnswered, answeredCount, 'text-ink'],
+          [c.exam.countBlank, blankCount, 'text-ink'],
+          [c.exam.countFlagged, flaggedCount, 'text-pending'],
+        ].map(([label, value, tone]) => (
+          <div
+            key={label}
+            className="bg-bg rounded-control flex flex-col items-center gap-0.5 py-2.5"
+          >
+            {/* 18px, under the stem: the handoff's 22px out-sized the question on
+                a desktop, which the Stem Supremacy Rule does not allow. */}
+            <dd className={`font-display num text-[18px] font-extrabold ${tone}`}>{value}</dd>
+            <dt className="text-ink-3 text-[12px] font-medium">{label}</dt>
+          </div>
+        ))}
+      </dl>
       <JumpGrid
         slots={slots}
         currentPosition={item.position}
-        onJump={(position) => void goTo(sittingId, position)}
+        onJump={(position) => {
+          setGridOpen(false);
+          void goTo(sittingId, position);
+        }}
       />
-
-      {/*
-        Asked before the paper closes, and only when there is something to ask
-        about (T-236).
-
-        Submitting is the one action in the product that cannot be undone — the
-        sitting closes, unanswered questions score zero, and there is no reopen.
-        The button sat directly under the jump grid with nothing between a
-        mis-tap and a finished exam.
-
-        An inline panel rather than `window.confirm`: the dialog is unstyleable,
-        renders as a browser chrome bar inside the Telegram webview where most of
-        these sittings happen, and cannot carry the count that makes the question
-        worth asking. A student with every question answered still gets the plain
-        button — a confirmation that always fires is one nobody reads.
-      */}
-      {confirming ? (
-        <Card
-          as="section"
-          role="alertdialog"
-          aria-labelledby="submit-confirm"
-          className="flex flex-col gap-3"
-        >
-          <h2 id="submit-confirm" className="text-label">
-            {c.exam.confirmTitle}
-          </h2>
-          <p className="text-body text-ink-2">
-            {c.exam.confirmBody(manifest.totalQuestions - answeredCount)}
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row-reverse">
-            <Button className="sm:flex-1" onClick={() => setConfirming(false)}>
-              {c.exam.confirmBack}
-            </Button>
-            <Button variant="ghost" className="sm:flex-1" onClick={() => void submit()}>
-              {c.exam.confirmSubmit}
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        <Button
-          onClick={() => {
-            if (answeredCount < manifest.totalQuestions) setConfirming(true);
-            else void submit();
-          }}
-        >
-          {c.exam.submit(answeredCount, manifest.totalQuestions)}
-        </Button>
-      )}
+      <button
+        type="button"
+        className="bg-brand hover:bg-brand-hover text-on-brand rounded-control min-h-[52px] text-[15px] font-semibold"
+        onClick={() => {
+          setGridOpen(false);
+          setConfirming(true);
+        }}
+      >
+        {c.exam.reviewAndSubmit}
+      </button>
     </div>
   );
+
+  return (
+    <div className="bg-bg flex min-h-dvh flex-col" data-state="sitting">
+      {/*
+        The paper's own header: the way out, what this is, how far through,
+        and the clock. Sticky, so the clock is never scrolled away from.
+      */}
+      <header className="bg-surface border-border sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b px-3 lg:px-6">
+        <a
+          href="/mocks"
+          aria-label={c.exam.leave}
+          title={c.exam.leave}
+          className="text-ink hover:bg-surface-2 rounded-control inline-flex size-11 shrink-0 items-center justify-center"
+        >
+          <Icon name="cross" size={20} />
+        </a>
+        <div className="flex min-w-0 flex-col">
+          <span className="font-display truncate text-[16px] leading-5 font-bold">
+            {manifest.examName}
+          </span>
+          <span className="text-ink-3 num text-[13px]">
+            {c.exam.answeredOf(answeredCount, manifest.totalQuestions)}
+          </span>
+        </div>
+        <div className="ml-auto">
+          <ExamTimer remainingSec={remaining} durationSec={durationRef.current} />
+        </div>
+      </header>
+
+      <div className="flex flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="mx-auto flex w-full max-w-[760px] flex-1 flex-col gap-5 px-4 py-6 lg:px-8">
+            {/*
+              Said once, after a stale sitting was closed out to make room for
+              this one. Not an error: their answers to it were kept and marked.
+            */}
+            {settledNotice !== null && (
+              <p className="text-caption text-ink-2" data-settled-previous>
+                {settledNotice}
+              </p>
+            )}
+
+            {/* Says the work is safe, because the alternative is a student who
+                thinks it is not and answers everything twice. */}
+            {pending.length > 0 && (
+              <p className="text-caption text-ink-2" data-pending-sync={pending.length}>
+                {c.exam.pendingSync(pending.length)}
+              </p>
+            )}
+
+            {gridOpen ? (
+              <section className="border-border bg-surface rounded-card border p-5 lg:hidden">
+                {panel}
+              </section>
+            ) : null}
+
+            {confirming ? (
+              /*
+                The confirmation, in place of the question.
+
+                Every time, with the counts and the time left: a submitted paper
+                cannot be reopened. Not a modal, because DESIGN.md allows one in
+                the whole product and it is the emergency retire. The safe choice
+                is the primary button.
+              */
+              <section
+                role="alertdialog"
+                aria-labelledby="submit-confirm"
+                aria-describedby="submit-confirm-body"
+                className="border-border bg-surface rounded-card flex flex-col gap-4 border p-6"
+              >
+                <h1 id="submit-confirm" className="font-display text-[22px] font-extrabold">
+                  {blankCount > 0 ? c.exam.confirmTitle : c.exam.confirmReadyTitle}
+                </h1>
+                <p id="submit-confirm-body" className="text-body text-ink-2">
+                  {blankCount > 0 ? c.exam.confirmBody(blankCount) : c.exam.confirmReadyBody}
+                </p>
+                <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    [c.exam.countAnswered, String(answeredCount)],
+                    [c.exam.countBlank, String(blankCount)],
+                    [c.exam.countFlagged, String(flaggedCount)],
+                    [c.exam.timeLeft, clockText(remaining)],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="bg-bg rounded-control flex flex-col items-center gap-0.5 py-3"
+                    >
+                      <dd className="font-display num text-[20px] font-extrabold">{value}</dd>
+                      <dt className="text-ink-3 text-[12px] font-medium">{label}</dt>
+                    </div>
+                  ))}
+                </dl>
+                <div className="flex flex-col gap-2 sm:flex-row-reverse">
+                  <Button className="sm:flex-1" onClick={() => setConfirming(false)}>
+                    {blankCount > 0 ? c.exam.confirmBack : c.exam.backToPaper}
+                  </Button>
+                  <Button variant="ghost" className="sm:flex-1" onClick={() => void submit()}>
+                    {blankCount > 0 ? c.exam.confirmSubmit : c.exam.submitNow}
+                  </Button>
+                </div>
+              </section>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  {/* A label, smaller than the stem: the Stem Supremacy Rule,
+                      measured by the layout sweep. */}
+                  <span className="font-display text-ink text-[17px] font-extrabold">
+                    {c.exam.questionNumber(item.position)}
+                  </span>
+                  <span className="text-ink-3 text-[14px]">
+                    {c.exam.ofTotalTopic(item.totalQuestions, item.question.topic)}
+                  </span>
+                  <button
+                    type="button"
+                    data-flag-toggle=""
+                    aria-pressed={item.flagged}
+                    onClick={() => void save({ isFlagged: !item.flagged })}
+                    className={[
+                      'rounded-control ml-auto inline-flex min-h-11 items-center gap-2 border px-3 text-[14px] font-semibold',
+                      item.flagged
+                        ? 'border-pending bg-pending-soft text-pending'
+                        : 'border-border-input bg-surface text-ink',
+                    ].join(' ')}
+                  >
+                    <Icon name="flag" size={16} />
+                    {item.flagged ? c.exam.flagged : c.exam.flag}
+                  </button>
+                </div>
+
+                <p className="text-stem text-pretty" data-stem="">
+                  {item.question.stem}
+                </p>
+                {item.question.codeBlock && <CodeBlock code={item.question.codeBlock} />}
+
+                <AnswerOptionGroup
+                  ariaLabel={item.question.stem}
+                  choices={item.question.options.map((o) => ({
+                    label: o.label as OptionLabel,
+                    text: o.text,
+                    state: item.chosenLabel === o.label ? 'selected' : 'default',
+                  }))}
+                  onSelect={(label) => void save({ chosenLabel: label })}
+                />
+              </>
+            )}
+          </main>
+
+          {/* Previous and Next, pinned. On the last question Next becomes the
+              way to submit, so the end of the paper is not a dead end. */}
+          {confirming ? null : (
+            <footer className="bg-surface border-border sticky bottom-0 z-10 border-t px-4 py-3">
+              <div className="mx-auto flex w-full max-w-[760px] items-center gap-2 lg:px-4">
+                <span className="text-ink-3 hidden text-[13px] lg:block">{c.exam.keys}</span>
+                <button
+                  type="button"
+                  className="btn-ghost w-auto px-4 lg:ml-auto"
+                  disabled={item.position <= 1}
+                  title={item.position <= 1 ? c.exam.firstQuestion : undefined}
+                  onClick={() => void goTo(sittingId, item.position - 1)}
+                >
+                  <Icon name="chevronLeft" size={18} />
+                  {c.exam.previous}
+                </button>
+                <button
+                  type="button"
+                  aria-expanded={gridOpen}
+                  aria-label={c.exam.allQuestions}
+                  className="btn-ghost w-auto px-3 lg:hidden"
+                  onClick={() => {
+                    setGridOpen((open) => !open);
+                    window.scrollTo({ top: 0 });
+                  }}
+                >
+                  <Icon name="grid" size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary ml-auto w-auto px-5 lg:ml-0"
+                  onClick={() =>
+                    last ? setConfirming(true) : void goTo(sittingId, item.position + 1)
+                  }
+                >
+                  {last ? c.exam.reviewAndSubmit : c.exam.next}
+                  {last ? null : <Icon name="chevronRight" size={18} />}
+                </button>
+              </div>
+            </footer>
+          )}
+        </div>
+
+        <aside className="bg-surface border-border sticky top-16 hidden h-[calc(100dvh-4rem)] w-[360px] shrink-0 overflow-y-auto border-l p-6 lg:block">
+          {panel}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+/** h:mm:ss or m:ss, for the time left on the confirmation. */
+function clockText(seconds: number): string {
+  const s = Math.max(0, seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  const two = (n: number) => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${two(m)}:${two(r)}` : `${m}:${two(r)}`;
 }

@@ -81,7 +81,9 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
                 aria-hidden="true"
               />
             </div>
-            <span className="text-caption text-ink-2 truncate">{point.label}</span>
+            {/* `max-w-full`, or `truncate` has no width to truncate to: a flex
+                column centring its items sizes each to its content. */}
+            <span className="text-caption text-ink-2 max-w-full truncate">{point.label}</span>
           </li>
         ))}
       </ul>

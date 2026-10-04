@@ -96,6 +96,10 @@ const STROKE = {
       <path d="M3 10h18M8 3v4M16 3v4" />
     </>
   ),
+  /* The exam simulator's flag toggle and grid button, from the handoff's own
+     path data. */
+  flag: <path d="M5 21V4h11l-1.5 4L16 12H5" />,
+  grid: <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />,
   chevronRight: <path d="M9 5l7 7-7 7" />,
   chevronLeft: <path d="M15 5l-7 7 7 7" />,
   sun: (

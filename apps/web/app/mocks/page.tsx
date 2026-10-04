@@ -1,11 +1,11 @@
-import { redirect } from 'next/navigation';
+import { MocksScreen } from './MocksScreen';
+
+export const metadata = { title: 'Mock exams' };
 
 /**
- * Mocks — the list of papers (redesign step 8).
- *
- * A redirect to the existing exam screen until that step. See `today/page.tsx`
- * for why these are redirects rather than placeholders.
+ * Mocks: the next paper and the past ones (redesign step 8). It replaced a
+ * redirect to `/exam`. See `MocksScreen`.
  */
-export default function MocksPage(): never {
-  redirect('/exam');
+export default function MocksPage() {
+  return <MocksScreen />;
 }

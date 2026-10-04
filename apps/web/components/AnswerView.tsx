@@ -157,27 +157,43 @@ export function AnswerView({
         the screen makes the reader do the join.
       */}
       {showQuestion && (
-        <section data-section="question" className="flex flex-col gap-2">
+        <section data-section="question" className="flex flex-col gap-3">
           <p className="text-stem">{answer.stem}</p>
-          <ul className="flex flex-col gap-1" data-question-options="">
+          {/*
+            The same rows as practice, resolved and not pressable: the `.option`
+            styles keyed on `data-state`, so a reviewed paper looks like the
+            question the student answered rather than a second design of it.
+          */}
+          <ul className="flex flex-col gap-2.5" data-question-options="">
             {answer.options.map((option) => {
               const right = option.label === answer.correctLabel;
               const mine = option.label === answer.chosenLabel;
+              const state = right ? 'correct' : mine ? 'wrong' : 'default';
               return (
                 <li
                   key={option.label}
                   data-option={option.label}
                   data-correct={right ? '' : undefined}
                   data-chosen={mine ? '' : undefined}
-                  className={`rounded-card flex items-start gap-2 p-2 ${
-                    right ? 'bg-correct-soft text-correct' : 'bg-surface-2 text-ink'
-                  }`}
+                  data-state={state}
+                  className="option"
                 >
-                  <span className="text-label num shrink-0">{option.label}</span>
-                  <span className="text-body grow">{option.text}</span>
-                  {/* The same word the why-wrongs use below. Two names for
-                      "the one you picked" on one screen is one too many. */}
-                  {mine && <Chip tone={right ? 'correct' : 'wrong'}>{copy().answer.yours}</Chip>}
+                  <span className="option-key" aria-hidden="true">
+                    {option.label}
+                  </span>
+                  <span className="flex-1">{option.text}</span>
+                  {/* The same word the why-wrongs use below. Two names for one
+                      fact is a second thing to learn. */}
+                  {right || mine ? (
+                    <span
+                      className={`text-caption inline-flex shrink-0 items-center gap-1.5 uppercase ${
+                        right ? 'text-correct' : 'text-wrong'
+                      }`}
+                    >
+                      <Icon name={right ? 'check' : 'cross'} size={16} strokeWidth={2.5} />
+                      {right ? copy().answer.correct : copy().answer.yours}
+                    </span>
+                  ) : null}
                 </li>
               );
             })}

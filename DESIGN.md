@@ -500,6 +500,39 @@ covers all seven days; each answer earns ledger rows, so a busy student's page c
 short, and the days past it would otherwise be drawn as empty although they were studied. A day
 off is an outline, never a red dot.
 
+## Mocks, the exam, and results
+
+**Mocks** (`/mocks`) is a dark "Next up" card that starts a paper or goes back to the open one,
+and every past paper with its score and a link to its results. Starting is the simulator's
+job: the button goes to `/exam?start=1`, so queued offline answers, an expired paper and the
+resume position are handled in one place.
+
+**The exam** (`/exam`) has the whole screen: no tabs, its own header with the way out, the
+paper's name, the answered count and the clock, and its own footer with Previous and Next. A
+desktop gets the question panel beside the paper (counts, the grid, Review and submit); a phone
+opens the same panel above the question. Keys: the arrows move, A to D or 1 to 4 answer, F
+flags, all ignored with a modifier held or when a control has already used the key.
+
+1. **Leaving is a door, not a cancel.** The paper stays open and its clock keeps running on the
+   server; the control's label says so.
+2. **The confirmation comes every time** with answered, blank and flagged counts and the time
+   left, because a submitted paper cannot be reopened. It replaces the question in place: the
+   emergency retire is the only modal in the system.
+3. **Grid cells stay at 44px.** The handoff draws ten 30px cells to a row; the grid fills its
+   width with as many 44px columns as fit. Answered is the lemon, blank is grey, the current
+   cell is outlined in the link amber at 2px, and a flag is an orange dot in the corner.
+4. **The panel's counts are 18px**, under the stem, not the handoff's 22px.
+
+**Results** (`/exam/review/[id]`) is where a paper goes the moment it closes: the score on the
+dark surface, the score by topic beside it, then the questions, missed ones first, each opening
+its full explanation in place. "Time used" is not shown, because the result carries no start
+time; Blank takes its slot.
+
+**No pass mark is stated anywhere yet.** The handoff says "graded against the 50% pass mark".
+Nothing in this product states one, and the school tracks are not sat against the university
+exit exam's. `PASS_MARK_PCT` in `lib/pass-mark.ts` is typed, null, and wired to the Mocks
+subtitle and the results badge, which appear when it is set.
+
 ## Components
 
 ### Buttons

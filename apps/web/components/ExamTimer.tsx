@@ -7,6 +7,7 @@
  * photosensitivity hazard. The state changes by *colour and weight*, once, and
  * then holds.
  */
+import { Icon } from './icons';
 import {
   formatRemaining,
   formatWithOverrun,
@@ -17,9 +18,9 @@ import {
 
 /** Full class strings — Tailwind cannot see an interpolated one. */
 const TIMER_CLASS: Record<TimerState, string> = {
-  normal: 'bg-surface-2 text-ink',
-  warning: 'bg-pending-soft text-pending',
-  critical: 'bg-wrong-soft text-wrong',
+  normal: 'border-border bg-surface text-ink',
+  warning: 'border-pending/40 bg-pending-soft text-pending',
+  critical: 'border-wrong/40 bg-wrong-soft text-wrong',
 };
 
 /**
@@ -34,7 +35,7 @@ const TIMER_CLASS: Record<TimerState, string> = {
  * not failure, so it gets no alarm colour". A mock sitting keeps `critical`,
  * because there the clock reaching zero really does end the paper.
  */
-const OVERRUN_CLASS = 'bg-pending-soft text-pending';
+const OVERRUN_CLASS = 'border-pending/40 bg-pending-soft text-pending';
 
 export interface ExamTimerProps {
   remainingSec: number;
@@ -62,15 +63,20 @@ export function ExamTimer({ remainingSec, durationSec, countUpPastZero = false }
       data-over={over ? '' : undefined}
       // `num` is tabular figures: without it the digits shuffle sideways every
       // second, which reads as flickering even though nothing is animating.
-      className={`${over ? OVERRUN_CLASS : TIMER_CLASS[state]} rounded-control num text-label px-3 py-1.5`}
+      // The handoff's clock: bordered, with the clock glyph, in tabular
+      // figures. The tint and the colour change together at 20% and 5% left.
+      className={`${over ? OVERRUN_CLASS : TIMER_CLASS[state]} rounded-control num inline-flex items-center gap-1.5 border px-3 py-1.5 text-[clamp(15px,2vw,18px)] font-bold`}
       role="timer"
       aria-live={timerPoliteness(state)}
       // "over" rather than "remaining" past zero: a screen reader saying "2:26
       // remaining" when the student is 2:26 over is worse than saying nothing.
       aria-label={
-        over ? `${formatRemaining(-remainingSec)} over` : `${formatRemaining(remainingSec)} remaining`
+        over
+          ? `${formatRemaining(-remainingSec)} over`
+          : `${formatRemaining(remainingSec)} remaining`
       }
     >
+      <Icon name="clock" size={16} />
       {shown}
     </div>
   );

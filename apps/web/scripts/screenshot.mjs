@@ -45,6 +45,16 @@ try {
 } catch {
   // First run for this persona.
 }
+/*
+ * A cached token can be dead: the layout sweep signs the same personas in,
+ * and the two device limit signs the oldest session out. A dead token would
+ * capture the signed out version of the screen, which looks like a bug in the
+ * screen. So it is checked first, and replaced if the API no longer knows it.
+ */
+if (token) {
+  const check = await fetch(`${API}/me`, { headers: { Cookie: `lomi_session=${token}` } });
+  if (!check.ok) token = '';
+}
 if (!token) {
   token = await sessionToken(API, persona);
   writeFileSync(cache, token);

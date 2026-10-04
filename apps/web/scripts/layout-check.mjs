@@ -47,6 +47,8 @@ const ROUTES = [
   { path: '/practice', as: 'userc' },
   { path: '/community', as: 'userc' },
   { path: '/exam', as: 'userc' },
+  // The list of papers (redesign step 8), which replaced a redirect.
+  { path: '/mocks', as: 'userc' },
   /*
    * A paper read back after the fact.
    *

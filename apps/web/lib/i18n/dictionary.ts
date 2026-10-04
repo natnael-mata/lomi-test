@@ -31,6 +31,15 @@
  * because a student reading this is deciding whether to wait or come back, and
  * the seconds do not change that decision.
  */
+/** "3 hours", "90 minutes", "2 hours 30 minutes": a paper's length in words. */
+export function hoursAndMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} minute${m === 1 ? '' : 's'}`;
+  const hours = `${h} hour${h === 1 ? '' : 's'}`;
+  return m === 0 ? hours : `${hours} ${m} minute${m === 1 ? '' : 's'}`;
+}
+
 export function plainDuration(seconds: number): string {
   const whole = Math.max(0, Math.round(seconds));
   if (whole < 90) return `${whole}s`;
@@ -803,7 +812,7 @@ export const en = {
      * somewhere they can act rather than in an apology.
      */
     previousExpired:
-      'Your last paper ran out of time, so it was marked as it stood. The result is on your progress page. This is a new one.',
+      'Your last paper ran out of time, so it was marked as it stood. Its result is under Mock exams. This is a new one.',
     resumeBody: (answered: number, total: number) =>
       `${answered} of ${total} answered. Your answers are saved and the clock has kept running.`,
     resume: (position: number) => `Go back to question ${position}`,
@@ -830,8 +839,107 @@ export const en = {
     questionNavigator: 'Question navigator',
     everyQuestion: 'Every question',
     questionNumber: (position: number) => `Question ${position}`,
+    questionShort: (position: number) => `Q${position}`,
     showMore: (count: number) => `Show ${count} more`,
     ranOutOfTime: 'The time ran out before you submitted. Everything you answered was kept.',
+
+    /*
+     * The simulator's own frame (redesign handoff, § Mock exam).
+     *
+     * "Leave" rather than "Exit": the paper stays open and its clock keeps
+     * running on the server, so this is a door, not a cancel. The words say so,
+     * because a student who thinks leaving stops the clock comes back to a paper
+     * that marked itself.
+     */
+    leave: 'Leave the paper. The clock keeps running and you can come back to it.',
+    answeredOf: (answered: number, total: number) => `${answered} of ${total} answered`,
+    ofTotalTopic: (total: number, topic: string) => `of ${total} · ${topic}`,
+    flagged: 'Flagged',
+    previous: 'Previous',
+    next: 'Next',
+    allQuestions: 'All questions',
+    hideQuestions: 'Hide the grid',
+    countAnswered: 'Answered',
+    countBlank: 'Blank',
+    countFlagged: 'Flagged',
+    reviewAndSubmit: 'Review and submit',
+    // Named in words rather than drawn as arrow glyphs.
+    keys: 'Arrow keys move · A to D answer · F flags',
+
+    /*
+     * The confirmation, every time, not only with blanks left.
+     *
+     * A submitted paper cannot be reopened, so the counts and the time left are
+     * shown before every submission, the way the handoff draws it. It replaces
+     * the question in place rather than opening over it: DESIGN.md allows one
+     * modal in the whole product, and it is the emergency retire.
+     */
+    confirmReadyTitle: 'Submit your paper?',
+    confirmReadyBody: 'Everything is answered. A submitted paper cannot be reopened.',
+    timeLeft: 'Time left',
+
+    // The idle card, reached by typing /exam with nothing open.
+    readyTitle: 'Ready when you are',
+    didNotGoThrough: 'That did not go through. Your answers are saved. Try again.',
+    openingResults: 'Opening your results…',
+    backToPaper: 'Back to the paper',
+    submitNow: 'Submit the paper',
+    backToMocks: 'Mock exams',
+  },
+
+  /*
+   * Mocks: the list of papers (redesign handoff, § Mocks).
+   *
+   * No pass mark is stated. The handoff says "graded against the 50% pass
+   * mark"; nothing in this product says what the pass mark is, and the school
+   * tracks are not sat against the university exit exam's. See
+   * `PASS_MARK_PCT` in `lib/pass-mark.ts`.
+   */
+  mocks: {
+    title: 'Mock exams',
+    shape: (questions: number, minutes: number) =>
+      `${questions} questions · ${hoursAndMinutes(minutes)}`,
+    passMark: (pct: number) => `graded against the ${pct}% pass mark`,
+    nextUp: 'Next up',
+    nextMock: (n: number) => `Mock ${n}`,
+    openTitle: 'Your paper is open',
+    setAside: (minutes: number) =>
+      `Set aside ${hoursAndMinutes(minutes)} somewhere quiet. The clock does not stop once you start.`,
+    start: (n: number) => `Start mock ${n}`,
+    pastTitle: 'Past mocks',
+    noneYet: 'No mocks sat yet. Your scores appear here, each with its paper to read through.',
+    pastMeta: (date: string, minutes: number) => `${date} · ${minutes} min used`,
+    review: 'Review',
+    couldNotLoad: 'Your mocks could not be loaded. Nothing is lost. Try again.',
+  },
+
+  /*
+   * Results (redesign handoff, § Results).
+   *
+   * "Time used" is not shown: the result does not carry a start time, and a
+   * figure made up from the paper's length would be the first invented number
+   * on the page. Blank takes its place, which the result does carry.
+   */
+  results: {
+    submitted: (name: string) => `${name} · submitted`,
+    timedOut: (name: string) => `${name} · time ran out`,
+    outOf: (total: number) => `/ ${total}`,
+    abovePass: (pct: number) => `Above the ${pct}% pass mark`,
+    belowPass: (pct: number) => `Below the ${pct}% pass mark`,
+    correct: 'Correct',
+    wrong: 'Wrong',
+    blank: 'Blank',
+    byTopic: 'Score by topic',
+    missedTitle: 'Questions you missed',
+    allTitle: 'Every question',
+    toReview: (n: number) => `${n} to review`,
+    showMissed: (n: number) => `Missed (${n})`,
+    showAll: (n: number) => `All (${n})`,
+    youChose: (chose: string | null, answer: string | null) =>
+      chose === null
+        ? `Left blank. The answer is ${answer ?? 'not set'}.`
+        : `You chose ${chose}. The answer is ${answer ?? 'not set'}.`,
+    nothingMissed: 'Nothing missed on this paper.',
   },
 
   summary: {

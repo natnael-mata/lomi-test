@@ -304,7 +304,7 @@ export function TodayScreen() {
 
       {session.kind === 'signedIn' && session.field ? (
         <>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
             <Countdown fieldName={session.field.name} coverage={detail.coverage} />
             <Plan coverage={detail.coverage} today={detail.today}>
               {action}
@@ -313,7 +313,13 @@ export function TodayScreen() {
 
           <div
             className={[
-              'grid gap-4',
+              /*
+                `grid-cols-1`, not the implicit column. An implicit track is
+                `auto`, whose minimum is the widest thing in it, so six mock
+                bars with their labels pushed the phone column 26px past the
+                screen. `grid-cols-1` is `minmax(0, 1fr)`, which lets it shrink.
+              */
+              'grid grid-cols-1 gap-4',
               // Two columns only when there are two things to put in them; a
               // failed readiness read must not leave a blank column.
               detail.readiness ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]' : '',

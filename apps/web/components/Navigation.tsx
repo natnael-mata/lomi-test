@@ -77,7 +77,9 @@ function Item({ destination, active }: { destination: Destination; active: boole
         className={
           // On a phone the pill sits behind the icon only: a filled cell in a
           // 56px bar reads as a button rather than as "you are here".
-          active ? 'bg-brand-soft inline-flex rounded-full px-3 py-0.5 lg:bg-transparent lg:p-0' : ''
+          active
+            ? 'bg-brand-soft inline-flex rounded-full px-3 py-0.5 lg:bg-transparent lg:p-0'
+            : ''
         }
       >
         <Icon name={destination.icon} size={22} />
@@ -222,5 +224,17 @@ function AccessCard() {
  * student on a screen with nothing selected — which reads as being nowhere.
  */
 export function isActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+  const under = (base: string) => pathname === base || pathname.startsWith(`${base}/`);
+  return under(href) || (ALIASES[href] ?? []).some(under);
 }
+
+/**
+ * Routes that belong to a destination without living under its path.
+ *
+ * A mock's results are at `/exam/review/…`, an address older than the Mocks
+ * tab. Without this a student reading their paper had no tab lit at all, which
+ * reads as being nowhere.
+ */
+const ALIASES: Record<string, readonly string[]> = {
+  '/mocks': ['/exam'],
+};

@@ -66,8 +66,8 @@ describe('the measures come from DESIGN.md (§ Layout)', () => {
   });
 
   it('applies the data measure to exactly the screens made of figures', () => {
-    // Today joined in the redesign: it is a dashboard of figures, not prose.
-    expect(MEASURES.dataRoutes).toEqual(['/today', '/progress', '/standing']);
+    // Today and a mock's results joined in the redesign: figures, not prose.
+    expect(MEASURES.dataRoutes).toEqual(['/today', '/progress', '/standing', '/exam/review']);
     // Practice, exam and checkout are prose and must keep the reading measure.
     for (const prose of ['/practice', '/exam', '/checkout']) {
       expect(MEASURES.dataRoutes, `${prose} is read, not scanned`).not.toContain(prose);
@@ -217,5 +217,8 @@ describe('navigation matches DESIGN.md (§ Navigation)', () => {
     // The hub moved to /home and is not a destination either.
     expect(isActive('/home', '/practice')).toBe(false);
     expect(isActive('/progress', '/standing')).toBe(false);
+    // A mock's results live under /exam, and light Mocks.
+    expect(isActive('/exam/review/abc', '/mocks')).toBe(true);
+    expect(isActive('/exam/review/abc', '/practice')).toBe(false);
   });
 });
