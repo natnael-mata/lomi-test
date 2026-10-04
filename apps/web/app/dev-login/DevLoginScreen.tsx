@@ -177,7 +177,7 @@ export function DevLoginScreen() {
               <span className="text-body">
                 {tester.who}
                 {state.kind === 'busy' && state.label === tester.label
-                  ? ` — ${c.devLogin.signingIn}`
+                  ? `. ${c.devLogin.signingIn}`
                   : ''}
               </span>
               <span className="text-caption text-ink-2">{tester.note}</span>

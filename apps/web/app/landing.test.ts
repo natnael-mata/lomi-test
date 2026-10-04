@@ -114,7 +114,7 @@ describe('the landing page (T-269)', () => {
    */
   it('gives every FAQ row a visible disclosure control', () => {
     expect(landing).toContain('group-open:rotate-45');
-    expect(landing).toContain("<Icon name=\"plus\"");
+    expect(landing).toContain('<Icon name="plus"');
   });
 
   /**
@@ -143,7 +143,9 @@ describe('the landing page (T-269)', () => {
     expect(row, 'the honest-numbers FAQ row has moved').toBeTruthy();
     // Coverage: correct AND explainable, out of a stated total.
     expect(row).toContain('answered correctly');
-    expect(row).toContain('not lucky guesses');
+    // Case-insensitive: the no-dashes copy pass turned this clause into its own
+    // sentence, and the rule is about what it says, not where it starts.
+    expect(row!.toLowerCase()).toContain('not lucky guesses');
     // Readiness: the other figure, and over the tried set only.
     expect(row).toContain('Readiness is the other figure');
     expect(row).toContain('questions you have tried');

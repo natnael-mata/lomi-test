@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     apple: [{ url: '/brand/lomi-exams-apple-180.png', sizes: '180x180', type: 'image/png' }],
   },
   description:
-    'Exit-exam preparation for Ethiopian university students — every answer fully explained.',
+    'Exit exam preparation for Ethiopian university students. Every answer fully explained.',
 };
 
 export const viewport: Viewport = {

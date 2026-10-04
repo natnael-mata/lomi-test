@@ -165,7 +165,7 @@ describe('the voice a student reads (T-209)', () => {
   it('leaves the real copy alone', () => {
     for (const text of [
       'That did not load',
-      'Nothing you have answered is lost — your work is saved as you go.',
+      'Nothing you have answered is lost. Your work is saved as you go.',
       'Your answers are recorded.',
       'Open Lomi-Exams to answer it and see why.',
     ]) {
@@ -174,6 +174,32 @@ describe('the voice a student reads (T-209)', () => {
         `"${text}" should have passed`,
       ).toEqual([]);
     }
+  });
+
+  /**
+   * No dashes in anything a student reads (owner, 2026-10-04).
+   *
+   * Em dash, en dash, minus sign, and hyphenated words alike: "Nothing is lost —
+   * try again" became "Nothing is lost. Try again.", "six-digit" became "six
+   * digit", and "Ages 11–12" became "Ages 11 to 12". The product's own name is
+   * the one exception, because it is a name.
+   *
+   * The admin and provider screens, and the design gallery, are not covered
+   * yet: their copy is rebuilt with them in step 12 of the redesign, and this
+   * list shrinks to nothing when it is.
+   */
+  it('uses no dashes', () => {
+    const NOT_YET = [
+      /^app\/admin\//,
+      /^app\/provider\//,
+      /^app\/design\//,
+      /^dictionary:admin\./,
+      /^dictionary:provider\./,
+    ];
+    const offenders = ALL.filter(({ file }) => !NOT_YET.some((p) => p.test(file)))
+      .filter(({ text }) => /[—–−]|\b\w+-\w+\b/.test(text.replaceAll('Lomi-Exams', '')))
+      .map(({ file, text }) => `${file}: "${text}"`);
+    expect(offenders, offenders.join('\n')).toEqual([]);
   });
 
   /**

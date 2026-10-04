@@ -175,6 +175,13 @@ Plain, direct, second person, active. Errors state cause _and_ fix. Numbers are 
 missed day — the explanation is the reward for getting it wrong, and a missed day _adjusts the
 plan_, it does not break a streak.
 
+**No dashes in anything a student reads** (owner, 2026-10-04): no em dash, no en dash, no minus
+sign, no hyphenated words. Use a full stop and start a new sentence ("Nothing is lost. Try
+again."), split the compound ("six digit code"), and spell ranges out ("Ages 11 to 12"). The
+product's name, Lomi-Exams, is the one exception. `components/voice.test.ts` enforces it over
+the dictionary and the JSX; the admin, provider and design gallery copy joins it in redesign
+step 12.
+
 ## Running the API locally
 
 - **`tsx` cannot run this API.** It transpiles with esbuild, which does not emit

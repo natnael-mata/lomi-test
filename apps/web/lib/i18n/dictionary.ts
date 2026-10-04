@@ -47,7 +47,7 @@ export const en = {
     save: 'Save',
     back: 'Back',
     next: 'Next',
-    somethingSaved: 'Nothing you have answered is lost — your work is saved as you go.',
+    somethingSaved: 'Nothing you have answered is lost. Your work is saved as you go.',
   },
 
   importer: {
@@ -67,7 +67,7 @@ export const en = {
     updated: 'Updated',
     rejected: 'Not taken',
     nothingRead: 'That file had no rows in it. Check it is the right file and try again.',
-    couldNotUpload: 'The upload did not go through. Nothing was changed — try again.',
+    couldNotUpload: 'The upload did not go through. Nothing was changed. Try again.',
     allTaken: 'Every row was taken. They are drafts until a reviewer publishes them.',
     /*
      * What the ADDED figure means, said without claiming anything about the
@@ -92,7 +92,7 @@ export const en = {
     title: 'Which programme are you sitting?',
     intro: 'This decides every question you practise. You can change it later.',
     working: 'Loading programmes…',
-    couldNotLoad: 'The programmes could not be loaded. Nothing is lost — try again.',
+    couldNotLoad: 'The programmes could not be loaded. Nothing is lost. Try again.',
     none: 'No programmes are available yet. Check back shortly.',
 
     retakerQuestion: 'Have you sat the exit exam before?',
@@ -114,7 +114,7 @@ export const en = {
     examDayLabel: 'Exam day',
     examDayIn: (days: number) =>
       days <= 0
-        ? 'That date has passed — tell us if it has moved.'
+        ? 'That date has passed. Tell us if it has moved.'
         : `That is ${days} day${days === 1 ? '' : 's'} away. Your daily target is worked out from it, and again every morning.`,
     // Said plainly rather than left blank, and it names who can fix it. A
     // missing date is not the student's problem to solve.
@@ -124,7 +124,7 @@ export const en = {
 
     confirm: 'Start practising',
     saving: 'Saving…',
-    couldNotSave: 'That did not save. Choose again — nothing else is affected.',
+    couldNotSave: 'That did not save. Choose again. Nothing else is affected.',
     chosen: (name: string) => `You are practising ${name}.`,
     change: 'Change programme',
   },
@@ -260,14 +260,14 @@ export const en = {
     sending: 'Sending…',
     couldNotSend: 'The code could not be sent just now. Try again in a moment.',
 
-    sentTo: (phone: string) => `We sent a six-digit code to ${phone}.`,
+    sentTo: (phone: string) => `We sent a six digit code to ${phone}.`,
     // When the server refused to send another one. Says plainly that nothing
     // went out, and points at the code they may already have rather than
     // leaving them waiting for an SMS that is not coming.
     notSentYet: (phone: string) =>
       `We have not sent another code to ${phone} yet. If one arrived earlier, it still works.`,
     codeTitle: 'Enter the code',
-    codeLabel: 'The six-digit code',
+    codeLabel: 'The six digit code',
     codeHint: 'It arrives by SMS and lasts ten minutes.',
     // The number, and the way to correct it. Without this a typo in the number
     // is a dead end — the code goes to a handset nobody is holding, and the
@@ -297,7 +297,7 @@ export const en = {
      * anyway for the bot and any other API caller. Two sentences meant one
      * instant printed twice in two locale formats, one line under the other.
      */
-    nothingWrong: 'Nothing is wrong with your account — codes simply do not last long.',
+    nothingWrong: 'Nothing is wrong with your account. Codes simply do not last long.',
 
     passwordHint: 'At least 8 characters. Anything you will remember.',
     weakPassword: 'That password is too short. Use at least 8 characters.',
@@ -342,7 +342,7 @@ export const en = {
     title: 'Sign in for testing',
     intro: 'Choose who to sign in as. This page is for local testing only.',
     password: 'Password',
-    passwordHint: 'The password dev:testers sets. Already filled in — leave it as it is.',
+    passwordHint: 'The password dev:testers sets. Already filled in. Leave it as it is.',
     signingIn: 'signing in…',
     // 401 here means the seeded account is not on this database — which is the
     // ordinary state of every server except a developer's own. Not an error to
@@ -355,45 +355,44 @@ export const en = {
     // "A normal student" tells a tester nothing about which screens that button
     // will let them reach, which is the only thing they need to choose by.
     userA: 'User A',
-    userANote: 'Brand new — no programme chosen yet. Start here.',
+    userANote: 'Brand new. No programme chosen yet. Start here.',
     userB: 'User B',
     userBNote: '8 of 10 free questions used, and a bank transfer waiting to be checked.',
     userC: 'User C',
-    userCNote: 'Paid for 12 months — receipt, payment history and the mock exam.',
+    userCNote: 'Paid for 12 months. Receipt, payment history and the mock exam.',
     userD: 'User D',
-    userDNote: 'All 10 free questions spent, never paid — meets the paywall on arrival.',
+    userDNote: 'All 10 free questions spent, never paid. Meets the paywall on arrival.',
     userE: 'User E',
-    userENote: 'Paid once and lapsed yesterday — the renewal offer, not the first-time one.',
+    userENote: 'Paid once and lapsed yesterday. The renewal offer, not the first time one.',
     userF: 'User F',
-    userFNote: 'A mock exam open and unsubmitted — resuming it, and the practice lock.',
+    userFNote: 'A mock exam open and unsubmitted. Resuming it, and the practice lock.',
     userG: 'User G',
-    userGNote: 'A mock exam finished — the result, the review and the trend.',
+    userGNote: 'A mock exam finished. The result, the review and the trend.',
     userH: 'User H',
-    userHNote: 'Five days engaged with points banked — the standing and the leaderboard.',
+    userHNote: 'Five days engaged with points banked. The standing and the leaderboard.',
     userI: 'User I',
-    userINote: 'Answered 15 and got a quarter right — readiness when the news is bad.',
+    userINote: 'Answered 15 and got a quarter right. Readiness when the news is bad.',
     userJ: 'User J',
-    userJNote: 'Two live devices, at the limit — the device list, and being evicted.',
+    userJNote: 'Two live devices, at the limit. The device list, and being evicted.',
     // The five school-track accounts. Between them they are the only way to
     // reach the junior band, the Grade 12 split and a coverage figure that is
     // not zero, which is why their absence from this list cost a whole QA pass.
     userK: 'User K',
     userKNote:
-      'Grade 12 Natural, 5 of 12 beaten — and two right answers whose reason was wrong, which do not count.',
+      'Grade 12 Natural, 5 of 12 beaten. And two right answers whose reason was wrong, which do not count.',
     userL: 'User L',
-    userLNote: 'Grade 6, 4 of 6, chose to appear — the junior board, with somebody on it.',
+    userLNote: 'Grade 6, 4 of 6, chose to appear. The junior board, with somebody on it.',
     userM: 'User M',
-    userMNote:
-      'Grade 6, all 6 beaten, never asked about the board — on no board, and still ranked.',
+    userMNote: 'Grade 6, all 6 beaten, never asked about the board. On no board, and still ranked.',
     userN: 'User N',
-    userNNote: 'Grade 8, 2 of 4, chose to appear — the other half of the junior band.',
+    userNNote: 'Grade 8, 2 of 4, chose to appear. The other half of the junior band.',
     userO: 'User O',
     userONote:
-      'Grade 12 Social, 3 of 4 — the half of Grade 12 that Natural must never be measured on.',
+      'Grade 12 Social, 3 of 4. The half of Grade 12 that Natural must never be measured on.',
     admin: 'Admin',
     adminNote: "Sees the admin pages and can settle User B's payment.",
     provider: 'Provider',
-    providerNote: 'Above admin — the activity log and the live health board.',
+    providerNote: 'Above admin. The activity log and the live health board.',
   },
 
   home: {
@@ -488,7 +487,7 @@ export const en = {
     coverage: 'Coverage',
     coverageLine: (beaten: number, total: number, toTarget: number, target: number) =>
       toTarget === 0
-        ? `${beaten} of ${total} beaten — past the ${target}% target.`
+        ? `${beaten} of ${total} beaten. Past the ${target}% target.`
         : `${beaten} of ${total} beaten. ${toTarget} more to reach ${target}%.`,
 
     // Today's plan.
@@ -517,14 +516,15 @@ export const en = {
     belowLine: (n: number, line: number) =>
       n === 0
         ? `Every topic you have tried is above ${line}%.`
-        : `${n} topic${n === 1 ? ' is' : 's are'} below ${line}% — that is where today's questions come from.`,
+        : `${n} topic${n === 1 ? ' is' : 's are'} below ${line}%. That is where today's questions come from.`,
 
     // Mocks.
     mocksTitle: 'Mock scores',
+    // Words, not signs: "−6" is a dash to the eye, and "down 6" is read faster.
     sinceLast: (delta: number, label: string) =>
       delta === 0
         ? `Level with ${label}`
-        : `${delta > 0 ? '+' : '−'}${Math.abs(delta)} since ${label}`,
+        : `${delta > 0 ? 'Up' : 'Down'} ${Math.abs(delta)} since ${label}`,
     sitAMock: 'Sit a mock',
 
     /*
@@ -570,14 +570,14 @@ export const en = {
     nextQuestion: 'Next question',
     practiseTopic: (topic: string) => `Practise ${topic}`,
     whyRanked:
-      "Ranked by how many marks each topic cost — a topic's share of past papers against how much of it you missed, not the number of misses.",
+      "Ranked by how many marks each topic cost. A topic's share of past papers against how much of it you missed, not the number of misses.",
 
     loading: 'Loading a question…',
     checkAnswer: 'Check answer',
     checking: 'Checking…',
     chooseFirst: 'Choose an answer first',
     nothingLeftToday: 'Nothing left to practise in this programme today.',
-    didNotLoad: 'That did not load. Nothing you have answered is lost — try again.',
+    didNotLoad: 'That did not load. Nothing you have answered is lost. Try again.',
 
     // Uppercased in the chip; written here in sentence case so the Amharic,
     // which has no capitals to set, is not asked to imitate them (T-101).
@@ -609,7 +609,7 @@ export const en = {
     reasonSkipCost: 'The question stays unbeaten and comes round again.',
     reasonChecking: 'Checking…',
     reasonRight: 'That is the reason. This question is done.',
-    reasonWrong: 'Not quite the reason — this is what makes the answer work.',
+    reasonWrong: 'Not quite the reason. This is what makes the answer work.',
     reasonNext: 'Next question',
     goToExam: 'Go to your exam',
     outOfNewTitle: 'That is your ten free questions',
@@ -618,8 +618,8 @@ export const en = {
       'You can keep going over the ones you have already answered as often as you like. ' +
       'New questions come back when you renew.',
     outOfNewBody:
-      'You can keep going over the ones you have already answered as often as you like — ' +
-      'that stays free. New questions need full access.',
+      'You can keep going over the ones you have already answered as often as you like. ' +
+      'That stays free. New questions need full access.',
   },
 
   /**
@@ -634,7 +634,7 @@ export const en = {
     title: 'You have used your ten free questions',
     intro:
       'Every question in the bank comes with a full explanation. Unlock the rest of your ' +
-      'programme — nothing in it is held back or sold separately.',
+      'programme. Nothing in it is held back or sold separately.',
     months: (count: number) => `${count} months`,
     perMonth: (etb: number) => `Br ${etb} / month`,
     price: (etb: number) => `Br ${etb}`,
@@ -660,7 +660,7 @@ export const en = {
      * invent one they will forget.
      */
     phoneLabel: 'Phone number',
-    phoneHint: 'The number you signed up with — 09… or 07…',
+    phoneHint: 'The number you signed up with, starting 09 or 07.',
     passwordLabel: 'Password',
     forgotPassword: 'Forgot your password?',
     noAccount: 'Create an account',
@@ -684,7 +684,7 @@ export const en = {
     // Names the cause, clears the reader, gives the move. "Something went
     // wrong" is banned by the voice rules for the middle reason: it leaves
     // somebody holding a problem with nothing to do about it.
-    signInBroken: 'We could not reach the server. Your password is fine — try again in a moment.',
+    signInBroken: 'We could not reach the server. Your password is fine. Try again in a moment.',
     tooMany: (seconds: number) =>
       `Too many attempts on this number. Try again in ${plainDuration(seconds)}.`,
     /*
@@ -801,7 +801,7 @@ export const en = {
     unflag: 'Remove flag',
     firstQuestion: 'This is the first question',
     lastQuestion: 'This is the last question',
-    submit: (answered: number, total: number) => `Submit — ${answered} of ${total} answered`,
+    submit: (answered: number, total: number) => `Submit. ${answered} of ${total} answered`,
     confirmTitle: 'Submit with questions unanswered?',
     confirmBody: (left: number) =>
       `${left} question${left === 1 ? ' has' : 's have'} no answer. ` +
@@ -810,7 +810,7 @@ export const en = {
     confirmSubmit: 'Submit anyway',
     pendingSync: (count: number) =>
       `${count} answer${count === 1 ? '' : 's'} saved on this phone, waiting to send. ` +
-      'Keep going — they go up when the connection returns.',
+      'Keep going. They go up when the connection returns.',
     questionNavigator: 'Question navigator',
     everyQuestion: 'Every question',
     questionNumber: (position: number) => `Question ${position}`,
@@ -839,7 +839,7 @@ export const en = {
   progress: {
     title: 'Progress',
     working: 'Working out where you are…',
-    couldNotLoad: 'Your progress did not load. Nothing you have answered is lost — try again.',
+    couldNotLoad: 'Your progress did not load. Nothing you have answered is lost. Try again.',
     nothingYet:
       'Nothing answered yet, so there is no readiness figure to show. Answer a few questions and it starts here.',
     chooseProgramme: 'Choose a programme to see your progress.',
@@ -904,7 +904,7 @@ export const en = {
     sittingWrong: 'Wrong',
     sittingBlank: 'Left blank',
     sittingLegend: (correct: number, wrong: number, blank: number, total: number) =>
-      `${correct} correct · ${wrong} wrong · ${blank} left blank — of ${total}`,
+      `${correct} correct · ${wrong} wrong · ${blank} left blank, of ${total}`,
     sittingMinutes: (minutes: number) => `${minutes} min used`,
     sittingOfAttempted: (pct: number, attempted: number) =>
       `${pct}% of the ${attempted} you attempted`,
@@ -941,13 +941,13 @@ export const en = {
     howToPay: 'How would you like to pay?',
 
     telebirr: 'telebirr',
-    telebirrHow: 'We send a request to your phone — you approve it there.',
+    telebirrHow: 'We send a request to your phone. You approve it there.',
     cbebirr: 'CBE Birr',
-    cbebirrHow: 'We send a request to your phone — you approve it there.',
+    cbebirrHow: 'We send a request to your phone. You approve it there.',
     chapa: 'Card or another wallet',
     chapaHow: "Opens Chapa's secure payment page.",
     bank: 'Bank transfer',
-    bankHow: 'Pay from any bank, then paste the reference — a person verifies it.',
+    bankHow: 'Pay from any bank, then paste the reference. A person verifies it.',
 
     mobileLabel: 'The phone number you pay with',
     mobileHint: 'For example 0911223344.',
@@ -958,7 +958,7 @@ export const en = {
     // Names what is missing, like every other blocked control in the product.
     txRefNeeded: 'Add the transfer reference first',
     txRefHint:
-      "The reference is on your bank's confirmation SMS. A person checks every claim — access is " +
+      "The reference is on your bank's confirmation SMS. A person checks every claim. Access is " +
       'granted after it is verified, usually within a few hours.',
     txRefRequired: 'Enter the transaction number from your transfer receipt.',
     txRefTaken:
@@ -985,12 +985,12 @@ export const en = {
     // telebirr / CBE Birr, waiting for the handset.
     waitingBanner: 'Check your phone',
     requestSentTo: (method: string, mobile: string) =>
-      `We sent a ${method} request to ${mobile}. Approve it there — this page updates by itself.`,
-    waitingFor: (clock: string) => `Waiting ${clock} — requests usually arrive within a minute.`,
+      `We sent a ${method} request to ${mobile}. Approve it there. This page updates by itself.`,
+    waitingFor: (clock: string) => `Waiting ${clock}. Requests usually arrive within a minute.`,
     slowBanner: 'Taking longer than usual',
     slowBody:
-      'The request can take up to two minutes on a slow network. Nothing has been charged yet — ' +
-      'you can wait, or send a fresh request.',
+      'The request can take up to two minutes on a slow network. Nothing has been charged yet. ' +
+      'You can wait, or send a fresh request.',
     sendAgain: 'Send the request again',
     payDifferently: 'Pay a different way',
 
@@ -999,12 +999,12 @@ export const en = {
     accountLabel: 'Account',
     accountNotPublished:
       'The account to pay into is not published on this server. Ask support for it before you ' +
-      'transfer — a claim with no matching transfer cannot be verified.',
+      'transfer. A claim with no matching transfer cannot be verified.',
     submitForVerification: 'Submit for verification',
-    submittedBanner: 'Submitted — being verified',
+    submittedBanner: 'Submitted. Being verified',
     submittedBody: (ref: string) =>
       `Reference ${ref} is with our team. We will message you on Telegram the moment it is ` +
-      'confirmed — you can keep practising your free questions meanwhile.',
+      'confirmed. You can keep practising your free questions meanwhile.',
 
     verifiedBanner: 'Payment verified',
 
@@ -1019,8 +1019,8 @@ export const en = {
      */
     lapsedBanner: 'Your access has ended',
     lapsedBody: (ended: string) =>
-      `Your access ran until ${ended}. Renew below and it picks up from today — ` +
-      'everything you have answered is still here.',
+      `Your access ran until ${ended}. Renew below and it picks up from today. ` +
+      'Everything you have answered is still here.',
     renew: 'Renew',
 
     pay: 'Pay',
@@ -1029,23 +1029,23 @@ export const en = {
       `A payment request has been sent to ${mobile}. Approve it on your phone, and this page ` +
       'updates on its own.',
     stillWaiting:
-      'Still waiting for the payment. If you have approved it, give it another moment — nothing ' +
+      'Still waiting for the payment. If you have approved it, give it another moment. Nothing ' +
       'is lost if you close this page.',
     openingChapa: 'Opening Chapa…',
     confirmed: 'You have full access.',
     accessUntil: (date: string) => `Your access runs until ${date}.`,
-    yourReference: (ref: string) => `Your reference is ${ref}. Keep it — support can look it up.`,
+    yourReference: (ref: string) => `Your reference is ${ref}. Keep it. Support can look it up.`,
     /*
      * For where the reference has already been said in the sentence above.
      * The pending panel ran "Reference FT… is with our team." straight into
      * "Your reference is FT…", which is the same number twice in consecutive
      * sentences — it reads as a mistake and buries the part that matters.
      */
-    keepReference: 'Keep it — support can look it up.',
+    keepReference: 'Keep it. Support can look it up.',
     manualPending:
       'Thank you. Someone checks the transfer against the bank statement, usually the same day, ' +
       'and your access starts as soon as it is found.',
-    couldNotStart: 'The payment could not be started. Nothing has been charged — try again.',
+    couldNotStart: 'The payment could not be started. Nothing has been charged. Try again.',
     unavailable:
       'That way of paying is not available right now. The bank transfer below still works.',
   },
@@ -1059,7 +1059,7 @@ export const en = {
    */
   receipt: {
     working: 'Loading your payments…',
-    couldNotLoad: 'Your payments could not be loaded. Nothing is lost — try again.',
+    couldNotLoad: 'Your payments could not be loaded. Nothing is lost. Try again.',
 
     plan: 'Plan',
     planValue: (months: number) => `${months} months · every programme`,
@@ -1084,7 +1084,7 @@ export const en = {
   standing: {
     title: 'Where you stand',
     working: 'Counting…',
-    couldNotLoad: 'Your standing could not be loaded. Nothing is lost — try again.',
+    couldNotLoad: 'Your standing could not be loaded. Nothing is lost. Try again.',
 
     points: 'Points',
     pointsFrom: 'from every award you have earned',
@@ -1223,7 +1223,7 @@ export const en = {
   dashboard: {
     title: 'Overview',
     working: 'Counting…',
-    couldNotLoad: 'The figures could not be loaded. Nothing is wrong with the data — try again.',
+    couldNotLoad: 'The figures could not be loaded. Nothing is wrong with the data. Try again.',
 
     signups: 'Signups',
     paying: 'Paying',
@@ -1266,9 +1266,9 @@ export const en = {
      */
     moderation: {
       title: 'Reported posts',
-      intro: 'A student reported each of these. One report is one opinion — read the post.',
+      intro: 'A student reported each of these. One report is one opinion. Read the post.',
       loading: 'Loading the queue…',
-      couldNotLoad: 'The queue could not be loaded. Nothing has changed — try again.',
+      couldNotLoad: 'The queue could not be loaded. Nothing has changed. Try again.',
       waiting: (count: number) => (count === 0 ? 'Nothing waiting' : `${count} waiting`),
       // Not a congratulation: an empty queue is the ordinary state.
       empty: 'No reports are waiting.',
@@ -1311,7 +1311,7 @@ export const en = {
       restoreWhy: 'Students see it again.',
       hidden: 'Hidden, and the report is settled.',
       restored: 'Back up, and the report is settled.',
-      couldNotAct: 'That did not go through. Nothing has changed — try again.',
+      couldNotAct: 'That did not go through. Nothing has changed. Try again.',
     },
 
     nav: {
@@ -1350,7 +1350,7 @@ export const en = {
     payments: {
       title: 'Claimed bank transfers',
       working: 'Loading claims…',
-      couldNotLoad: 'The claims could not be loaded. Nothing has been settled — try again.',
+      couldNotLoad: 'The claims could not be loaded. Nothing has been settled. Try again.',
       waiting: (count: number) => `${count} waiting`,
       nothingWaiting: 'Nothing is waiting to be checked.',
 
@@ -1374,16 +1374,16 @@ export const en = {
         `${total} prior payment${total === 1 ? '' : 's'}, ${verified} verified.`,
       noPriorPayments: 'No prior payments on this account.',
 
-      reasonLabel: 'Reason — required for reject, kept on the record either way',
+      reasonLabel: 'Reason. Required for a rejection, and kept on the record either way',
       reasonPlaceholder: 'Amount received matches, reference found on the statement.',
-      approve: 'Approve — grant access',
+      approve: 'Approve and grant access',
       approving: 'Granting access…',
       reject: 'Reject with reason',
       rejecting: 'Recording the rejection…',
       approveNote: 'Approval grants access immediately and messages the student on Telegram.',
-      rejectNeedsReason: 'Say why before rejecting — the student is told this reason.',
+      rejectNeedsReason: 'Say why before rejecting. The student is told this reason.',
       settled: 'Settled. The list below no longer shows it as waiting.',
-      couldNotSettle: 'That did not go through. Nothing was granted or refused — try again.',
+      couldNotSettle: 'That did not go through. Nothing was granted or refused. Try again.',
     },
 
     /**
@@ -1405,12 +1405,12 @@ export const en = {
       resetting: 'Signing them out…',
       deactivate: 'Close the account',
       deactivateWhy:
-        'Stops this account signing in. Their answers and payments are kept — nothing is ' +
+        'Stops this account signing in. Their answers and payments are kept. Nothing is ' +
         'deleted.',
       deactivating: 'Closing…',
       reasonLabel: 'Why, for the record',
       reasonPlaceholder: 'Student asked for a device reset after losing their phone.',
-      needsReason: 'Say why first — this is written to the record with your name.',
+      needsReason: 'Say why first. This is written to the record with your name.',
       // Never "nobody matched". A search that could not run has found nothing
       // out about the data, and saying otherwise hides the real problem.
       searchFailed:
@@ -1418,7 +1418,7 @@ export const en = {
       devicesReset: 'Devices reset. They can sign in again on a new phone.',
       accountClosed: 'Account closed. It can be reopened by whoever runs the server.',
       alreadyClosed: 'Already closed',
-      couldNotDo: 'That did not go through. Nothing was changed — try again.',
+      couldNotDo: 'That did not go through. Nothing was changed. Try again.',
     },
 
     /**
@@ -1433,7 +1433,7 @@ export const en = {
       intro:
         'Everything uploaded lands here as a draft. Nothing reaches a student until somebody has read it and published it.',
       working: 'Reading the queue…',
-      couldNotLoad: 'The queue could not be read. Nothing has changed — try again.',
+      couldNotLoad: 'The queue could not be read. Nothing has changed. Try again.',
 
       draft: 'Drafts',
       inReview: 'Waiting on a reviewer',
@@ -1460,9 +1460,9 @@ export const en = {
       published2: 'Published. Students can see it now.',
       bounce: 'Send it back',
       bouncing: 'Sending it back…',
-      bounceLabel: 'What needs fixing — the author reads this',
+      bounceLabel: 'What needs fixing. The author reads this',
       bouncePlaceholder: 'Option C is also correct, and the concept line repeats the stem.',
-      bounceTooShort: 'Say what needs fixing — a note this short leaves the author guessing.',
+      bounceTooShort: 'Say what needs fixing. A note this short leaves the author guessing.',
       bounced2: 'Sent back to its author.',
       cannotPublish: 'This cannot be published yet:',
       topicUnweighted: 'Topic has no weight',
@@ -1485,15 +1485,15 @@ export const en = {
       addStep: 'Add a step',
       removeStep: 'Remove',
       lastStepHint: (label: string) =>
-        `The last step has to name the answer — "… → answer ${label}".`,
+        `The last step has to name the answer, for example "… so it is answer ${label}".`,
       timeLimit: 'Time limit, in seconds',
       timeLimitHint: 'Between 15 and 600. It sets the pacing line a student sees after answering.',
       save: 'Save changes',
       saving: 'Saving…',
       savedChanges: 'Saved.',
       nothingChanged: 'Nothing has been changed yet.',
-      couldNotSave: 'That did not save. Nothing has changed — try again.',
-      couldNotAct: 'That did not go through. Nothing has changed — try again.',
+      couldNotSave: 'That did not save. Nothing has changed. Try again.',
+      couldNotAct: 'That did not go through. Nothing has changed. Try again.',
     },
 
     topicWeights: 'Topic weights',
@@ -1527,7 +1527,7 @@ export const en = {
     balanced: 'Balanced',
     withdrawTitle: (stableId: string) => `Withdraw ${stableId}?`,
     withdrawIntro:
-      'The question stops being served and stops being sampled into new papers. It is not deleted — students’ history keeps pointing at something real.',
+      'The question stops being served and stops being sampled into new papers. It is not deleted. Students’ history keeps pointing at something real.',
     withdrawIt: 'Withdraw it',
     sayWhyFirst: 'Say why first',
     withdrawReasonLabel: 'Why is it being withdrawn?',
@@ -1558,9 +1558,9 @@ export const en = {
     activity: {
       title: 'Activity',
       intro:
-        'Everything that has happened, newest first — staff actions, sign-ins, payments, practice and mock exams, in one feed.',
+        'Everything that has happened, newest first. Staff actions, sign ins, payments, practice and mock exams, in one feed.',
       working: 'Reading the record…',
-      couldNotLoad: 'The activity could not be read. Nothing is lost — try again.',
+      couldNotLoad: 'The activity could not be read. Nothing is lost. Try again.',
       empty: 'Nothing has happened yet on this server.',
       more: 'Show older',
       loadingMore: 'Reading…',
@@ -1568,8 +1568,8 @@ export const en = {
 
       all: 'Everything',
       kindStaff: 'Staff actions',
-      kindSignin: 'Sign-ins',
-      kindSignout: 'Sign-outs',
+      kindSignin: 'Sign ins',
+      kindSignout: 'Sign outs',
       kindPayment: 'Payments',
       kindPractice: 'Practice',
       kindExam: 'Mock exams',
@@ -1584,7 +1584,7 @@ export const en = {
       title: 'Health',
       intro: 'Measured now, every time this page asks. Nothing here is cached.',
       working: 'Checking…',
-      couldNotLoad: 'The health check did not answer. That is itself worth knowing — try again.',
+      couldNotLoad: 'The health check did not answer. That is itself worth knowing. Try again.',
 
       live: 'Live',
       lastChecked: (clock: string) => `checked ${clock}`,
@@ -1614,7 +1614,7 @@ export const en = {
   error: {
     didNotLoad: 'That did not load',
     routeBody: (digest: string) =>
-      `Nothing you have answered is lost — your work is saved as you go. Try again, and if it ` +
+      `Nothing you have answered is lost. Your work is saved as you go. Try again, and if it ` +
       `keeps happening, tell support${digest ? ` and quote ${digest}` : ''}.`,
     generic: 'Something we did not expect happened. Try again.',
   },

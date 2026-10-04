@@ -7,10 +7,10 @@ export const metadata = {
    * title is the tagline rather than a section, and it is also the page most
    * likely to be shared as a link.
    */
-  title: { absolute: 'Lomi-Exams — the shortcuts are closed, the questions are open' },
+  title: { absolute: 'Lomi-Exams. The shortcuts are closed, the questions are open' },
   description:
     'Practice for the Ethiopian national and university exit exams. Every answer explained: ' +
-    'a one-sentence idea, the worked solution, and why each wrong option tempted you.',
+    'a one sentence idea, the worked solution, and why each wrong option tempted you.',
 };
 
 /**

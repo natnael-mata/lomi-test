@@ -440,7 +440,7 @@ export function ExamScreen() {
           {pending.length === 1
             ? '1 answer saved on this phone'
             : `${pending.length} answers saved on this phone`}
-          , waiting to send. Keep going — they go up when the connection returns.
+          , waiting to send. Keep going. They go up when the connection returns.
         </p>
       )}
 

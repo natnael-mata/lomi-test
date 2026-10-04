@@ -222,7 +222,7 @@ const STEPS = [
   [
     '02',
     'Pick your exam',
-    'Grade 6, Grade 8, Grade 12 Natural or Social, or a university exit-exam field. Every subject in it is included.',
+    'Grade 6, Grade 8, Grade 12 Natural or Social, or a university exit exam field. Every subject in it is included.',
   ],
   [
     '03',
@@ -278,7 +278,7 @@ const STATS = [
 const FEATURES = [
   [
     'Every answer explained',
-    'A one-sentence idea, the worked solution, and why each wrong option tempted you.',
+    'A one sentence idea, the worked solution, and why each wrong option tempted you.',
   ],
   [
     'Timed mocks',
@@ -295,21 +295,21 @@ const FEATURES = [
 
 const TRACKS = [
   [
-    'Ages 11–12',
+    'Ages 11 to 12',
     'Grade 6',
-    ['Drawn from grades 4–6', 'Maths, English', 'Science, Social Studies'],
+    ['Drawn from grades 4 to 6', 'Maths, English', 'Science, Social Studies'],
     false,
   ],
   [
-    'Ages 13–14',
+    'Ages 13 to 14',
     'Grade 8',
-    ['Drawn from grades 7–8', 'Maths, General Science', 'English, Social Studies'],
+    ['Drawn from grades 7 and 8', 'Maths, General Science', 'English, Social Studies'],
     false,
   ],
   [
-    'Ages 17–18',
+    'Ages 17 to 18',
     'Grade 12',
-    ['Drawn from grades 9–12', 'Natural or Social stream', 'Every subject in your stream'],
+    ['Drawn from grades 9 to 12', 'Natural or Social stream', 'Every subject in your stream'],
     true,
   ],
   ['University', 'Exit exam', ['Computer Science', 'Public Health', 'Accounting & Finance'], false],
@@ -325,11 +325,11 @@ const FAQ = [
     // Names the figure, because the app does. A student who has been taught the
     // word here meets it again on `/progress` instead of two unexplained
     // percentages — coverage, and the readiness beside it.
-    'That is your coverage. It counts the questions you answered correctly and could explain — not lucky guesses. The total is the number of questions in your track, and we show it, so you can check the figure yourself. Readiness is the other figure: how you are doing on the questions you have tried, weighted by each topic’s share of past papers.',
+    'That is your coverage. It counts the questions you answered correctly and could explain. Not lucky guesses. The total is the number of questions in your track, and we show it, so you can check the figure yourself. Readiness is the other figure: how you are doing on the questions you have tried, weighted by each topic’s share of past papers.',
   ],
   [
     'Is the free tier really free?',
-    'Yes. A limited number of questions in every subject, with the full explanation — not a teaser that hides the answer. The count remaining is always shown.',
+    'Yes. A limited number of questions in every subject, with the full explanation. Not a teaser that hides the answer. The count remaining is always shown.',
   ],
   [
     'Can I use it without internet?',
@@ -469,7 +469,7 @@ export function LandingScreen() {
             </h1>
 
             <p className="max-w-[48ch] text-[clamp(16px,2vw,19px)] leading-[1.6] text-on-deep-2">
-              Thousands of past questions, every one explained — the idea behind it, the worked
+              Thousands of past questions, every one explained. The idea behind it, the worked
               solution, and why each wrong option tempted you. Work through them and you walk in
               ready, not hoping.
             </p>
@@ -568,7 +568,7 @@ export function LandingScreen() {
           </h2>
           <p className="max-w-[56ch] text-[17px] leading-[1.6] text-on-deep-2">
             100 questions, 180 minutes, one clock. Flag what you want to come back to, jump the
-            grid, and get every answer explained the moment you submit — not a score and a shrug.
+            grid, and get every answer explained the moment you submit. Not a score and a shrug.
           </p>
           <div className="flex flex-wrap gap-6 pt-2">
             {[
@@ -617,8 +617,8 @@ export function LandingScreen() {
           ))}
         </ol>
         <p className="text-ink-2 max-w-[64ch] text-[14px]">
-          Your name, school and region are asked for later — after you have used it, and only
-          because they unlock the school leaderboard.
+          Your name, school and region are asked for later. After you have used it, and only because
+          they unlock the school leaderboard.
         </p>
       </section>
 
@@ -691,9 +691,9 @@ export function LandingScreen() {
           ))}
         </div>
         <p className="text-ink-2 flex flex-wrap items-center gap-2 text-[14px]">
-          One price for the whole track — every subject, not one at a time. Pay with Telebirr or CBE
+          One price for the whole track. Every subject, not one at a time. Pay with Telebirr or CBE
           Birr, or send a bank transfer and paste the reference.
-          <Todo>school-track prices to confirm</Todo>
+          <Todo>school track prices to confirm</Todo>
         </p>
       </section>
 
@@ -780,7 +780,7 @@ export function LandingScreen() {
           <p className="text-ink-2 max-w-[54ch] text-[15px]">
             {/* Said plainly rather than dressed as three empty cards. */}
             We are setting up our support channels. Until then, sign in and use the question thread
-            on any topic — a person reads those.
+            on any topic. A person reads those.
           </p>
         )}
         {CONTACTS.filter((contact) => contact.value === null).map((contact) => (
@@ -809,9 +809,8 @@ export function LandingScreen() {
               <Logo size={30} wordmark onDark />
               <p className="text-on-deep-2 max-w-[40ch] text-[14px] leading-[1.55]">
                 No testimonials, no pass rates, no school logos. We have not run a cohort through an
-                exam yet, so we have no such numbers — and inventing them would break the only rule
-                this product has. When there is evidence it will appear here, with its method
-                attached.
+                exam yet, so we have no such numbers. Inventing them would break the only rule this
+                product has. When there is evidence it will appear here, with its method attached.
               </p>
             </div>
 
@@ -866,15 +865,15 @@ export function LandingScreen() {
                     Nowhere yet. When there is an account to follow it will be linked here rather
                     than named without a link.
                   </p>
-                  <Todo>social links to add — Facebook, TikTok, Telegram</Todo>
+                  <Todo>social links to add: Facebook, TikTok, Telegram</Todo>
                 </>
               )}
             </div>
           </div>
 
           <p className="border-on-deep/10 text-on-deep-3 max-w-[64ch] border-t pt-6 text-[13px] leading-[1.6]">
-            Everything here is in English, because the exam is in English — the questions, the
-            worked solutions and the app itself. We do not publish your real name anywhere.
+            Everything here is in English, because the exam is in English: the questions, the worked
+            solutions and the app itself. We do not publish your real name anywhere.
           </p>
         </div>
       </footer>
