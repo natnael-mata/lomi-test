@@ -49,6 +49,8 @@ const ROUTES = [
   { path: '/exam', as: 'userc' },
   // The list of papers (redesign step 8), which replaced a redirect.
   { path: '/mocks', as: 'userc' },
+  // The account, which replaced a redirect to checkout (redesign step 10).
+  { path: '/account', as: 'userc' },
   /*
    * A paper read back after the fact.
    *

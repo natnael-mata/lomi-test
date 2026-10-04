@@ -6,7 +6,7 @@
  * all of which a page with 195px of nothing in the middle passes cleanly:
  *
  *   - "roughly 195px of dead space between the payment block and 'Where you are
- *     signed in'" on `/checkout`
+ *     signed in'" on `/checkout` (that panel is on Account now; see below)
  *   - "the space between the choices and the next button is big… on some screens
  *     not even displayed unless scrolled" on `/practice`
  *
@@ -41,25 +41,23 @@ const MAX_GAP_PX = 80;
 /** What to measure, and who has to be signed in to see it. */
 const CHECKS = [
   {
-    name: '/checkout — payment block to the account panel',
+    name: '/checkout — between the blocks of the checkout',
     as: 'userc',
     path: '/checkout',
     /*
-     * The largest gap between any two things stacked on this page.
+     * The largest gap between any two blocks the checkout stacks.
      *
-     * Not the gap between the checkout and the panel below it: when the
-     * checkout container grows, its bottom edge travels with it, so that gap
-     * stays a constant 16px while the void opens up *inside* it. The last child
-     * is a `mt-auto` button ("Back to practising"), which is precisely the thing
-     * that gets pushed to the bottom of the grown container — so the empty space
-     * lands above the button, between two siblings. Measuring the wrong pair
-     * reported this clean while 195px of nothing was on screen.
+     * It used to be measured against the device panel below the checkout;
+     * that panel moved to Account in the redesign (step 10). The void QA found
+     * was never between the two anyway: a grown container pushed its last
+     * child, a \`mt-auto\` button, to its own bottom, and the empty space opened
+     * above that button, between two siblings inside the checkout. So the
+     * checkout's own children are what is measured.
      */
     measure: `(() => {
-      const panel = document.querySelector('[data-account-panel]');
-      const screen = panel && panel.previousElementSibling;
+      const screen = document.querySelector('main')?.firstElementChild;
       if (!screen) return null;
-      const rows = [...screen.children, panel];
+      const rows = [...screen.children].filter((el) => el.getBoundingClientRect().height > 0);
       let worst = 0;
       for (let i = 1; i < rows.length; i++) {
         const gap = rows[i].getBoundingClientRect().top - rows[i - 1].getBoundingClientRect().bottom;

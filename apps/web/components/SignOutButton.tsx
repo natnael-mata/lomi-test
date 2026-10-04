@@ -26,11 +26,29 @@ import { Icon } from './icons';
 import { api } from '../lib/api';
 import { copy } from '../lib/i18n';
 
-export function SignOutButton({ className = '' }: { className?: string }) {
+/**
+ * `quiet` everywhere it sits beside other controls (the bars, the foot of
+ * Today). `danger` on the Account screen, where it is the last thing on the
+ * page and the handoff draws it in the wrong wash: leaving is the one action
+ * there that has a cost, the next sign in.
+ */
+const VARIANT = {
+  quiet: 'text-ink-2 hover:bg-surface-2 hover:text-ink text-caption min-h-11 px-3 rounded-control',
+  danger:
+    'bg-wrong-soft text-wrong hover:bg-wrong-soft/70 min-h-[52px] w-full justify-center rounded-control text-[15px] font-semibold',
+} as const;
+
+export function SignOutButton({
+  className = '',
+  variant = 'quiet',
+}: {
+  className?: string;
+  variant?: keyof typeof VARIANT;
+}) {
   return (
     <button
       type="button"
-      className={`text-ink-2 rounded-control hover:bg-surface-2 hover:text-ink text-caption inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 transition-[background-color,color] duration-150 ${className}`}
+      className={`${VARIANT[variant]} inline-flex shrink-0 items-center gap-1.5 transition-[background-color,color] duration-150 ${className}`}
       data-sign-out=""
       onClick={() => {
         void api

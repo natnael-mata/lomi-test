@@ -561,6 +561,21 @@ The mock trend and the paper history left Progress: Mocks lists every paper with
 results, and the two screens printed each paper twice. Standing is linked from here, since it
 left the navigation.
 
+## Account
+
+Four cards on the reading measure, stacked: who you are (initial, display name, phone), your
+access (active in the correct wash, lapsed in the pending wash, free in grey, each with its one
+button to checkout), the devices signed in (with "Log out" on every one but this one, which signs
+out with the button at the foot), and the ways out (the staff console for staff, and Sign out in
+the wrong wash, the one action here with a cost).
+
+Not built from the handoff: the English and Amharic toggle (English only, by decision), the Fayda
+line (identity checks were dropped), and an editable display name. There is no endpoint to change
+the name, so it is shown as plain text with a sentence saying it cannot be changed yet, never as a
+field that looks editable and saves nothing. `DISPLAY_NAME_EDITABLE` is the switch.
+
+The device list moved here from under the plans on `/checkout`, which is about buying access now.
+
 ## Components
 
 ### Buttons

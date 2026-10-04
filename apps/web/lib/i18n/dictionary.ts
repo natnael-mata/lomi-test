@@ -234,6 +234,43 @@ export const en = {
     signOut: 'Sign out',
     signingOut: 'Signing out…',
     signOutFailed: 'Could not sign out. Try again.',
+
+    /*
+     * The Account screen (redesign handoff, § Account).
+     *
+     * Not built from the handoff: the English and Amharic toggle (the product is
+     * English only, by the owner's decision, because the exam is sat in
+     * English) and the Fayda status (identity checks were dropped).
+     */
+    pageTitle: 'Account',
+    profileTitle: 'Your profile',
+    displayNameLabel: 'Display name',
+    displayNameWhy: 'Shown on the leaderboard instead of your real name.',
+    // Said, not hidden: the name cannot be changed from here yet, and a field
+    // that looks editable and does not save is worse than one that says so.
+    displayNameFixed: 'Changing it is not available yet.',
+    phoneLabel: 'Phone number',
+    phoneVerified: 'confirmed by SMS',
+    accessTitle: 'Your access',
+    accessActive: (date: string) => `Full access until ${date}`,
+    accessActiveWhy: 'Every question, every worked solution, and the mock exams.',
+    accessLapsed: (date: string) => `Your access ended on ${date}`,
+    accessLapsedWhy: 'Everything you answered is still here. Renewing picks up from today.',
+    accessFree: 'Free plan',
+    accessFreeWhy: (left: number | null) =>
+      left === null
+        ? 'Ten free questions in every subject, with full explanations.'
+        : left === 0
+          ? 'Your free questions are used up. Anything you already answered is still free to redo.'
+          : `${left} free question${left === 1 ? '' : 's'} left, with full explanations.`,
+    extend: 'Extend your access',
+    seePlans: 'See plans',
+    devicesTitleShort: 'Devices',
+    // "Log out", the handoff's words, for a device that is not this one.
+    // Signing this one out is the Sign out button at the foot of the page.
+    logOutDevice: 'Log out',
+    staffConsole: 'Staff: open the admin console',
+    staffConsoleProvider: 'Staff: open the provider console',
   },
 
   /*
