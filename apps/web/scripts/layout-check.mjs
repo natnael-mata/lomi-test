@@ -80,6 +80,10 @@ const ROUTES = [
   { path: '/progress', as: 'userc' },
   { path: '/standing', as: 'userc' },
   { path: '/checkout', as: 'userc' },
+  // The same address as somebody who has not paid: the plans, the ways to pay
+  // and the summary. User C has paid and only ever sees the receipt, so the
+  // page most students meet was never measured.
+  { path: '/checkout', as: 'usera' },
   { path: '/choose', as: 'usera' },
   { path: '/signin', as: null },
   // The two halves of the auth flow. Signed out, like the students who use them.

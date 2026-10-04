@@ -22,7 +22,6 @@
  * No countdown, no "offer ends", no strike-through price. The saving is stated
  * as arithmetic because it is arithmetic.
  */
-import { Card } from './Card';
 import { Chip } from './Chip';
 import { Icon } from './icons';
 import type { PlanOffer } from '../lib/api';
@@ -38,7 +37,7 @@ export function Paywall({ plans, href = '/checkout' }: PaywallProps) {
   const c = copy();
 
   return (
-    <div className="flex flex-1 flex-col gap-3" data-state="paywalled">
+    <div className="flex flex-1 flex-col gap-4" data-state="paywalled">
       <div className="flex justify-end">
         {/* Pending, not wrong. Running out of free questions is a state the
             product planned for; the amber says "waiting on you", which is
@@ -49,10 +48,12 @@ export function Paywall({ plans, href = '/checkout' }: PaywallProps) {
         </Chip>
       </div>
 
-      <Card as="section" className="flex flex-col gap-2 p-5">
-        <h1 className="text-title">{c.paywall.title}</h1>
+      <section className="flex flex-col gap-2">
+        <h1 className="font-display text-[clamp(24px,3vw,30px)] leading-[1.15] font-extrabold tracking-[-0.025em]">
+          {c.paywall.title}
+        </h1>
         <p className="text-body text-ink-2">{c.paywall.intro}</p>
-      </Card>
+      </section>
 
       {/* Shortest commitment first: a student who has just hit a wall reads the
           smaller ask first, and the recommendation is still marked. */}
@@ -64,12 +65,14 @@ export function Paywall({ plans, href = '/checkout' }: PaywallProps) {
 
       <p className="text-caption text-ink-2 text-center">{c.paywall.footnote}</p>
 
-      {/* `mt-auto` so the action sits at the bottom of the viewport on a phone
-          rather than halfway up it — the same placement as "Check answer" on
-          the screen this one replaces. */}
-      <a href={href} className="btn-primary mt-auto">
-        {c.paywall.cta}
-      </a>
+      {/* Pinned above the tab bar, like "Check answer" on the screen this one
+          replaces, rather than `mt-auto`, which only reached the bottom when
+          the page was shorter than the screen. */}
+      <div className="bg-bg sticky-foot -mx-1 px-1 pt-2 pb-2">
+        <a href={href} className="btn-primary">
+          {c.paywall.cta}
+        </a>
+      </div>
     </div>
   );
 }
@@ -90,24 +93,30 @@ function PlanRow({ plan }: { plan: PlanOffer }) {
     <div
       data-plan={plan.code}
       data-best={best ? 'yes' : 'no'}
+      // The checkout's plan card, read only: the same lemon wash and amber
+      // edge mark the recommendation here as there, so the two screens name
+      // one plan the same way.
       className={[
-        'rounded-card bg-surface flex items-center justify-between gap-3 p-4',
-        best ? 'border-ink border-2' : 'shadow-card',
+        'rounded-card flex items-center justify-between gap-3 border-[1.5px] p-5',
+        best ? 'border-link bg-brand-soft' : 'border-border bg-surface',
       ].join(' ')}
     >
       <span className="flex flex-col gap-1">
         <span className="flex items-center gap-2">
-          <span className="text-label">{c.paywall.months(plan.months)}</span>
+          <span className="font-display text-[17px] font-bold">
+            {c.paywall.months(plan.months)}
+          </span>
           {best ? (
-            <span className="bg-reward-fill text-on-reward text-caption inline-flex items-center gap-1 rounded-full px-2.5 py-0.5">
-              <Icon name="star" size={12} strokeWidth={2.5} />
+            <span className="bg-brand text-on-brand rounded-full px-2.5 py-1 text-[12px] font-bold whitespace-nowrap">
               {c.paywall.bestValue}
             </span>
           ) : null}
         </span>
         <span className="text-caption text-ink-2 num">{c.paywall.perMonth(plan.perMonthEtb)}</span>
       </span>
-      <span className="text-title num font-display">{c.paywall.price(plan.priceEtb)}</span>
+      <span className="font-display num text-[28px] font-extrabold">
+        {c.paywall.price(plan.priceEtb)}
+      </span>
     </div>
   );
 }

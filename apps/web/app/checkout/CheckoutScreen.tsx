@@ -29,7 +29,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
 import { Icon, type IconName } from '../../components/icons';
 import { Input } from '../../components/Input';
 import { Receipt } from '../../components/Receipt';
@@ -43,9 +42,13 @@ type Phase =
   | { kind: 'loading' }
   /** Already paid: the receipt, not the picker. */
   | { kind: 'subscribed' }
+  /**
+   * Plans, the way to pay, and the summary with the one button, on one page
+   * (redesign). The method used to be its own phase, a second screen reached
+   * by tapping a method; now it is a choice on this one, and its fields (the
+   * paying number, or the bank and the reference) sit in the summary.
+   */
   | { kind: 'choosing' }
-  /** A method has been picked and is collecting whatever it needs. */
-  | { kind: 'method'; method: Method }
   | { kind: 'redirecting' }
   /** A push is on its way to a handset, or the student has come back from Chapa. */
   | { kind: 'waiting'; txRef: string; mobile: string | null; slow: boolean; method: Method }
@@ -79,6 +82,9 @@ export function CheckoutScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [plans, setPlans] = useState<PlanOffer[]>([]);
   const [planCode, setPlanCode] = useState<PlanCode>('TWELVE_MONTH');
+  const [method, setMethod] = useState<Method>('telebirr');
+  /** The programme being paid for, for the heading and the summary line. */
+  const [fieldName, setFieldName] = useState<string | null>(null);
   const [mobile, setMobile] = useState('');
   /** Set when the number came from Telegram rather than from the keyboard. */
   const [verifiedPhone, setVerifiedPhone] = useState(false);
@@ -103,16 +109,18 @@ export function CheckoutScreen() {
     let alive = true;
     void (async () => {
       try {
-        const [offers, subscription, contact, history] = await Promise.all([
+        const [offers, subscription, contact, history, fields] = await Promise.all([
           api.plans(),
           api.mySubscription().catch(() => null),
           // Never fatal: a checkout that refuses to open because a convenience
           // lookup failed is a checkout that refuses money.
           api.myContact().catch(() => null),
           api.paymentHistory().catch(() => null),
+          api.myFields().catch(() => []),
         ]);
         if (!alive) return;
         setPlans(offers);
+        setFieldName(fields.find((f) => f.chosen)?.name ?? null);
 
         const waiting = history?.payments.find((p) => p.status === 'PENDING') ?? null;
         setPending(waiting ? { txRef: waiting.txRef, amountEtb: waiting.amountEtb } : null);
@@ -253,10 +261,10 @@ export function CheckoutScreen() {
 
   if (phase.kind === 'error') {
     return (
-      <Card as="section" className="flex flex-col gap-3">
+      <section className="border-border bg-surface rounded-card flex flex-col gap-3 border p-6">
         <p className="text-body">{phase.message}</p>
         <Button onClick={() => setPhase({ kind: 'choosing' })}>{c.common.tryAgain}</Button>
-      </Card>
+      </section>
     );
   }
 
@@ -273,10 +281,10 @@ export function CheckoutScreen() {
 
   if (phase.kind === 'waiting') {
     return (
-      <div className="flex flex-col gap-3" aria-live="polite">
+      <div className="flex flex-col gap-4" aria-live="polite">
         <Heading onBack={() => setPhase({ kind: 'choosing' })}>{c.checkout[phase.method]}</Heading>
 
-        <Card as="section" className="flex flex-col gap-3 p-5">
+        <section className="border-border bg-surface rounded-card flex flex-col gap-3 border p-6">
           {plan ? <OrderLine plan={plan} /> : null}
           <span className="bg-border h-px" />
           <Banner tone="pending" icon="clock">
@@ -288,26 +296,26 @@ export function CheckoutScreen() {
               : c.checkout.openingChapa}
           </p>
           <p className="text-caption text-ink-2 num">{c.checkout.waitingFor(mmss(waited))}</p>
-          {/* Always on screen, not only on the outcome: a student reading a
-              reference to support is usually mid-wait. */}
+          {/* The reference, now, before anything can go wrong: it is what a
+              student quotes to support if the request never arrives. */}
           <p className="text-caption text-ink-2">{c.checkout.yourReference(phase.txRef)}</p>
-        </Card>
+        </section>
 
         {phase.slow ? (
-          <Card as="section" className="flex flex-col gap-3 p-5">
+          <section className="border-border bg-surface rounded-card flex flex-col gap-3 border p-6">
             <Banner tone="pending" icon="clock">
               {c.checkout.slowBanner}
             </Banner>
             <p className="text-body">{c.checkout.slowBody}</p>
-            {/* Ghost buttons: the brand shadow belongs to one primary action
-                per screen, and neither of these is it. */}
+            {/* A fresh request is a fresh reference. The old one may still
+                arrive and settle; the server dedupes on the reference. */}
             <Button variant="ghost" onClick={() => void pay(phase.method)} disabled={busy}>
               {c.checkout.sendAgain}
             </Button>
             <Button variant="ghost" onClick={() => setPhase({ kind: 'choosing' })}>
               {c.checkout.payDifferently}
             </Button>
-          </Card>
+          </section>
         ) : null}
       </div>
     );
@@ -315,67 +323,181 @@ export function CheckoutScreen() {
 
   if (phase.kind === 'submitted') {
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         <Heading onBack={() => setPhase({ kind: 'choosing' })}>{c.checkout.bank}</Heading>
-        <Card as="section" className="flex flex-col gap-3 p-5">
-          {/* Pending, not success. A claim grants nothing until a person has
-              read the statement, and a green tick here would say otherwise. */}
+        <section className="border-border bg-surface rounded-card flex flex-col gap-3 border p-6">
+          {/* Pending, not confirmed: nothing is granted until a person has
+              matched the transfer against the bank statement. */}
           <Banner tone="pending" icon="clock">
             {c.checkout.submittedBanner}
           </Banner>
           <p className="text-body">{c.checkout.submittedBody(phase.txRef)}</p>
           <p className="text-caption text-ink-2">{c.checkout.yourReference(phase.txRef)}</p>
-        </Card>
+        </section>
       </div>
     );
   }
 
-  if (phase.kind === 'method') {
-    const { method } = phase;
-    const direct = method === 'telebirr' || method === 'cbebirr';
-    return (
-      <div className="flex flex-col gap-3">
-        <Heading onBack={() => setPhase({ kind: 'choosing' })}>{c.checkout[method]}</Heading>
+  /*
+   * Choosing: the handoff's one page. The plans, then the way to pay beside
+   * the summary, whose button says the amount and the method in words, so
+   * there is nothing between pressing it and knowing what it does.
+   */
+  const direct = method === 'telebirr' || method === 'cbebirr';
+  const price = c.paywall.price(plan?.priceEtb ?? 0);
+  const METHODS = [
+    ['telebirr', c.checkout.telebirr, c.checkout.telebirrHow],
+    ['cbebirr', c.checkout.cbebirr, c.checkout.cbebirrHow],
+    ['chapa', c.checkout.chapa, c.checkout.chapaHow],
+    ['bank', c.checkout.bank, c.checkout.bankHow],
+  ] as const;
+  const methodName = METHODS.find(([value]) => value === method)?.[1] ?? '';
 
-        <Card as="section" className="flex flex-col gap-3 p-5">
-          {plan ? <OrderLine plan={plan} /> : null}
-          <span className="bg-border h-px" />
+  return (
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-col gap-1.5">
+        <h1 className="font-display text-[clamp(26px,3.4vw,36px)] leading-[1.15] font-extrabold tracking-[-0.025em]">
+          {lapsedOn
+            ? c.checkout.lapsedBanner
+            : fieldName
+              ? c.checkout.unlock(fieldName)
+              : c.checkout.unlockGeneric}
+        </h1>
+        <p className="text-ink-2 text-[16px] leading-[25px]">
+          {lapsedOn ? c.checkout.lapsedBody(day(lapsedOn)) : c.checkout.unlockBody}
+        </p>
+      </header>
 
+      {/* Money already sent, said before anything else on the page: a
+          student who paid by transfer and came back to check must not be
+          talked into paying again. */}
+      {pending ? (
+        <section className="border-pending/30 bg-pending-soft rounded-card flex flex-col gap-2 border p-5">
+          <Banner tone="pending" icon="clock">
+            {c.checkout.submittedBanner}
+          </Banner>
+          <p className="text-body">{c.checkout.submittedBody(pending.txRef)}</p>
+          {/* Named twice on purpose: once in the sentence, once as the
+              thing to keep. */}
+          <p className="text-caption text-ink-2">{c.checkout.keepReference}</p>
+        </section>
+      ) : null}
+
+      <fieldset className="flex flex-col gap-3 border-0 p-0">
+        <legend className="sr-only">{c.checkout.title}</legend>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-3">
+          {byLength(plans).map((offer) => (
+            <PlanCard
+              key={offer.code}
+              plan={offer}
+              chosen={offer.code === planCode}
+              onChoose={() => setPlanCode(offer.code)}
+            />
+          ))}
+        </div>
+        {/* Said once, because it is the same for every plan: they differ in
+            length, never in what they unlock. */}
+        <div className="text-ink-2 flex flex-col gap-1.5 text-[14px]">
+          <span className="text-ink font-semibold">{c.checkout.includedTitle}</span>
+          {c.checkout.included.map((line) => (
+            <span key={line} className="inline-flex items-center gap-1.5">
+              <span className="text-correct">
+                <Icon name="check" size={16} strokeWidth={2.5} />
+              </span>
+              {line}
+            </span>
+          ))}
+        </div>
+      </fieldset>
+
+      {/*
+        Stacked, not side by side as the handoff draws it. Checkout keeps the
+        640px reading measure (it is read as sentences, and layout-measure
+        holds it there), and two columns at that width wrapped every method's
+        description to three lines and the pay button to two.
+      */}
+      <section className="border-border bg-surface rounded-card flex flex-col gap-6 border p-6">
+        <fieldset className="flex flex-col gap-3 border-0 p-0">
+          <legend className="font-display mb-1 text-[18px] font-bold">{c.checkout.payWith}</legend>
+          {METHODS.map(([value, label, how]) => (
+            <label
+              key={value}
+              data-method={value}
+              className={[
+                'rounded-option flex min-h-[56px] cursor-pointer items-center gap-3 border-[1.5px] p-3.5',
+                method === value
+                  ? 'border-link bg-brand-soft'
+                  : 'border-border bg-surface hover:border-border-strong',
+              ].join(' ')}
+            >
+              <input
+                type="radio"
+                name="method"
+                className="sr-only"
+                value={value}
+                checked={method === value}
+                onChange={() => {
+                  setFieldError(null);
+                  setMethod(value);
+                }}
+              />
+              <span className="bg-surface-2 inline-flex size-10 shrink-0 items-center justify-center rounded-[10px]">
+                <Icon name={METHOD_ICON[value]} size={20} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-ink text-[15px] font-semibold">{label}</span>
+                {/* What it will do, before it is chosen. "Approve it on your
+                    phone" and "a person verifies it" are very different
+                    waits, and the time to find out is now. */}
+                <span className="text-ink-2 text-[13px]">{how}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+
+        <div className="bg-bg rounded-option flex flex-col gap-4 p-5">
+          <h2 className="font-display text-[18px] font-bold">{c.checkout.summary}</h2>
+          {plan ? (
+            <div className="flex items-baseline justify-between gap-3 text-[15px] font-medium">
+              <span>{c.checkout.summaryPlan(plan.months, fieldName)}</span>
+              <span className="num">{price}</span>
+            </div>
+          ) : null}
+          <p className="text-ink-3 text-[14px]">{c.checkout.countedFromToday}</p>
+          <div className="border-border flex items-baseline justify-between gap-3 border-t pt-4">
+            <span className="text-[15px] font-semibold">{c.checkout.total}</span>
+            <span className="font-display num text-[28px] font-extrabold">{price}</span>
+          </div>
+
+          {/* What the chosen method needs, and nothing the others need. */}
           {direct ? (
             <Input
               label={c.checkout.mobileLabel}
-              // Says where the number came from when it was not typed here.
-              // A field that fills itself with no explanation reads as the
-              // product knowing something it should not.
-              hint={verifiedPhone ? c.checkout.mobileFromTelegram : c.checkout.mobileHint}
+              hint={verifiedPhone ? c.checkout.mobileOnFile : c.checkout.mobileHint}
               error={fieldError ?? undefined}
               inputMode="tel"
               autoComplete="tel"
               value={mobile}
               onChange={(e) => {
                 setMobile(e.target.value);
-                // Edited by hand, so it is no longer the number Telegram
-                // vouched for and the screen must stop saying it is.
                 setVerifiedPhone(false);
               }}
             />
           ) : null}
 
-          {method === 'chapa' ? <p className="text-body">{c.checkout.chapaHow}</p> : null}
-
           {method === 'bank' ? (
             <>
-              <p className="text-body">
-                {c.checkout.transferTo(c.paywall.price(plan?.priceEtb ?? 0))}
-              </p>
+              <p className="text-body">{c.checkout.transferTo(price)}</p>
               {BANK_ACCOUNT ? (
-                <span className="bg-surface-2 rounded-control flex flex-col gap-0.5 p-3">
+                <span className="bg-surface border-border rounded-control flex flex-col gap-0.5 border p-3">
                   <span className="text-caption text-ink-2 uppercase">
                     {c.checkout.accountLabel}
                   </span>
                   <span className="text-body num font-semibold">{BANK_ACCOUNT}</span>
                 </span>
               ) : (
+                // Said, rather than an empty box: a transfer to an account
+                // nobody published cannot be matched to anybody.
                 <p className="text-pending text-body">{c.checkout.accountNotPublished}</p>
               )}
               <Input
@@ -388,134 +510,24 @@ export function CheckoutScreen() {
             </>
           ) : null}
 
-          {/*
-            A bank claim needs its reference before it can be sent (T-269).
-
-            This was `disabled={busy}` alone, so "Submit for verification" was
-            live with the reference box empty — and the product's convention
-            everywhere else is the opposite: a control that cannot work yet is
-            disabled and says what is missing ("Choose an answer first", "Add a
-            title and a question first"). The reference is the only thing that
-            lets an operator find the transfer on a statement, so a claim
-            without one is a row nobody can settle and a student waiting on it.
-          */}
-          <Button
+          {/* The amount and the method, in the button's own words. */}
+          <button
+            type="button"
+            className="bg-brand hover:bg-brand-hover text-on-brand rounded-control disabled:bg-surface-2 disabled:text-ink-2 min-h-[52px] px-5 text-[16px] font-semibold disabled:cursor-not-allowed"
             onClick={() => void pay(method)}
-            disabled={busy || (method === 'bank' && txRef.trim() === '')}
-            blockingReason={
-              method === 'bank' && txRef.trim() === '' ? c.checkout.txRefNeeded : undefined
-            }
+            disabled={busy || !plan || (method === 'bank' && txRef.trim() === '')}
           >
             {busy
               ? c.checkout.sending
               : method === 'bank'
                 ? c.checkout.submitForVerification
-                : c.checkout.pay}
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-title">{lapsedOn ? c.checkout.lapsedBanner : c.checkout.heading}</h1>
-
-      {/*
-        Paid before, and ran out.
-
-        The plans below are the same; the framing is not. A student who bought
-        twelve months and lapsed was shown the identical first-time page — "Get
-        full access", "Counted from today", no end date, no history — and told
-        on `/practice` that they had used up their ten free questions. Both QA
-        passes reported it, and both were right: the product had the fact and
-        never used it.
-      */}
-      {lapsedOn ? (
-        <Card as="section" data-lapsed="" className="flex flex-col gap-2">
-          <Banner tone="pending" icon="clock">
-            {c.checkout.lapsedBanner}
-          </Banner>
-          <p className="text-body">{c.checkout.lapsedBody(day(lapsedOn))}</p>
-        </Card>
-      ) : null}
-
-      {/*
-        The claim already with the team, above the plans.
-        Pending rather than success — nothing has been granted — and it names
-        the reference, because the reference is the only thing a student has to
-        quote if they have to ask about it.
-      */}
-      {pending ? (
-        <Card as="section" className="flex flex-col gap-2">
-          <Banner tone="pending" icon="clock">
-            {c.checkout.submittedBanner}
-          </Banner>
-          <p className="text-body">{c.checkout.submittedBody(pending.txRef)}</p>
-          {/* The reference is already in the sentence above; this says only the
-              part that is not — keep it, it is what support looks up. */}
-          <p className="text-caption text-ink-2">{c.checkout.keepReference}</p>
-        </Card>
-      ) : null}
-
-      {/* Side by side, so the two prices and the two per-month figures can be
-          compared without scrolling between them. */}
-      {/*
-        Shortest commitment first, which is not the order the API returns.
-        `GET /payments/plans` sorts cheapest-per-month first — right for
-        deciding which plan to *recommend*, wrong for laying two of them out
-        side by side, where a student reads left to right and the left-hand card
-        should be the smaller ask. The recommendation still shows: it is the
-        one carrying the border and the Best value marker.
-      */}
-      <fieldset className="flex gap-2">
-        <legend className="sr-only">{c.checkout.title}</legend>
-        {byLength(plans).map((offer) => (
-          <PlanCard
-            key={offer.code}
-            plan={offer}
-            chosen={offer.code === planCode}
-            onChoose={() => setPlanCode(offer.code)}
-          />
-        ))}
-      </fieldset>
-
-      <p className="text-caption text-ink-2">{c.checkout.countedFromToday}</p>
-      <p className="text-caption text-ink-2">{c.checkout.howToPay}</p>
-
-      <div className="flex flex-col gap-2">
-        {(
-          [
-            ['telebirr', c.checkout.telebirr, c.checkout.telebirrHow],
-            ['cbebirr', c.checkout.cbebirr, c.checkout.cbebirrHow],
-            ['chapa', c.checkout.chapa, c.checkout.chapaHow],
-            ['bank', c.checkout.bank, c.checkout.bankHow],
-          ] as const
-        ).map(([value, label, how]) => (
-          <button
-            key={value}
-            type="button"
-            data-method={value}
-            className="border-border bg-surface rounded-control flex min-h-[56px] w-full items-center gap-3 border-2 p-3 text-left"
-            onClick={() => {
-              setFieldError(null);
-              setPhase({ kind: 'method', method: value });
-            }}
-          >
-            <span className="bg-surface-2 inline-flex size-10 shrink-0 items-center justify-center rounded-[10px]">
-              <Icon name={METHOD_ICON[value]} size={20} />
-            </span>
-            <span className="flex flex-1 flex-col">
-              <span className="text-label">{label}</span>
-              {/* What actually happens next, on the option itself. A student
-                  choosing between four wallets should not have to press one to
-                  find out whether it opens a page or rings their phone. */}
-              <span className="text-caption text-ink-2">{how}</span>
-            </span>
-            <Icon name="chevronRight" size={18} className="text-ink-2" />
+                : c.checkout.payAmountWith(price, methodName)}
           </button>
-        ))}
-      </div>
+          {method === 'bank' && txRef.trim() === '' ? (
+            <p className="text-ink-3 text-[13px]">{c.checkout.txRefNeeded}</p>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }
@@ -524,11 +536,18 @@ export function CheckoutScreen() {
 function Heading({ children, onBack }: { children: string; onBack: () => void }) {
   const c = copy();
   return (
-    <div className="flex items-center gap-2">
-      <button type="button" onClick={onBack} aria-label={c.common.back} className="p-1">
-        <Icon name="chevronLeft" size={20} className="text-ink-2" />
+    <div className="flex items-center gap-1">
+      {/* 44px of target: it was a 28px arrow, on the screen somebody uses
+          while a payment is pending and they want to change their mind. */}
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label={c.common.back}
+        className="text-ink-2 hover:text-ink rounded-control -ml-3 inline-flex size-11 items-center justify-center"
+      >
+        <Icon name="chevronLeft" size={20} />
       </button>
-      <h1 className="text-title">{children}</h1>
+      <h1 className="font-display text-[24px] font-extrabold">{children}</h1>
     </div>
   );
 }
@@ -538,8 +557,10 @@ function OrderLine({ plan }: { plan: PlanOffer }) {
   const c = copy();
   return (
     <span className="flex items-center justify-between gap-3">
-      <span className="text-body text-ink-2">{c.paywall.months(plan.months)}</span>
-      <span className="text-title num font-display">{c.paywall.price(plan.priceEtb)}</span>
+      <span className="text-ink-2 text-[15px]">{c.paywall.months(plan.months)}</span>
+      <span className="font-display num text-[24px] font-extrabold">
+        {c.paywall.price(plan.priceEtb)}
+      </span>
     </span>
   );
 }
@@ -555,32 +576,20 @@ function PlanCard({
 }) {
   const c = copy();
   return (
+    /*
+     * A real radio under a pressable card, like the programme chooser: one tab
+     * stop for the group, arrow keys between plans, and "radio, 2 of 2".
+     */
     <label
       data-plan={plan.code}
       data-selected={chosen}
       className={[
-        'rounded-card flex flex-1 cursor-pointer flex-col gap-0.5 border-2 p-3',
-        chosen ? 'border-ink bg-brand-soft' : 'border-border bg-surface',
+        'rounded-card flex cursor-pointer flex-col gap-3 border-[1.5px] p-5 transition-[background-color,border-color]',
+        chosen
+          ? 'border-link bg-brand-soft'
+          : 'border-border bg-surface hover:border-border-strong',
       ].join(' ')}
     >
-      <span className="flex items-center justify-between gap-2">
-        <span className="text-label">{c.paywall.months(plan.months)}</span>
-        {/* The word, not only the fill — this is the one control on the screen
-            whose state decides what the next screen charges. */}
-        {chosen ? (
-          <span className="text-caption text-ink uppercase">{c.checkout.chosen}</span>
-        ) : null}
-      </span>
-      <span className="text-title num font-display">{c.paywall.price(plan.priceEtb)}</span>
-      <span className="flex flex-wrap items-center gap-1.5">
-        <span className="text-caption text-ink-2 num">{c.paywall.perMonth(plan.perMonthEtb)}</span>
-        {plan.bestValue ? (
-          <span className="bg-reward-fill text-on-reward text-caption inline-flex items-center gap-1 rounded-full px-2 py-0.5">
-            <Icon name="star" size={11} strokeWidth={2.5} />
-            {c.paywall.bestValue}
-          </span>
-        ) : null}
-      </span>
       <input
         type="radio"
         name="plan"
@@ -589,6 +598,28 @@ function PlanCard({
         checked={chosen}
         onChange={onChoose}
       />
+      <span className="flex flex-wrap items-center gap-2.5">
+        {/* The radio drawn, so the choice reads as a choice before the fill
+            does: a ring, filled when chosen. */}
+        <span
+          aria-hidden="true"
+          className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${
+            chosen ? 'border-link' : 'border-border-input'
+          }`}
+        >
+          <span className={`size-2.5 rounded-full ${chosen ? 'bg-link' : 'bg-transparent'}`} />
+        </span>
+        <span className="font-display text-[18px] font-bold">{c.paywall.months(plan.months)}</span>
+        {plan.bestValue ? (
+          <span className="bg-brand text-on-brand ml-auto rounded-full px-2.5 py-1 text-[12px] font-bold whitespace-nowrap">
+            {c.paywall.bestValue}
+          </span>
+        ) : null}
+      </span>
+      <span className="font-display num text-[40px] leading-10 font-extrabold">
+        {c.paywall.price(plan.priceEtb)}
+      </span>
+      <span className="text-ink-2 num text-[14px]">{c.paywall.perMonth(plan.perMonthEtb)}</span>
     </label>
   );
 }

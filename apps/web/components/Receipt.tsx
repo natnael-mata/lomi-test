@@ -24,7 +24,6 @@
  */
 import { useEffect, useState } from 'react';
 
-import { Card } from './Card';
 import { Icon, type IconName } from './icons';
 import { api, type PaymentHistoryRow } from '../lib/api';
 import { day } from '../lib/dates';
@@ -64,17 +63,21 @@ export function Receipt() {
   const latest = phase.rows.find((row) => row.status === 'CONFIRMED') ?? null;
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
-      <h1 className="text-title">{c.checkout.heading}</h1>
+    // Content height, not `flex-1` with an `mt-auto` button: that pair is
+    // what opened the void the gap checker was written for.
+    <div className="flex flex-col gap-4">
+      <h1 className="font-display text-[clamp(26px,3vw,32px)] leading-[1.2] font-extrabold tracking-[-0.025em]">
+        {c.checkout.heading}
+      </h1>
 
       {latest ? <Detail row={latest} /> : null}
 
-      <span className="text-caption text-ink-2 mt-1 uppercase">{c.receipt.history}</span>
+      <span className="text-caption text-ink-3 mt-2 uppercase">{c.receipt.history}</span>
 
       {phase.rows.length === 0 ? (
         <p className="text-body text-ink-2">{c.receipt.noHistory}</p>
       ) : (
-        <Card as="section" className="flex flex-col px-4 py-1">
+        <section className="border-border bg-surface rounded-card flex flex-col border px-5 py-1">
           {phase.rows.map((row, index) => (
             <span
               key={row.id}
@@ -98,10 +101,10 @@ export function Receipt() {
               <StatusMark status={row.status} />
             </span>
           ))}
-        </Card>
+        </section>
       )}
 
-      <a href="/practice" className="btn-primary mt-auto">
+      <a href="/practice" className="btn-primary">
         {c.receipt.backToPractising}
       </a>
     </div>
@@ -120,10 +123,10 @@ function Detail({ row }: { row: PaymentHistoryRow }) {
   ];
 
   return (
-    <Card as="section" className="flex flex-col gap-3 p-5">
+    <section className="border-border bg-surface rounded-card flex flex-col gap-4 border p-6">
       <span
         data-banner="correct"
-        className="bg-correct-soft text-correct rounded-control text-label inline-flex items-center gap-2 p-3"
+        className="bg-correct-soft text-correct-deep rounded-option inline-flex items-center gap-2 p-3.5 text-[15px] font-bold"
       >
         <Icon name="check" size={18} strokeWidth={2.5} />
         {c.checkout.verifiedBanner}
@@ -149,7 +152,7 @@ function Detail({ row }: { row: PaymentHistoryRow }) {
           </>
         ) : null}
       </span>
-    </Card>
+    </section>
   );
 }
 

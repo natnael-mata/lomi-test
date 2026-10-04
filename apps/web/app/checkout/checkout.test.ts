@@ -141,4 +141,35 @@ describe('the copy', () => {
     expect(en.checkout.manualPending.toLowerCase()).not.toContain('instant');
     expect(en.checkout.manualPending.toLowerCase()).not.toContain('immediately');
   });
+
+  /** The handoff's one page: the method is a choice, not a second screen. */
+  it('chooses the plan and the way to pay on one page', () => {
+    expect(code.checkout).not.toContain("kind: 'method'");
+    expect(code.checkout).toContain('setMethod(value)');
+    expect(code.checkout).toContain('c.checkout.payAmountWith(price, methodName)');
+  });
+
+  /**
+   * Plans by length, never by feature: the owner kept the duration pricing,
+   * so the handoff's Starter, Standard and Full prep tiers are not built, and
+   * what every plan includes is said once.
+   */
+  it('sells lengths of the same access, not feature tiers', () => {
+    expect(code.checkout).not.toMatch(/Starter|Standard|Full prep|Most chosen/);
+    expect(code.checkout).toContain('c.checkout.included.map');
+  });
+
+  it('builds no identity check', () => {
+    expect(code.checkout).not.toMatch(/fayda/i);
+  });
+
+  /**
+   * No promise the product does not keep. Nothing in the payments code sends
+   * a message when a transfer is confirmed, and an account made by SMS may
+   * have no Telegram at all.
+   */
+  it('does not promise a Telegram message, or a Telegram number', () => {
+    expect(en.checkout.submittedBody('LMX-1').toLowerCase()).not.toContain('telegram');
+    expect(en.checkout.mobileOnFile.toLowerCase()).not.toContain('telegram');
+  });
 });

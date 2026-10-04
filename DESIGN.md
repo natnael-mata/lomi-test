@@ -576,6 +576,26 @@ field that looks editable and saves nothing. `DISPLAY_NAME_EDITABLE` is the swit
 
 The device list moved here from under the plans on `/checkout`, which is about buying access now.
 
+## Plans and checkout
+
+One page, the handoff's way: the plans, then the ways to pay, then a summary whose button says
+the amount and the method in words ("Pay Br 800 with telebirr"). The method used to be a second
+screen; now its fields sit in the summary when it is chosen (the paying number for telebirr and
+CBE Birr, the account and the reference for a bank transfer).
+
+**Plans by length, not the handoff's feature tiers.** The handoff sells Starter, Standard and Full
+prep at three prices with different features. Every plan here unlocks the same programme for a
+different length of time (Br 500 for six months, Br 800 for twelve, Br 300 on school tracks), by
+the owner's decision, so the cards show length, price and price a month, and what every plan
+includes is said once beneath them. Plan cards and methods are real radios under pressable cards.
+
+On the 640px reading measure the ways to pay and the summary are stacked, not side by side: at
+that width two columns wrapped every method's description to three lines.
+
+Not built: the Fayda note (identity checks were dropped) and a receipt upload (a transfer is
+claimed by its reference, and a person matches it to the statement). The practice paywall uses
+the same card for a plan, so both screens mark the recommended one the same way.
+
 ## Components
 
 ### Buttons

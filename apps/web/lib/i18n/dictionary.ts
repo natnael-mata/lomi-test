@@ -1139,8 +1139,9 @@ export const en = {
 
     mobileLabel: 'The phone number you pay with',
     mobileHint: 'For example 0911223344.',
-    mobileFromTelegram:
-      'From the number you shared on Telegram. Change it if you pay with another.',
+    // Sign up is by SMS now, so the number on file is the one that received
+    // the code. It said "the number you shared on Telegram", from before.
+    mobileOnFile: 'The number you signed up with. Change it if you pay with another.',
     mobileInvalid: 'That does not look like an Ethiopian mobile number. Check it and try again.',
     txRefLabel: 'Transfer reference',
     // Names what is missing, like every other blocked control in the product.
@@ -1190,9 +1191,16 @@ export const en = {
       'transfer. A claim with no matching transfer cannot be verified.',
     submitForVerification: 'Submit for verification',
     submittedBanner: 'Submitted. Being verified',
+    /*
+     * It promised "We will message you on Telegram the moment it is confirmed".
+     * Nothing in the payments code sends a message when a claim settles, and
+     * an account made by SMS may have no Telegram at all, so the promise was
+     * one the product did not keep. What is true: access starts when it is
+     * confirmed, and this page and Account both show it.
+     */
     submittedBody: (ref: string) =>
-      `Reference ${ref} is with our team. We will message you on Telegram the moment it is ` +
-      'confirmed. You can keep practising your free questions meanwhile.',
+      `Reference ${ref} is with our team. Your access starts the moment it is confirmed, and ` +
+      'this page shows it. You can keep practising your free questions meanwhile.',
 
     verifiedBanner: 'Payment verified',
 
@@ -1236,6 +1244,29 @@ export const en = {
     couldNotStart: 'The payment could not be started. Nothing has been charged. Try again.',
     unavailable:
       'That way of paying is not available right now. The bank transfer below still works.',
+
+    /*
+     * One page, the handoff's way (§ Plans & payment): the plans, the way to
+     * pay, and a summary with the one button. Not the handoff's three feature
+     * tiers: every plan unlocks the same programme for a different length of
+     * time, by the owner's decision, so what is included is said once.
+     */
+    unlock: (field: string) => `Unlock ${field}`,
+    unlockGeneric: 'Unlock your programme',
+    unlockBody: 'One payment covers every subject in your programme. Pick how long you need it.',
+    includedTitle: 'Every plan includes',
+    included: [
+      'Every question in your programme',
+      'A worked solution for every question',
+      'The timed mock exams and their results',
+    ] as const,
+    payWith: 'Pay with',
+    summary: 'Summary',
+    summaryPlan: (months: number, field: string | null) =>
+      field ? `${months} months · ${field}` : `${months} months`,
+    total: 'Total',
+    payAmountWith: (price: string, method: string) => `Pay ${price} with ${method}`,
+    backToToday: 'Back to today',
   },
 
   /**
