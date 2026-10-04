@@ -113,23 +113,17 @@ describe('the trend is a sequence, not a timeline (T-138)', () => {
    * The chart is decoration for anyone not looking at it; the numbers are the
    * content, so they are also written out (T-269).
    *
-   * The rule has not changed — what changed is where it is kept. `ScoreTrend`
-   * used to carry a second list restating every bar as `label · correct/total`,
-   * and `SittingHistory` sits directly under it giving the same rows with the
-   * date, the minutes, the correct/wrong/blank split and a link into the paper.
-   * So `/progress` printed every mock three times, and the middle copy was the
-   * smallest of the three.
-   *
-   * It is satisfied now by the percentage printed above each bar, plus the full
-   * history below — so nothing on this screen depends on reading a shape.
+   * Each bar carries its percentage above it. And the full record of every
+   * paper is written out in words on Mocks (redesign step 8): its score, its
+   * date, the minutes used, and the way into its results. That used to be
+   * `SittingHistory` under the chart on Progress, which left with the redesign
+   * because it printed every paper a second time.
    */
   it('never leaves a number encoded only as a bar height', () => {
     expect(source).toContain('{point.scorePct}%');
-    // And the removed list has not simply left the numbers nowhere.
-    const history = readFileSync(join(HERE, 'SittingHistory.tsx'), 'utf8');
-    expect(history).toContain('point.scoreCorrect');
-    // The legend is the sentence that spells out correct/wrong/blank/total.
-    expect(history).toContain('sittingLegend');
+    const mocks = readFileSync(join(HERE, '..', 'app', 'mocks', 'MocksScreen.tsx'), 'utf8');
+    expect(mocks).toContain('{paper.scorePct}%');
+    expect(mocks).toContain('/exam/review/${paper.sittingId}');
   });
 
   /**

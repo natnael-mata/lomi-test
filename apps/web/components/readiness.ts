@@ -19,6 +19,11 @@ export interface TopicScore {
   scorePct: number;
   /** This topic's share of past papers, 0–100. */
   weightPct: number;
+  /**
+   * How many answers the score rests on, when known. A 100% from one answer
+   * and a 100% from forty are different facts, and the row says which.
+   */
+  answered?: number;
 }
 
 export interface ElidedRow {

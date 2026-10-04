@@ -94,7 +94,7 @@ export function ScoreTrend({ points }: { points: TrendPoint[] }) {
         It restated every bar in words — label, a ran-out chip, and
         `correct / total` — on the reasoning that the chart is decoration and
         the numbers are the content. That reasoning still holds, and it is
-        `SittingHistory` directly below that satisfies it: the same rows, with
+        the Mocks page that satisfies it (formerly `SittingHistory`): the same rows, with
         the date, the minutes taken, the correct/wrong/blank split, and a link
         into the paper. This list was a strictly smaller copy sitting between
         the chart and the full version of itself, so `/progress` printed every

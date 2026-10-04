@@ -18,6 +18,13 @@ import { en } from '../../lib/i18n/dictionary';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const screen = stripComments(readFileSync(resolve(here, 'ProgressScreen.tsx'), 'utf8'));
+/*
+ * The evidence moved into each topic's row in the redesign, so the per row
+ * rules are checked where the row is drawn.
+ */
+const statement = stripComments(
+  readFileSync(resolve(here, '../../components/ReadinessStatement.tsx'), 'utf8'),
+);
 
 describe('the progress screen (T-269)', () => {
   /**
@@ -29,7 +36,8 @@ describe('the progress screen (T-269)', () => {
    * score rests on — but it was saying that fact *and* repeating the score.
    */
   it('states how much a score rests on without reprinting the score', () => {
-    expect(screen).toContain('c.progress.fromAnswers(t.answered)');
+    expect(statement).toContain('c.progress.fromAnswers(row.answered)');
+    expect(screen).toContain('answered: t.answered');
     expect(en.progress.fromAnswers(5)).toBe('from 5 answers');
     expect(en.progress.fromAnswers(5)).not.toContain('%');
     // One answer is singular. A caveat that reads "1 answers" undermines the
@@ -44,7 +52,7 @@ describe('the progress screen (T-269)', () => {
    * move the headline twenty points.
    */
   it('flags a score resting on too little', () => {
-    expect(screen).toContain('c.progress.thinEvidence');
+    expect(statement).toContain('c.progress.thinEvidence');
     expect(en.progress.thinEvidence.length).toBeGreaterThan(4);
   });
 
@@ -60,5 +68,46 @@ describe('the progress screen (T-269)', () => {
     const line = en.progress.readinessVsCoverage.toLowerCase();
     expect(line).toContain('coverage');
     expect(line).toContain('tried');
+  });
+
+  /**
+   * The redesign's figures (handoff, § Progress), each read and each with
+   * how it was worked out.
+   */
+  it('leads with coverage, the checkable figure', () => {
+    const coverageAt = screen.indexOf('c.progress.kpiCoverage');
+    const readinessAt = screen.indexOf('c.progress.kpiReadiness');
+    expect(coverageAt).toBeGreaterThan(-1);
+    expect(coverageAt).toBeLessThan(readinessAt);
+  });
+
+  /** "Day streak" in the handoff; the API counts days shown up, not in a row. */
+  it('never calls the study day count a streak in a row', () => {
+    expect(en.progress.kpiStudyDays.toLowerCase()).not.toContain('streak');
+    expect(en.progress.kpiStudyDaysHow.toLowerCase()).not.toContain('in a row');
+  });
+
+  /** D5: a share of past papers, never "% of exam", which the handoff writes. */
+  it('frames topic weights as a share of past papers', () => {
+    expect(statement).toContain('c.progress.shareOf(');
+    expect(en.progress.shareOf(25)).toBe('25% share of past papers');
+    expect(JSON.stringify(en.progress)).not.toMatch(/of exam/i);
+  });
+
+  /** Activity comes only from the guarded ledger reading, never a guess. */
+  it('draws activity only when the ledger can vouch for it', () => {
+    expect(screen).toContain('activityFrom(');
+    expect(screen).toContain('cells ? <Activity');
+  });
+
+  /** Mocks lists every paper now; printing them here too was a second copy. */
+  it('does not reprint the paper history Mocks already shows', () => {
+    expect(screen).not.toContain('SittingHistory');
+    expect(screen).not.toContain('ScoreTrend');
+    expect(screen).toContain('href="/mocks"');
+  });
+
+  it('keeps Standing linked, now that it is out of the navigation', () => {
+    expect(screen).toContain('href="/standing"');
   });
 });

@@ -25,7 +25,6 @@
  * university exit exam sends null and the section does not render at all, since
  * a degree draws on no school year.
  */
-import { Card } from './Card';
 import { copy } from '../lib/i18n';
 import type { CoverageSlice, CoverageView } from '../lib/api';
 
@@ -111,12 +110,16 @@ function SliceRow({ slice }: { slice: CoverageSlice }) {
   return (
     <li className="flex flex-col gap-1" data-slice={slice.key}>
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-body truncate">{slice.label}</span>
+        <span className="text-ink truncate text-[15px] font-semibold">{slice.label}</span>
         <span className="text-caption text-ink-2 num shrink-0">
           {c.progress.coverageRow(slice.beaten, slice.total, slice.pct)}
         </span>
       </span>
-      <span className="bg-surface-2 h-2 w-full overflow-hidden rounded-full">
+      <span
+        className={`h-2 w-full overflow-hidden rounded-full ${
+          slice.pct < WEAK_BELOW_PCT ? 'bg-pending-soft' : 'bg-surface-2'
+        }`}
+      >
         {/*
           Terracotta below 60, forest above (handoff frame 5a).
 
@@ -135,7 +138,10 @@ function SliceRow({ slice }: { slice: CoverageSlice }) {
         <span
           className={[
             'block h-full rounded-full',
-            slice.pct < WEAK_BELOW_PCT ? 'bg-wrong' : 'bg-ink',
+            // Pending orange, not the wrong red (redesign): a subject not yet
+            // covered is unfinished, not failed, and red on a bar measuring
+            // progress made reads as a penalty for the progress.
+            slice.pct < WEAK_BELOW_PCT ? 'bg-pending' : 'bg-ink',
           ].join(' ')}
           style={{ width: `${Math.min(100, slice.pct)}%` }}
         />
@@ -166,14 +172,25 @@ export function CoveragePanel({
   const c = copy();
 
   return (
-    <section className="flex flex-col gap-4" data-coverage="">
-      <h2 className="text-title">{c.progress.coverageTitle}</h2>
+    /*
+      One card, not three (redesign, § Progress).
 
-      <Card as="section" className="flex flex-wrap items-center gap-5">
+      It was a heading, then a card with the ring, then a card per breakdown:
+      three white boxes for one figure and its two explanations. The breakdowns
+      are below a hairline inside the same card, because they are the same
+      coverage, cut two ways.
+    */
+    <section
+      className="border-border bg-surface rounded-card flex flex-col gap-6 border p-6"
+      data-coverage=""
+    >
+      <h2 className="font-display text-[18px] font-bold">{c.progress.coverageTitle}</h2>
+
+      <div className="flex flex-wrap items-center gap-6">
         <Ring pct={coverage.pct} targetPct={coverage.targetPct} />
 
         <div className="flex min-w-[14rem] flex-1 flex-col gap-2">
-          <p className="text-label num">
+          <p className="text-ink num text-[16px] font-semibold">
             {c.progress.coverageOf(coverage.beaten, coverage.total)}
             {/* The effort, beside the score. Only where there is effort to
                 report and it is not already the same number. */}
@@ -193,51 +210,52 @@ export function CoveragePanel({
           </p>
 
           {/*
-            The daily target, with the division that produced it.
-            `perDay` is null when no exam date is set — rendered as a sentence
-            saying so, never as a zero. A zero against a target draws a full
-            progress bar, which is the one wrong answer worse than no answer.
+            The daily target, with the division that produced it. `perDay` is
+            null when no exam date is set: rendered as a sentence saying so,
+            never as a zero, which would draw a full bar.
           */}
           {coverage.perDay === null ? (
             <p className="text-caption text-ink-2">{c.progress.coverageNoDate}</p>
           ) : coverage.toTarget > 0 && coverage.daysToExam !== null ? (
             <p className="flex flex-wrap items-baseline gap-2">
-              <span className="text-label num">{c.progress.coverageDaily(coverage.perDay)}</span>
+              <span className="text-ink num text-[15px] font-semibold">
+                {c.progress.coverageDaily(coverage.perDay)}
+              </span>
               <span className="text-caption text-ink-2 num">
                 {c.progress.coverageDailyWhy(coverage.toTarget, coverage.daysToExam)}
               </span>
             </p>
           ) : null}
         </div>
-      </Card>
+      </div>
 
       {/*
-        The diagnostic. Rendered only where the track has school years — an exit
-        exam draws on a degree, and a "which year" section over a degree names
-        nothing. The rows come from the server already ordered by year.
+        The diagnostic. Only where the track has school years: an exit exam
+        draws on a degree, and a "which year" list over a degree names nothing.
+        The rows come from the server already ordered by year.
       */}
       {coverage.years && coverage.byGrade.length > 0 ? (
-        <Card as="section" className="flex flex-col gap-3">
-          <h3 className="text-label">{c.progress.coverageByGrade}</h3>
-          <ul className="flex flex-col gap-3">
+        <div className="border-border flex flex-col gap-3 border-t pt-5">
+          <h3 className="text-ink-3 text-caption uppercase">{c.progress.coverageByGrade}</h3>
+          <ul className="flex flex-col gap-4">
             {coverage.byGrade.map((slice) => (
               <SliceRow key={slice.key} slice={slice} />
             ))}
           </ul>
-        </Card>
+        </div>
       ) : null}
 
       {coverage.bySubject.length > 0 ? (
-        <Card as="section" className="flex flex-col gap-3">
-          <h3 className="text-label">{c.progress.coverageBySubject}</h3>
-          {/* Weakest first, from the server — this list is read to decide what
+        <div className="border-border flex flex-col gap-3 border-t pt-5">
+          <h3 className="text-ink-3 text-caption uppercase">{c.progress.coverageBySubject}</h3>
+          {/* Weakest first, from the server: this list is read to decide what
               to do next, and the thing to do next belongs at the top. */}
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-4">
             {coverage.bySubject.map((slice) => (
               <SliceRow key={slice.key} slice={slice} />
             ))}
           </ul>
-        </Card>
+        </div>
       ) : null}
     </section>
   );

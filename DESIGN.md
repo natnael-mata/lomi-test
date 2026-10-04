@@ -533,6 +533,34 @@ Nothing in this product states one, and the school tracks are not sat against th
 exit exam's. `PASS_MARK_PCT` in `lib/pass-mark.ts` is typed, null, and wired to the Mocks
 subtitle and the results badge, which appear when it is set.
 
+## Progress
+
+Four figures across the top, each with how it was worked out written under it: **coverage**
+first (beaten of total, the checkable headline), readiness, the latest mock, and study days.
+The handoff's four are readiness, latest mock, day streak and topics below 60%; coverage takes
+the lead for the reason it leads Today, the topics below the line are counted in the readiness
+card's own header where the topics are, and the streak is "study days" because the API counts
+days shown up, never days in a row.
+
+Then coverage and readiness side by side on a desktop:
+
+1. **Coverage** is one card: the ring with its target tick, the sentences that explain it, then
+   by year and by subject under a hairline. Subjects under 60% are pending orange, not the wrong
+   red they were: red on a bar that measures progress made reads as a penalty for the progress.
+2. **Readiness by topic** covers every topic, read against the 60% pass safe line drawn on each
+   track, ink above it and orange below, with the evidence folded into each row ("from 2
+   answers · too few to be sure"). That evidence was a second list under the first.
+
+Then **five weeks of activity**, a row a week, Monday first, shaded by answers per day at stated
+thresholds (1 to 5, 6 to 11, 12 or more, twelve being the smallest daily target). There is no
+activity endpoint, so it is counted from the points ledger and drawn **only when the ledger page
+covers all five weeks**; otherwise it is left out rather than drawn with studied days empty. An
+endpoint returning counts per day is the open item that lets every student see it.
+
+The mock trend and the paper history left Progress: Mocks lists every paper with its score and
+results, and the two screens printed each paper twice. Standing is linked from here, since it
+left the navigation.
+
 ## Components
 
 ### Buttons

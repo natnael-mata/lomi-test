@@ -967,16 +967,10 @@ export const en = {
     nothingYet:
       'Nothing answered yet, so there is no readiness figure to show. Answer a few questions and it starts here.',
     chooseProgramme: 'Choose a programme to see your progress.',
-    mockScores: 'Mock scores',
-    mocksSat: 'Mocks sat',
-    noneYet: 'none yet',
-    mostRecent: (pct: number) => `most recent: ${pct}%`,
     trendEmpty: 'Your mock scores appear here once you have sat one.',
-    notReached: (count: number) => `${count} not reached`,
     readiness: 'Readiness',
     focus: 'Focus',
     chooseFirst: 'Choose a programme',
-    evidenceTitle: 'What each score rests on',
 
     /*
      * Coverage (T-256), the headline that replaces the weighted mean.
@@ -1023,19 +1017,8 @@ export const en = {
      * "Left blank" and never "ran out of time": the figure counts blanks and
      * knows nothing about why — a paper submitted early leaves them too.
      */
-    sittingsTitle: 'Your mock papers',
-    sittingCorrect: 'Correct',
-    sittingWrong: 'Wrong',
-    sittingBlank: 'Left blank',
-    sittingLegend: (correct: number, wrong: number, blank: number, total: number) =>
-      `${correct} correct · ${wrong} wrong · ${blank} left blank, of ${total}`,
-    sittingMinutes: (minutes: number) => `${minutes} min used`,
-    sittingOfAttempted: (pct: number, attempted: number) =>
-      `${pct}% of the ${attempted} you attempted`,
     // The way back into a paper already sat. "Read", not "review" — reviewing
     // is what a marker does; this is the student reading their own answers.
-    readThisPaper: 'Read this paper',
-    sittingsEmpty: 'No mock papers sat yet.',
     /*
      * The count, and not the percentage again (T-269).
      *
@@ -1049,6 +1032,50 @@ export const en = {
      * section earn its place.
      */
     fromAnswers: (answered: number) => `from ${answered} answer${answered === 1 ? '' : 's'}`,
+
+    /*
+     * The redesign's Progress (handoff, § Progress): four figures, coverage,
+     * readiness by topic, and five weeks of activity.
+     */
+    subtitle: (field: string, answered: number) =>
+      `${field} · ${answered.toLocaleString('en')} question${answered === 1 ? '' : 's'} answered`,
+    // Was inline English in the components; the dictionary is where copy lives.
+    shareOf: (pct: number) => `${pct}% share of past papers`,
+    weightedMeanOf: (groups: number) => `weighted mean of ${groups} topic groups`,
+    weightedAcross: (assessedPct: number, answered: number) =>
+      `weighted mean across ${assessedPct}% of past papers · ${answered} questions answered`,
+    kpiCoverage: 'Coverage',
+    kpiCoverageHow: (beaten: number, total: number) => `${beaten} of ${total} beaten`,
+    kpiReadiness: 'Readiness',
+    kpiReadinessHow: (assessedPct: number) =>
+      assessedPct >= 100
+        ? 'weighted by share of past papers'
+        : `weighted, from topics making up ${assessedPct}% of past papers`,
+    kpiLatestMock: 'Latest mock',
+    kpiLatestMockHow: (label: string) => label,
+    kpiNoMock: 'sit one under Mock exams',
+    // A word, not a zero: no paper sat is not a score of nothing.
+    kpiNoneValue: 'None',
+    nothingYetTitle: 'Nothing answered yet',
+    otherTopics: 'other topics',
+    kpiStudyDays: 'Study days',
+    kpiStudyDaysHow: 'days you showed up, all time',
+    byTopicTitle: 'Readiness by topic',
+    // The line the bars are read against. "Pass safe" is this product's own
+    // threshold, not the exam's pass mark, and it says so by name.
+    byTopicLine: (line: number) => `against the ${line}% pass safe line`,
+    belowLine: (n: number) => (n === 0 ? 'none below the line' : `${n} below the line`),
+    untried: 'Not tried yet',
+    activityTitle: 'Last 5 weeks',
+    // Thresholds stated as numbers, so a shade can be checked against them.
+    // Twelve is the smallest daily target the product sets.
+    activityKey: ['None', '1 to 5', '6 to 11', '12 or more'] as const,
+    activityDay: (date: string, n: number) =>
+      `${date}: ${n === 0 ? 'nothing answered' : `${n} answered`}`,
+    activityWhy: 'Questions answered each day. Twelve a day is the smallest daily target.',
+    standingLink: 'Where you stand',
+    standingLinkWhy: 'Points, your tier, and the leaderboard for your programme.',
+    mocksLink: 'Your mock papers are under Mock exams.',
     thinEvidence: 'too few to be sure',
     unansweredInMocks: (count: number) =>
       `${count} mock question${count === 1 ? '' : 's'} ${count === 1 ? 'was' : 'were'} ` +

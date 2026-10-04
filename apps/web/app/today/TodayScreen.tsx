@@ -46,6 +46,7 @@ import {
   type StandingView,
   type TrendPoint,
 } from '../../lib/api';
+import { addisDay, DAY_MS } from '../../lib/addis-day';
 import { day } from '../../lib/dates';
 import { copy } from '../../lib/i18n';
 
@@ -720,13 +721,7 @@ function Streak({ standing, ledger }: { standing: StandingView; ledger: LedgerRo
 
 /* ---------------------------------------------------------------- the clock */
 
-/** Addis is UTC+3 all year — the same constant `points.ts` uses for `dayOf`. */
-const ADDIS_OFFSET_MS = 3 * 60 * 60 * 1000;
-
-/** The ledger's own calendar day, `YYYY-MM-DD`, for an instant. */
-function addisDay(at: number): string {
-  return new Date(at + ADDIS_OFFSET_MS).toISOString().slice(0, 10);
-}
+// `addisDay` is shared with Progress: `lib/addis-day.ts`.
 
 /**
  * The last seven Addis days, oldest first, marked from the ledger — or null when
@@ -741,9 +736,8 @@ function weekFrom(ledger: LedgerRow[]): {
   days: { day: string; label: string; active: boolean; isToday: boolean }[];
   todayPoints: number | null;
 } | null {
-  const DAY = 24 * 60 * 60 * 1000;
   const now = Date.now();
-  const days = Array.from({ length: 7 }, (_, i) => addisDay(now - (6 - i) * DAY));
+  const days = Array.from({ length: 7 }, (_, i) => addisDay(now - (6 - i) * DAY_MS));
   const today = days[6]!;
   const oldest = ledger.at(-1)?.day ?? null;
   const complete = ledger.length < LEDGER_PAGE || (oldest !== null && oldest < days[0]!);
