@@ -191,8 +191,19 @@ export const en = {
     // 56px row with the option text, and set in capitals with an icon so the
     // row still reads in greyscale.
     correct: 'Correct',
-    yours: 'Yours',
+    // "Your answer", the handoff's words. "Yours" alone read as a fragment
+    // beside the option text, and on a row that is wrong it is the one word
+    // the student most needs to read without effort.
+    yours: 'Your answer',
     selected: 'Selected',
+
+    // The verdict names the right letter when the chosen one was not it, so
+    // nobody has to scan the rows above to find the green one.
+    theAnswerIs: (label: string) => `The answer is ${label}.`,
+    whatWasTested: 'What was tested',
+    workedSolution: 'Worked solution',
+    explanation: 'Explanation',
+    whyWrong: (label: string) => `Why ${label} is wrong`,
   },
 
   account: {
@@ -553,6 +564,11 @@ export const en = {
 
   practice: {
     title: 'Practise',
+    // The header (redesign handoff, § Practice): the way back to the plan, and
+    // where today's count stands against the daily target.
+    backToPlan: "Today's plan",
+    ofTarget: (done: number, target: number) => `${done} of ${target}`,
+    questionN: (n: number) => `Question ${n}`,
     /*
      * What the clock on a practice question is (T-269).
      *

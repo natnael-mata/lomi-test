@@ -6,7 +6,6 @@
  * A collapsed explanation is one most students never open, and the explanation
  * is the thing they are paying for.
  */
-import { Card } from './Card';
 import { Chip } from './Chip';
 import { CodeBlock } from './CodeBlock';
 import { Icon } from './icons';
@@ -186,110 +185,140 @@ export function AnswerView({
         </section>
       )}
 
-      {/* 1 — verdict.
+      {/* 1. Verdict.
           The ONLY element that animates on entrance (T-117). The spring is the
           answer moment; anything else moving at the same time competes with it,
           and a page where four things animate reads as slow rather than alive. */}
       <section
         data-section="verdict"
         data-verdict={verdict}
-        className={`${VERDICT_CLASS[verdict]} rounded-card animate-pop flex items-center justify-between gap-3 p-4`}
+        className={`${VERDICT_CLASS[verdict]} rounded-option animate-pop flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3.5`}
       >
-        <span className="text-label inline-flex items-center gap-2">
+        <span className="inline-flex items-center gap-2 text-[16px] font-bold">
           <Icon name={VERDICT_ICON[verdict]} size={20} strokeWidth={2.5} />
-          {verdictWord(verdict)}
+          {/* One element, so "Not quite. The answer is B." reads as one line of
+              text with ordinary spacing, rather than two flex items a gap
+              apart. The right letter is named when the chosen one was not it
+              (handoff): nobody should have to scan the rows above for the
+              green one. */}
+          <span>
+            {verdictWord(verdict)}
+            {verdict === 'wrong' && answer.correctLabel
+              ? `. ${copy().answer.theAnswerIs(answer.correctLabel)}`
+              : ''}
+          </span>
         </span>
         {timed && (
-          <span className="text-label num">
+          <span className="num text-[14px] font-semibold">
             {clock(timeTakenSec)} / {clock(answer.timeLimitSec)}
           </span>
         )}
       </section>
 
-      {/* 2 — concept line: the one thing to remember, unless it is currently
-             the answer to the reason check below. See `withholdConcept`. */}
+      {/* 2. What was tested: the one thing to remember, unless it is currently
+          the answer to the reason check below. See `withholdConcept`. */}
       {answer.conceptLine &&
         (withholdConcept ? (
           <section
             data-section="concept"
             data-withheld=""
-            className="border-border text-ink-2 rounded-card border border-dashed p-4"
+            className="border-border text-ink-2 rounded-option border border-dashed p-4"
           >
             <p className="text-caption">{copy().practice.conceptAfterReason}</p>
           </section>
         ) : (
-          <section data-section="concept" className="bg-brand-soft text-ink rounded-card p-4">
-            <p className="text-stem">{answer.conceptLine}</p>
+          <section
+            data-section="concept"
+            className="bg-brand-soft text-ink rounded-option flex flex-col gap-1 p-4"
+          >
+            <span className="text-caption text-link uppercase">{copy().answer.whatWasTested}</span>
+            <p className="text-[16px] leading-6 font-medium">{answer.conceptLine}</p>
           </section>
         ))}
 
-      {/* 3 — solution: prose for CONCEPT, numbered working for CALCULATION */}
-      <section data-section="solution">
-        <Card>
-          {answer.codeBlock && (
-            <div className="mb-3">
-              <CodeBlock code={answer.codeBlock} />
-            </div>
-          )}
-          {isCalculation && answer.steps.length > 0 ? (
-            <ol className="flex flex-col gap-2" data-steps="">
-              {answer.steps.map((step, index) => {
-                /*
-                 * T-114: the last step states the answer choice, and the publish
-                 * gate refuses a calculation whose last step does not.
-                 * Highlighting it is what makes that rule visible to a student.
-                 *
-                 * The MARKER highlights it (handoff frame 3b), not the mint.
-                 * The lemon is the highlighter in this system — the pen you run
-                 * over the line that matters — and mint had quietly taken on a
-                 * fourth job here after picking up selected, correct and the
-                 * active nav. A highlighter over the final line is also just
-                 * what a student does to their own working on paper.
-                 *
-                 * Ink on lemon is 11.24:1, against 6.23:1 for the teal-on-mint
-                 * it replaces.
-                 */
-                const isLast = index === answer.steps.length - 1;
-                return (
-                  <li
-                    key={step.stepNo}
-                    data-step={step.stepNo}
-                    data-final={isLast ? 'yes' : 'no'}
-                    className={
-                      isLast
-                        ? 'bg-brand text-on-brand rounded-card p-3 font-semibold'
-                        : 'bg-surface-2 rounded-card p-3'
-                    }
+      {/* 3. The solution: numbered working for CALCULATION, prose otherwise. */}
+      <section
+        data-section="solution"
+        className="border-border bg-surface rounded-option flex flex-col gap-3 border p-4"
+      >
+        <span className="text-caption text-ink-3 uppercase">
+          {isCalculation && answer.steps.length > 0
+            ? copy().answer.workedSolution
+            : copy().answer.explanation}
+        </span>
+        {answer.codeBlock && <CodeBlock code={answer.codeBlock} />}
+        {isCalculation && answer.steps.length > 0 ? (
+          <ol className="flex flex-col gap-3" data-steps="">
+            {answer.steps.map((step, index) => {
+              /*
+               * T-114: the last step states the answer choice, and the publish
+               * gate refuses a calculation whose last step does not.
+               * Highlighting it is what makes that rule visible to a student.
+               *
+               * **Green now, not the lemon** (redesign handoff: "the last step
+               * green"). The lemon was chosen as the highlighter, the pen run
+               * over the line that matters. But this line is not a takeaway,
+               * it is the answer, and the answer already has a colour on this
+               * screen: the green row a few inches above it. Two colours for one
+               * fact made the student match them up; one makes them the same
+               * thing. The numbered chip carries it too, so it is never colour
+               * alone, and correct deep on its wash is an audited pair.
+               */
+              const isLast = index === answer.steps.length - 1;
+              return (
+                <li
+                  key={step.stepNo}
+                  data-step={step.stepNo}
+                  data-final={isLast ? 'yes' : 'no'}
+                  className="flex gap-2.5"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`num grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-bold ${
+                      isLast ? 'bg-correct text-on-state' : 'bg-surface-2 text-ink-2'
+                    }`}
                   >
-                    {step.formula && (
-                      <p className="text-caption num mb-1 font-mono">{step.formula}</p>
-                    )}
-                    <p className="text-body">
-                      <span className="num mr-2">{step.stepNo}.</span>
+                    {step.stepNo}
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-1.5">
+                    <p className={`text-body ${isLast ? 'font-semibold' : ''}`}>
+                      <span className="sr-only">{step.stepNo}. </span>
                       {step.text}
                     </p>
-                  </li>
-                );
-              })}
-            </ol>
-          ) : (
-            <p className="text-body">{answer.explanation}</p>
-          )}
-        </Card>
+                    {step.formula && (
+                      <p
+                        className={`num rounded-control overflow-x-auto px-3 py-2 font-mono text-[14px] ${
+                          isLast ? 'bg-correct-soft text-correct-deep' : 'bg-surface-2 text-ink'
+                        }`}
+                      >
+                        {step.formula}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <p className="text-body">{answer.explanation}</p>
+        )}
       </section>
 
-      {/* 4 — why-wrongs, the student's own answer first */}
+      {/* 4. Why each wrong option is wrong, the student's own answer first. */}
       {withholdWhyWrongs && whyWrongs.length > 0 ? (
         <section
           data-section="why-wrongs"
           data-withheld=""
-          className="border-border text-ink-2 rounded-card border border-dashed p-4"
+          className="border-border text-ink-2 rounded-option border border-dashed p-4"
         >
           <p className="text-caption">{copy().practice.whyWrongsAfterReason}</p>
         </section>
       ) : null}
       {!withholdWhyWrongs && whyWrongs.length > 0 && (
-        <section data-section="why-wrongs" className="flex flex-col gap-2">
+        <section
+          data-section="why-wrongs"
+          className="border-border bg-surface rounded-option flex flex-col gap-4 border p-4"
+        >
           {whyWrongs.map((option) => {
             const mine = isOwnAnswer(option, answer.chosenLabel);
             return (
@@ -297,12 +326,16 @@ export function AnswerView({
                 key={option.label}
                 data-why-wrong={option.label}
                 data-own={mine ? 'yes' : 'no'}
-                className={`rounded-card p-4 ${mine ? 'bg-wrong-soft' : 'bg-surface-2'}`}
+                className="flex flex-col gap-1"
               >
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="option-key">{option.label}</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-caption text-ink-3 uppercase">
+                    {copy().answer.whyWrong(option.label)}
+                  </span>
+                  {/* The student's own wrong answer is named in words, not only
+                      placed first: first is an order, and order is easy to miss. */}
                   {mine && <Chip tone="wrong">{copy().answer.yours}</Chip>}
-                </div>
+                </span>
                 <p className="text-body text-ink-2">{option.whyWrong}</p>
               </div>
             );

@@ -118,6 +118,12 @@ const PAIRS: [fg: string, bg: string, where: string][] = [
   ['on-state', 'wrong', 'danger button label'],
   ['on-state', 'pending', 'label on a solid pending fill'],
   ['on-state', 'reward', 'label on a solid reward fill'],
+  // The lettered chip on a wrong answer row (redesign, § Practice). The bright
+  // red is a fill; the white letter on it clears AA where red text on its own
+  // wash does not.
+  ['on-state', 'wrong-bright', 'option letter on a wrong answer'],
+  // The "What was tested" eyebrow, in the link amber on the concept wash.
+  ['link', 'brand-soft', 'the concept card eyebrow'],
   /*
    * The dark bands (redesign handoff, 2026-10-01).
    *

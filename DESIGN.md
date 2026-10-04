@@ -54,7 +54,7 @@ typography:
     letterSpacing: '-0.02em'
   stem:
     fontFamily: 'Inter, system-ui, sans-serif'
-    fontSize: '1.1875rem'
+    fontSize: 'clamp(1.1875rem, 1.8vw, 1.25rem)' # 19px on a phone, 20px wide
     fontWeight: 600
     lineHeight: '1.8125rem'
   body:
@@ -289,7 +289,7 @@ product is actually read.
 
 - **Display** (Outfit 800, 34/40, -0.03em): countdown, mock score, readiness. One per screen.
 - **Title** (Outfit 700, 24/30, -0.02em): screen titles.
-- **Stem** (Inter 600, 19/29): the question — the most-read text in the product.
+- **Stem** (Inter 600, 19/29 on a phone, growing to 20px wide): the question — the most-read text in the product. The layout sweep measures that nothing on a practice or exam screen is larger.
 - **Body** (Inter 400, 16/26): options, explanations, prose. Never below 16px on mobile,
   never truncated, measure ≤70ch.
 - **Label** (Inter 600, 15/20): buttons, tabs, chips.
@@ -523,11 +523,32 @@ off is an outline, never a red dot.
 
 ### Answer option
 
-Full-width row, 56px minimum, **16px radius** (an option is a card you can press, not an
-input) and a **1px border**, driven by a `data-state` attribute
-(`default` / `selected` / `correct` / `wrong`) that mirrors `aria-checked`. A pill letter badge
-sits on the left and fills with the state colour. Correct and wrong states add an icon and a
-word ("Correct", "Yours"). The whole row is the target.
+Full width row, 56px minimum, **12px radius** (`rounded-option`: an option is a card you press,
+not a panel) and a **1.5px border in every state**, driven by a `data-state` attribute
+(`default` / `selected` / `correct` / `wrong`) that mirrors `aria-checked`. It was 1px at rest
+and 2px once chosen, so every tap moved the row's text and everything below it; only the colour
+changes now. The state is carried three ways and never by colour alone: border and fill, the
+lettered chip filling with the state colour (lemon when chosen, olive when correct, bright red
+when it is your wrong answer), and a word with an icon at the end of the row ("Selected",
+"Correct", "Your answer"). The whole row is the target.
+
+### Practice
+
+The handoff's layout, around logic that did not change: choose, then check; the reason check
+on a first correct answer; the free counter and the paywall.
+
+- **"Today's plan" and today's count** at the top, read from the same two endpoints Today reads
+  so the bar here and the ring there cannot disagree. No bar when there is no sitting date.
+- **"Question 16" is a 16px label, not the handoff's 24px heading.** The Stem Supremacy Rule
+  wins, and the layout sweep now measures it on every screen with a stem.
+- **The stem sits on the page, not in a card.**
+- **The verdict names the right letter**: "Not quite. The answer is B."
+- **"What was tested"** on the lemon wash, then the worked solution as numbered steps with the
+  **final step green**: it states the answer, and the answer already has a colour on this
+  screen.
+- **"Check answer" and "Next question" ride `sticky-foot`**, which pins above the phone's tab
+  bar and to the bottom on a desktop. `sticky bottom-0` put them under the tab bar the moment
+  an explanation made the page scroll.
 
 ### The explanation (signature component)
 

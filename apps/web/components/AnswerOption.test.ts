@@ -42,7 +42,7 @@ describe('verdictWordFor', () => {
   });
 
   it("labels the student's own wrong row", () => {
-    expect(verdictWordFor('wrong', true)).toBe('Yours');
+    expect(verdictWordFor('wrong', true)).toBe('Your answer');
   });
 
   // A distractor nobody picked is just a distractor; "Yours" on it would be a

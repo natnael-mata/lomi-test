@@ -61,9 +61,7 @@ export function PracticeScreen() {
    * this route out of a Suspense boundary it does not otherwise need.
    */
   const [topicId] = useState<string | null>(() =>
-    typeof window === 'undefined'
-      ? null
-      : new URLSearchParams(window.location.search).get('topic'),
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('topic'),
   );
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [chosen, setChosen] = useState<OptionLabel | null>(null);
@@ -87,6 +85,24 @@ export function PracticeScreen() {
    * that sentence on an account holding a lapsed twelve-month subscription.
    */
   const [everPaid, setEverPaid] = useState(false);
+  /**
+   * Today's answers against the daily target, for the header bar.
+   *
+   * Null until both reads land, and null if either fails or there is no
+   * target (no sitting date): the bar is left out rather than drawn empty.
+   */
+  const [answeredToday, setAnsweredToday] = useState<number | null>(null);
+  const [perDay, setPerDay] = useState<number | null>(null);
+  const day =
+    answeredToday !== null && perDay !== null ? { answered: answeredToday, perDay } : null;
+  /**
+   * The number in "Question 16", and which question it belongs to.
+   *
+   * Fixed when the question is served and kept while it is on screen, so
+   * answering it (which bumps today's count) does not renumber it under the
+   * student's eyes.
+   */
+  const [numbered, setNumbered] = useState<{ id: string; n: number } | null>(null);
 
   /**
    * When this question was first shown.
@@ -198,6 +214,38 @@ export function PracticeScreen() {
     void load();
   }, [load]);
 
+  /*
+   * Where today stands. The same two reads Today makes, so the bar here and
+   * the ring there agree; refreshed after every answer by `refreshDay`.
+   */
+  const refreshDay = useCallback(async (): Promise<void> => {
+    try {
+      const [summary, fields] = await Promise.all([api.practiceSummary(), api.myFields()]);
+      setAnsweredToday(summary.answered);
+      const field = fields.find((f) => f.chosen);
+      if (!field) return;
+      const coverage = await api.coverage(field.id);
+      // Null with no sitting date: "12 of nothing" is not a target.
+      setPerDay(coverage.perDay && coverage.perDay > 0 ? coverage.perDay : null);
+    } catch {
+      // The header is orientation, not the task. A failed read leaves it out.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshDay();
+  }, [refreshDay]);
+
+  // The question's number is set when it is served and does not move while it
+  // is on screen, even after the answer bumps today's count.
+  const servedId = phase.kind === 'asking' ? phase.question.questionId : null;
+  useEffect(() => {
+    if (servedId === null || answeredToday === null) return;
+    setNumbered((current) =>
+      current?.id === servedId ? current : { id: servedId, n: answeredToday + 1 },
+    );
+  }, [servedId, answeredToday]);
+
   const outOfFree =
     phase.kind === 'asking' && phase.question.freeRemaining === 0 && phase.question.alreadyAnswered;
 
@@ -228,6 +276,7 @@ export function PracticeScreen() {
         timeTakenSec: Math.round((Date.now() - shownAt.current) / 1000),
       });
       setPhase({ kind: 'answered', question: phase.question, result });
+      void refreshDay();
     } catch (e) {
       // 402 is not an error state, it is the end of the free tier — a different
       // screen with a different action.
@@ -311,104 +360,138 @@ export function PracticeScreen() {
   if (phase.kind === 'paywalled') return <Paywall plans={phase.plans} />;
 
   const { question } = phase;
+  const questionNo = numbered?.id === question.questionId ? numbered.n : null;
   // The count the student is choosing under, not the one they have just spent:
   // the served question carries it while asking, the attempt result after.
   const freeLeft = phase.kind === 'answered' ? phase.result.freeRemaining : question.freeRemaining;
 
   return (
-    <div className="flex flex-1 flex-col gap-3 sm:gap-4">
-      <header className="flex items-center justify-between gap-2">
-        {/* The title is desktop-and-up. On a phone the bottom bar already says
-            Practise and marks it as the current page, and 30px of repetition
-            is 30px the question stem does not get. */}
-        <h1 className="text-title hidden sm:block">{c.practice.title}</h1>
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+    <div className="flex flex-1 flex-col gap-4 sm:gap-5">
+      {/*
+        The way back, and where today stands (redesign handoff, § Practice).
+
+        "Today's plan" is a link, not a router back: somebody who arrived from a
+        shared URL has no history to go back through. The count and the bar are
+        today's answers against the daily target, read from the same two
+        endpoints Today reads, so the two screens cannot disagree; when either
+        read fails the bar is simply not drawn, never drawn as empty.
+      */}
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center gap-2">
+          <a
+            href="/today"
+            className="text-ink hover:text-link -ml-2 inline-flex min-h-11 items-center gap-1 px-2 text-[14px] font-semibold"
+          >
+            <Icon name="chevronLeft" size={18} />
+            {c.practice.backToPlan}
+          </a>
+          {day ? (
+            <span className="text-ink-3 num ml-auto text-[14px] font-semibold">
+              {c.practice.ofTarget(day.answered, day.perDay)}
+            </span>
+          ) : null}
+        </div>
+        {day ? (
+          <div
+            className="bg-border h-1 overflow-hidden rounded-full"
+            role="img"
+            aria-label={c.practice.ofTarget(day.answered, day.perDay)}
+          >
+            <div
+              className="bg-brand h-full rounded-full"
+              style={{ width: `${Math.min(100, (day.answered / Math.max(1, day.perDay)) * 100)}%` }}
+            />
+          </div>
+        ) : null}
+      </div>
+
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {/*
+          "Question 16", smaller than the question itself.
+
+          The handoff sets it at 24px, above a stem of 17 to 20. DESIGN.md's
+          Stem Supremacy Rule says the stem is the largest type on any practice
+          or exam screen, "Always", and lists it again under Don't. The rule
+          wins; the heading is a label, and the layout sweep now measures it.
+        */}
+        <h1 className="font-display text-ink text-[16px] font-extrabold">
+          {questionNo !== null ? c.practice.questionN(questionNo) : c.practice.title}
+        </h1>
+        <span className="text-caption text-ink-3 uppercase">{question.topic}</span>
+        <span className="ml-auto flex flex-wrap items-center gap-2">
           {/*
             The clock for this question (T-270).
-            
+
             Counts *down* against the question's own budget while there is one
             left, and then keeps going as an overrun rather than stopping at
-            zero or taking the question away. The exam is timed and practising
-            against a clock is the point — but nothing here is scored on it, and
+            zero or taking the question away. Nothing here is scored on it, and
             snatching a question from somebody who is thinking would punish the
             student this product is most careful with.
+
+            The word "suggested" sits beside it: an unlabelled countdown puts a
+            stressed student on a deadline nobody explained.
           */}
           {phase.kind === 'asking' && (
             <span className="inline-flex items-center gap-1.5">
-              {/*
-                The word "suggested", beside the clock.
-
-                An unlabelled countdown at the top of a practice screen puts a
-                stressed student on a deadline nobody explained — a tester read
-                it as a limit, waited to see what would happen at zero, and only
-                then found out that nothing does. One word is the whole fix: it
-                is a pace to practise against, not a rule.
-              */}
-              <span className="text-caption text-ink-2 uppercase">{c.practice.suggestedTime}</span>
+              <span className="text-caption text-ink-3 uppercase">{c.practice.suggestedTime}</span>
               <ExamTimer
-                // Not clamped at zero. It was — `Math.max(0, …)` — directly
-                // under a comment promising an overrun, so the clock froze at
-                // 00:00 and the true figure surfaced only after answering
-                // ("over time 2:26 / 1:30"). The clamp was the bug.
+                // Not clamped at zero; see the note above. The clamp was a bug.
                 remainingSec={question.timeLimitSec - elapsed}
                 durationSec={question.timeLimitSec}
                 countUpPastZero
               />
             </span>
           )}
-          <Chip className="uppercase">{question.topic}</Chip>
           {freeLeft !== null && (
             <Chip tone={freeLeft <= 2 ? 'pending' : 'neutral'} className="uppercase">
               {freeLeft <= 2 ? <Icon name="clock" size={14} /> : null}
               {c.practice.freeLeft(freeLeft)}
             </Chip>
           )}
-        </div>
+        </span>
       </header>
 
       {/*
         Said once the allowance is gone, on the question itself.
-        The server keeps offering questions after the tenth — they are ones the
+        The server keeps offering questions after the tenth: they are ones the
         student has already answered, and going over them again is free. Unsaid,
-        that reads as a free tier nobody is enforcing: QA answered two more,
-        watched the counter sit still, and filed it as a blocker. So the screen
-        states which of the two situations they are in, and where the new
-        questions are.
+        that reads as a free tier nobody is enforcing, so the screen states which
+        of the two situations they are in, and where the new questions are.
       */}
       {freeLeft === 0 && question.alreadyAnswered && (
-        <Card as="section" data-out-of-new="" className="flex flex-col gap-2">
-          <h2 className="text-label">
+        <section
+          data-out-of-new=""
+          className="border-pending/30 bg-pending-soft rounded-option flex flex-col gap-2 border p-4"
+        >
+          <h2 className="text-ink text-[15px] font-bold">
             {everPaid ? c.practice.lapsedTitle : c.practice.outOfNewTitle}
           </h2>
-          <p className="text-body text-ink-2">
+          <p className="text-body text-ink">
             {everPaid ? c.practice.lapsedBody : c.practice.outOfNewBody}
           </p>
           <a className="btn-ghost self-start" href="/checkout">
             {c.practice.seePlans}
           </a>
-        </Card>
+        </section>
       )}
 
-      <Card as="section" className="p-4 sm:p-5">
-        {/*
-          On the question, every time, not only while allowance remains.
-          This was gated on `freeLeft > 0`, so the one case where a repeat is
-          hardest to spot — the paywall panel above it and a fresh-looking stem
-          below — was the one case with no label. Both testers read it as a new
-          question being served past the wall.
-        */}
+      {/*
+        The stem, on the page rather than in a card (handoff).
+
+        A card around the only thing on the screen that matters separated it
+        from nothing, and spent 32px of a phone's width on padding the stem
+        needed. "Seen before" stays on the question, every time: gated on the
+        allowance, the hardest repeat to spot was the one with no label.
+      */}
+      <section className="flex flex-col gap-3">
         {freeLeft !== null && question.alreadyAnswered && (
-          <p className="text-caption text-ink-2 mb-2">{c.practice.seenBefore}</p>
+          <p className="text-caption text-ink-2">{c.practice.seenBefore}</p>
         )}
-        <p className="text-stem" data-stem="">
+        <p className="text-stem text-pretty" data-stem="">
           {question.stem}
         </p>
-        {question.codeBlock && (
-          <div className="mt-3">
-            <CodeBlock code={question.codeBlock} />
-          </div>
-        )}
-      </Card>
+        {question.codeBlock && <CodeBlock code={question.codeBlock} />}
+      </section>
 
       {phase.kind === 'asking' ? (
         <>
@@ -430,7 +513,9 @@ export function PracticeScreen() {
             QA measured it around 500px below the fold and read the screen as a
             dead end, having to search the DOM to find the button.
 
-            `sticky bottom-0` pins it for real: reachable at any content height,
+            `sticky-foot` pins it for real: reachable at any content height,
+            and above the phone's tab bar rather than under it (see the
+            utility in the theme),
             on the screen a student uses more than any other. The negative margin
             and padding let its own background cover the gap the column would
             otherwise show through underneath it.
@@ -445,7 +530,7 @@ export function PracticeScreen() {
             eye already is, and still pins it to the foot once a long stem makes
             the page scroll.
           */}
-          <div className="bg-bg sticky bottom-0 -mx-1 px-1 pt-2 pb-1">
+          <div className="bg-bg sticky-foot -mx-1 px-1 pt-2 pb-2">
             <Button
               className="w-full"
               disabled={chosen === null || submitting}
@@ -508,9 +593,12 @@ export function PracticeScreen() {
             stays unbeaten and comes round again.
           */}
           {phase.result.reasonCheck && reason === null ? (
-            <Card as="section" data-reason-check="" className="flex flex-col gap-3">
+            <section
+              data-reason-check=""
+              className="border-border bg-surface rounded-option flex flex-col gap-3 border p-4"
+            >
               <div className="flex flex-col gap-1">
-                <h2 className="text-label">{c.practice.reasonTitle}</h2>
+                <h2 className="text-ink text-[16px] font-bold">{c.practice.reasonTitle}</h2>
                 <p className="text-caption text-ink-2">{c.practice.reasonWhy}</p>
               </div>
               <ul className="flex flex-col gap-2">
@@ -523,7 +611,9 @@ export function PracticeScreen() {
                       onClick={() =>
                         void nameReason(phase.result.reasonCheck!.attemptId, option.id)
                       }
-                      className="bg-surface-2 rounded-card text-body min-h-11 w-full p-3 text-left"
+                      // The same row as an answer option, because it is one:
+                      // a choice among sentences, pressed once.
+                      className="rounded-option border-border bg-surface hover:border-border-strong text-body min-h-[52px] w-full border-[1.5px] px-3.5 py-3 text-left transition-[border-color]"
                     >
                       {option.text}
                     </button>
@@ -552,22 +642,35 @@ export function PracticeScreen() {
                 */}
                 <p className="text-caption text-ink-2">{c.practice.reasonSkipCost}</p>
               </div>
-            </Card>
+            </section>
           ) : null}
 
+          {/*
+            The reason's verdict. Green when it was the reason; the pending wash
+            when it was not, because a wrong reason is unfinished rather than
+            failed: the letter still stands and the question comes round again.
+          */}
           {reason ? (
-            <Card as="section" data-reason-verdict={reason.correct} className="flex flex-col gap-1">
-              <p className="text-body">
-                {reason.correct ? c.practice.reasonRight : c.practice.reasonWrong}
-              </p>
-            </Card>
+            <section
+              data-reason-verdict={reason.correct}
+              className={`rounded-option text-ink flex items-center gap-2 px-4 py-3.5 text-[15px] font-semibold ${
+                reason.correct ? 'bg-correct-soft' : 'bg-pending-soft'
+              }`}
+            >
+              <Icon name={reason.correct ? 'check' : 'clock'} size={18} strokeWidth={2.5} />
+              {reason.correct ? c.practice.reasonRight : c.practice.reasonWrong}
+            </section>
           ) : null}
 
-          <Button onClick={() => void load()}>
-            {phase.result.reasonCheck && reason === null
-              ? c.practice.nextQuestion
-              : c.practice.reasonNext}
-          </Button>
+          {/* Sticky, like Check answer before it: the next step stays under the
+              thumb however long the explanation runs. */}
+          <div className="bg-bg sticky-foot -mx-1 px-1 pt-2 pb-2">
+            <Button className="w-full" onClick={() => void load()}>
+              {phase.result.reasonCheck && reason === null
+                ? c.practice.nextQuestion
+                : c.practice.reasonNext}
+            </Button>
+          </div>
         </>
       )}
     </div>

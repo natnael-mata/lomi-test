@@ -152,7 +152,13 @@
   --text-title--font-weight: 700;
   --text-title--letter-spacing: -0.02em;
 
-  --text-stem: 1.1875rem; /* 19px — the question. Largest on screen. */
+  /* The question. Largest on screen, and measured as such by the layout
+     sweep. 19px on a phone, growing to 20px on a wide screen as the handoff's
+     does: at a fixed 19px the sidebar's 20px wordmark out-sized the stem on
+     every desktop practice screen, which the Stem Supremacy Rule names
+     outright ("not the brand"). The floor stays at 19px, so nothing gets
+     smaller on the phone where most of this is read. */
+  --text-stem: clamp(1.1875rem, 1.8vw, 1.25rem);
   --text-stem--line-height: 1.8125rem;
   --text-stem--font-weight: 600;
 
@@ -180,7 +186,8 @@
      because they hold the objects. Cards moved 8 → 12 and panels 14 → 16 so
      the three steps are actually distinguishable at arm's length. */
   --radius-control: 8px; /* buttons, inputs                               */
-  --radius-card: 16px; /* cards, option rows, sheets, wells             */
+  --radius-option: 12px; /* answer rows: a card you press, not a panel   */
+  --radius-card: 16px; /* cards, sheets, wells                          */
   --radius-panel: 20px; /* outer frames, the floating nav, modals        */
   --radius-full: 999px; /* chips, badges, avatars, progress tracks       */
 
@@ -388,6 +395,27 @@
   text-transform: none;
 }
 
+/*
+ * A bar pinned to the foot of the screen, above the phone's bottom navigation.
+ *
+ * `sticky bottom-0` pins to the bottom edge of the viewport, and below `lg`
+ * that edge is underneath the fixed five-tab bar: the practice screen's "Check
+ * answer" and "Next question" sat behind it as soon as a long explanation made
+ * the page scroll, which is the moment they matter. The handoff offsets its own
+ * sticky bar by the tab bar's height on phones and by nothing on desktop; this
+ * is that, in one place, so a second sticky bar cannot get it wrong separately.
+ *
+ * 57px is the bar: 56px tabs and a 1px top border (`Navigation.tsx`), plus the
+ * safe area the bar pads itself by.
+ */
+@utility sticky-foot {
+  position: sticky;
+  bottom: calc(57px + env(safe-area-inset-bottom));
+  @media (width >= 64rem) {
+    bottom: 0;
+  }
+}
+
 /* A first-class utility, not a bare class: `num` must be usable in markup AND
    inside @apply. Declaring it in @layer base would make @apply fail with
    "Cannot apply unknown utility class". */
@@ -460,9 +488,18 @@
   /* 12px, not 6: an option row is a card you can press, not an input. The
      handoff puts option rows on the card radius and buttons on the control
      one. */
+  /*
+   * The answer row (redesign handoff, 2026-10-01, § Practice).
+   *
+   * **One border width in every state.** It was 1px at rest and 2px once
+   * selected, correct or wrong, so tapping an option moved the text inside it
+   * by a pixel and every row below it down by two, on the one interaction a
+   * student repeats a hundred times a day. 1.5px throughout, the handoff's
+   * number, and only the colour changes.
+   */
   .option {
-    @apply w-full min-h-[56px] flex items-center gap-3 p-3 text-left
-           rounded-card border border-border bg-surface text-body
+    @apply w-full min-h-[56px] flex items-center gap-3 px-3.5 py-3 text-left
+           rounded-option border-[1.5px] border-border bg-surface text-body
            transition-[background-color,border-color,transform] duration-200;
   }
   .option:active {
@@ -489,24 +526,39 @@
    * exactly what choosing an option is — and it says nothing about whether the
    * choice is any good, which is the point.
    *
-   * The border is ink and stays 2px while every other row is 1px. That weight
-   * step is the second signal: the fill says which one you chose, the edge says
-   * you chose it, and either alone would be colour doing the work by itself.
+   * **The second signal moved from the border's weight to the chip.** The
+   * border was 2px of ink while every other row was 1px, so the weight step
+   * said "you chose this" beside the fill. With one width in every state
+   * (above), the lettered chip carries it instead: it fills with the lemon on
+   * the chosen row and stays grey on the rest, and `AnswerOption` still prints
+   * the word "Selected". Fill, chip and word; never colour on its own. The
+   * border is the link amber, the handoff's, at 4.8:1 against white.
    */
   .option[data-state='selected'] {
-    @apply border-2 border-ink bg-brand-soft;
+    @apply border-link bg-brand-soft;
   }
   .option[data-state='correct'] {
-    @apply border-2 border-correct bg-correct-soft;
+    @apply border-correct bg-correct-soft;
   }
   .option[data-state='wrong'] {
-    @apply border-2 border-wrong bg-wrong-soft;
+    @apply border-wrong-bright bg-wrong-soft;
   }
 
   /* Letter badge inside an option. */
   .option-key {
-    @apply size-8 shrink-0 rounded-full bg-surface-2 text-caption
+    @apply size-[30px] shrink-0 rounded-full bg-surface-2 text-ink-2 text-caption
            inline-flex items-center justify-center num;
+  }
+  /* The chip fills with the row's state. Every pair is audited: ink on the
+     lemon, white on the two solid state fills. */
+  .option[data-state='selected'] .option-key {
+    @apply bg-brand text-on-brand;
+  }
+  .option[data-state='correct'] .option-key {
+    @apply bg-correct text-on-state;
+  }
+  .option[data-state='wrong'] .option-key {
+    @apply bg-wrong-bright text-on-state;
   }
 
   /* A hairline, not a float. A card used to be separated from the ground by a

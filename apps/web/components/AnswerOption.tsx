@@ -46,7 +46,7 @@ export function ariaCheckedFor(state: OptionState, wasChosen: boolean): boolean 
  */
 export function verdictWordFor(state: OptionState, wasChosen: boolean): string | null {
   if (state === 'correct') return 'Correct';
-  if (state === 'wrong' && wasChosen) return 'Yours';
+  if (state === 'wrong' && wasChosen) return 'Your answer';
   return null;
 }
 

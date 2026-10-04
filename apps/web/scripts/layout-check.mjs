@@ -230,6 +230,34 @@ const AUDIT = `(() => {
   }
 
   /*
+   * 4b. The question stem is the largest text on the screen.
+   *
+   * DESIGN.md's Stem Supremacy Rule: "On any practice or exam screen the
+   * question stem is the largest type present. Not the timer, not the score,
+   * not the streak, not the brand." Stated three times, enforced nowhere, and
+   * the redesign handoff breaks it on its own practice screen ("Question 16" at
+   * 24px over a 17 to 20px stem). Measured rather than read from classes: the
+   * sizes that matter are the rendered ones, after clamp() and the viewport.
+   */
+  const stem = document.querySelector('[data-stem]');
+  if (stem) {
+    const stemSize = parseFloat(getComputedStyle(stem).fontSize);
+    for (const el of document.querySelectorAll('body *')) {
+      if (el === stem || stem.contains(el)) continue;
+      const style = getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') continue;
+      const hasText = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!hasText) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+      const size = parseFloat(style.fontSize);
+      if (size > stemSize) {
+        problems.push(\`\${size}px text larger than the \${stemSize}px stem: \${name(el)}\`);
+      }
+    }
+  }
+
+  /*
    * 5 — every piece of text is readable against what is actually behind it.
    *
    * \`contrast.test.ts\` already audits the *tokens*, and that is the right place
@@ -477,7 +505,7 @@ async function main() {
     process.exit(1);
   }
   console.log(
-    `${screens} screens audited — no sideways scroll, no nested cards, no control under 44px, ` +
+    `${screens} screens audited — no sideways scroll, no nested cards, no control under 44px, nothing larger than a question stem, ` +
       'nothing under 11px, and every piece of text at AA contrast against what is behind it.',
   );
 }
