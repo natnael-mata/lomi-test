@@ -109,16 +109,35 @@ export function PaymentsScreen() {
   }
 
   const waiting = phase.claims.filter((claim) => claim.status === 'PENDING').length;
+  const verified = phase.claims.filter((claim) => claim.status === 'CONFIRMED').length;
+  const rejected = phase.claims.filter((claim) => claim.status === 'REJECTED').length;
 
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-title">{c.admin.payments.title}</h1>
-        <span className="bg-pending-soft text-pending text-caption inline-flex items-center gap-1.5 rounded-full px-3 py-1 uppercase">
-          <Icon name="clock" size={14} />
-          {c.admin.payments.waiting(waiting)}
-        </span>
       </header>
+
+      {/*
+        The counts, the handoff's way: three tiles over the list. Counted from
+        the claims on screen, so each figure can be checked against the rows
+        below it, and labelled as such.
+      */}
+      <dl className="grid grid-cols-3 gap-3">
+        {[
+          [c.admin.payments.kpiWaiting, waiting],
+          [c.admin.payments.kpiVerified, verified],
+          [c.admin.payments.kpiRejected, rejected],
+        ].map(([label, value]) => (
+          <div
+            key={label}
+            className="border-border bg-surface rounded-card flex flex-col gap-0.5 border p-4"
+          >
+            <dt className="text-ink-3 text-[13px] font-medium">{label}</dt>
+            <dd className="font-display num order-first text-[26px] font-extrabold">{value}</dd>
+          </div>
+        ))}
+      </dl>
 
       {notice ? (
         <p className="text-body" aria-live="polite">
@@ -176,8 +195,10 @@ export function PaymentsScreen() {
                   ].join(' ')}
                 >
                   <span>{dayAndTime(claim.claimedAt)}</span>
-                  <span className="font-semibold">{claim.student ?? '—'}</span>
-                  <span>{claim.phone ?? '—'}</span>
+                  <span className="font-semibold">
+                    {claim.student ?? c.admin.payments.notGiven}
+                  </span>
+                  <span>{claim.phone ?? c.admin.payments.notGiven}</span>
                   <span>{claim.txRef}</span>
                   <span className="text-right font-semibold">
                     {c.paywall.price(claim.amountEtb)}
@@ -205,8 +226,8 @@ export function PaymentsScreen() {
                       </p>
                       <p className="text-body text-ink-2">
                         {c.admin.payments.claimedBy(
-                          claim.student ?? '—',
-                          claim.joinedAt ? dayAndTime(claim.joinedAt) : '—',
+                          claim.student ?? c.admin.payments.notGiven,
+                          claim.joinedAt ? dayAndTime(claim.joinedAt) : c.admin.payments.notGiven,
                         )}{' '}
                         {claim.priorPayments > 0
                           ? c.admin.payments.priorPayments(claim.priorVerified, claim.priorPayments)
@@ -230,7 +251,11 @@ export function PaymentsScreen() {
                       {/* Correct green, not brand violet: this is a verdict. */}
                       <button
                         type="button"
-                        className="bg-correct text-on-state rounded-control text-label inline-flex min-h-[52px] w-full items-center justify-center gap-2 px-6 disabled:opacity-60"
+                        // The primary action, the lemon, as in the handoff. It
+                        // was a solid green, and green is "correct answer" in
+                        // this product: the Separation Rule keeps a brand
+                        // moment and a semantic colour apart.
+                        className="btn-primary"
                         disabled={busy || claim.status !== 'PENDING'}
                         onClick={() => void settle(claim, true)}
                       >
@@ -239,7 +264,7 @@ export function PaymentsScreen() {
                       </button>
                       <button
                         type="button"
-                        className="border-wrong text-wrong bg-surface rounded-control text-label inline-flex min-h-[52px] w-full items-center justify-center gap-2 border-2 px-6 disabled:opacity-60"
+                        className="border-wrong text-wrong bg-surface rounded-control text-label inline-flex min-h-[52px] w-full items-center justify-center gap-2 border-[1.5px] px-6 disabled:cursor-not-allowed disabled:border-border disabled:text-ink-2"
                         disabled={busy || claim.status !== 'PENDING'}
                         onClick={() => void settle(claim, false)}
                       >

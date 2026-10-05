@@ -184,18 +184,12 @@ describe('the voice a student reads (T-209)', () => {
    * digit", and "Ages 11–12" became "Ages 11 to 12". The product's own name is
    * the one exception, because it is a name.
    *
-   * The admin and provider screens, and the design gallery, are not covered
-   * yet: their copy is rebuilt with them in step 12 of the redesign, and this
-   * list shrinks to nothing when it is.
+   * Everything is covered since redesign step 12, the admin and provider
+   * screens and the design gallery included. `NOT_YET` stays as the place to
+   * name a temporary exception, and stays empty.
    */
   it('uses no dashes', () => {
-    const NOT_YET = [
-      /^app\/admin\//,
-      /^app\/provider\//,
-      /^app\/design\//,
-      /^dictionary:admin\./,
-      /^dictionary:provider\./,
-    ];
+    const NOT_YET: RegExp[] = [];
     const offenders = ALL.filter(({ file }) => !NOT_YET.some((p) => p.test(file)))
       .filter(({ text }) => /[—–−]|\b\w+-\w+\b/.test(text.replaceAll('Lomi-Exams', '')))
       .map(({ file, text }) => `${file}: "${text}"`);

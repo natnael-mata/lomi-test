@@ -724,7 +724,10 @@ export function ExamScreen() {
                 </button>
                 <button
                   type="button"
-                  className="btn-primary ml-auto w-auto px-5 lg:ml-0"
+                  // Ink, not the lemon: the handoff's one ink button. The
+                  // lemon is "Review and submit" in the panel, and two lemon
+                  // buttons on one screen would be two primary actions.
+                  className="bg-ink text-on-state hover:bg-ink-2 rounded-control text-label ml-auto inline-flex min-h-[52px] items-center justify-center gap-2 px-5 lg:ml-0"
                   onClick={() =>
                     last ? setConfirming(true) : void goTo(sittingId, item.position + 1)
                   }

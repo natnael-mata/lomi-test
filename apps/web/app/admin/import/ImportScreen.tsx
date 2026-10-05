@@ -171,9 +171,12 @@ function Report({ report }: { report: ImportReport }) {
       {rejected.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {rejected.map((row) => (
-            <li key={`${row.line}-${row.stableId}`} className="bg-surface-2 rounded-card p-3">
+            <li
+              key={`${row.line}-${row.stableId}`}
+              className="border-border bg-surface rounded-card border p-4"
+            >
               <div className="flex items-center gap-2">
-                <span className="text-label num">{row.stableId || '—'}</span>
+                <span className="text-label num">{row.stableId || c.admin.payments.notGiven}</span>
                 {/* The line number, because that is how a person finds the row
                     again in their spreadsheet. */}
                 <Chip tone="pending">{c.importer.line(row.line)}</Chip>

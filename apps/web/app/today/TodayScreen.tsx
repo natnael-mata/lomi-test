@@ -383,7 +383,7 @@ function Countdown({ fieldName, coverage }: { fieldName: string; coverage: Cover
   const days = coverage?.daysToExam ?? null;
 
   return (
-    <section className="bg-ink-deep text-on-deep rounded-panel flex flex-col gap-6 p-6">
+    <section className="bg-ink-deep on-deep text-on-deep rounded-panel flex flex-col gap-6 p-6">
       <span className="text-caption text-on-deep-3 uppercase">{fieldName}</span>
 
       <div className="flex flex-col gap-1">

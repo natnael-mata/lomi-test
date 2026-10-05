@@ -43,7 +43,7 @@ export default function DesignSystemPage() {
   return (
     <main className="mx-auto max-w-md p-6">
       <h1 className="text-title">Design system</h1>
-      <p className="text-body text-ink-2 mt-1">Lomi v1 (ሎሚ) — every component, every state.</p>
+      <p className="text-body text-ink-2 mt-1">Lomi-Exams (ሎሚ). Every component, every state.</p>
 
       <Row title="Buttons">
         <Button id="btn-primary" variant="primary">
@@ -71,7 +71,7 @@ export default function DesignSystemPage() {
         </Button>
       </Row>
 
-      <Row title="Answer options — unanswered">
+      <Row title="Answer options: unanswered">
         <div id="group-unanswered">
           <AnswerOptionGroup
             ariaLabel="Which sampling method gives every household an equal chance?"
@@ -85,7 +85,7 @@ export default function DesignSystemPage() {
         </div>
       </Row>
 
-      <Row title="Answer options — answered wrongly">
+      <Row title="Answer options: answered wrongly">
         <div id="group-answered">
           <AnswerOptionGroup
             ariaLabel="Which sampling method gives every household an equal chance?"
@@ -175,7 +175,7 @@ export default function DesignSystemPage() {
           />
         </div>
       </Row>
-      <Row title="Answer view — calculation, answered wrongly">
+      <Row title="Answer view: calculation, answered wrongly">
         <div id="answer-calculation">
           <AnswerView
             isCorrect={false}
@@ -222,7 +222,7 @@ export default function DesignSystemPage() {
         </div>
       </Row>
 
-      <Row title="Answer view — concept, correct but over time">
+      <Row title="Answer view: concept, correct but over time">
         <div id="answer-concept">
           <AnswerView
             isCorrect={true}
@@ -264,7 +264,7 @@ export default function DesignSystemPage() {
           />
         </div>
       </Row>
-      <Row title="Code block — CS-0001">
+      <Row title="Code block: CS-0001">
         <div id="code-well">
           <CodeBlock code="nav ul { list-style-type: none; margin: 0; padding: 0; }" />
         </div>
@@ -276,7 +276,7 @@ export default function DesignSystemPage() {
           />
         </div>
       </Row>
-      <Row title="Exam timer — the three states">
+      <Row title="Exam timer: the three states">
         <div id="timer-normal">
           <ExamTimer remainingSec={10800} durationSec={10800} />
         </div>
@@ -293,7 +293,7 @@ export default function DesignSystemPage() {
           <JumpGridDemo />
         </div>
       </Row>
-      <Row title="Post-exam summary">
+      <Row title="Post exam summary">
         <div id="exam-summary-demo">
           <ExamSummary
             summary={{
@@ -371,7 +371,7 @@ export default function DesignSystemPage() {
           />
         </div>
       </Row>
-      <Row title="Weight sum — balanced and not">
+      <Row title="Weight sum: balanced and not">
         <div id="weight-sum-balanced">
           <WeightSumIndicator
             rows={[
@@ -392,7 +392,7 @@ export default function DesignSystemPage() {
         </div>
       </Row>
 
-      <Row title="Retire confirmation — the only modal">
+      <Row title="Retire confirmation: the only modal">
         <div id="retire-confirmation-demo">
           <RetireConfirmationDemo />
         </div>

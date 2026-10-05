@@ -1535,6 +1535,8 @@ export const en = {
 
     nav: {
       title: 'Lomi-Exams Admin',
+      // Beside the wordmark in the dark bar, which already says Lomi-Exams.
+      badge: 'Admin',
       label: 'Admin sections',
       dashboard: 'Dashboard',
       payments: 'Payments',
@@ -1567,6 +1569,12 @@ export const en = {
      * note.
      */
     payments: {
+      // The count tiles over the claims (redesign handoff, § Admin).
+      kpiWaiting: 'Waiting',
+      kpiVerified: 'Verified',
+      kpiRejected: 'Not accepted',
+      // A word, not a dash, for a value the claim does not carry.
+      notGiven: 'Not given',
       title: 'Claimed bank transfers',
       working: 'Loading claims…',
       couldNotLoad: 'The claims could not be loaded. Nothing has been settled. Try again.',
@@ -1697,9 +1705,9 @@ export const en = {
       explanation: 'The explanation',
       explanationPlaceholder: 'What makes the right answer right, in a couple of sentences.',
       stepsLabel: 'The working, step by step',
-      stepPlaceholder: 'Depreciable base = cost − residual value',
+      stepPlaceholder: 'Depreciable base = cost minus residual value',
       stepNumber: (n: number) => `Step ${n}`,
-      formulaPlaceholder: 'e.g. 620,000 − 20,000 = 600,000',
+      formulaPlaceholder: 'For example, 620,000 minus 20,000 = 600,000',
       formulaFor: (n: number) => `Formula for step ${n}`,
       addStep: 'Add a step',
       removeStep: 'Remove',
@@ -1772,7 +1780,12 @@ export const en = {
     // The bar's own name when a provider is looking at it. A provider outranks
     // an admin and sees screens an admin cannot, so badging their session
     // "Admin" is simply the wrong word for what they are.
-    nav: { title: 'Lomi-Exams Provider', activity: 'Activity', health: 'Health' },
+    nav: {
+      title: 'Lomi-Exams Provider',
+      badge: 'Provider',
+      activity: 'Activity',
+      health: 'Health',
+    },
 
     activity: {
       title: 'Activity',

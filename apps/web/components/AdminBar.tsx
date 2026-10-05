@@ -94,23 +94,27 @@ export function AdminBar({ pathname }: { pathname: string }) {
     role === 'PROVIDER' ? [...ADMIN_DESTINATIONS, ...PROVIDER_DESTINATIONS] : ADMIN_DESTINATIONS;
 
   return (
-    <header className="bg-surface border-border sticky top-0 z-10 border-b">
-      <div className="mx-auto flex min-h-16 max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 sm:px-8">
+    /*
+     * The staff bar, on the dark surface (redesign handoff, § Admin).
+     *
+     * Dark so that nobody mistakes the console for the student app: the two
+     * share a palette, and a reviewer who is also a student moves between them
+     * many times a day. The same object as the landing's bands and Today's
+     * hero, so it uses the `on-deep` inks, all audited against `ink-deep`.
+     *
+     * The tabs are 44px, not the handoff's 40: the floor holds for staff too.
+     */
+    <header className="bg-ink-deep on-deep text-on-deep sticky top-0 z-10">
+      <div className="mx-auto flex min-h-16 max-w-[1200px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-8">
         <span className="flex items-center gap-2.5">
-          <Logo size={34} />
-          {/*
-            Named for the role, so nobody reading over a shoulder mistakes an
-            operator's screen for the student product — and so a provider is not
-            told they are looking at Admin. QA noticed `/provider/*` wearing the
-            admin badge while showing screens an admin cannot open; the bar knows
-            the role already, and using it costs nothing.
-          */}
-          <span className="font-display text-[18px] font-bold -tracking-[0.02em]">
-            {role === 'PROVIDER' ? c.provider.nav.title : c.admin.nav.title}
+          <Logo size={30} wordmark onDark />
+          {/* Which console this is, said beside the name. */}
+          <span className="bg-on-deep/10 text-on-deep-2 rounded-full px-2.5 py-1 text-[12px] font-semibold">
+            {role === 'PROVIDER' ? c.provider.nav.badge : c.admin.nav.badge}
           </span>
         </span>
 
-        <nav aria-label={c.admin.nav.label} className="flex flex-wrap gap-1">
+        <nav aria-label={c.admin.nav.label} className="flex flex-wrap gap-0.5">
           {destinations.map((d) => {
             const active = pathname === d.href || pathname.startsWith(`${d.href}/`);
             return (
@@ -118,13 +122,12 @@ export function AdminBar({ pathname }: { pathname: string }) {
                 key={d.href}
                 href={d.href}
                 className={[
-                  // 44px, not the 36 that `py-2` gives. Admin is mostly a
-                  // laptop surface and the temptation is to treat the touch
-                  // floor as a phone rule — but the operator settling payments
-                  // on a tablet is the same person, and DESIGN.md sets the floor
-                  // for controls, not for devices.
-                  'text-label inline-flex min-h-11 items-center rounded-full px-3.5',
-                  active ? 'bg-brand-soft text-ink' : 'text-ink-2',
+                  'rounded-control inline-flex min-h-11 items-center px-3 text-[14px] font-semibold whitespace-nowrap',
+                  // The lemon with ink on it, the one fill that reads as "here"
+                  // on the dark bar; the weight change is the second signal.
+                  active
+                    ? 'bg-brand text-on-brand'
+                    : 'text-on-deep-2 hover:bg-on-deep/10 hover:text-on-deep',
                 ].join(' ')}
                 {...(active ? { 'aria-current': 'page' as const } : {})}
               >
@@ -134,27 +137,17 @@ export function AdminBar({ pathname }: { pathname: string }) {
           })}
         </nav>
 
-        {/*
-          The way out of the console (T-269).
-
-          **Staff could not leave.** Seven to nine navigation links, no sign-out
-          anywhere, and the title was not a link — so an operator who wanted to
-          go back to the student app or end their session had to edit the URL.
-          A shared office machine with an admin session on it and no visible way
-          to close it is the version of this that matters.
-
-          Both halves: "the student app" because most staff are also using the
-          product, and Sign out because this is the account that can settle
-          payments and retire questions.
-        */}
+        {/* Both halves of leaving: "the student app" because most staff also
+            practise, and Sign out because this is the account that can settle
+            payments and retire questions. */}
         <div className="ml-auto flex items-center gap-1">
           <a
             href="/today"
-            className="text-ink-2 hover:text-ink text-caption rounded-control inline-flex min-h-11 items-center px-3"
+            className="border-on-deep/20 text-on-deep hover:bg-on-deep/10 rounded-control inline-flex min-h-11 items-center border px-3.5 text-[13px] font-semibold"
           >
             {c.admin.nav.backToApp}
           </a>
-          <SignOutButton />
+          <SignOutButton variant="onDark" />
         </div>
       </div>
     </header>

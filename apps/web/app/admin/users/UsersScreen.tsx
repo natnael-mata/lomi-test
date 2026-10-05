@@ -148,7 +148,9 @@ export function UsersScreen() {
         <Card key={hit.userId} as="section" className="flex flex-wrap items-start gap-4">
           <span className="flex min-w-[240px] flex-1 flex-col gap-1">
             <span className="text-label">{hit.displayName}</span>
-            <span className="text-caption text-ink-2 num">{hit.phone ?? '—'}</span>
+            <span className="text-caption text-ink-2 num">
+              {hit.phone ?? c.admin.payments.notGiven}
+            </span>
             <span className="flex flex-wrap gap-2">
               <Chip>{matchedOn(hit)}</Chip>
               {hit.deactivated ? <Chip tone="wrong">{c.admin.users.alreadyClosed}</Chip> : null}

@@ -36,6 +36,9 @@ const VARIANT = {
   quiet: 'text-ink-2 hover:bg-surface-2 hover:text-ink text-caption min-h-11 px-3 rounded-control',
   danger:
     'bg-wrong-soft text-wrong hover:bg-wrong-soft/70 min-h-[52px] w-full justify-center rounded-control text-[15px] font-semibold',
+  // On the admin bar's dark surface, where the quiet ink is 1.1:1.
+  onDark:
+    'text-on-deep-2 hover:bg-on-deep/10 hover:text-on-deep text-caption min-h-11 px-3 rounded-control',
 } as const;
 
 export function SignOutButton({

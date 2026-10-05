@@ -48,10 +48,10 @@ typography:
     letterSpacing: '-0.03em'
   title:
     fontFamily: 'Outfit, system-ui, sans-serif'
-    fontSize: '1.5rem'
-    fontWeight: 700
-    lineHeight: '1.875rem'
-    letterSpacing: '-0.02em'
+    fontSize: '1.625rem'
+    fontWeight: 800
+    lineHeight: '2rem'
+    letterSpacing: '-0.025em'
   stem:
     fontFamily: 'Inter, system-ui, sans-serif'
     fontSize: 'clamp(1.1875rem, 1.8vw, 1.25rem)' # 19px on a phone, 20px wide
@@ -288,7 +288,7 @@ product is actually read.
 ### Hierarchy
 
 - **Display** (Outfit 800, 34/40, -0.03em): countdown, mock score, readiness. One per screen.
-- **Title** (Outfit 700, 24/30, -0.02em): screen titles.
+- **Title** (Outfit 800, 26/32, -0.025em): screen titles.
 - **Stem** (Inter 600, 19/29 on a phone, growing to 20px wide): the question — the most-read text in the product. The layout sweep measures that nothing on a practice or exam screen is larger.
 - **Body** (Inter 400, 16/26): options, explanations, prose. Never below 16px on mobile,
   never truncated, measure ≤70ch.
@@ -596,21 +596,42 @@ Not built: the Fayda note (identity checks were dropped) and a receipt upload (a
 claimed by its reference, and a person matches it to the statement). The practice paywall uses
 the same card for a plan, so both screens mark the recommended one the same way.
 
+## Admin
+
+The staff console sits under a **dark bar**: the wordmark, an "Admin" or "Provider" badge, the
+tabs (the current one in the lemon, 44px each, not the handoff's 40), the way back to the student
+app, and Sign out. Dark so that nobody mistakes the console for the student app.
+
+1. **Review** is the handoff's list and detail: the question under review beside the drafts, with
+   publish, a note to the writer, and send back. Success lands in the correct wash; the publish
+   gate's refusals in the pending wash, one per line.
+2. **Payments** keeps its dense table, which suits a person working through many claims better
+   than the handoff's cards, and gains the handoff's three count tiles above it. **Approve is the
+   lemon primary button**, not the solid green it was: green means a correct answer here, and the
+   Separation Rule keeps a brand moment and a semantic colour apart.
+3. **Weights** is the handoff's "Structure" idea (a weight sum badge, a field live only at 100%)
+   inside the existing editor, with buttons sized to their labels.
+
+Money is written Br first everywhere, the dashboard's totals included. A value a record does not
+carry reads "Not given", never a dash.
+
+## Focus on dark surfaces
+
+Inside any element marked `.on-deep` (the landing's bands, Today's hero, the Mocks card, a
+result's score card, the admin bar) the focus ring is the **lemon**, 11.7:1 on `ink-deep`. The ink
+ring is 1.22:1 there, which is no ring at all; the focus check found every control on the dark
+admin bar invisible to a keyboard until this rule.
+
 ## Components
 
 ### Buttons
 
-- **Primary:** **ink fill**, `on-state` text, 8px radius, 52px minimum height, full width on
-  mobile. Presses to `scale(.98)`. Hover lightens to Ink 2.
-
-  > **Open, and deliberately so.** The frontmatter above still names a brand fill, because that
-  > is what the 2026-10-01 handoff draws and it is what the landing's calls to action already
-  > are. In the app the primary button has been ink since 2026-08-23, on the argument that the
-  > lemon is the _marker_ — pending pills, flags, the free-question count — and a marker that is
-  > also the primary button competes with itself on every screen. Both readings are defensible
-  > and the choice changes every screen at once, so it is made when the components are rebuilt,
-  > not inferred here. Until then the stylesheet is the fact and this note is the disagreement.
-
+- **Primary:** the **lemon fill**, `on-brand` ink text (11.3:1), 8px radius, 52px minimum
+  height, full width on mobile. Presses to `scale(.98)`. Hover deepens to Brand Hover. It was ink
+  from 2026-08-23 to the 2026-10-01 handoff, on the argument that the lemon was the marker; the
+  handoff makes every primary action the lemon and moved the markers to orange, so the dispute
+  recorded here during the redesign is settled its way. The exam's Next is the one ink button,
+  as in the handoff, because "Review and submit" is the lemon on that screen.
 - **Ghost:** surface fill with a 1px border; the manual-payment path and every secondary action.
 - **Danger:** Incorrect fill, no shadow. Exists only on emergency retire.
 - **Disabled:** Surface 2 fill, Ink 2 text, no shadow — and the label is replaced by the

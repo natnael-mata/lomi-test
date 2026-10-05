@@ -149,7 +149,11 @@ export function WeightEditor() {
           )}
         </div>
         {fieldId && (
-          <Button variant="ghost" onClick={() => void run(() => api.adminDeriveWeights(fieldId))}>
+          <Button
+            variant="ghost"
+            className="w-auto self-start px-5"
+            onClick={() => void run(() => api.adminDeriveWeights(fieldId))}
+          >
             {c.admin.recompute}
           </Button>
         )}
@@ -162,7 +166,7 @@ export function WeightEditor() {
         <label className="flex flex-col gap-1">
           <span className="text-caption text-ink-2">{c.admin.switchProgramme}</span>
           <select
-            className="border-border bg-surface text-body min-h-11 rounded-xl border px-3"
+            className="border-border-input bg-surface text-body rounded-control min-h-12 max-w-[34rem] border px-3"
             value={fieldId ?? ''}
             onChange={(e) => void switchTo(e.target.value)}
           >
@@ -204,7 +208,7 @@ export function WeightEditor() {
           <span className="text-caption text-ink-2">{c.admin.examDateLabel}</span>
           <input
             type="date"
-            className="border-border bg-surface text-body min-h-11 max-w-[16rem] rounded-xl border px-3"
+            className="border-border-input bg-surface text-body rounded-control min-h-12 max-w-[16rem] border px-3"
             value={examDate}
             onChange={(e) => void saveExamDate(e.target.value)}
           />
@@ -227,7 +231,11 @@ export function WeightEditor() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <ul className="flex flex-col gap-2 lg:order-1">
           {rows.map((row) => (
-            <li key={row.topicId} data-topic={row.topicId} className="bg-surface rounded-card p-3">
+            <li
+              key={row.topicId}
+              data-topic={row.topicId}
+              className="border-border bg-surface rounded-card border p-4"
+            >
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-label">{row.topicName}</span>
                 <span className="text-label num">{row.weightPct}%</span>
@@ -265,8 +273,14 @@ export function WeightEditor() {
                     placeholder={c.admin.reasonPlaceholder}
                   />
                   <div className="flex items-center gap-2">
-                    <Button onClick={() => void save(row.topicId)}>{c.common.save}</Button>
-                    <Button variant="ghost" onClick={() => setEditing(null)}>
+                    <Button className="w-auto px-5" onClick={() => void save(row.topicId)}>
+                      {c.common.save}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-auto px-5"
+                      onClick={() => setEditing(null)}
+                    >
                       {c.common.cancel}
                     </Button>
                   </div>
@@ -275,6 +289,7 @@ export function WeightEditor() {
                 <div className="mt-2 flex items-center gap-2">
                   <Button
                     variant="ghost"
+                    className="w-auto px-5"
                     onClick={() => {
                       setEditing(row.topicId);
                       setDraft({ weightPct: String(row.weightPct), reason: '' });
@@ -285,6 +300,7 @@ export function WeightEditor() {
                   {row.weightSource === 'override' && fieldId && (
                     <Button
                       variant="ghost"
+                      className="w-auto px-5"
                       onClick={() =>
                         void run(() => api.adminClearWeightOverride(fieldId, row.topicId))
                       }

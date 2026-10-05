@@ -168,7 +168,7 @@ export function Dashboard() {
               rows={revenue.rows.map((row) => ({ label: methodLabel(row.method), value: row.etb }))}
               total={revenue.totalEtb}
               totalLabel={c.dashboard.revenueTotal}
-              unit=" Br"
+              prefix="Br "
             />
             <p className="text-caption text-ink-2">
               {c.dashboard.paymentsCounted(revenue.totalCount)}

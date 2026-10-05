@@ -55,6 +55,13 @@ const ROUTES = [
   { path: '/admin/users', as: 'admin', tabs: 10 },
   { path: '/provider/activity', as: 'provider', tabs: 14 },
   { path: '/admin/review', as: 'admin', tabs: 12 },
+  /*
+   * The dark surfaces the redesign added, where the ink ring was 1.22:1 until
+   * `.on-deep` turned it to the lemon: the landing's hero calls to action and
+   * the Mocks card's start button.
+   */
+  { path: '/', as: null, tabs: 4 },
+  { path: '/mocks', as: 'userc', tabs: 9 },
 ];
 
 const DEBUG_PORT = 9333;

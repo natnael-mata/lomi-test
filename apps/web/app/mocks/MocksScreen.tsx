@@ -109,7 +109,7 @@ export function MocksScreen() {
         after it is pressed.
       */}
       {preview ? (
-        <section className="bg-ink-deep text-on-deep rounded-card flex flex-wrap items-center gap-x-8 gap-y-5 p-[clamp(20px,3vw,32px)]">
+        <section className="bg-ink-deep on-deep text-on-deep rounded-card flex flex-wrap items-center gap-x-8 gap-y-5 p-[clamp(20px,3vw,32px)]">
           <div className="flex min-w-[16rem] flex-1 flex-col gap-1.5">
             <span className="text-caption text-brand uppercase">{c.mocks.nextUp}</span>
             <span className="font-display text-[28px] leading-[34px] font-extrabold">

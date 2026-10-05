@@ -152,12 +152,17 @@ export function ReviewScreen() {
       </header>
 
       {notice ? (
-        <div className="flex flex-col gap-1" aria-live="polite">
-          <p className="text-body">{notice}</p>
+        <div
+          className={`rounded-option flex flex-col gap-1 p-4 ${
+            refused.length > 0 ? 'bg-pending-soft' : 'bg-correct-soft'
+          }`}
+          aria-live="polite"
+        >
+          <p className="text-ink text-[15px] font-semibold">{notice}</p>
           {refused.length > 0 ? (
             <ul className="flex flex-col gap-0.5">
               {refused.map((blocker) => (
-                <li key={blocker} className="text-caption text-pending">
+                <li key={blocker} className="text-pending text-[14px]">
                   {blocker}
                 </li>
               ))}
@@ -354,7 +359,7 @@ function Waiting({
       ) : null}
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-caption text-ink-2 uppercase">{c.admin.review.bounceLabel}</span>
+        <span className="text-ink text-[14px] font-semibold">{c.admin.review.bounceLabel}</span>
         <input
           className="field"
           value={note}

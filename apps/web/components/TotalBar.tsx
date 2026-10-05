@@ -17,11 +17,23 @@ export interface TotalBarProps {
   rows: TotalRow[];
   total: number;
   totalLabel?: string | undefined;
-  /** Rendered after each figure — "%", " Br". */
+  /** Rendered after each figure: "%". */
   unit?: string | undefined;
+  /**
+   * Rendered before each figure: "Br ". Money is written Br first everywhere
+   * else in the product ("Br 800"), and the dashboard's totals were the one
+   * place it read "4000 Br".
+   */
+  prefix?: string | undefined;
 }
 
-export function TotalBar({ rows, total, totalLabel = 'Total', unit = '' }: TotalBarProps) {
+export function TotalBar({
+  rows,
+  total,
+  totalLabel = 'Total',
+  unit = '',
+  prefix = '',
+}: TotalBarProps) {
   const check = sumsTo(rows, total);
 
   if (!check.ok && process.env.NODE_ENV !== 'production') {
@@ -36,6 +48,7 @@ export function TotalBar({ rows, total, totalLabel = 'Total', unit = '' }: Total
             <tr key={row.label} className="border-border border-b last:border-b-0">
               <td className="text-body px-4 py-2.5">{row.label}</td>
               <td className="text-body num px-4 py-2.5 text-right">
+                {prefix}
                 {row.value}
                 {unit}
               </td>
@@ -46,6 +59,7 @@ export function TotalBar({ rows, total, totalLabel = 'Total', unit = '' }: Total
           <tr className="bg-ink text-surface">
             <td className="text-label px-4 py-3">{totalLabel}</td>
             <td className="text-label num px-4 py-3 text-right">
+              {prefix}
               {total}
               {unit}
             </td>

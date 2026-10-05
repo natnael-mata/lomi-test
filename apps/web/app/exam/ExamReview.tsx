@@ -64,7 +64,7 @@ export function ExamReview({ result }: { result: SittingResult }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         {/* The score, on the dark surface: the one hero figure on the page. */}
-        <section className="bg-ink-deep text-on-deep rounded-card flex flex-col gap-4 self-start p-6">
+        <section className="bg-ink-deep on-deep text-on-deep rounded-card flex flex-col gap-4 self-start p-6">
           <span className="text-caption text-on-deep-2 uppercase">
             {closedEarly
               ? c.results.timedOut(result.examName)

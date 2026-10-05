@@ -389,7 +389,7 @@ const CONTACTS: readonly { label: string; value: string | null; todo: string; wh
 const MEASURE = 'mx-auto w-full max-w-[1080px] px-5';
 
 /** A full-bleed dark band. Its own contents still sit on `MEASURE`. */
-const BAND = 'bg-ink-deep text-on-deep w-full px-5';
+const BAND = 'bg-ink-deep on-deep text-on-deep w-full px-5';
 
 /**
  * The footer's two link columns.

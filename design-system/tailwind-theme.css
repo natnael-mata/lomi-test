@@ -147,10 +147,13 @@
   --text-display--font-weight: 800;
   --text-display--letter-spacing: -0.03em;
 
-  --text-title: 1.5rem; /* 24px — screen titles                    */
-  --text-title--line-height: 1.875rem;
-  --text-title--font-weight: 700;
-  --text-title--letter-spacing: -0.02em;
+  /* 26px, extrabold, tight: the redesign's page heading, the size the
+     handoff gives every admin screen. One token, so the screens that still
+     use it (admin, Standing, Community, the error pages) moved together. */
+  --text-title: 1.625rem;
+  --text-title--line-height: 2rem;
+  --text-title--font-weight: 800;
+  --text-title--letter-spacing: -0.025em;
 
   /* The question. Largest on screen, and measured as such by the layout
      sweep. 19px on a phone, growing to 20px on a wide screen as the handoff's
@@ -382,6 +385,19 @@
     outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
+  /*
+   * On a dark surface, the lemon.
+   *
+   * The ink ring is 1.22:1 against `ink-deep`, which is no ring at all: the
+   * focus check tabbed the admin bar after the redesign darkened it and found
+   * every control there invisible to a keyboard. The same was true of every
+   * dark band the redesign added (the landing's hero, exam band and footer,
+   * Today's hero, the Mocks card, a result's score card). The lemon is 11.7:1
+   * on `ink-deep`, and those surfaces opt in by carrying `.on-deep`.
+   */
+  .on-deep :focus-visible {
+    outline-color: var(--color-brand);
+  }
 }
 
 /* Amharic casing (T-101).
@@ -430,25 +446,28 @@
 @layer components {
   /* Primary action. 52px is the floor — this is a one-handed product. */
   /*
-   * INK fill, cream text (handoff bundle, 2026-08-23).
+   * The LEMON fill, ink text (redesign handoff, 2026-10-01).
    *
-   * The primary action was a lemon fill. The redesign makes it ink, and the
-   * reason is hierarchy: the lemon is the *marker* — pending pills, flags, the
-   * free-question count, the logo tile — and a marker that is also the primary
-   * button competes with itself on every screen. Ink is the only fill in the
-   * palette with nothing else to do.
+   * It was ink from 2026-08-23, on the argument that the lemon is the marker
+   * (pending pills, flags, the free count) and a marker that is also the
+   * primary button competes with itself. The 2026-10-01 handoff settles it the
+   * other way and is consistent about it: Send code, Sign in, Start mock, Pay,
+   * Publish, Approve and Review and submit are all the lemon, and the markers
+   * moved off it (pending is orange now, flags are an orange dot). The one ink
+   * button the handoff keeps is the exam's Next, which says so in its markup.
    *
-   * One primary CTA per screen, which is the design's rule and is why this is
-   * the loudest thing the stylesheet can produce.
+   * Ink on the lemon is 11.3:1, an audited pair, and the focus ring is ink, so
+   * it reads on the fill. One primary action per screen is still the rule, and
+   * this is still the loudest thing the stylesheet can produce.
    */
   .btn-primary {
-    @apply w-full min-h-[52px] px-6 rounded-control bg-ink text-on-state
+    @apply w-full min-h-[52px] px-6 rounded-control bg-brand text-on-brand
            text-label inline-flex items-center justify-center gap-2
            transition-[background-color,box-shadow,transform] duration-150
-           shadow-card active:scale-[.98];
+           active:scale-[.98];
   }
   .btn-primary:hover {
-    @apply bg-ink-2;
+    @apply bg-brand-hover;
   }
 
   .btn-primary:disabled {
