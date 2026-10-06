@@ -263,9 +263,10 @@ export const en = {
     profileTitle: 'Your profile',
     displayNameLabel: 'Display name',
     displayNameWhy: 'Shown on the leaderboard instead of your real name.',
-    // Said, not hidden: the name cannot be changed from here yet, and a field
-    // that looks editable and does not save is worse than one that says so.
-    displayNameFixed: 'Changing it is not available yet.',
+    displayNameSave: 'Save name',
+    displayNameSaving: 'Saving…',
+    displayNameSaved: 'Saved. Other students see this name now.',
+    displayNameFailed: 'That did not save. Try again in a moment.',
     phoneLabel: 'Phone number',
     phoneVerified: 'confirmed by SMS',
     accessTitle: 'Your access',

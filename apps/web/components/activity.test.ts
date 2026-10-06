@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { activityFrom, levelOf } from './activity';
+import { ACTIVITY_DAYS, activityFrom, levelOf } from './activity';
 
 // Saturday 3 October 2026, 10:00 in Addis (07:00 UTC).
 const NOW = Date.parse('2026-10-03T07:00:00Z');
-const row = (day: string, ruleId = 'answered') => ({ ruleId, day });
-
-describe('activity, from the ledger', () => {
+describe('activity, from GET /me/activity', () => {
   it('draws five whole weeks, Monday first, ending on this Sunday', () => {
-    const cells = activityFrom([], NOW, 200)!;
+    const cells = activityFrom([], NOW);
     expect(cells).toHaveLength(35);
     expect(cells[0]!.day).toBe('2026-08-31'); // a Monday, four weeks before this one
     expect(cells[34]!.day).toBe('2026-10-04'); // this Sunday
@@ -16,30 +14,26 @@ describe('activity, from the ledger', () => {
     expect(cells.filter((c) => c.future).map((c) => c.day)).toEqual(['2026-10-04']);
   });
 
-  it('counts only answers, per Addis day', () => {
+  it('places each day the server counted', () => {
     const cells = activityFrom(
-      [row('2026-10-03'), row('2026-10-03'), row('2026-10-03', 'correct'), row('2026-10-01')],
+      [
+        { day: '2026-10-03', answered: 2 },
+        { day: '2026-10-01', answered: 1 },
+        { day: '2026-10-02', answered: 0 },
+      ],
       NOW,
-      200,
-    )!;
+    );
     const count = (day: string) => cells.find((c) => c.day === day)!.answered;
     expect(count('2026-10-03')).toBe(2);
     expect(count('2026-10-01')).toBe(1);
     expect(count('2026-10-02')).toBe(0);
+    // A day the server did not send is drawn as nothing done, never omitted.
+    expect(count('2026-09-01')).toBe(0);
   });
 
-  /**
-   * The rule that keeps the grid honest: a full page that stops short of the
-   * first day would draw studied days as empty.
-   */
-  it('gives up rather than drawing a short page', () => {
-    const full = Array.from({ length: 200 }, () => row('2026-10-02'));
-    expect(activityFrom(full, NOW, 200)).toBeNull();
-  });
-
-  it('trusts a full page that reaches past the first day', () => {
-    const full = [...Array.from({ length: 199 }, () => row('2026-10-02')), row('2026-08-20')];
-    expect(activityFrom(full, NOW, 200)).not.toBeNull();
+  it('asks for enough days to reach the first Monday from any weekday', () => {
+    // On a Sunday the grid's first cell is 34 days back, the furthest it goes.
+    expect(ACTIVITY_DAYS).toBeGreaterThanOrEqual(35);
   });
 
   it('shades by stated thresholds, the last at the smallest daily target', () => {

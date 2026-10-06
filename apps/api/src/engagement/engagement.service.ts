@@ -33,6 +33,15 @@ export interface StandingView {
   lastActiveDay: string | null;
 }
 
+/** Questions answered on one Addis calendar day. */
+export interface ActivityDay {
+  day: string;
+  answered: number;
+}
+
+/** The longest window `/me/activity` will count. Four months covers any grid. */
+export const MAX_ACTIVITY_DAYS = 120;
+
 export interface LedgerRow {
   ruleId: string;
   points: number;
@@ -173,6 +182,40 @@ export class EngagementService {
       pointsToNextTier: pointsToNextTier(totalPoints),
       lastActiveDay: last?.day ?? null,
     };
+  }
+
+  /**
+   * Questions answered per day, for the Progress grid (hand off of 2026-10-04).
+   *
+   * **Counted, not paged.** The web app used to count `answered` rows out of
+   * the 200 row ledger page, and a busy student's page ran out days short of
+   * five weeks, so the grid was hidden from exactly the students with the
+   * most to show. This is one grouped count over the `(userId, day)` index,
+   * however much they answered.
+   *
+   * The same `answered` rows as the ledger, so the grid and the points can
+   * never disagree about a day. Every day in the window is returned, oldest
+   * first, zeros included: a missing day and a day with nothing done must
+   * not look different to the client.
+   */
+  async activityFor(userId: string, days: number, now = new Date()): Promise<ActivityDay[]> {
+    const span = Math.min(Math.max(Math.trunc(days) || 1, 1), MAX_ACTIVITY_DAYS);
+    const today = dayOf(now);
+    const dayAt = (back: number): string =>
+      new Date(Date.parse(`${today}T00:00:00Z`) - back * 86_400_000).toISOString().slice(0, 10);
+    const first = dayAt(span - 1);
+
+    const counted = await this.prisma.pointEntry.groupBy({
+      by: ['day'],
+      where: { userId, ruleId: RULES.ANSWERED.id, day: { gte: first, lte: today } },
+      _count: { _all: true },
+    });
+    const byDay = new Map(counted.map((row) => [row.day, row._count._all]));
+
+    return Array.from({ length: span }, (_, i) => {
+      const day = dayAt(span - 1 - i);
+      return { day, answered: byDay.get(day) ?? 0 };
+    });
   }
 
   /** The student's own ledger, newest first. What every number was for. */

@@ -7,25 +7,23 @@
  * Four cards: who you are, what access you have, where you are signed in, and
  * the ways out (the staff console for staff, and sign out).
  *
- * **Built from the handoff, with three things left out:**
+ * **Built from the handoff, with two things left out:**
  *
  * 1. The English and Amharic toggle. The product is English only, by the
  *    owner's decision, because the exam is sat in English.
  * 2. The Fayda status line. Identity checks were dropped.
- * 3. Editing the display name. The handoff has a field and a Save button; the
- *    API has no endpoint to change the name, so a field that looked editable
- *    would save nothing. The name is shown, the reason it exists is said, and
- *    `DISPLAY_NAME_EDITABLE` is the switch for when the endpoint lands (asked
- *    for in docs/HANDOFFS.md).
  *
  * Each card reads on its own and fails on its own: a slow device list must not
  * hide the access card a student came here to check.
  */
 import { useCallback, useEffect, useState } from 'react';
 
+import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
+import { Input } from '../../components/Input';
 import { SignOutButton } from '../../components/SignOutButton';
 import {
+  ApiError,
   api,
   refusalMessage,
   signInRequired,
@@ -34,14 +32,6 @@ import {
 } from '../../lib/api';
 import { day, dayAndTime } from '../../lib/dates';
 import { copy } from '../../lib/i18n';
-
-/**
- * TODO(display name): there is no endpoint to change it.
- *
- * Asked for in docs/HANDOFFS.md (PATCH /me with { displayName }). Until it
- * exists the name is shown read only, with a sentence saying so.
- */
-const DISPLAY_NAME_EDITABLE = false;
 
 type Subscription = Awaited<ReturnType<typeof api.mySubscription>>;
 
@@ -112,18 +102,10 @@ export function AccountScreen() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-ink text-[14px] font-semibold">{c.account.displayNameLabel}</span>
-            <span className="text-ink-2 text-[13px]">{c.account.displayNameWhy}</span>
-            {DISPLAY_NAME_EDITABLE ? null : (
-              <>
-                {/* Plain text, not a field drawn to look like one: something
-                    with an input's border invites a tap that does nothing. */}
-                <span className="text-ink text-[15px] font-semibold">{name}</span>
-                <span className="text-ink-3 text-[13px]">{c.account.displayNameFixed}</span>
-              </>
-            )}
-          </div>
+          {/* Keyed by the saved name, so the field starts from it once it loads. */}
+          {me ? (
+            <DisplayNameForm key={me.displayName} current={me.displayName} onSaved={setMe} />
+          ) : null}
         </section>
 
         {/* What access you have, and the way to more of it. */}
@@ -149,6 +131,88 @@ export function AccountScreen() {
         <SignOutButton variant="danger" />
       </section>
     </div>
+  );
+}
+
+/**
+ * The display name, editable (PATCH /me).
+ *
+ * The server's rules decide and its reasons are shown as given, all of them,
+ * under the field: "Use at most 24 characters." and "Leave phone numbers out"
+ * are both things to fix, and showing one at a time turns two fixes into two
+ * round trips.
+ */
+function DisplayNameForm({
+  current,
+  onSaved,
+}: {
+  current: string;
+  onSaved: (identity: Identity) => void;
+}) {
+  const c = copy();
+  const [value, setValue] = useState(current);
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const save = async (): Promise<void> => {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    setSaved(false);
+    try {
+      onSaved(await api.updateDisplayName(value));
+      setSaved(true);
+    } catch (e) {
+      if (signInRequired(e)) {
+        window.location.assign('/signin');
+        return;
+      }
+      const reasons =
+        e instanceof ApiError ? (e.body as { reasons?: unknown } | undefined)?.reasons : undefined;
+      setProblem(
+        Array.isArray(reasons) && reasons.length > 0
+          ? reasons.join(' ')
+          : (refusalMessage(e) ?? c.account.displayNameFailed),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form
+      noValidate
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      <Input
+        label={c.account.displayNameLabel}
+        hint={c.account.displayNameWhy}
+        value={value}
+        maxLength={40}
+        autoComplete="nickname"
+        error={problem ?? undefined}
+        onChange={(e) => {
+          setSaved(false);
+          setProblem(null);
+          setValue(e.target.value);
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variant="ghost" disabled={busy}>
+          {busy ? c.account.displayNameSaving : c.account.displayNameSave}
+        </Button>
+        {saved ? (
+          <span role="status" className="text-correct text-[14px] font-semibold">
+            {c.account.displayNameSaved}
+          </span>
+        ) : null}
+      </div>
+    </form>
   );
 }
 

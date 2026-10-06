@@ -20,15 +20,15 @@
  *    not days in a row.
  * 2. Readiness for every topic, with how many answers each score rests on
  *    folded into its row, where it used to be a second list under the first.
- * 3. Five weeks of activity, counted from the points ledger, and only when the
- *    ledger can vouch for all five weeks (see `components/activity.ts`).
+ * 3. Five weeks of activity, counted per day by the server
+ *    (see `components/activity.ts`).
  * 4. The mock trend and the paper history left. Mocks lists every paper with
  *    its score and its results now, and printing them here as well made every
  *    mock appear on two screens.
  */
 import { useEffect, useState } from 'react';
 
-import { activityFrom, levelOf, type ActivityCell } from '../../components/activity';
+import { ACTIVITY_DAYS, activityFrom, levelOf, type ActivityCell } from '../../components/activity';
 import { Button } from '../../components/Button';
 import { CoveragePanel } from '../../components/CoveragePanel';
 import { Icon } from '../../components/icons';
@@ -39,15 +39,11 @@ import {
   api,
   refusalMessage,
   signInRequired,
-  type LedgerRow,
   type Readiness,
   type StandingView,
   type TrendPoint,
 } from '../../lib/api';
 import { copy } from '../../lib/i18n';
-
-/** The server's maximum ledger page. See `activityFrom`. */
-const LEDGER_PAGE = 200;
 
 export function ProgressScreen() {
   const c = copy();
@@ -62,7 +58,7 @@ export function ProgressScreen() {
   /** The headline. Null when it could not be read, which hides its card. */
   const [coverage, setCoverage] = useState<CoverageView | null>(null);
   const [standing, setStanding] = useState<StandingView | null>(null);
-  const [ledger, setLedger] = useState<LedgerRow[] | null>(null);
+  const [activity, setActivity] = useState<{ day: string; answered: number }[] | null>(null);
   /** Bumped by "Try again" to rerun the load. */
   const [attempt, setAttempt] = useState(0);
   const reload = (): void => {
@@ -83,7 +79,7 @@ export function ProgressScreen() {
         /*
          * Readiness is the screen; without it there is nothing to show, so a
          * failure there is the page's error. Everything else is settled on its
-         * own: a slow ledger must not cost a student their coverage.
+         * own: a slow activity count must not cost a student their coverage.
          */
         const [r, rest] = await Promise.all([
           api.readiness(fieldId),
@@ -91,7 +87,7 @@ export function ProgressScreen() {
             api.trend(fieldId),
             api.coverage(fieldId),
             api.standing(),
-            api.pointsLedger(LEDGER_PAGE),
+            api.myActivity(ACTIVITY_DAYS),
           ] as const),
         ]);
         if (cancelled) return;
@@ -100,7 +96,7 @@ export function ProgressScreen() {
         setTrend(t.status === 'fulfilled' ? t.value : []);
         setCoverage(cov.status === 'fulfilled' ? cov.value : null);
         setStanding(st.status === 'fulfilled' ? st.value : null);
-        setLedger(led.status === 'fulfilled' ? led.value : null);
+        setActivity(led.status === 'fulfilled' ? led.value : null);
       } catch (e) {
         if (signInRequired(e)) {
           window.location.assign('/signin');
@@ -180,7 +176,7 @@ export function ProgressScreen() {
 
   const scored = readiness.topics.filter((t) => t.scorePct !== null);
   const latest = trend.at(-1) ?? null;
-  const cells = ledger ? activityFrom(ledger, Date.now(), LEDGER_PAGE) : null;
+  const cells = activity ? activityFrom(activity, Date.now()) : null;
 
   /*
    * The four figures. Each states how it was worked out, under it: DESIGN.md's

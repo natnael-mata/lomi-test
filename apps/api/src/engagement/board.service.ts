@@ -130,9 +130,7 @@ export class BoardService {
      * beside graduating undergraduates — not the shape of the query.
      */
     const inScope = new Set(
-      scope === 'exam' && viewer?.fieldId
-        ? [viewer.fieldId]
-        : fields.map((f) => f.id),
+      scope === 'exam' && viewer?.fieldId ? [viewer.fieldId] : fields.map((f) => f.id),
     );
 
     const totals = await this.prisma.question.groupBy({

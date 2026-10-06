@@ -57,3 +57,80 @@ export function generateDisplayName(): string {
   const suffix = String(randomInt(1000, 10000));
   return `${adjective}${noun}${suffix}`;
 }
+
+/**
+ * The rules for a name a student chooses (hand off of 2026-10-05).
+ *
+ * The board shows this to every student on it, so it must not become a way to
+ * publish a phone number, pose as the operators, or put the student's own
+ * legal name back on a public surface (T-086). It is NOT unique, for the reason
+ * given above: refusing a student's choice because a stranger took it first.
+ *
+ * Returns the cleaned name, or every reason it was refused at once, in words a
+ * student can act on.
+ */
+export const DISPLAY_NAME_MIN = 3;
+export const DISPLAY_NAME_MAX = 24;
+
+/**
+ * Words that would read as the product or its staff. Matched on letters only,
+ * so "L0mi Admin" and "lomi.admin" are caught with "Lomi Admin".
+ */
+const RESERVED = [
+  'admin',
+  'staff',
+  'lomi',
+  'support',
+  'official',
+  'moderator',
+  'reviewer',
+  'provider',
+];
+
+export type DisplayNameCheck = { ok: true; name: string } | { ok: false; reasons: string[] };
+
+export function checkDisplayName(raw: unknown, legalName?: string | null): DisplayNameCheck {
+  if (typeof raw !== 'string') return { ok: false, reasons: ['Type a name.'] };
+  // One space between words, none at the ends: "  Swift   Summit " is "Swift Summit".
+  const name = raw.normalize('NFC').trim().replace(/\s+/g, ' ');
+  const reasons: string[] = [];
+  // Characters as a person counts them, so an Ethiopic name is not measured in
+  // code units.
+  const length = [...name].length;
+
+  if (length < DISPLAY_NAME_MIN) reasons.push(`Use at least ${DISPLAY_NAME_MIN} characters.`);
+  if (length > DISPLAY_NAME_MAX) reasons.push(`Use at most ${DISPLAY_NAME_MAX} characters.`);
+  // Letters in any script, the marks Ethiopic and others combine with, digits,
+  // spaces, full stops and underscores. Nothing that could pass for a link or
+  // markup on the board.
+  if (!/^[\p{L}\p{M}\p{Nd} ._]*$/u.test(name)) {
+    reasons.push('Use letters, numbers, spaces, full stops or underscores only.');
+  }
+  if ((name.match(/\p{L}/gu) ?? []).length < 2) reasons.push('Include at least two letters.');
+  // Six digits in a row, however they are spaced, is most of a phone number.
+  if (/\d{6,}/.test(name.replace(/[ ._]/g, ''))) {
+    reasons.push('Leave phone numbers and other long numbers out of it.');
+  }
+
+  const letters = name
+    .toLowerCase()
+    .replace(/0/g, 'o')
+    .replace(/1/g, 'l')
+    .replace(/[^\p{L}]/gu, '');
+  if (RESERVED.some((word) => letters.includes(word))) {
+    reasons.push('Choose a name that does not look like the product or its staff.');
+  }
+
+  // The legal name, whole. Every word of it present in any order is the name
+  // the board exists to keep private.
+  const words = (legalName ?? '')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => [...w].length >= 2);
+  const lowered = name.toLowerCase();
+  if (words.length >= 2 && words.every((w) => lowered.includes(w))) {
+    reasons.push('Choose a name that is not your real name. Other students see this one.');
+  }
+
+  return reasons.length > 0 ? { ok: false, reasons } : { ok: true, name };
+}

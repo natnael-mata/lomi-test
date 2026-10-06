@@ -27,13 +27,13 @@ describe('Account', () => {
   });
 
   /**
-   * There is no endpoint to change the display name, so nothing on the page
-   * may look like it saves one.
+   * The display name saves through PATCH /me, and a refusal shows every
+   * reason the server gave rather than a generic failure.
    */
-  it('does not offer a display name field that saves nothing', () => {
-    expect(screen).toContain('const DISPLAY_NAME_EDITABLE = false;');
-    expect(screen).not.toMatch(/<input/);
-    expect(screen).toContain('c.account.displayNameFixed');
+  it('saves the display name and shows every reason it was refused', () => {
+    expect(screen).toContain('api.updateDisplayName(value)');
+    expect(screen).toContain("reasons.join(' ')");
+    expect(screen).not.toContain('DISPLAY_NAME_EDITABLE');
   });
 
   /** "Log out" on the other devices; this one signs out at the foot. */

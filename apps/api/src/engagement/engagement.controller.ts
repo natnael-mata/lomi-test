@@ -4,6 +4,7 @@ import { SessionGuard, type AuthedRequest } from '../auth/session.guard';
 import { BoardService, type BoardView } from './board.service';
 import {
   EngagementService,
+  type ActivityDay,
   type LeaderboardView,
   type LedgerRow,
   type StandingView,
@@ -36,6 +37,16 @@ export class EngagementController {
   ledger(@Req() req: AuthedRequest, @Query('limit') limit?: string): Promise<LedgerRow[]> {
     const take = Math.min(Math.max(Number(limit) || 50, 1), 200);
     return this.engagement.ledgerFor(req.auth!.userId, take);
+  }
+
+  /**
+   * Questions answered per Addis day, oldest first, every day present.
+   * `?days=` defaults to the Progress grid's five weeks and is clamped to
+   * 1 to 120, so a typo cannot ask the database for a decade.
+   */
+  @Get('activity')
+  activity(@Req() req: AuthedRequest, @Query('days') days?: string): Promise<ActivityDay[]> {
+    return this.engagement.activityFor(req.auth!.userId, Number(days) || 35);
   }
 
   /**

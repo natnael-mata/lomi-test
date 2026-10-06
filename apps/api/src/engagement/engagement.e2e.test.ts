@@ -327,4 +327,66 @@ describe('points, streaks and the board (Phase 11)', () => {
       await request(app.getHttpServer()).get('/me/points').expect(401);
     });
   });
+  /**
+   * Questions answered per day (the Progress grid). Counted on the server so a
+   * busy student is not cut off by the ledger's page size.
+   */
+  describe('GET /me/activity', () => {
+    const row = (day: string, ruleId: string = RULES.ANSWERED.id) => ({
+      userId: a.userId,
+      ruleId,
+      points: 1,
+      reason: 'You answered a question.',
+      day,
+    });
+
+    it('counts answered rows per Addis day, every day present, oldest first', async () => {
+      await prisma.pointEntry.createMany({
+        data: [
+          row('2026-08-10'),
+          row('2026-08-10'),
+          row('2026-08-08'),
+          // Not an answer, so not counted.
+          row('2026-08-10', RULES.CORRECT.id),
+          // Outside a three day window.
+          row('2026-08-01'),
+        ],
+      });
+      const days = await engagement.activityFor(a.userId, 3, at('2026-08-10', '12:00'));
+      expect(days).toEqual([
+        { day: '2026-08-08', answered: 1 },
+        { day: '2026-08-09', answered: 0 },
+        { day: '2026-08-10', answered: 2 },
+      ]);
+    });
+
+    it('is not cut short by a busy student', async () => {
+      // More rows on one day than the ledger's largest page.
+      await prisma.pointEntry.createMany({
+        data: Array.from({ length: 250 }, () => row('2026-08-10')),
+      });
+      await prisma.pointEntry.createMany({ data: [row('2026-07-10')] });
+      const days = await engagement.activityFor(a.userId, 35, at('2026-08-10', '12:00'));
+      expect(days).toHaveLength(35);
+      expect(days.at(-1)).toEqual({ day: '2026-08-10', answered: 250 });
+      expect(days[0]!.day).toBe('2026-07-07');
+      expect(days.find((d) => d.day === '2026-07-10')?.answered).toBe(1);
+    });
+
+    it('counts only the asker, defaults to five weeks, and clamps the window', async () => {
+      await prisma.pointEntry.createMany({ data: [{ ...row('2026-08-10'), userId: b.userId }] });
+      const res = await request(app.getHttpServer()).get('/me/activity').set(a.auth).expect(200);
+      expect(res.body).toHaveLength(35);
+      expect(res.body.every((d: { answered: number }) => d.answered === 0)).toBe(true);
+      const wide = await request(app.getHttpServer())
+        .get('/me/activity?days=100000')
+        .set(a.auth)
+        .expect(200);
+      expect(wide.body).toHaveLength(120);
+    });
+
+    it('turns away a caller with no session', async () => {
+      await request(app.getHttpServer()).get('/me/activity').expect(401);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards } from '@nestjs/common';
 import type { StaffRole } from '@prisma/client';
 
 import { AuthService, type DeviceList, type Identity, type RevokeResult } from './auth.service';
@@ -43,6 +43,18 @@ export class MeController {
   @Get()
   async whoami(@Req() req: AuthedRequest): Promise<Identity> {
     return this.auth.identityOf(req.auth!.userId);
+  }
+
+  /**
+   * Changes what other students see: the display name, and nothing else.
+   *
+   * 422 `DISPLAY_NAME_REFUSED` with every `reasons` entry when the rules in
+   * `display-name.ts` turn it down. The legal name and phone are not editable
+   * here: they are not public, and changing either is a support matter.
+   */
+  @Patch()
+  update(@Req() req: AuthedRequest, @Body() body: { displayName?: unknown }): Promise<Identity> {
+    return this.auth.setDisplayName(req.auth!.userId, body?.displayName);
   }
 
   @Get('staff')

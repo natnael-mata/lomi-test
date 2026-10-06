@@ -1068,6 +1068,13 @@ export const api = {
       body: JSON.stringify({ phone, code, password, deviceLabel: deviceLabel() }),
     }),
 
+  /**
+   * Changes the public handle. A 422 `DISPLAY_NAME_REFUSED` carries every
+   * reason in `reasons`; the first is also the error's message.
+   */
+  updateDisplayName: (displayName: string): Promise<Identity> =>
+    call<Identity>('/me', { method: 'PATCH', body: JSON.stringify({ displayName }) }),
+
   /** Who am I. The generated handle, never a legal name. */
   me: (): Promise<Identity> => call<Identity>('/me'),
 
@@ -1174,6 +1181,10 @@ export const api = {
    * for the maximum, because it reads the last seven days off this page and a
    * short page would draw active days as empty.
    */
+  /** Questions answered per Addis day, oldest first, every day present. */
+  myActivity: (days: number): Promise<{ day: string; answered: number }[]> =>
+    call(`/me/activity?days=${days}`),
+
   pointsLedger: (limit?: number): Promise<LedgerRow[]> =>
     call<LedgerRow[]>(limit === undefined ? '/me/points' : `/me/points?limit=${limit}`),
 

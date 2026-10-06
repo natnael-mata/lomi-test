@@ -9,7 +9,7 @@ import {
 import type { OtpPurpose, StaffRole } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
-import { generateDisplayName } from './display-name';
+import { checkDisplayName, generateDisplayName } from './display-name';
 import { verifyInitData, type TelegramUser } from './telegram-init-data';
 import { bandFor } from '../engagement/bands';
 import { normaliseEthiopianMobile } from '../common/phone';
@@ -273,7 +273,6 @@ export class AuthService {
       isNew,
     };
   }
-
 
   /**
    * Opens a session, evicting the oldest if the device limit is already met.
@@ -680,9 +679,7 @@ export class AuthService {
           },
         });
         throw codeRejected(
-          attempts >= MAX_ATTEMPTS
-            ? { ok: false, reason: 'locked', triesLeft: 0 }
-            : verdict,
+          attempts >= MAX_ATTEMPTS ? { ok: false, reason: 'locked', triesLeft: 0 } : verdict,
           attempts >= MAX_ATTEMPTS ? lockUntil(now) : null,
         );
       }
@@ -1077,6 +1074,31 @@ export class AuthService {
     ]);
     if (!user) throw new NotFoundException('No such account.');
     return { userId: user.id, displayName: user.displayName, staffRole };
+  }
+
+  /**
+   * Changes the public handle (hand off of 2026-10-05).
+   *
+   * Checked against the student's own stored name as well as the general
+   * rules, because the one real name this server can recognise is theirs.
+   * Every reason is returned at once, so a second attempt is not a guess.
+   */
+  async setDisplayName(userId: string, raw: unknown): Promise<Identity> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    if (!user) throw new NotFoundException('No such account.');
+    const check = checkDisplayName(raw, user.name);
+    if (!check.ok) {
+      throw new UnprocessableEntityException({
+        error: 'DISPLAY_NAME_REFUSED',
+        message: check.reasons[0],
+        reasons: check.reasons,
+      });
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: { displayName: check.name } });
+    return this.identityOf(userId);
   }
 
   /** The caller's staff role, or null. See `MeController.staff` for why it exists. */
