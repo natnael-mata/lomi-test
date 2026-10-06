@@ -3,8 +3,8 @@
  *
  *   npm run dev:testers -w api
  *
- * The smoke-test door (`/dev-login`) mints its accounts on first use, which is
- * enough to get *in* and not enough to try anything: a brand-new account has no
+ * A sign-in alone is enough to get *in* and not enough to try anything: a
+ * brand-new account has no
  * programme, no history, no subscription and no staff role, so the paywall, the
  * receipt, the mock exam and every admin screen are unreachable. This puts ten
  * students and two operators into states that between them reach every screen.
@@ -414,7 +414,40 @@ async function seedCoverage(
   }
 }
 
+/**
+ * Refuses any database that is not on this machine.
+ *
+ * Every account this script writes shares one password, and that password is
+ * in the repository. Run against a live database, it would create twelve
+ * accounts anybody could sign in as, an ADMIN and a PROVIDER among them: the
+ * dev login door again, in data rather than code. The old `/dev-login` page
+ * was removed for exactly that reason, so nothing here may put its accounts
+ * where it was taken away from.
+ *
+ * The host is read from `DATABASE_URL`; only localhost counts. There is no
+ * override flag on purpose: a staging box that needs testers can be given its
+ * own accounts with their own passwords.
+ */
+function refuseUnlessLocal(): void {
+  const raw = process.env.DATABASE_URL ?? '';
+  let host = '';
+  try {
+    host = new URL(raw).hostname;
+  } catch {
+    // An unparseable URL is not a local one.
+  }
+  if (!['localhost', '127.0.0.1', '::1', '[::1]'].includes(host)) {
+    console.error(
+      `dev:testers only seeds a database on this machine, and DATABASE_URL points at ` +
+        `"${host || 'nothing readable'}". The test accounts share a password that is in ` +
+        `the repository, so seeding them anywhere else would let anyone sign in as them.`,
+    );
+    process.exit(1);
+  }
+}
+
 async function main(): Promise<void> {
+  refuseUnlessLocal();
   const field = await prisma.field.findUnique({
     where: { slug: FIELD_SLUG },
     select: { id: true },
@@ -848,12 +881,15 @@ async function main(): Promise<void> {
     schoolNote = 'seeded';
   }
 
-  const line = (label: string, value: string): string => `  ${label.padEnd(9)} ${value}`;
-  console.log('\nTest accounts ready. Sign in at http://localhost:3100/dev-login\n');
-  console.log('  Type the name exactly as shown — the door normalises spacing and case.');
+  // The phone beside each persona, because it is what signs them in: the banner
+  // above promised it for a long time while these lines never printed it.
+  const line = (label: string, value: string): string =>
+    `  ${label.padEnd(9)} ${phoneFor(label)}  ${value}`;
+  // The tester page (`/dev-login`) is gone; testers sign in like a student.
+  console.log('\nTest accounts ready. Sign in at http://localhost:3100/signin\n');
   console.log(
-    `  Or sign in with a phone number and the password "${TEST_PASSWORD}" ` +
-      "— each persona's number is printed beside it below.\n",
+    `  With the persona's phone number and the password "${TEST_PASSWORD}". ` +
+      'Each number is printed beside its persona below.\n',
   );
   console.log(line('User A', 'no programme chosen — starts at the programme chooser'));
   console.log(

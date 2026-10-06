@@ -16,16 +16,15 @@
  * The number is derived here rather than listed, because it is derived in
  * `dev-testers.ts` too and a second copy of a table is a second thing to update.
  * Node has `crypto`, so the algorithm runs directly — the browser bundle cannot
- * do that synchronously, which is why `DevLoginScreen` carries literals and a
- * contract test instead.
+ * do that synchronously; `tester-session.test.ts` holds the two in step.
  */
 import { createHash } from 'node:crypto';
 
 /**
  * The reserved smoke-test id range, from `dev-login.ts`.
  *
- * Kept in step by `dev-login.contract.test.ts`, which reads these same constants
- * out of the API source. If they ever move, that test recomputes and fails.
+ * Kept in step by `tester-session.test.ts`, which reads these same constants out
+ * of the API source. If they ever move, that test fails.
  */
 const DEV_TELEGRAM_ID_FLOOR = -2_000_000_000;
 const DEV_TELEGRAM_ID_CEILING = -1_000_000_000;

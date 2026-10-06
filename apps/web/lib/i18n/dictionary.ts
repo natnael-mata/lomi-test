@@ -395,63 +395,6 @@ export const en = {
     },
   },
 
-  devLogin: {
-    title: 'Sign in for testing',
-    intro: 'Choose who to sign in as. This page is for local testing only.',
-    password: 'Password',
-    passwordHint: 'The password dev:testers sets. Already filled in. Leave it as it is.',
-    signingIn: 'signing in…',
-    // 401 here means the seeded account is not on this database — which is the
-    // ordinary state of every server except a developer's own. Not an error to
-    // fix: the accounts are local fixtures and exist nowhere else.
-    notSeeded:
-      'No such test account on this server. Run `npm run dev:testers -w api` against a local database.',
-    failed: (status: number) => `Could not sign in (${status}). Check the API is running.`,
-    noServer: 'Could not reach the server. Is the API running?',
-    // Each says what STATE the account is in, not what kind of person it is.
-    // "A normal student" tells a tester nothing about which screens that button
-    // will let them reach, which is the only thing they need to choose by.
-    userA: 'User A',
-    userANote: 'Brand new. No programme chosen yet. Start here.',
-    userB: 'User B',
-    userBNote: '8 of 10 free questions used, and a bank transfer waiting to be checked.',
-    userC: 'User C',
-    userCNote: 'Paid for 12 months. Receipt, payment history and the mock exam.',
-    userD: 'User D',
-    userDNote: 'All 10 free questions spent, never paid. Meets the paywall on arrival.',
-    userE: 'User E',
-    userENote: 'Paid once and lapsed yesterday. The renewal offer, not the first time one.',
-    userF: 'User F',
-    userFNote: 'A mock exam open and unsubmitted. Resuming it, and the practice lock.',
-    userG: 'User G',
-    userGNote: 'A mock exam finished. The result, the review and the trend.',
-    userH: 'User H',
-    userHNote: 'Five days engaged with points banked. The standing and the leaderboard.',
-    userI: 'User I',
-    userINote: 'Answered 15 and got a quarter right. Readiness when the news is bad.',
-    userJ: 'User J',
-    userJNote: 'Two live devices, at the limit. The device list, and being evicted.',
-    // The five school-track accounts. Between them they are the only way to
-    // reach the junior band, the Grade 12 split and a coverage figure that is
-    // not zero, which is why their absence from this list cost a whole QA pass.
-    userK: 'User K',
-    userKNote:
-      'Grade 12 Natural, 5 of 12 beaten. And two right answers whose reason was wrong, which do not count.',
-    userL: 'User L',
-    userLNote: 'Grade 6, 4 of 6, chose to appear. The junior board, with somebody on it.',
-    userM: 'User M',
-    userMNote: 'Grade 6, all 6 beaten, never asked about the board. On no board, and still ranked.',
-    userN: 'User N',
-    userNNote: 'Grade 8, 2 of 4, chose to appear. The other half of the junior band.',
-    userO: 'User O',
-    userONote:
-      'Grade 12 Social, 3 of 4. The half of Grade 12 that Natural must never be measured on.',
-    admin: 'Admin',
-    adminNote: "Sees the admin pages and can settle User B's payment.",
-    provider: 'Provider',
-    providerNote: 'Above admin. The activity log and the live health board.',
-  },
-
   home: {
     // "Your exit exam" was written when that was the only thing this product
     // prepared anybody for. It now runs from Grade 6 upwards, and a page that

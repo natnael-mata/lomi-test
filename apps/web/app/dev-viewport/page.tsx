@@ -9,12 +9,10 @@ export const metadata = { title: 'Viewport harness' };
 /**
  * A testing harness, and it does not ship (T-269).
  *
- * `/dev-login` is the other page like this and it stays in the build, because
- * it is a door into the product that a real deployment needs to *not* have
- * working rather than to not have at all — its own tests assert the bypass is
- * gone. This one is different: it exists only so a browser-driving tester can
- * measure the app at a width their tooling refuses to set, and a page that
- * frames arbitrary same-origin paths has no business on a public build.
+ * It exists only so a browser-driving tester can measure the app at a width
+ * their tooling refuses to set, and a page that frames arbitrary same-origin
+ * paths has no business on a public build. (`/dev-login`, the tester sign-in
+ * page, was removed outright before the first redesigned deploy.)
  *
  * `NODE_ENV` rather than a flag, so nobody has to remember to set anything.
  */

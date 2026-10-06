@@ -67,7 +67,6 @@ const DATA_ROUTES = ['/today', '/progress', '/standing', '/exam/review'];
  */
 const UNFRAMED = [
   '/design',
-  '/dev-login',
   '/signin',
   /*
    * Sign-up and reset were NOT in this list, and should have been from the day

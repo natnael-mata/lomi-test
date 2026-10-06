@@ -89,7 +89,6 @@ const ROUTES = [
   // The two halves of the auth flow. Signed out, like the students who use them.
   { path: '/signup', as: null },
   { path: '/reset', as: null },
-  { path: '/dev-login', as: null },
   { path: '/admin/dashboard', as: 'admin' },
   { path: '/admin/payments', as: 'admin' },
   { path: '/admin/users', as: 'admin' },
