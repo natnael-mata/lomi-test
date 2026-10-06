@@ -102,10 +102,7 @@ export function ReadinessStatement({
               className="flex flex-col gap-1.5"
             >
               <div className="flex items-baseline justify-between gap-3">
-                <span
-                  className="text-ink min-w-0 truncate text-[15px] font-semibold"
-                  title={row.topic}
-                >
+                <span className="text-ink min-w-0 text-[15px] font-semibold break-words">
                   {row.topic}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
@@ -139,7 +136,9 @@ export function ReadinessStatement({
           <li data-elided="" className="border-border flex flex-col gap-1 border-t pt-4">
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-ink-2 text-[15px] font-semibold">{elidedLabel(elided)}</span>
-              <span className="text-ink-3 text-[13px]">{c.progress.untried}</span>
+              <span className="text-ink-3 shrink-0 text-[13px] whitespace-nowrap">
+                {c.progress.untried}
+              </span>
             </div>
             <span className="text-ink-3 num text-[12px]">
               {c.progress.shareOf(elided.weightPct)}

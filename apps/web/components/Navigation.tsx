@@ -170,14 +170,14 @@ export function SideRail({ pathname }: { pathname: string }) {
  * neither is a date guessed from a plan nobody has bought.
  */
 function AccessCard() {
-  const [until, setUntil] = useState<string | null>(null);
+  const [state, setState] = useState<Access | null>(null);
 
   useEffect(() => {
     let live = true;
     void (async () => {
       try {
         const status = await api.mySubscription();
-        if (live && status.active && status.expiresAt) setUntil(day(status.expiresAt));
+        if (live) setState(accessFrom(status));
       } catch {
         // Signed out, or offline. The sidebar is navigation; it does not get to
         // report a network fault the student cannot act on.
@@ -187,6 +187,27 @@ function AccessCard() {
       live = false;
     };
   }, []);
+
+  /*
+    Until the answer comes, the free plan's general line, which is true of
+    everybody who has not paid and claims nothing about a count. It used to be
+    the answer for everybody who was not active, so a student with no free
+    questions left, or whose access had ended, read "Ten free questions" here.
+  */
+  const shown = state ?? { kind: 'free', left: null };
+  const [label, body, href, action] =
+    shown.kind === 'active'
+      ? [c.nav.accessLabel, shown.until, '/account', c.nav.manage]
+      : shown.kind === 'checking'
+        ? [c.nav.checkingLabel, c.nav.checkingBody(shown.amount), '/account', c.nav.manage]
+        : shown.kind === 'ended'
+          ? [c.nav.endedLabel, c.nav.endedBody, '/checkout', c.nav.seePlans]
+          : [
+              c.nav.freePlan,
+              shown.left === null ? c.nav.freePlanBody : c.nav.freeLeft(shown.left),
+              '/checkout',
+              c.nav.seePlans,
+            ];
 
   return (
     /*
@@ -198,23 +219,46 @@ function AccessCard() {
       out visually. `ink-2` rather than `ink-3` for the label for the same
       reason, with room to spare.
     */
-    <div className="bg-surface border-border rounded-card mt-auto flex flex-col gap-1 border p-4">
-      <span className="text-caption text-ink-2">
-        {until === null ? c.nav.freePlan : c.nav.accessLabel}
-      </span>
-      <span className="text-ink num text-[15px] font-semibold">
-        {until === null ? c.nav.freePlanBody : until}
-      </span>
+    <div
+      className="bg-surface border-border rounded-card mt-auto flex flex-col gap-1 border p-4"
+      data-access={shown.kind}
+    >
+      <span className="text-caption text-ink-2">{label}</span>
+      <span className="text-ink num text-[15px] font-semibold">{body}</span>
       {/* 44px of target, like every other control. A 26px link is one the
           sweep catches and a thumb does not. */}
       <a
-        href="/account"
+        href={href}
         className="text-link hover:text-link-hover -mx-1 inline-flex min-h-11 items-center px-1 text-[14px] font-semibold"
       >
-        {until === null ? c.nav.seePlans : c.nav.manage}
+        {action}
       </a>
     </div>
   );
+}
+
+/** The four things the access card can say. */
+type Access =
+  | { kind: 'active'; until: string }
+  | { kind: 'checking'; amount: number }
+  | { kind: 'ended' }
+  | { kind: 'free'; left: number | null };
+
+/**
+ * Which of them is true. Active first: a pending transfer from somebody who
+ * already has access is a renewal, and the date they have is still the news.
+ */
+export function accessFrom(status: {
+  active: boolean;
+  expiresAt: string | null;
+  hasEverPaid: boolean;
+  pendingClaim: { amountEtb: number } | null;
+  freeRemaining: number | null;
+}): Access {
+  if (status.active && status.expiresAt) return { kind: 'active', until: day(status.expiresAt) };
+  if (status.pendingClaim) return { kind: 'checking', amount: status.pendingClaim.amountEtb };
+  if (status.hasEverPaid) return { kind: 'ended' };
+  return { kind: 'free', left: status.freeRemaining };
 }
 
 /**

@@ -30,9 +30,16 @@ type State =
   | { kind: 'ready'; preview: ExamPreview | null; past: TrendPoint[] }
   | { kind: 'error' };
 
+/**
+ * Past papers listed at once. A student who sits a mock a day has sixty by the
+ * exam, and sixty rows is a page nobody scrolls to the bottom of.
+ */
+const PAGE = 10;
+
 export function MocksScreen() {
   const c = copy();
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const [shown, setShown] = useState(PAGE);
 
   useEffect(() => {
     let live = true;
@@ -138,7 +145,7 @@ export function MocksScreen() {
           <p className="text-ink-2 px-6 py-5 text-[15px]">{c.mocks.noneYet}</p>
         ) : (
           <ul>
-            {newestFirst.map((paper) => (
+            {newestFirst.slice(0, shown).map((paper) => (
               <li key={paper.sittingId} className="border-border border-b last:border-b-0">
                 {/* The whole row is the link: a 56px target, and the place a
                     thumb lands is anywhere on it. */}
@@ -172,6 +179,13 @@ export function MocksScreen() {
             ))}
           </ul>
         )}
+        {newestFirst.length > shown ? (
+          <div className="border-border border-t p-4">
+            <button type="button" className="btn-ghost" onClick={() => setShown((n) => n + PAGE)}>
+              {c.exam.showMore(Math.min(newestFirst.length - shown, PAGE))}
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );

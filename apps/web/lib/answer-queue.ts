@@ -171,6 +171,12 @@ export async function replay(
   entries: readonly QueuedAnswer[],
   send: (position: number, patch: AnswerPatch) => Promise<unknown>,
   isClosed: (error: unknown) => boolean,
+  /**
+   * The server read the change and said no. Dropped and passed over: sending
+   * it again cannot change the answer, and kept at the head of the queue it
+   * blocked every entry behind it for the rest of the paper.
+   */
+  isRefused: (error: unknown) => boolean = () => false,
 ): Promise<ReplayOutcome> {
   let remaining = [...entries];
   let sent = 0;
@@ -182,6 +188,10 @@ export async function replay(
       sent += 1;
     } catch (error) {
       if (isClosed(error)) return { remaining: [], sent, closed: true };
+      if (isRefused(error)) {
+        remaining = dequeue(remaining, entry.position);
+        continue;
+      }
       return { remaining, sent, closed: false };
     }
   }

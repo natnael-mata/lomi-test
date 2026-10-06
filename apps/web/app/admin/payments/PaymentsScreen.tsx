@@ -46,7 +46,9 @@ const STATUS: Record<string, { tone: string; icon: IconName }> = {
 };
 
 /** The grid, declared once. Header and rows must not drift apart. */
-const COLUMNS = 'grid-cols-[150px_1fr_150px_180px_110px_120px]';
+// The last, narrow column is the chevron: the one cue that a row opens. Rows
+// looked like a static table, and nothing said a click would show the checks.
+const COLUMNS = 'grid-cols-[150px_1fr_150px_180px_110px_120px_20px]';
 
 export function PaymentsScreen() {
   const c = copy();
@@ -171,16 +173,17 @@ export function PaymentsScreen() {
               <span>{c.admin.payments.colReference}</span>
               <span className="text-right">{c.admin.payments.colAmount}</span>
               <span>{c.admin.payments.colStatus}</span>
+              <span aria-hidden="true" />
             </div>
 
             {phase.claims.map((claim) => (
               <div key={claim.paymentId} data-claim={claim.txRef}>
                 <button
                   type="button"
+                  // No aria-label: it replaced the whole row, so a screen reader
+                  // heard "Open" and none of the claim. `aria-expanded` already
+                  // says whether it is open.
                   aria-expanded={open === claim.paymentId}
-                  aria-label={
-                    open === claim.paymentId ? c.admin.payments.close : c.admin.payments.open
-                  }
                   onClick={() => {
                     setOpen(open === claim.paymentId ? null : claim.paymentId);
                     setReason(claim.note ?? '');
@@ -204,6 +207,12 @@ export function PaymentsScreen() {
                     {c.paywall.price(claim.amountEtb)}
                   </span>
                   <Status status={claim.status} />
+                  <span
+                    aria-hidden="true"
+                    className={`text-ink-3 transition-transform ${open === claim.paymentId ? 'rotate-90' : ''}`}
+                  >
+                    <Icon name="chevronRight" size={18} />
+                  </span>
                 </button>
 
                 {open === claim.paymentId ? (

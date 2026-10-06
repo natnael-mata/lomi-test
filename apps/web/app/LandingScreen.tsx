@@ -289,7 +289,7 @@ const FEATURES = [
     'Weighted by each topic\u2019s share of past papers, so you study what the paper is made of.',
   ],
   ['A plan to exam day', 'How many questions a day to reach 80%, recalculated every morning.'],
-  ['Built for your phone', 'A 16px floor, 44px targets, and no download you did not ask for.'],
+  ['Built for your phone', 'Large text, large buttons, and nothing to download.'],
   ['Pay the way you pay', 'telebirr, CBE Birr, card, or a bank transfer with the reference.'],
 ] as const;
 
@@ -450,10 +450,20 @@ export function LandingScreen() {
             headline and steal the one screen a visitor gives this page. */}
         <FloatingShapes />
 
+        {/* The way back in for somebody who already has an account. It was
+            only in the footer, a long scroll below "Start practising free". */}
+        <div className="relative mx-auto mb-7 flex w-full max-w-[1080px] items-center justify-between gap-4">
+          <Logo size={34} wordmark onDark />
+          <Link
+            href="/signin"
+            className="text-on-deep hover:text-brand -mr-2 inline-flex min-h-11 items-center px-2 text-[15px] font-semibold"
+          >
+            Sign in
+          </Link>
+        </div>
+
         <div className="relative mx-auto grid w-full max-w-[1080px] items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="flex flex-col items-start gap-7">
-            <Logo size={34} wordmark onDark />
-
             <span className="border-on-deep/15 bg-on-deep/5 text-caption inline-flex items-center gap-2 rounded-full border px-3 py-1.5">
               {/* The pulsing dot. Decoration beside a word, never the word. */}
               <span
@@ -469,9 +479,9 @@ export function LandingScreen() {
             </h1>
 
             <p className="max-w-[48ch] text-[clamp(16px,2vw,19px)] leading-[1.6] text-on-deep-2">
-              Thousands of past questions, every one explained. The idea behind it, the worked
-              solution, and why each wrong option tempted you. Work through them and you walk in
-              ready, not hoping.
+              Past exam questions, every one explained. The idea behind it, the worked solution, and
+              why each wrong option tempted you. Work through them and you walk in ready, not
+              hoping.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -490,7 +500,7 @@ export function LandingScreen() {
             </div>
 
             <p className="text-caption text-on-deep-3">
-              Ten free questions in every subject, explanations included. No card needed.
+              Ten free questions, explanations included. No card needed.
             </p>
           </div>
 
@@ -698,7 +708,7 @@ export function LandingScreen() {
           ))}
         </div>
         <p className="text-ink-2 text-[14px]">
-          One price for the whole track. Every subject, not one at a time. Pay with Telebirr or CBE
+          One price for the whole track. Every subject, not one at a time. Pay with telebirr or CBE
           Birr, or send a bank transfer and paste the reference.
         </p>
       </section>

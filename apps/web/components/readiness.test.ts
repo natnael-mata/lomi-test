@@ -61,10 +61,10 @@ describe('buildReadiness — the elided row (T-097)', () => {
   it('names them while naming them is still readable', () => {
     const base = buildReadiness([topic('a', 50, 20)]).elided!;
     expect(elidedLabel({ ...base, topicCount: 1, topics: ['Value Added Tax'] })).toBe(
-      'Value Added Tax — not started',
+      'Value Added Tax, not started',
     );
     expect(elidedLabel({ ...base, topicCount: 2, topics: ['Trade', 'Landforms'] })).toBe(
-      'Trade, Landforms — not started',
+      'Trade, Landforms, not started',
     );
   });
 

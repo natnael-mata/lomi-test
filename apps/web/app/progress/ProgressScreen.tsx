@@ -222,7 +222,9 @@ export function ProgressScreen() {
     <div className="flex flex-col gap-6" data-state="ready">
       {header}
 
-      <dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,200px),1fr))] gap-3">
+      {/* Four tiles: one column on a phone, two by two in between, a row of
+          four from `lg`. `auto-fit` left three and an orphan at tablet width. */}
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (
           <div
             key={tile.label}
@@ -334,7 +336,9 @@ export function ProgressScreen() {
 }
 
 /** The four shades, lightest to darkest, keyed by `levelOf`. */
-const SHADE = ['bg-surface-2', 'bg-brand-pale', 'bg-brand', 'bg-link'] as const;
+// Level 1 is the softest lemon, so the first step up from nothing is a
+// different family from level 2 rather than a near twin of it.
+const SHADE = ['bg-surface-2', 'bg-brand-soft', 'bg-brand', 'bg-link'] as const;
 
 /**
  * Five weeks, a row a week, Monday first.

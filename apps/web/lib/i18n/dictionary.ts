@@ -40,10 +40,15 @@ export function hoursAndMinutes(minutes: number): string {
   return m === 0 ? hours : `${hours} ${m} minute${m === 1 ? '' : 's'}`;
 }
 
+/**
+ * A wait, in words. Seconds while they are worth counting, then minutes, then
+ * hours: "45s" is an abbreviation and "525 seconds" is a sum.
+ */
 export function plainDuration(seconds: number): string {
   const whole = Math.max(0, Math.round(seconds));
-  if (whole < 90) return `${whole}s`;
+  if (whole < 60) return `${whole} second${whole === 1 ? '' : 's'}`;
   const minutes = Math.round(whole / 60);
+  if (minutes === 1) return 'a minute';
   if (minutes < 60) return `${minutes} minutes`;
   const hours = Math.round(minutes / 60);
   return hours === 1 ? 'an hour' : `${hours} hours`;
@@ -95,7 +100,8 @@ export const en = {
 
   choose: {
     notReady: 'Being written',
-    notReadyWhy: 'No questions in this programme yet. Pick another for now.',
+    // Names the marker it explains: it sits under the grid, not beside a card.
+    notReadyWhy: 'Programmes marked Being written have no questions yet. Pick another for now.',
     questionsAvailable: (count: number) => `${count} question${count === 1 ? '' : 's'} ready`,
     setUp: 'Set up your plan',
     title: 'Which programme are you sitting?',
@@ -183,6 +189,17 @@ export const en = {
     manage: 'Manage plan',
     freePlan: 'Free plan',
     freePlanBody: 'Ten free questions',
+    /** The count the server keeps, so the card agrees with the practice banner. */
+    freeLeft: (n: number) =>
+      n === 0
+        ? 'Free questions used'
+        : n === 1
+          ? '1 free question left'
+          : `${n} free questions left`,
+    endedLabel: 'Access ended',
+    endedBody: 'Renew to keep practising',
+    checkingLabel: 'Payment being checked',
+    checkingBody: (amount: number) => `Bank transfer of Br ${amount}`,
     seePlans: 'See plans',
     mainBottom: 'Main, bottom bar',
     accessUntil: (date: string) => `Access until ${date}`,
@@ -345,7 +362,12 @@ export const en = {
     resendIn: (seconds: number) => `Send another code in ${plainDuration(seconds)}`,
     couldNotVerify: 'That did not go through. Try again in a moment.',
 
-    triesLeft: (left: number) => `${left} ${left === 1 ? 'try' : 'tries'} left, or send a new one.`,
+    triesLeft: (left: number) => `${left} ${left === 1 ? 'try' : 'tries'} left.`,
+    // What an early press is waiting for. The buttons are never greyed out,
+    // because a dead button does not say why.
+    phoneIncomplete: 'Enter the whole number, like 0911 234 567.',
+    codeIncomplete: 'Enter all six digits from the SMS.',
+    passwordIncomplete: 'Use at least 8 characters.',
     /*
      * `tryAgainAt` is gone.
      *
@@ -390,8 +412,11 @@ export const en = {
       // The one real dead end in this flow, so it gets a route out rather than
       // an apology. A student who has lost the number cannot prove anything by
       // SMS, by definition.
+      // It said "Message us on Telegram" with no link to any channel. Until a
+      // support channel exists the honest answer is that this cannot be done
+      // from here, said plainly rather than as a promise.
       lostNumber:
-        'No longer have this number? Message us on Telegram and we will move your account.',
+        'No longer have this number? Moving an account to a new number cannot be done from here yet.',
     },
   },
 
@@ -515,16 +540,18 @@ export const en = {
     noneTried: 'Answer a few questions and each topic shows how you are doing on it.',
     belowLine: (n: number, line: number) =>
       n === 0
-        ? `Every topic you have tried is above ${line}%.`
+        ? `Every topic you have tried is at ${line}% or more.`
         : `${n} topic${n === 1 ? ' is' : 's are'} below ${line}%. That is where today's questions come from.`,
 
     // Mocks.
     mocksTitle: 'Mock scores',
     // Words, not signs: "−6" is a dash to the eye, and "down 6" is read faster.
+    // Points, not percent: 60% to 65% is five points, and "5% higher" would be
+    // a different and wrong figure. "Up 5 since" left the unit unsaid.
     sinceLast: (delta: number, label: string) =>
       delta === 0
         ? `Level with ${label}`
-        : `${delta > 0 ? 'Up' : 'Down'} ${Math.abs(delta)} since ${label}`,
+        : `${Math.abs(delta)} point${Math.abs(delta) === 1 ? '' : 's'} ${delta > 0 ? 'higher' : 'lower'} than ${label}`,
     sitAMock: 'Sit a mock',
 
     /*
@@ -570,7 +597,7 @@ export const en = {
     suggestedTime: 'Suggested',
     startPractising: 'Start practising',
     doneForToday: 'Done for today',
-    freeLimit: 'That is your ten free questions',
+    freeLimit: 'You have used your ten free questions',
     seePlans: 'Get full access',
     nextQuestion: 'Next question',
     practiseTopic: (topic: string) => `Practise ${topic}`,
@@ -617,7 +644,7 @@ export const en = {
     reasonWrong: 'Not quite the reason. This is what makes the answer work.',
     reasonNext: 'Next question',
     goToExam: 'Go to your exam',
-    outOfNewTitle: 'That is your ten free questions',
+    outOfNewTitle: 'You have used your ten free questions',
     lapsedTitle: 'Your access has ended',
     lapsedBody:
       'You can keep going over the ones you have already answered as often as you like. ' +
@@ -1041,9 +1068,10 @@ export const en = {
     kpiStudyDays: 'Study days',
     kpiStudyDaysHow: 'days you showed up, all time',
     byTopicTitle: 'Readiness by topic',
-    // The line the bars are read against. "Pass safe" is this product's own
-    // threshold, not the exam's pass mark, and it says so by name.
-    byTopicLine: (line: number) => `against the ${line}% pass safe line`,
+    // The line the bars are read against. It is this product's own threshold,
+    // not the exam's pass mark, so it never carries the word "pass": with no
+    // published pass mark, a "pass" line here is a promise nobody can keep.
+    byTopicLine: (line: number) => `against a ${line}% target line`,
     belowLine: (n: number) => (n === 0 ? 'none below the line' : `${n} below the line`),
     untried: 'Not tried yet',
     activityTitle: 'Last 5 weeks',
@@ -1129,9 +1157,10 @@ export const en = {
     // Bank transfer.
     transferTo: (amount: string) => `Transfer ${amount} from any bank to:`,
     accountLabel: 'Account',
+    // There is no support channel yet, so this cannot send anybody to one.
     accountNotPublished:
-      'The account to pay into is not published on this server. Ask support for it before you ' +
-      'transfer. A claim with no matching transfer cannot be verified.',
+      'Bank transfer is not open yet, because the account to pay into has not been published. ' +
+      'Nothing has been charged.',
     submitForVerification: 'Submit for verification',
     submittedBanner: 'Submitted. Being verified',
     /*
@@ -1141,9 +1170,15 @@ export const en = {
      * one the product did not keep. What is true: access starts when it is
      * confirmed, and this page and Account both show it.
      */
-    submittedBody: (ref: string) =>
+    // The free questions are mentioned only to somebody who has some left.
+    // "Keep practising your free questions" to a student who has none sent
+    // them to a paywall while they waited.
+    submittedBody: (ref: string, freeLeft: number | null = null) =>
       `Reference ${ref} is with our team. Your access starts the moment it is confirmed, and ` +
-      'this page shows it. You can keep practising your free questions meanwhile.',
+      'this page shows it.' +
+      (freeLeft !== null && freeLeft > 0
+        ? ` You can keep practising your ${freeLeft === 1 ? 'last free question' : `${freeLeft} free questions`} meanwhile.`
+        : ''),
 
     verifiedBanner: 'Payment verified',
 
@@ -1185,8 +1220,14 @@ export const en = {
       'Thank you. Someone checks the transfer against the bank statement, usually the same day, ' +
       'and your access starts as soon as it is found.',
     couldNotStart: 'The payment could not be started. Nothing has been charged. Try again.',
-    unavailable:
-      'That way of paying is not available right now. The bank transfer below still works.',
+    /*
+     * Said under the button, not instead of the form. It replaced the whole
+     * page and pointed at "the bank transfer below", with nothing below it, so
+     * the one working way to pay was hidden by the message recommending it.
+     */
+    unavailable: (method: string, bankOpen: boolean) =>
+      `${method} is not switched on here yet. Nothing has been charged.` +
+      (bankOpen ? ' Bank transfer works: choose it above.' : ''),
 
     /*
      * One page, the handoff's way (§ Plans & payment): the plans, the way to
@@ -1209,7 +1250,7 @@ export const en = {
       field ? `${months} months · ${field}` : `${months} months`,
     total: 'Total',
     payAmountWith: (price: string, method: string) => `Pay ${price} with ${method}`,
-    backToToday: 'Back to today',
+    backToToday: 'Back to Today',
   },
 
   /**
@@ -1327,6 +1368,10 @@ export const en = {
     boardNobodyListed: 'Nobody on this board has chosen to appear yet.',
     yourRank: (rank: number) =>
       `You are ${rank}${rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th'}`,
+    // Which board the figures on your own line belong to. "0%" on its own read
+    // as the student's coverage, which Progress showed as much higher: it was
+    // this week's share, and the line did not say so.
+    yourWindow: (week: boolean) => (week ? 'this week' : 'all time'),
     notListed: 'You are not shown on the board. Your rank is still yours to see.',
     // For a student who IS listed but sits below the last visible row. It says
     // where they are without dressing up the distance, and without implying
@@ -1531,9 +1576,6 @@ export const en = {
       colAmount: 'Amount',
       colStatus: 'Status',
 
-      open: 'Open this claim',
-      close: 'Close this claim',
-
       checkAgainst: 'Check against the bank statement',
       expected: (reference: string, amount: string, account: string) =>
         `Reference ${reference} · expected ${amount} to ${account}.`,
@@ -1636,6 +1678,15 @@ export const en = {
       bounced2: 'Sent back to its author.',
       cannotPublish: 'This cannot be published yet:',
       topicUnweighted: 'Topic has no weight',
+      // The importer's flags, in words. The raw codes (NEEDS_ANSWER and the
+      // rest) are the spreadsheet's vocabulary, not a reviewer's.
+      importFlag: (flag: string) =>
+        ({
+          READY: 'Complete in the sheet',
+          NEEDS_ANSWER: 'No answer in the sheet',
+          NEEDS_EXPLANATION: 'No explanation in the sheet',
+          NEEDS_TOPIC_REVIEW: 'Check the topic',
+        })[flag] ?? flag.toLowerCase().replace(/_/g, ' '),
 
       // The editor (T-233). Every label says what the gate wants, in the words
       // it uses to refuse — so a reviewer reading a blocker finds the field.

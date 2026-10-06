@@ -18,7 +18,7 @@
  * late, a code they mistyped, a number they no longer have. Those are the
  * screens worth building carefully, and each is spelled out below.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { AuthShell } from './AuthShell';
 import { Button } from './Button';
@@ -71,8 +71,19 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [refusal, setRefusal] = useState<Refusal | null>(null);
+  /** Why the current step cannot go on yet, said under its field. */
+  const [incomplete, setIncomplete] = useState<string | null>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
   /** Seconds until another code may be asked for. Counted down for display. */
   const [cooldown, setCooldown] = useState(0);
+
+  /*
+   * After a refused code the caret goes back to the boxes. The field is
+   * disabled while the check runs, so this waits for it to come back.
+   */
+  useEffect(() => {
+    if (step.kind === 'code' && refusal && !busy) codeRef.current?.focus();
+  }, [step.kind, refusal, busy]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -265,41 +276,80 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
       title={heading.title}
       subtitle={heading.subtitle}
     >
+      {/*
+        Each step is a form, so Enter does what the button does. And the button
+        is never greyed out for an incomplete field: a dead button does not say
+        what it is waiting for. Pressing it early says so, under the field.
+      */}
       {step.kind === 'phone' && (
-        <section className="flex flex-col gap-4">
+        <form
+          noValidate
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (busy) return;
+            if (phone.trim().length < 9) return setIncomplete(c.codeFlow.phoneIncomplete);
+            setIncomplete(null);
+            void askForCode(phone.trim());
+          }}
+        >
           <Input
             label={c.codeFlow.phoneLabel}
             hint={c.codeFlow.phoneHint}
             value={phone}
             inputMode="tel"
             autoComplete="tel"
-            onChange={(e) => setPhone(e.target.value)}
+            error={incomplete ?? undefined}
+            onChange={(e) => {
+              setIncomplete(null);
+              setPhone(e.target.value);
+            }}
           />
-          <Button
-            disabled={busy || phone.trim().length < 9}
-            onClick={() => void askForCode(phone.trim())}
-          >
+          <Button type="submit" disabled={busy}>
             {busy ? c.codeFlow.sending : c.codeFlow.sendCode}
           </Button>
-        </section>
+        </form>
       )}
 
       {step.kind === 'code' && (
         <section className="flex flex-col gap-4">
-          <CodeInput
-            label={c.codeFlow.codeLabel}
-            hint={c.codeFlow.codeHint}
-            value={code}
-            disabled={busy}
-            onChange={setCode}
-          />
-
-          <Button
-            disabled={busy || code.length !== 6}
-            onClick={() => void checkThenContinue(step.phone)}
+          <form
+            noValidate
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (busy) return;
+              if (code.length !== 6) return setIncomplete(c.codeFlow.codeIncomplete);
+              setIncomplete(null);
+              void checkThenContinue(step.phone);
+            }}
           >
-            {busy ? c.codeFlow.checking : c.codeFlow.continue}
-          </Button>
+            <CodeInput
+              label={c.codeFlow.codeLabel}
+              hint={c.codeFlow.codeHint}
+              value={code}
+              disabled={busy}
+              inputRef={codeRef}
+              // A refused code is said under the boxes, where the eyes are,
+              // not in a card below the resend link.
+              error={
+                incomplete ??
+                (refusal?.reason === 'wrong'
+                  ? refusal.triesLeft > 0
+                    ? `${refusal.message} ${c.codeFlow.triesLeft(refusal.triesLeft)}`
+                    : refusal.message
+                  : null)
+              }
+              onChange={(value) => {
+                setIncomplete(null);
+                setCode(value);
+              }}
+            />
+
+            <Button type="submit" disabled={busy}>
+              {busy ? c.codeFlow.checking : c.codeFlow.continue}
+            </Button>
+          </form>
 
           {/*
             A live countdown, never a dead button.
@@ -334,18 +384,32 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
       )}
 
       {step.kind === 'password' && (
-        <section className="flex flex-col gap-4">
+        <form
+          noValidate
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (busy) return;
+            if (password.length < 8) return setIncomplete(c.codeFlow.passwordIncomplete);
+            setIncomplete(null);
+            void finish();
+          }}
+        >
           <Input
             label={words.passwordLabel}
             value={password}
             type="password"
             autoComplete="new-password"
-            onChange={(e) => setPassword(e.target.value)}
+            error={incomplete ?? undefined}
+            onChange={(e) => {
+              setIncomplete(null);
+              setPassword(e.target.value);
+            }}
           />
-          <Button disabled={busy || password.length < 8} onClick={() => void finish()}>
+          <Button type="submit" disabled={busy}>
             {busy ? c.codeFlow.saving : words.finish}
           </Button>
-        </section>
+        </form>
       )}
 
       {/*
@@ -355,12 +419,9 @@ export function CodeFlow({ purpose }: { purpose: CodePurpose }) {
         facts about counters and clocks rather than about the guess — nothing
         here tells anybody their digits were close.
       */}
-      {refusal && (
+      {refusal && refusal.reason !== 'wrong' && (
         <Card as="section" className="flex flex-col gap-1" data-refusal={refusal.reason}>
           <p className="text-body text-wrong">{refusal.message}</p>
-          {refusal.reason === 'wrong' && refusal.triesLeft > 0 && (
-            <p className="text-caption text-ink-2">{c.codeFlow.triesLeft(refusal.triesLeft)}</p>
-          )}
           {/*
             No second sentence about the time (T-268).
 

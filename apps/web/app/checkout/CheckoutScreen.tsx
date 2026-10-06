@@ -53,7 +53,7 @@ type Phase =
   /** A push is on its way to a handset, or the student has come back from Chapa. */
   | { kind: 'waiting'; txRef: string; mobile: string | null; slow: boolean; method: Method }
   | { kind: 'confirmed'; expiresAt: string | null }
-  | { kind: 'submitted'; txRef: string }
+  | { kind: 'submitted'; txRef: string; plan: PlanOffer | null }
   | { kind: 'error'; message: string };
 
 /** How often the waiting screen asks. */
@@ -90,6 +90,8 @@ export function CheckoutScreen() {
   const [verifiedPhone, setVerifiedPhone] = useState(false);
   const [txRef, setTxRef] = useState('');
   const [fieldError, setFieldError] = useState<string | null>(null);
+  /** A method that cannot be used here, said beside the button that tried it. */
+  const [methodError, setMethodError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   /** Counts up while a push is outstanding, so the wait is a number not a mood. */
   const [waited, setWaited] = useState(0);
@@ -104,6 +106,8 @@ export function CheckoutScreen() {
   const [pending, setPending] = useState<{ txRef: string; amountEtb: number } | null>(null);
   /** Set when they paid before and it has run out — a renewal, not a first sale. */
   const [lapsedOn, setLapsedOn] = useState<string | null>(null);
+  /** Free questions left, for the line about waiting. Null when unknown. */
+  const [freeLeft, setFreeLeft] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -120,6 +124,7 @@ export function CheckoutScreen() {
         ]);
         if (!alive) return;
         setPlans(offers);
+        setFreeLeft(subscription?.freeRemaining ?? null);
         setFieldName(fields.find((f) => f.chosen)?.name ?? null);
 
         const waiting = history?.payments.find((p) => p.status === 'PENDING') ?? null;
@@ -188,7 +193,7 @@ export function CheckoutScreen() {
   }, [phase.kind]);
 
   const fail = useCallback(
-    (error: unknown): void => {
+    (error: unknown, method: Method): void => {
       if (error instanceof ApiError) {
         if (error.code === 'MOBILE_INVALID') {
           setFieldError(c.checkout.mobileInvalid);
@@ -203,9 +208,9 @@ export function CheckoutScreen() {
           return;
         }
         if (error.code === 'CHAPA_NOT_CONFIGURED' || error.status === 503) {
-          // Names the way out rather than only the fault: the bank transfer is
-          // on the same screen and does not depend on the provider being up.
-          setPhase({ kind: 'error', message: c.checkout.unavailable });
+          // In place, under the button: the form stays, so the bank transfer
+          // it recommends is still on screen to choose.
+          setMethodError(c.checkout.unavailable(c.checkout[method], BANK_ACCOUNT !== ''));
           return;
         }
       }
@@ -217,6 +222,7 @@ export function CheckoutScreen() {
   const pay = useCallback(
     async (method: Method): Promise<void> => {
       setFieldError(null);
+      setMethodError(null);
       setBusy(true);
       try {
         if (method === 'telebirr' || method === 'cbebirr') {
@@ -240,14 +246,18 @@ export function CheckoutScreen() {
           return;
         }
         await api.payManual(planCode, txRef);
-        setPhase({ kind: 'submitted', txRef: txRef.trim() });
+        setPhase({
+          kind: 'submitted',
+          txRef: txRef.trim(),
+          plan: plans.find((p) => p.code === planCode) ?? null,
+        });
       } catch (error) {
-        fail(error);
+        fail(error, method);
       } finally {
         setBusy(false);
       }
     },
-    [fail, mobile, planCode, txRef],
+    [fail, mobile, planCode, plans, txRef],
   );
 
   const plan = plans.find((p) => p.code === planCode) ?? null;
@@ -331,8 +341,16 @@ export function CheckoutScreen() {
           <Banner tone="pending" icon="clock">
             {c.checkout.submittedBanner}
           </Banner>
-          <p className="text-body">{c.checkout.submittedBody(phase.txRef)}</p>
+          {/* What was claimed, restated: the plan and the amount the team will
+              look for on the statement. */}
+          {phase.plan ? <OrderLine plan={phase.plan} /> : null}
+          <p className="text-body">{c.checkout.submittedBody(phase.txRef, freeLeft)}</p>
           <p className="text-caption text-ink-2">{c.checkout.yourReference(phase.txRef)}</p>
+          {/* A way on. Without it the only control was Back, into the form
+              that had just been sent. */}
+          <a href="/today" className="btn-primary self-start">
+            {c.checkout.backToToday}
+          </a>
         </section>
       </div>
     );
@@ -376,7 +394,7 @@ export function CheckoutScreen() {
           <Banner tone="pending" icon="clock">
             {c.checkout.submittedBanner}
           </Banner>
-          <p className="text-body">{c.checkout.submittedBody(pending.txRef)}</p>
+          <p className="text-body">{c.checkout.submittedBody(pending.txRef, freeLeft)}</p>
           {/* Named twice on purpose: once in the sentence, once as the
               thing to keep. */}
           <p className="text-caption text-ink-2">{c.checkout.keepReference}</p>
@@ -438,6 +456,7 @@ export function CheckoutScreen() {
                 checked={method === value}
                 onChange={() => {
                   setFieldError(null);
+                  setMethodError(null);
                   setMethod(value);
                 }}
               />
@@ -515,7 +534,11 @@ export function CheckoutScreen() {
             type="button"
             className="bg-brand hover:bg-brand-hover text-on-brand rounded-control disabled:bg-surface-2 disabled:text-ink-2 min-h-[52px] px-5 text-[16px] font-semibold disabled:cursor-not-allowed"
             onClick={() => void pay(method)}
-            disabled={busy || !plan || (method === 'bank' && txRef.trim() === '')}
+            // A transfer to an account nobody published cannot be matched to
+            // anybody, so the claim cannot be sent until there is one.
+            disabled={
+              busy || !plan || (method === 'bank' && (txRef.trim() === '' || BANK_ACCOUNT === ''))
+            }
           >
             {busy
               ? c.checkout.sending
@@ -523,8 +546,13 @@ export function CheckoutScreen() {
                 ? c.checkout.submitForVerification
                 : c.checkout.payAmountWith(price, methodName)}
           </button>
-          {method === 'bank' && txRef.trim() === '' ? (
+          {method === 'bank' && txRef.trim() === '' && BANK_ACCOUNT !== '' ? (
             <p className="text-ink-3 text-[13px]">{c.checkout.txRefNeeded}</p>
+          ) : null}
+          {methodError ? (
+            <p role="alert" className="bg-pending-soft text-ink rounded-option p-3 text-[14px]">
+              {methodError}
+            </p>
           ) : null}
         </div>
       </section>

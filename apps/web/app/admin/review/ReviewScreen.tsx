@@ -54,6 +54,7 @@ export function ReviewScreen() {
   const c = copy();
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   /** The gate's reasons, when a publish was refused. Never a summary of them. */
@@ -84,9 +85,12 @@ export function ReviewScreen() {
 
   const act = async (what: 'submit' | 'publish' | 'bounce', id: string): Promise<void> => {
     if (what === 'bounce' && note.trim().length < MIN_NOTE) {
-      setNotice(c.admin.review.bounceTooShort);
+      // Under the note field, which is what has to change. It used to go to
+      // the notice at the top of the page, a screen away from the field.
+      setNoteError(c.admin.review.bounceTooShort);
       return;
     }
+    setNoteError(null);
     setBusy(id);
     setNotice(null);
     setRefused([]);
@@ -219,7 +223,11 @@ export function ReviewScreen() {
               item={item}
               busy={busy}
               note={note}
-              onNote={setNote}
+              noteError={noteError}
+              onNote={(value) => {
+                setNoteError(null);
+                setNote(value);
+              }}
               onAct={act}
               onSaved={load}
             />
@@ -242,8 +250,8 @@ export function ReviewScreen() {
                     <Chip>{draft.field}</Chip>
                     <Chip>{draft.topic}</Chip>
                     {draft.importFlags.map((flag) => (
-                      <Chip key={flag} tone="pending">
-                        {flag}
+                      <Chip key={flag} tone={flag === 'READY' ? 'correct' : 'pending'}>
+                        {c.admin.review.importFlag(flag)}
                       </Chip>
                     ))}
                   </span>
@@ -312,6 +320,7 @@ function Waiting({
   item,
   busy,
   note,
+  noteError,
   onNote,
   onAct,
   onSaved,
@@ -319,6 +328,7 @@ function Waiting({
   item: ReviewItem;
   busy: string | null;
   note: string;
+  noteError: string | null;
   onNote: (value: string) => void;
   onAct: (what: 'submit' | 'publish' | 'bounce', id: string) => Promise<void>;
   onSaved: () => Promise<void>;
@@ -360,12 +370,25 @@ function Waiting({
 
       <label className="flex flex-col gap-1.5">
         <span className="text-ink text-[14px] font-semibold">{c.admin.review.bounceLabel}</span>
-        <input
+        {/* Several lines: what needs fixing is rarely one phrase. */}
+        <textarea
           className="field"
+          rows={3}
           value={note}
           placeholder={c.admin.review.bouncePlaceholder}
+          aria-invalid={noteError ? true : undefined}
+          aria-describedby={noteError ? `bounce-error-${item.id}` : undefined}
           onChange={(e) => onNote(e.target.value)}
         />
+        {noteError ? (
+          <span
+            id={`bounce-error-${item.id}`}
+            role="alert"
+            className="text-wrong text-[14px] font-semibold"
+          >
+            {noteError}
+          </span>
+        ) : null}
       </label>
 
       <div className="flex flex-col gap-2 sm:flex-row">

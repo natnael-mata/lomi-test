@@ -40,7 +40,10 @@ describe('the code screen (T-268)', () => {
    * is why nothing could ever be refused.
    */
   it('does not walk to the password step without asking', () => {
-    const continueButton = flow.slice(flow.indexOf('c.codeFlow.continue') - 400, flow.indexOf('c.codeFlow.continue') + 100);
+    const continueButton = flow.slice(
+      flow.indexOf('c.codeFlow.continue') - 1500,
+      flow.indexOf('c.codeFlow.continue') + 100,
+    );
     expect(continueButton).toContain('checkThenContinue');
     expect(continueButton).not.toMatch(/onClick=\{\(\) => setStep\(\{ kind: 'password'/);
   });
@@ -125,8 +128,11 @@ describe('waits said in words (T-268)', () => {
    * 84238 seconds" is a sum, and the answer to it is "tomorrow".
    */
   it('keeps seconds only while seconds are readable', () => {
-    expect(plainDuration(28)).toBe('28s');
-    expect(plainDuration(60)).toBe('60s');
+    expect(plainDuration(28)).toBe('28 seconds');
+    expect(plainDuration(1)).toBe('1 second');
+    // A minute is a minute, not "60s" or "1 minutes".
+    expect(plainDuration(60)).toBe('a minute');
+    expect(plainDuration(89)).toBe('a minute');
   });
 
   it('turns long waits into minutes and hours', () => {

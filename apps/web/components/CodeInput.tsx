@@ -20,7 +20,7 @@
  * its own value, and six spans reading "4", "8", "2" after it is the value said
  * twice.
  */
-import { useId } from 'react';
+import { useId, type Ref } from 'react';
 
 const LENGTH = 6;
 
@@ -30,11 +30,25 @@ export interface CodeInputProps {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean | undefined;
+  /** Why the code was refused, said under the boxes it is about. */
+  error?: string | null | undefined;
+  /** So the flow can put the caret back after a refusal. */
+  inputRef?: Ref<HTMLInputElement> | undefined;
 }
 
-export function CodeInput({ label, hint, value, onChange, disabled }: CodeInputProps) {
+export function CodeInput({
+  label,
+  hint,
+  value,
+  onChange,
+  disabled,
+  error,
+  inputRef,
+}: CodeInputProps) {
   const id = useId();
   const hintId = `${id}-hint`;
+  const errorId = `${id}-error`;
+  const describedBy = [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ');
   const digits = Array.from({ length: LENGTH }, (_, i) => value[i] ?? '');
   // Which box the caret is in. One past the last digit, and the last box once
   // the code is complete — so a full code does not leave the ring floating in
@@ -54,9 +68,11 @@ export function CodeInput({ label, hint, value, onChange, disabled }: CodeInputP
               key={i}
               className={[
                 'font-display rounded-control grid h-[58px] place-items-center border text-[26px] font-bold',
-                digit || (!disabled && i === active)
-                  ? 'border-link bg-brand-soft border-2'
-                  : 'border-border-input bg-surface',
+                error && !digit
+                  ? 'border-wrong bg-surface border-2'
+                  : digit || (!disabled && i === active)
+                    ? 'border-link bg-brand-soft border-2'
+                    : 'border-border-input bg-surface',
               ].join(' ')}
             >
               {digit}
@@ -78,13 +94,15 @@ export function CodeInput({ label, hint, value, onChange, disabled }: CodeInputP
         */}
         <input
           id={id}
+          ref={inputRef}
           className="peer absolute inset-0 h-full w-full cursor-pointer bg-transparent text-transparent caret-transparent opacity-0 outline-none"
           value={value}
           disabled={disabled ?? false}
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={LENGTH}
-          aria-describedby={hint ? hintId : undefined}
+          aria-describedby={describedBy || undefined}
+          aria-invalid={error ? true : undefined}
           onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, LENGTH))}
         />
 
@@ -107,6 +125,11 @@ export function CodeInput({ label, hint, value, onChange, disabled }: CodeInputP
         />
       </div>
 
+      {error ? (
+        <p id={errorId} role="alert" className="text-wrong text-[14px] font-semibold">
+          {error}
+        </p>
+      ) : null}
       {hint ? (
         <p id={hintId} className="text-ink-2 text-[13px]">
           {hint}

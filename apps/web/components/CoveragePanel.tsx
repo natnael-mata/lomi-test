@@ -110,7 +110,9 @@ function SliceRow({ slice }: { slice: CoverageSlice }) {
   return (
     <li className="flex flex-col gap-1" data-slice={slice.key}>
       <span className="flex items-baseline justify-between gap-3">
-        <span className="text-ink truncate text-[15px] font-semibold">{slice.label}</span>
+        <span className="text-ink min-w-0 text-[15px] font-semibold break-words">
+          {slice.label}
+        </span>
         <span className="text-caption text-ink-2 num shrink-0">
           {c.progress.coverageRow(slice.beaten, slice.total, slice.pct)}
         </span>

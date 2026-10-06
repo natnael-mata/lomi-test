@@ -30,6 +30,7 @@ import { Button } from './Button';
 import { Input } from './Input';
 import { ApiError, api } from '../lib/api';
 import { copy } from '../lib/i18n';
+import { staffHome } from '../lib/staff-home';
 
 export function PasswordSignIn() {
   const c = copy();
@@ -44,9 +45,15 @@ export function PasswordSignIn() {
     setProblem(null);
     try {
       await api.signInWithPassword(phone, password);
+      // Staff start on the console, not on a student's Today. A failed role
+      // read is no reason to keep somebody on the sign in screen.
+      const home = await api
+        .myStaffRole()
+        .then(({ role }) => staffHome(role))
+        .catch(() => null);
       // A full load rather than a client route: the session cookie has just
       // changed, and every screen behind this one reads it on mount.
-      window.location.assign('/today');
+      window.location.assign(home ?? '/today');
     } catch (error) {
       const status = error instanceof ApiError ? error.status : 0;
       if (status === 429) {

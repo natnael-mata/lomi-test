@@ -159,6 +159,9 @@ export function AnswerView({
       {showQuestion && (
         <section data-section="question" className="flex flex-col gap-3">
           <p className="text-stem">{answer.stem}</p>
+          {/* Part of the question, so it sits with the stem it belongs to. The
+              review printed the stem with the code it refers to missing. */}
+          {answer.codeBlock && <CodeBlock code={answer.codeBlock} />}
           {/*
             The same rows as practice, resolved and not pressable: the `.option`
             styles keyed on `data-state`, so a reviewed paper looks like the
@@ -262,7 +265,8 @@ export function AnswerView({
             ? copy().answer.workedSolution
             : copy().answer.explanation}
         </span>
-        {answer.codeBlock && <CodeBlock code={answer.codeBlock} />}
+        {/* Once is enough: with the question printed above, it is there. */}
+        {answer.codeBlock && !showQuestion && <CodeBlock code={answer.codeBlock} />}
         {isCalculation && answer.steps.length > 0 ? (
           <ol className="flex flex-col gap-3" data-steps="">
             {answer.steps.map((step, index) => {

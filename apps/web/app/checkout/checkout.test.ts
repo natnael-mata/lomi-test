@@ -130,9 +130,13 @@ describe('the copy', () => {
   it('names the fix, not only the fault', () => {
     // "Payment failed" leaves somebody stranded over money. Each of these says
     // what to do next or what is not lost.
-    for (const key of ['couldNotStart', 'unavailable', 'mobileInvalid', 'txRefTaken'] as const) {
+    for (const key of ['couldNotStart', 'mobileInvalid', 'txRefTaken'] as const) {
       expect(en.checkout[key].split(/\s+/).length, key).toBeGreaterThan(6);
     }
+    expect(en.checkout.unavailable('Chapa', true)).toContain('Nothing has been charged');
+    // Bank transfer is only offered as the way round when it can be used.
+    expect(en.checkout.unavailable('Chapa', true)).toContain('Bank transfer works');
+    expect(en.checkout.unavailable('Chapa', false)).not.toContain('Bank transfer');
   });
 
   it('does not promise a speed the manual route cannot keep', () => {

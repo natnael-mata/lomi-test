@@ -199,9 +199,12 @@ export function StandingScreen() {
               <p className="text-body text-ink-2">{c.standing.ledgerEmpty}</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
-                {ledger.map((row) => (
+                {ledger.map((row, index) => (
                   <li
-                    key={`${row.at}-${row.ruleId}`}
+                    // The index too: one rule can award twice in the same
+                    // second (a session that beats two questions at once), and
+                    // the time and rule alone then collide as a React key.
+                    key={`${row.at}-${row.ruleId}-${index}`}
                     className="bg-surface-2 rounded-card flex items-center justify-between gap-3 p-3"
                   >
                     {/* The reason, always. A number with no sentence beside it is one

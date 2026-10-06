@@ -5,6 +5,8 @@
  * rewrites to the Nest server. The browser never learns the API's real address.
  */
 
+import { deviceLabel } from './device-label';
+
 /**
  * The session lives in an httpOnly cookie the API sets (T-112a).
  *
@@ -999,7 +1001,10 @@ export const api = {
     phone: string,
     password: string,
   ): Promise<{ token: string; userId: string; displayName: string; fieldId: string | null }> =>
-    call('/auth/sign-in', { method: 'POST', body: JSON.stringify({ phone, password }) }),
+    call('/auth/sign-in', {
+      method: 'POST',
+      body: JSON.stringify({ phone, password, deviceLabel: deviceLabel() }),
+    }),
 
   /**
    * Asks for a code, to sign up or to reset a forgotten password (T-266).
@@ -1056,10 +1061,11 @@ export const api = {
   }> =>
     call(purpose === 'register' ? '/auth/register/verify' : '/auth/password/reset/verify', {
       method: 'POST',
-      // No `deviceLabel`, the same as `signInWithPassword` — the server names
-      // the device from what it can see. Both doors behave identically, which
-      // matters more here than either behaviour does on its own.
-      body: JSON.stringify({ phone, code, password }),
+      // The same `deviceLabel` as `signInWithPassword`. Both doors behave
+      // identically, which matters more here than either behaviour does on its
+      // own: the server stores only what it is sent, so without it every row
+      // on the account's device list read "Unknown device".
+      body: JSON.stringify({ phone, code, password, deviceLabel: deviceLabel() }),
     }),
 
   /** Who am I. The generated handle, never a legal name. */

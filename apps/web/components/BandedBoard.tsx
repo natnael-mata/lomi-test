@@ -49,20 +49,23 @@ export function BandedBoard() {
   const [scope, setScope] = useState<'exam' | 'everyone'>('exam');
   const [failed, setFailed] = useState(false);
 
-  const load = useCallback(async (which: 'week' | 'all', where: 'exam' | 'everyone'): Promise<void> => {
-    try {
-      setBoard(await api.board(which, where));
-      setFailed(false);
-    } catch (error) {
-      if (signInRequired(error)) {
-        window.location.assign('/signin');
-        return;
+  const load = useCallback(
+    async (which: 'week' | 'all', where: 'exam' | 'everyone'): Promise<void> => {
+      try {
+        setBoard(await api.board(which, where));
+        setFailed(false);
+      } catch (error) {
+        if (signInRequired(error)) {
+          window.location.assign('/signin');
+          return;
+        }
+        // The board is not the reason a student opened this screen. A failure
+        // hides the panel rather than taking the page down with it.
+        setFailed(true);
       }
-      // The board is not the reason a student opened this screen. A failure
-      // hides the panel rather than taking the page down with it.
-      setFailed(true);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     void load(window_, scope);
@@ -203,7 +206,7 @@ export function BandedBoard() {
       {board.you && !board.rows.some((row) => row.isYou) ? (
         <Card as="section" className="flex flex-col gap-1">
           <p className="text-body num">
-            {c.standing.yourRank(board.you.rank)} ·{' '}
+            {c.standing.yourRank(board.you.rank)} {c.standing.yourWindow(window_ === 'week')} ·{' '}
             {c.standing.boardCoverageRow(board.you.pct, board.you.beaten, board.you.total)}
           </p>
           <p className="text-caption text-ink-2">

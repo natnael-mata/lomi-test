@@ -124,12 +124,12 @@ export function elidedLabel(elided: ElidedRow): string {
    *
    * Past three, a list is worse than a count — it stops being something to act
    * on and becomes a paragraph in a table cell. Below it, the names are the
-   * whole point: "Value Added Tax — not started" is a next step, "1 other
+   * whole point: "Value Added Tax, not started" is a next step, "1 other
    * topic" is a shrug.
    */
   const named = elided.topics ?? [];
   if (named.length > 0 && named.length <= NAME_UP_TO) {
-    return `${named.join(', ')} — not started`;
+    return `${named.join(', ')}, not started`;
   }
   return `${elided.topicCount} other topic${elided.topicCount === 1 ? '' : 's'}, not started`;
 }

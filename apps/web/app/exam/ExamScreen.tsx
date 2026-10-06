@@ -54,6 +54,16 @@ export function ExamScreen() {
   const [saving, setSaving] = useState(false);
   /** Whether the submit button has been pressed with questions still blank. */
   const [confirming, setConfirming] = useState(false);
+  /*
+   * The confirmation takes focus when it opens. It replaces the question in
+   * place, so focus was left on a submit button that no longer existed and a
+   * screen reader announced nothing: the alertdialog role alone does not move
+   * focus.
+   */
+  const confirmHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (confirming) confirmHeading.current?.focus();
+  }, [confirming]);
   /** The question grid on a phone, opened above the question. */
   const [gridOpen, setGridOpen] = useState(false);
   /** The paper on offer and any sitting already open, read before starting. */
@@ -153,6 +163,7 @@ export function ExamScreen() {
         (error) =>
           error instanceof ApiError &&
           (error.code === 'SITTING_EXPIRED' || error.code === 'SITTING_CLOSED'),
+        refused,
       );
       rememberQueue(id, outcome.remaining);
       if (outcome.closed) {
@@ -175,6 +186,22 @@ export function ExamScreen() {
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
   }, [sittingId, flush]);
+
+  /*
+   * And on a timer while anything waits.
+   *
+   * The `online` event only fires on a change of state. A save that failed
+   * while the phone stayed online (a server hiccup, a request that timed out)
+   * never got one, so it waited for an event that was never coming.
+   */
+  const waiting = pending.length > 0;
+  useEffect(() => {
+    if (!sittingId || !waiting) return;
+    const timer = setInterval(() => {
+      if (navigator.onLine) void flush(sittingId);
+    }, RETRY_EVERY_MS);
+    return () => clearInterval(timer);
+  }, [sittingId, waiting, flush]);
 
   const fail = (e: unknown): void => {
     if (signInRequired(e)) {
@@ -294,6 +321,8 @@ export function ExamScreen() {
           : current,
       );
       applyClock(saved.clock);
+      // The link works, so anything still waiting from earlier goes now.
+      if (pendingRef.current.length > 0) void flush(sittingId);
       setManifest(await api.sitting(sittingId));
     } catch (e) {
       // Running out mid-answer is not an error state — the sitting closed and
@@ -303,7 +332,16 @@ export function ExamScreen() {
         await showResult();
         return;
       }
-      // Anything else — no network, a 500, a dropped link — leaves the change in
+      /*
+       * A refusal is not a lost connection. The server read this change and
+       * said no, so sending it again cannot help, and keeping it left "1 answer
+       * saved on this phone, waiting to send" on screen while online, forever.
+       */
+      if (refused(e)) {
+        rememberQueue(sittingId, dequeue(pendingRef.current, item.position));
+        return;
+      }
+      // Anything else (no network, a 500, a dropped link) leaves the change in
       // the queue. It is not an error the student has to do anything about.
     } finally {
       setSaving(false);
@@ -617,7 +655,12 @@ export function ExamScreen() {
                 aria-describedby="submit-confirm-body"
                 className="border-border bg-surface rounded-card flex flex-col gap-4 border p-6"
               >
-                <h1 id="submit-confirm" className="font-display text-[22px] font-extrabold">
+                <h1
+                  id="submit-confirm"
+                  ref={confirmHeading}
+                  tabIndex={-1}
+                  className="font-display text-[22px] font-extrabold outline-none"
+                >
                   {blankCount > 0 ? c.exam.confirmTitle : c.exam.confirmReadyTitle}
                 </h1>
                 <p id="submit-confirm-body" className="text-body text-ink-2">
@@ -747,6 +790,23 @@ export function ExamScreen() {
     </div>
   );
 }
+
+/**
+ * A change the server read and declined, as opposed to one that never arrived.
+ * 408 and 429 are the server asking for later, so they stay queued.
+ */
+function refused(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status >= 400 &&
+    error.status < 500 &&
+    error.status !== 408 &&
+    error.status !== 429
+  );
+}
+
+/** How often the outbox is retried while it holds anything. */
+const RETRY_EVERY_MS = 15_000;
 
 /** h:mm:ss or m:ss, for the time left on the confirmation. */
 function clockText(seconds: number): string {

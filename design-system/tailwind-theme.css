@@ -617,6 +617,12 @@
   .field[aria-invalid='true'] {
     @apply border-wrong border-2;
   }
+  /* The same field for text that runs to sentences: an explanation, a reason
+     an option is wrong, a note to the author. One line of input for those
+     hid everything past the first forty characters. */
+  textarea.field {
+    @apply py-3 leading-[1.5] resize-y;
+  }
 }
 
 /* No content view is printable (T-205).

@@ -320,4 +320,37 @@ describe('the offline outbox (T-131)', () => {
       expect(outcome).toEqual({ remaining: [], sent: 0, closed: false });
     });
   });
+
+  describe('replaying past a refusal', () => {
+    it('drops a refused change and sends the rest', async () => {
+      const sent: number[] = [];
+      const outcome = await replay(
+        [
+          { position: 1, chosenLabel: 'A' },
+          { position: 2, chosenLabel: 'B' },
+        ],
+        async (position) => {
+          if (position === 1) throw new Error('refused');
+          sent.push(position);
+        },
+        () => false,
+        () => true,
+      );
+      expect(sent).toEqual([2]);
+      expect(outcome.remaining).toEqual([]);
+    });
+
+    it('keeps everything when the link is down', async () => {
+      const entries = [{ position: 1, chosenLabel: 'A' }];
+      const outcome = await replay(
+        entries,
+        async () => {
+          throw new Error('offline');
+        },
+        () => false,
+        () => false,
+      );
+      expect(outcome.remaining).toEqual(entries);
+    });
+  });
 });

@@ -112,6 +112,8 @@ export function TodayScreen() {
   const [session, setSession] = useState<Session>({ kind: 'checking' });
   const [detail, setDetail] = useState<Detail>(NOTHING);
   const [partial, setPartial] = useState(false);
+  // Null in `detail` means "not here yet" before this, and "did not come" after.
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -186,6 +188,7 @@ export function TodayScreen() {
         ledger: value(ledger),
       });
       setPartial(results.some((r) => r.status === 'rejected'));
+      setLoaded(true);
     })();
     return () => {
       live = false;
@@ -306,7 +309,7 @@ export function TodayScreen() {
       {session.kind === 'signedIn' && session.field ? (
         <>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <Countdown fieldName={session.field.name} coverage={detail.coverage} />
+            <Countdown fieldName={session.field.name} coverage={detail.coverage} loaded={loaded} />
             <Plan coverage={detail.coverage} today={detail.today}>
               {action}
             </Plan>
@@ -378,16 +381,37 @@ export function TodayScreen() {
  * `ink-deep` is a surface, not a mode, the same object as the landing's bands —
  * which is why it uses the `on-deep` inks and nothing from the light set.
  */
-function Countdown({ fieldName, coverage }: { fieldName: string; coverage: CoverageView | null }) {
+function Countdown({
+  fieldName,
+  coverage,
+  loaded,
+}: {
+  fieldName: string;
+  coverage: CoverageView | null;
+  loaded: boolean;
+}) {
   const c = copy();
   const days = coverage?.daysToExam ?? null;
+  /*
+   * "No sitting date" is a statement about the student, so it waits for the
+   * answer. Before this, every student with a date was told they had none for
+   * the second the coverage took to arrive. A failed read says nothing either:
+   * the banner above the page already says some of it did not load.
+   */
+  const unknown = coverage === null;
 
   return (
     <section className="bg-ink-deep on-deep text-on-deep rounded-panel flex flex-col gap-6 p-6">
       <span className="text-caption text-on-deep-3 uppercase">{fieldName}</span>
 
       <div className="flex flex-col gap-1">
-        {days !== null && days > 0 ? (
+        {unknown ? (
+          <span
+            aria-hidden="true"
+            data-countdown-pending=""
+            className={`bg-on-deep/10 block h-14 w-40 rounded-option ${loaded ? '' : 'animate-pulse'}`}
+          />
+        ) : days !== null && days > 0 ? (
           <div className="flex items-baseline gap-3">
             {/* The one hero figure on the page. */}
             <span className="font-display num text-[56px] leading-none font-extrabold tracking-[-0.03em]">
@@ -577,12 +601,10 @@ function Topics({ readiness }: { readiness: Readiness }) {
           return (
             <li key={topic.topicId} className="flex flex-col gap-1.5" data-focus={low}>
               <div className="flex items-baseline justify-between gap-3">
-                {/* Truncated on a narrow column, so the full name rides along
-                    for a pointer and is what a screen reader reads anyway. */}
-                <span
-                  className="text-ink truncate text-[15px] font-semibold"
-                  title={topic.topicName}
-                >
+                {/* Wrapped, not truncated: on a phone "Principles of
+                    Accounting and…" hid the very word that told two topics
+                    apart. */}
+                <span className="text-ink min-w-0 text-[15px] font-semibold break-words">
                   {topic.topicName}
                 </span>
                 <span className="text-ink-3 num shrink-0 text-[13px]">
@@ -603,7 +625,7 @@ function Topics({ readiness }: { readiness: Readiness }) {
                 </div>
                 <span
                   className={[
-                    'num w-[4.5rem] shrink-0 text-right text-[13px] font-semibold',
+                    'num min-w-[4.5rem] shrink-0 text-right text-[13px] font-semibold whitespace-nowrap',
                     low ? 'text-pending' : 'text-ink',
                   ].join(' ')}
                 >

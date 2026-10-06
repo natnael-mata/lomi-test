@@ -74,7 +74,7 @@ export function PracticeScreen() {
    * replaces it. A student who picks the wrong reason must still be able to read
    * why their answer was right — that is the whole remedy.
    */
-  const [reason, setReason] = useState<{ correct: boolean } | null>(null);
+  const [reason, setReason] = useState<{ correct: boolean; chosenId: string | null } | null>(null);
   const [naming, setNaming] = useState(false);
   /**
    * Whether this student has ever paid, read only once the allowance is gone.
@@ -300,12 +300,12 @@ export function PracticeScreen() {
     setNaming(true);
     try {
       const graded = await api.answerReason(attemptId, chosenId);
-      setReason({ correct: graded.reasonCorrect });
+      setReason({ correct: graded.reasonCorrect, chosenId });
     } catch {
       // Never a blocker. The answer and its explanation are already on screen,
       // and a failed bookkeeping write must not take them away — the question
       // stays unbeaten, which is the same outcome as skipping.
-      setReason({ correct: false });
+      setReason({ correct: false, chosenId });
     } finally {
       setNaming(false);
     }
@@ -592,7 +592,12 @@ export function PracticeScreen() {
             right. Skipping is allowed and costs nothing they had: the question
             stays unbeaten and comes round again.
           */}
-          {phase.result.reasonCheck && reason === null ? (
+          {/*
+            The options stay after the reason is named, with the one picked
+            marked. They used to vanish and leave only the verdict, so the page
+            jumped and "That was not the reason" pointed at nothing on screen.
+          */}
+          {phase.result.reasonCheck && (reason === null || reason.chosenId !== null) ? (
             <section
               data-reason-check=""
               className="border-border bg-surface rounded-option flex flex-col gap-3 border p-4"
@@ -606,30 +611,40 @@ export function PracticeScreen() {
                   <li key={option.id}>
                     <button
                       type="button"
-                      disabled={naming}
+                      disabled={naming || reason !== null}
+                      aria-pressed={reason ? reason.chosenId === option.id : undefined}
                       data-reason-option=""
                       onClick={() =>
                         void nameReason(phase.result.reasonCheck!.attemptId, option.id)
                       }
                       // The same row as an answer option, because it is one:
                       // a choice among sentences, pressed once.
-                      className="rounded-option border-border bg-surface hover:border-border-strong text-body min-h-[52px] w-full border-[1.5px] px-3.5 py-3 text-left transition-[border-color]"
+                      className={`rounded-option text-body min-h-[52px] w-full border-[1.5px] px-3.5 py-3 text-left transition-[border-color] ${
+                        reason?.chosenId === option.id
+                          ? reason.correct
+                            ? 'border-correct bg-correct-soft'
+                            : 'border-pending bg-pending-soft'
+                          : reason
+                            ? 'border-border bg-surface text-ink-2'
+                            : 'border-border bg-surface hover:border-border-strong'
+                      }`}
                     >
                       {option.text}
                     </button>
                   </li>
                 ))}
               </ul>
-              <div className="flex flex-col gap-1">
-                <Button
-                  variant="ghost"
-                  className="self-start"
-                  disabled={naming}
-                  onClick={() => void load()}
-                >
-                  {naming ? c.practice.reasonChecking : c.practice.reasonSkip}
-                </Button>
-                {/*
+              {reason === null ? (
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    className="self-start"
+                    disabled={naming}
+                    onClick={() => void load()}
+                  >
+                    {naming ? c.practice.reasonChecking : c.practice.reasonSkip}
+                  </Button>
+                  {/*
                   What skipping costs, before it is skipped.
 
                   Skipping is allowed and takes nothing away — but the question
@@ -640,8 +655,9 @@ export function PracticeScreen() {
                   next to the control that triggers it, which is where somebody
                   deciding actually looks.
                 */}
-                <p className="text-caption text-ink-2">{c.practice.reasonSkipCost}</p>
-              </div>
+                  <p className="text-caption text-ink-2">{c.practice.reasonSkipCost}</p>
+                </div>
+              ) : null}
             </section>
           ) : null}
 

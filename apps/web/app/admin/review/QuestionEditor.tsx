@@ -192,8 +192,9 @@ export function QuestionEditor({ item, onSaved }: QuestionEditorProps) {
                 somebody spends time wondering about.
               */}
               {option.label !== correct ? (
-                <input
+                <textarea
                   className="field"
+                  rows={2}
                   value={whyWrong[option.label] ?? ''}
                   placeholder={c.admin.review.whyWrongPlaceholder}
                   aria-label={c.admin.review.whyWrongFor(option.label)}
@@ -227,8 +228,9 @@ export function QuestionEditor({ item, onSaved }: QuestionEditorProps) {
             <span key={index} className="bg-surface-2 rounded-control flex flex-col gap-2 p-3">
               <span className="flex items-center gap-2">
                 <span className="option-key">{index + 1}</span>
-                <input
+                <textarea
                   className="field"
+                  rows={2}
                   value={step.text}
                   placeholder={c.admin.review.stepPlaceholder}
                   aria-label={c.admin.review.stepNumber(index + 1)}
@@ -275,8 +277,9 @@ export function QuestionEditor({ item, onSaved }: QuestionEditorProps) {
       ) : (
         <label className="flex flex-col gap-1.5">
           <span className="text-caption text-ink-2 uppercase">{c.admin.review.explanation}</span>
-          <input
+          <textarea
             className="field"
+            rows={4}
             value={explanation}
             placeholder={c.admin.review.explanationPlaceholder}
             onChange={(e) => setExplanation(e.target.value)}
