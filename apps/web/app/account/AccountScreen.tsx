@@ -102,10 +102,10 @@ export function AccountScreen() {
             </div>
           </div>
 
-          {/* Keyed by the saved name, so the field starts from it once it loads. */}
-          {me ? (
-            <DisplayNameForm key={me.displayName} current={me.displayName} onSaved={setMe} />
-          ) : null}
+          {/* Mounted once the name has loaded, so the field starts from it. Keyed
+              by the account, not the name: a key that changes on save remounts
+              the form and throws away its own "Saved." line. */}
+          {me ? <DisplayNameForm key={me.userId} current={me.displayName} onSaved={setMe} /> : null}
         </section>
 
         {/* What access you have, and the way to more of it. */}

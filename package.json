@@ -2,7 +2,7 @@
   "name": "lomi-test",
   "version": "0.1.0",
   "private": true,
-  "description": "Lomi-Exams — exit-exam preparation for Ethiopian university students",
+  "description": "Lomi-Exams \u2014 exit-exam preparation for Ethiopian university students",
   "workspaces": [
     "apps/*"
   ],
@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
@@ -42,6 +43,7 @@
     "lint": "eslint . --max-warnings=0",
     "db:seed": "npm run db:seed --workspace api --if-present",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test"
   }
 }

@@ -8,3 +8,7 @@ apps/web/next-env.d.ts
 
 # prettier has no .prisma parser
 *.prisma
+
+# Playwright run output and report
+e2e/.results
+e2e/.report

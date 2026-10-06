@@ -23,6 +23,9 @@ export default tseslint.config(
       '**/.pgdata/**',
       '**/generated/**',
       'apps/web/next-env.d.ts',
+      // Playwright's run output and its bundled HTML report.
+      'e2e/.results/**',
+      'e2e/.report/**',
       // Worktrees created for spawned side-tasks. They are whole checkouts of
       // this repo, so without this every one of them doubles the lint surface —
       // and a generated file in someone else's branch fails the parent's
