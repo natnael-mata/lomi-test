@@ -15,8 +15,8 @@
  * `Copy` is the product's shape, and marketing prose that changes weekly does
  * not belong in a contract every screen is type-checked against.
  *
- * The `<Todo>` markers are unfilled facts: contact details, school-track pricing
- * and the household device policy. They render loudly **in development only** —
+ * The `<Todo>` markers are unfilled facts: contact details, social links and the
+ * household device policy. School pricing was one until D3 settled it at Br 300. They render loudly **in development only** —
  * they used to render loudly to everybody, which is a different thing entirely.
  * See `Todo`.
  */
@@ -668,32 +668,38 @@ export function LandingScreen() {
 
         <div id="plans" className="flex flex-wrap gap-4 scroll-mt-20">
           {/* Same reasoning as the track cards: the filled one read as chosen.
-              It is the best value per month, so it says that. */}
-          {[
-            ['6 months', 'Br 500', ''],
-            ['12 months', 'Br 800', 'best value'],
-            ['Free tier', 'Br 0', ''],
-          ].map(([per, price, why]) => (
+              It is the best value per month, so it says that.
+
+              Each card names who it is for. This row showed only the exit
+              exam's Br 500 and Br 800, under a marker saying school prices
+              were still to confirm, so a Grade 6 family read the university
+              price as theirs. D3 settled it (one plan, Br 300 for a year,
+              `SCHOOL_YEAR` in the plans table), so it is stated here. */}
+          {(
+            [
+              ['Exit exam · 6 months', 'Br 500', false],
+              ['Exit exam · 12 months · best value', 'Br 800', true],
+              ['Grade 6, 8 or 12 · a year', 'Br 300', false],
+              ['Free tier', 'Br 0', false],
+            ] as const
+          ).map(([label, price, best]) => (
             <Link
-              key={per}
+              key={label}
               href="/signup"
               className={`rounded-card min-w-[180px] border px-6 py-5 ${
-                why ? 'bg-brand-soft border-brand' : 'bg-surface border-border'
+                best ? 'bg-brand-soft border-brand' : 'bg-surface border-border'
               }`}
             >
-              <span className="text-caption text-ink-2 uppercase">
-                {why ? `${per} · ${why}` : per}
-              </span>
+              <span className="text-caption text-ink-2 uppercase">{label}</span>
               <div className="font-display num text-[34px] leading-none font-extrabold">
                 {price}
               </div>
             </Link>
           ))}
         </div>
-        <p className="text-ink-2 flex flex-wrap items-center gap-2 text-[14px]">
+        <p className="text-ink-2 text-[14px]">
           One price for the whole track. Every subject, not one at a time. Pay with Telebirr or CBE
           Birr, or send a bank transfer and paste the reference.
-          <Todo>school track prices to confirm</Todo>
         </p>
       </section>
 
