@@ -7,7 +7,7 @@ import { createBot } from './bot.js';
 const BOT_INFO: UserFromGetMe = {
   id: 1,
   is_bot: true,
-  first_name: 'Lomi-Test',
+  first_name: 'Lomi-Exams',
   username: 'lomi_test_bot',
   can_join_groups: false,
   can_read_all_group_messages: false,
@@ -53,6 +53,6 @@ describe('bot', () => {
 
     const sent = calls.filter((c) => c.method === 'sendMessage');
     expect(sent).toHaveLength(1);
-    expect(sent[0]?.text).toContain('Lomi-Test');
+    expect(sent[0]?.text).toContain('Lomi-Exams');
   });
 });

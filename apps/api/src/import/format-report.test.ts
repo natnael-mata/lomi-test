@@ -36,7 +36,7 @@ describe('formatReport (T-056)', () => {
         ],
       }),
     );
-    expect(out).toContain('rejected (1) — not imported:');
+    expect(out).toContain('rejected (1), not imported:');
     expect(out).toContain('AF-9999');
     expect(out).toContain('- question_text is blank');
     expect(out).toContain('- only 1 option(s) supplied');

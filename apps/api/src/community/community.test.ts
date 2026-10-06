@@ -69,7 +69,7 @@ describe('what a post may be', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.message).toContain('Shorten it');
-    expect(result.message).toContain('nothing you typed is lost');
+    expect(result.message).toContain('Nothing you typed is lost');
     expect(result.message.split(/\s+/).length).toBeGreaterThan(6);
   });
 

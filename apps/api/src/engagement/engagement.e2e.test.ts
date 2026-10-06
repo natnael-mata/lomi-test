@@ -133,7 +133,7 @@ describe('points, streaks and the board (Phase 11)', () => {
       const adjusted = entries.find((e) => e.ruleId === 'plan-adjusted');
       expect(adjusted?.points).toBe(0);
       expect(adjusted?.reason).toContain('13 days');
-      expect(adjusted?.reason).toContain('nothing is lost');
+      expect(adjusted?.reason).toContain('Nothing is lost');
     });
 
     it('adds no points and takes none for the gap', async () => {

@@ -88,7 +88,7 @@ describe('a missed day adjusts the plan (T-191)', () => {
     expect(adjusted?.points).toBe(0);
     expect(adjusted?.reason).toContain('2 days');
     // The point of the row: it says what happened without taking anything away.
-    expect(adjusted?.reason).toContain('nothing is lost');
+    expect(adjusted?.reason).toContain('Nothing is lost');
   });
 
   /**
@@ -104,7 +104,7 @@ describe('a missed day adjusts the plan (T-191)', () => {
     const reason = RULES.PLAN_ADJUSTED.reason({ count: 5 });
     for (const word of ['lost', 'broke', 'broken', 'failed', 'missed out', 'reset', 'streak']) {
       // "nothing is lost" is the one permitted use, checked above.
-      const offending = reason.toLowerCase().includes(word) && !reason.includes('nothing is lost');
+      const offending = reason.toLowerCase().includes(word) && !reason.includes('Nothing is lost');
       expect(offending, `"${reason}" says "${word}"`).toBe(false);
     }
   });

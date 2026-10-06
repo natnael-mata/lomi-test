@@ -61,7 +61,7 @@ describe('the daily message', () => {
   });
 
   it('ends by pointing at the app, where the attempt is real', () => {
-    expect(dailyMessage(QUESTION)).toContain('Open Lomi-Test to answer it');
+    expect(dailyMessage(QUESTION)).toContain('Open Lomi-Exams to answer it');
   });
 });
 

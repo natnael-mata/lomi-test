@@ -132,7 +132,7 @@ describe('ImportService (T-053)', () => {
     expect(report).toMatchObject({ read: 2, rejected: 1 });
     const bad = report.rows.find((r) => r.action === 'rejected');
     expect(bad?.stableId).toBe(`IMP-BAD-${SUFFIX}`);
-    expect(bad?.messages.join(' ')).toContain('there is no question');
+    expect(bad?.messages.join(' ')).toContain('There is no question');
 
     // The good row in the same file still landed — one bad row is not a failed run.
     await expect(load(`IMP-1-${SUFFIX}`)).resolves.toBeTruthy();
@@ -150,7 +150,7 @@ describe('ImportService (T-053)', () => {
     expect(report).toMatchObject({ read: 3, rejected: 1 });
     const bad = report.rows.find((r) => r.action === 'rejected');
     expect(bad?.stableId).toBe(`IMP-3OPT-${SUFFIX}`);
-    expect(bad?.messages.join(' ')).toContain('option D is missing — a question needs all four');
+    expect(bad?.messages.join(' ')).toContain('option D is missing. A question needs all four');
     // Line 5, not row 3: the row above it spans two lines of the file.
     expect(bad?.line).toBe(5);
 
@@ -367,7 +367,7 @@ describe('ImportService is idempotent (T-055)', () => {
     const b = (await options()).find((o) => o.label === 'B');
     expect(b?.text).toBe('Two, restated');
     expect(b?.whyWrong).toBeNull();
-    expect(report.rows[0]?.messages.join(' ')).toContain('why-wrong note was cleared');
+    expect(report.rows[0]?.messages.join(' ')).toContain('why wrong note was cleared');
   });
 
   // T-057 makes this a rejection rather than an edit: a file that lost an option

@@ -125,7 +125,7 @@ describe('sampleBlueprint — the type mix is hard (T-120, T-120a)', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.blockers.join(' ')).toContain('Need 40 CALCULATION questions, have 10');
-    expect(result.blockers.join(' ')).toContain('short 30');
+    expect(result.blockers.join(' ')).toContain('Short by 30');
   });
 
   // Whoever is building a paper wants the whole shortfall, not the first one.

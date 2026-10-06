@@ -150,6 +150,6 @@ describe('bot copy (T-183)', () => {
    */
   it('pairs every refusal with a way forward', () => {
     const login = readFileSync(join(HERE, 'login.ts'), 'utf8');
-    expect(login).toContain('Open Lomi-Test again for a fresh one');
+    expect(login).toContain('Open Lomi-Exams again for a fresh one');
   });
 });

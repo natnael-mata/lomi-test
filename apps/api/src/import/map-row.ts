@@ -132,11 +132,11 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
 
   // Fatal: nothing here can be supplied later by a reviewer looking at the row,
   // because without these there is no row to look at.
-  if (stableId === '') reasons.push('question_id is blank — nothing to identify or re-import on');
+  if (stableId === '') reasons.push('question_id is blank. There is nothing to identify or import again on');
   if (row.question_text.trim() === '')
-    reasons.push('question_text is blank — there is no question');
+    reasons.push('question_text is blank. There is no question');
   if (row.field.trim() === '') {
-    reasons.push('field is blank — a question in no programme can never be served');
+    reasons.push('field is blank. A question in no programme can never be served');
   } else if (!slugifyable(row.field)) {
     reasons.push(`field "${row.field}" has no letters or digits to identify it by`);
   }
@@ -150,7 +150,7 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
     // the question is. A 3-option question served next to 4-option ones is also
     // a visible defect in the answer view. So the row goes back to the source.
     reasons.push(
-      `option ${missingOptions.join(', ')} ${missingOptions.length === 1 ? 'is' : 'are'} missing — a question needs all four`,
+      `option ${missingOptions.join(', ')} ${missingOptions.length === 1 ? 'is' : 'are'} missing. A question needs all four`,
     );
   }
 
@@ -211,8 +211,8 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
     flags.add('NEEDS_TOPIC_REVIEW');
     notes.push(
       course === '' && topic === ''
-        ? 'no course or topic — staged under Unsorted'
-        : `no ${course === '' ? 'course' : 'topic'} — staged under Unsorted`,
+        ? 'no course or topic, so staged under Unsorted'
+        : `no ${course === '' ? 'course' : 'topic'}, so staged under Unsorted`,
     );
   }
 
@@ -220,20 +220,20 @@ export function mapRow(raw: ImportRow, opts: MapOptions = {}): MapResult {
   if (row.year.trim() !== '') {
     const n = Number(row.year.trim());
     if (Number.isInteger(n) && n > 1900 && n < 2200) year = n;
-    else notes.push(`year "${row.year}" is not a usable year — dropped`);
+    else notes.push(`year "${row.year}" is not a usable year, so dropped`);
   }
 
   const difficulty = parseDifficulty(row.difficulty);
   if (row.difficulty.trim() !== '' && difficulty === null) {
     // Worded without the row's own value so the report can collapse it — one
     // fact about the file, not 500 facts.
-    notes.push(`difficulty "${row.difficulty.trim()}" is not one of easy, medium, hard — dropped`);
+    notes.push(`difficulty "${row.difficulty.trim()}" is not one of easy, medium, hard, so dropped`);
   }
 
   const stem = row.question_text.trim();
   const { qType, certain } = inferQTypeWithBasis(stem, optionTexts);
   if (!certain) {
-    notes.push(`typed as ${qType} from its numeric options alone — no type column, worth a look`);
+    notes.push(`typed as ${qType} from its numeric options alone. There is no type column, so it is worth a look`);
   }
 
   const whyWrongTexts = [

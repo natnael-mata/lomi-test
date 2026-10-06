@@ -69,6 +69,45 @@ describe('planFor', () => {
     expect(plan.toTarget).toBe(1048);
   });
 
+  /*
+   * The floor never asks for more than is left.
+   *
+   * QA found it on the two smallest school tracks: a Grade 12 Social student
+   * whose whole programme is 4 questions saw "1/12, 11 questions to go", and a
+   * Grade 6 student (6 questions) saw "4/12". Twelve is a floor on effort, not
+   * a count of questions that exist.
+   */
+  it('never sets a daily target above what is left', () => {
+    // Grade 12 Social: 4 questions, target ceil(3.2) = 4, 3 beaten, 1 to go.
+    const social = planFor(4, 3, 200);
+    expect(social).toEqual({ targetCount: 4, toTarget: 1, perDay: 1 });
+
+    // Grade 6: 6 questions, target ceil(4.8) = 5, 4 beaten, 1 to go.
+    expect(planFor(6, 4, 200)).toEqual({ targetCount: 5, toTarget: 1, perDay: 1 });
+
+    // Nothing beaten yet on a small track: the whole target, not twelve.
+    expect(planFor(6, 0, 200).perDay).toBe(5);
+    expect(planFor(4, 0, 30).perDay).toBe(4);
+  });
+
+  it('keeps the floor when exactly twelve or more are left', () => {
+    // 15 questions, target 12, nothing beaten: the floor and the cap agree.
+    expect(planFor(15, 0, 300).perDay).toBe(MIN_DAILY_QUESTIONS);
+    // 11 left: one short of the floor, so the ask is the 11 that exist.
+    expect(planFor(15, 1, 300).perDay).toBe(11);
+  });
+
+  it('never exceeds toTarget for any small programme', () => {
+    for (let total = 1; total <= 20; total++) {
+      for (let beaten = 0; beaten <= total; beaten++) {
+        for (const days of [1, 2, 7, 30, 300]) {
+          const plan = planFor(total, beaten, days);
+          expect(plan.perDay, `${total}/${beaten}/${days}`).toBeLessThanOrEqual(plan.toTarget);
+        }
+      }
+    }
+  });
+
   it('asks for nothing more once the target is met', () => {
     const plan = planFor(100, 80, 30);
     expect(plan.toTarget).toBe(0);

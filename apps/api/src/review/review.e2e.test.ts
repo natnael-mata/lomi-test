@@ -352,14 +352,14 @@ describe('POST /admin/review/:id/publish (T-067)', () => {
 
     expect(body.error).toBe('GATE_BLOCKED');
     expect(body.blockers).toEqual([
-      'No correct option marked — a reviewer must supply and confirm the answer.',
+      'No correct option marked. A reviewer must supply and confirm the answer.',
       'Option A: why it is wrong is missing.',
       'Option B: why it is wrong is missing.',
       'Option C: why it is wrong is missing.',
       'Option D: why it is wrong is missing.',
       'Concept line is missing.',
       'Explanation is missing.',
-      'Topic "Sampling" has no weight — set it before publishing.',
+      'Topic "Sampling" has no weight. Set it before publishing.',
     ]);
   });
 
@@ -612,7 +612,7 @@ describe('PATCH /admin/review/:id — the review write path (T-068a)', () => {
     // is a taxonomy decision, not an edit to this question.
     const stillBlocked = await publish(422);
     expect(stillBlocked.blockers).toEqual([
-      'Topic "Sampling" has no weight — set it before publishing.',
+      'Topic "Sampling" has no weight. Set it before publishing.',
     ]);
 
     await prisma.topic.update({ where: { id: topicId }, data: { weightPct: 100 } });

@@ -113,7 +113,7 @@ export function scanRows(text: string): RawRow[] {
   }
 
   if (quoted) {
-    throw new CsvError('Unterminated quoted field — the file ends mid-quote.');
+    throw new CsvError('Unterminated quoted field. The file ends inside a quote.');
   }
 
   return rows.filter((r) => r.cells.some((c) => c.trim() !== ''));

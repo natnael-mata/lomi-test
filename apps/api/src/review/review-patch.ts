@@ -53,7 +53,7 @@ export function normalisePatch(input: ReviewPatch): PatchResult {
   if (Object.keys(input).length === 0) {
     // Not pedantry: an empty patch that silently "succeeds" reads to the caller
     // as "saved", and a reviewer walks away believing they wrote something.
-    return { ok: false, reasons: ['Nothing to change — the patch is empty.'] };
+    return { ok: false, reasons: ['Nothing to change. The patch is empty.'] };
   }
 
   if (input.correctOption !== undefined) {
@@ -85,7 +85,7 @@ export function normalisePatch(input: ReviewPatch): PatchResult {
     );
     if (contradiction) {
       reasons.push(
-        `Option ${patch.correctOption} is being marked correct and given a why-wrong at the same time.`,
+        `Option ${patch.correctOption} is being marked correct and given a why wrong note at the same time.`,
       );
     }
   }
@@ -115,7 +115,7 @@ export function normalisePatch(input: ReviewPatch): PatchResult {
       reasons.push('Every step needs a whole stepNo of 1 or more.');
     }
     if (new Set(steps.map((s) => s.stepNo)).size !== steps.length) {
-      reasons.push('Two steps share a stepNo — the working would render in an arbitrary order.');
+      reasons.push('Two steps share a stepNo. The working would render in an arbitrary order.');
     }
     if (steps.some((s) => s.text === '')) {
       reasons.push('A step with no text is not a step.');

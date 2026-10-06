@@ -41,7 +41,7 @@ describe('normalisePatch (T-068a)', () => {
   // An empty patch that "succeeds" reads as "saved", and the reviewer walks away
   // believing they wrote something.
   it('rejects an empty patch rather than reporting a silent success', () => {
-    expect(bad({}).join(' ')).toContain('the patch is empty');
+    expect(bad({}).join(' ')).toContain('The patch is empty');
   });
 
   it('treats an empty string as a clear, not as content', () => {
@@ -61,7 +61,7 @@ describe('normalisePatch (T-068a)', () => {
   // while the answer view explains the right answer as wrong.
   it('rejects marking an option correct and giving it a why-wrong at once', () => {
     expect(bad({ correctOption: 'B', whyWrong: { B: 'because it is wrong' } }).join(' ')).toContain(
-      'marked correct and given a why-wrong',
+      'marked correct and given a why wrong note',
     );
   });
 

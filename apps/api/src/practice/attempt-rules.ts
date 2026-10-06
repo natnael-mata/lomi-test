@@ -53,7 +53,7 @@ export function validateSubmission(body: AttemptSubmission): SubmissionResult {
     // An attempt with no answer is not an attempt — it is a question that was
     // displayed. Recording one would put a wrong answer in a student's history
     // for something they never submitted.
-    reasons.push('chosenLabel is required — an attempt with no answer is not an attempt.');
+    reasons.push('chosenLabel is required. An attempt with no answer is not an attempt.');
   } else if (!isLabel(rawLabel)) {
     reasons.push(`chosenLabel "${String(body.chosenLabel)}" is not one of A, B, C, D.`);
   }
@@ -62,14 +62,14 @@ export function validateSubmission(body: AttemptSubmission): SubmissionResult {
   let timeNote: string | null = null;
   const raw = body.timeTakenSec;
   if (raw === undefined || raw === null) {
-    timeNote = 'no duration supplied — recorded as 0 and not used for pacing';
+    timeNote = 'no duration supplied, so recorded as 0 and not used for pacing';
   } else if (typeof raw !== 'number' || !Number.isFinite(raw)) {
-    timeNote = `duration ${JSON.stringify(raw)} is not a number — recorded as 0`;
+    timeNote = `duration ${JSON.stringify(raw)} is not a number, so recorded as 0`;
   } else if (raw < 0) {
-    timeNote = `duration ${raw}s is negative — recorded as 0`;
+    timeNote = `duration ${raw}s is negative, so recorded as 0`;
   } else if (raw > MAX_TIME_TAKEN_SEC) {
     timeTakenSec = MAX_TIME_TAKEN_SEC;
-    timeNote = `duration ${Math.round(raw)}s exceeds ${MAX_TIME_TAKEN_SEC}s — clamped`;
+    timeNote = `duration ${Math.round(raw)}s exceeds ${MAX_TIME_TAKEN_SEC}s, so clamped`;
   } else {
     timeTakenSec = Math.round(raw);
   }

@@ -64,7 +64,7 @@ export function checkPost(content: PostContent): PostCheck {
     return {
       ok: false,
       error: 'BODY_TOO_LONG',
-      message: `That is longer than ${MAX_BODY_CHARS} characters. Shorten it and post again — nothing you typed is lost.`,
+      message: `That is longer than ${MAX_BODY_CHARS} characters. Shorten it and post again. Nothing you typed is lost.`,
     };
   }
   return { ok: true, body };

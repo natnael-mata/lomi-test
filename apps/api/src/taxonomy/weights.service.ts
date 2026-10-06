@@ -195,7 +195,7 @@ export class WeightsService {
       entity: 'topic',
       entityId: topicId,
       reference: topic.name,
-      detail: `${weightPct}% — ${trimmed}`,
+      detail: `${weightPct}%. ${trimmed}`,
     });
 
     return this.derive(topic.course.fieldId);

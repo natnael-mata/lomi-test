@@ -72,7 +72,7 @@ export class AdminUsersService {
           // The display name, never the legal name — an audit log is read by
           // people who have no business seeing one (T-086).
           reference: user.displayName,
-          detail: `${revoked.count} session(s) ended${reason?.trim() ? ` — ${reason.trim()}` : ''}`,
+          detail: `${revoked.count} session(s) ended${reason?.trim() ? `. ${reason.trim()}` : ''}`,
         },
         tx,
       );

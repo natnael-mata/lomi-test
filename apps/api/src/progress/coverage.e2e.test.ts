@@ -298,8 +298,10 @@ describe('coverage (T-256)', () => {
     const view = await coverage(naturalId);
     expect(view.daysToExam).toBe(100);
     // Two to go over a hundred days is arithmetic nobody can act on, so the
-    // floor lifts the ask while `toTarget` and `daysToExam` stay honest.
-    expect(view.perDay).toBe(12);
+    // floor lifts the ask while `toTarget` and `daysToExam` stay honest. It
+    // lifts it to the two that are left and no further: twelve would be ten
+    // questions that do not exist.
+    expect(view.perDay).toBe(2);
     expect(view.toTarget).toBe(2);
   });
 

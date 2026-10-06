@@ -155,7 +155,7 @@ describe('publish gate — single-sentence concept line (T-042)', () => {
 
   it('rejects two sentences', () => {
     expect(withConcept('A. B.')).toEqual([
-      'Concept line must be a single sentence — split it or shorten it.',
+      'Concept line must be a single sentence. Split it or shorten it.',
     ]);
   });
 
@@ -184,12 +184,12 @@ describe('publish gate — single-sentence concept line (T-042)', () => {
   it('still rejects two real sentences that also contain an abbreviation', () => {
     expect(
       withConcept('Divide by 1.15, e.g. 977,500 becomes 850,000. Never multiply by 0.85.'),
-    ).toEqual(['Concept line must be a single sentence — split it or shorten it.']);
+    ).toEqual(['Concept line must be a single sentence. Split it or shorten it.']);
   });
 
   it('rejects a question mark followed by another sentence', () => {
     expect(withConcept('What is the divisor? It is 1.15.')).toEqual([
-      'Concept line must be a single sentence — split it or shorten it.',
+      'Concept line must be a single sentence. Split it or shorten it.',
     ]);
   });
 
@@ -198,7 +198,7 @@ describe('publish gate — single-sentence concept line (T-042)', () => {
   // on that list costs real detection, so common words must stay off it.
   it('does not let a common word ending in a period hide a second sentence', () => {
     expect(withConcept('The answer is no. It is not deductible.')).toEqual([
-      'Concept line must be a single sentence — split it or shorten it.',
+      'Concept line must be a single sentence. Split it or shorten it.',
     ]);
   });
 });
@@ -226,7 +226,7 @@ describe('publish gate — solution complete for its type (T-043)', () => {
         { stepNo: 1, text: 'Divide the inclusive amount by 1.15', formula: '977,500 / 1.15' },
         { stepNo: 2, text: '= 850,000' },
       ]),
-    ).toEqual(['Final step must state the answer choice — e.g. "… → answer A".']);
+    ).toEqual(['Final step must state the answer choice. For example: "… → answer A".']);
   });
 
   it('passes when the final step names the answer', () => {
@@ -253,7 +253,7 @@ describe('publish gate — solution complete for its type (T-043)', () => {
   // arrived somewhere it did not.
   it('blocks when the final step names a different option than the correct one', () => {
     expect(calc([{ stepNo: 1, text: '= 850,000 → answer C' }], 'A')).toEqual([
-      'Final step must state the answer choice — e.g. "… → answer A".',
+      'Final step must state the answer choice. For example: "… → answer A".',
     ]);
   });
 
@@ -270,12 +270,12 @@ describe('publish gate — solution complete for its type (T-043)', () => {
         { stepNo: 2, text: 'Divide by 1.15' },
         { stepNo: 1, text: '= 850,000 → answer A' },
       ]),
-    ).toEqual(['Final step must state the answer choice — e.g. "… → answer A".']);
+    ).toEqual(['Final step must state the answer choice. For example: "… → answer A".']);
   });
 
   it('blocks a calculation question with no steps at all', () => {
     expect(calc([])).toEqual([
-      'Add the worked steps — a calculation question needs its working shown.',
+      'Add the worked steps. A calculation question needs its working shown.',
     ]);
   });
 
@@ -295,7 +295,7 @@ describe('publish gate — solution complete for its type (T-043)', () => {
       }),
     );
     expect(blockers).toEqual([
-      'No correct option marked — a reviewer must supply and confirm the answer.',
+      'No correct option marked. A reviewer must supply and confirm the answer.',
     ]);
   });
 
@@ -316,7 +316,7 @@ describe('publish gate — solution complete for its type (T-043)', () => {
 describe('publish gate — reviewer is not the author (T-044)', () => {
   it('blocks when the same person authored and reviewed it', () => {
     expect(gateBlockers(question({ authorId: 'u_1', reviewerId: 'u_1' }))).toEqual([
-      'You wrote this question — someone else has to review it.',
+      'You wrote this question. Someone else has to review it.',
     ]);
   });
 
@@ -346,7 +346,7 @@ describe('publish gate — reviewer is not the author (T-044)', () => {
     expect(q).toBeDefined();
     expect(gateBlockers(q)).toEqual([
       'Concept line is missing.',
-      'You wrote this question — someone else has to review it.',
+      'You wrote this question. Someone else has to review it.',
     ]);
   });
 });
@@ -409,7 +409,7 @@ describe('publish gate — topic must be weighted (T-046)', () => {
 
   it('blocks an unweighted topic, naming it', () => {
     expect(withTopic({ name: 'VAT', weightPct: null })).toEqual([
-      'Topic "VAT" has no weight — set it before publishing.',
+      'Topic "VAT" has no weight. Set it before publishing.',
     ]);
   });
 

@@ -267,7 +267,7 @@ export class ReviewService {
     const trimmed = note.trim();
     if (trimmed.length < MIN_BOUNCE_NOTE) {
       throw new BadRequestException(
-        `A bounce note must say what is wrong — at least ${MIN_BOUNCE_NOTE} characters, got ${trimmed.length}.`,
+        `A bounce note must say what is wrong. Write at least ${MIN_BOUNCE_NOTE} characters, got ${trimmed.length}.`,
       );
     }
 
@@ -365,7 +365,7 @@ export class ReviewService {
         where: { questionId_label: { questionId: id, label } },
         data: { whyWrong: value },
       });
-      changed.push(value === null ? `cleared why-wrong ${label}` : `why-wrong ${label}`);
+      changed.push(value === null ? `cleared why wrong ${label}` : `why wrong ${label}`);
     }
 
     if (patch.steps !== undefined) {
@@ -399,7 +399,7 @@ export class ReviewService {
     // approved, so it stops being served until somebody approves it again.
     if (question.status === 'PUBLISHED') {
       fields.status = 'IN_REVIEW';
-      changed.push('sent back to review — a published question was edited');
+      changed.push('sent back to review because a published question was edited');
     }
 
     const updated = await this.prisma.question.update({ where: { id }, data: fields });

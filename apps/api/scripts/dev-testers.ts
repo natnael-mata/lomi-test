@@ -30,6 +30,12 @@
  * A seed that only ever adds ends up describing an account that no longer
  * matches it, which is worse than no seed at all: the tester believes the brief.
  *
+ * **The points ledger is derived, last, from what each account did.** Every
+ * attempt and every submitted mock is replayed through the same award rules the
+ * product uses, on the Addis day it happened (`rebuildLedger`). Today, Progress
+ * and Standing read three different tables, so a fixture that writes one
+ * without the others is a fixture whose screens disagree with each other.
+ *
  * It touches **only** accounts in the reserved smoke-test Telegram range
  * (`isDevTelegramId`), so it cannot reach a real student even if it is run
  * against a database that has some.
@@ -43,7 +49,7 @@ import { hashPassword } from '../src/auth/password';
 import { EngagementService } from '../src/engagement/engagement.service';
 import { ExamBuildService } from '../src/exams/exam-build.service';
 import { ExamsService } from '../src/exams/exams.service';
-import { RULES } from '../src/engagement/points';
+import { RULES, award, dayOf, entriesForReturn, type Day } from '../src/engagement/points';
 import { TaxonomyService } from '../src/taxonomy/taxonomy.service';
 import type { PrismaService } from '../src/prisma/prisma.service';
 
@@ -203,21 +209,15 @@ async function seedAttempts(
    * leaves the focus list empty and proves nothing.
    */
   isCorrectAt: (index: number) => boolean = (index) => index % 3 !== 2,
-): Promise<void> {
-  const engagement = new EngagementService(prisma as PrismaService);
-
-  /*
-   * The ledger is rebuilt from scratch, like the attempts below it.
+  /**
+   * When the answer at this position was given. Today by default.
    *
-   * Points are what the *answers* earned, so they are part of the state this
-   * function claims rather than a running total beside it. Adding to whatever
-   * was there would make a persona's points depend on how many times the seed
-   * had been run, which is the drift this file exists to refuse.
-   *
-   * Only ever a smoke-test account, and only its own rows.
+   * User H's streak is five days because H answered on five days, so the
+   * history has to be spread across them; the ledger is then derived from it
+   * rather than written beside it.
    */
-  await prisma.pointEntry.deleteMany({ where: { userId } });
-
+  answeredAt: (index: number) => Date = () => new Date(),
+): Promise<void> {
   const questions = await prisma.question.findMany({
     where: { fieldId, status: 'PUBLISHED' },
     orderBy: { stableId: 'asc' },
@@ -238,25 +238,18 @@ async function seedAttempts(
    * "0 FREE LEFT" on the next question, and reported the counter as broken. The
    * counter was right; the seed was not.
    *
-   * Trimmed only for smoke-test accounts, and only inside this field, which is
-   * demo content this script owns.
+   * A later version trimmed to `count` and kept the survivors, which kept their
+   * old dates too: User C's twelve answers were from August while the ledger
+   * written beside them said today, so Progress drew twelve answers today and
+   * the practice summary said none. Every attempt is now written fresh, on the
+   * day `answeredAt` says, and the ledger follows from it in `rebuildLedger`.
+   *
+   * Only smoke-test accounts, and only inside this field, which is demo content
+   * this script owns.
    */
-  const extra = await prisma.attempt.findMany({
-    where: { userId, fieldId },
-    orderBy: { createdAt: 'desc' },
-    select: { id: true, questionId: true },
-  });
-  const keep = new Set<string>();
-  const remove: string[] = [];
-  for (const attempt of [...extra].reverse()) {
-    if (keep.size < count || keep.has(attempt.questionId)) keep.add(attempt.questionId);
-    else remove.push(attempt.id);
-  }
-  if (remove.length > 0) await prisma.attempt.deleteMany({ where: { id: { in: remove } } });
+  await prisma.attempt.deleteMany({ where: { userId, fieldId } });
 
-  const wanted = questions.slice(0, count);
-
-  for (const [index, question] of wanted.entries()) {
+  for (const [index, question] of questions.slice(0, count).entries()) {
     // Every third one wrong. A history that is all correct makes the focus list
     // empty and the readiness figure 100%, which is the one state that proves
     // nothing about the screens being tested.
@@ -265,25 +258,6 @@ async function seedAttempts(
       ? question.options.find((o) => o.isCorrect)
       : question.options.find((o) => !o.isCorrect);
     if (!chosen) continue;
-
-    /*
-     * The ledger is written for every wanted answer, not only the new ones.
-     *
-     * It was cleared above, so skipping the ones whose attempt row already
-     * existed would leave a re-run with all its answers and none of its points
-     * — which is the state QA found: User I showed 15 answered on `/progress`
-     * and 0 points on `/standing`, and reported, correctly, that one of the two
-     * screens had to be lying. Both were faithful; the fixture had written
-     * attempts and no ledger at all.
-     */
-    await engagement.record(userId, RULES.ANSWERED);
-    if (correct) await engagement.record(userId, RULES.CORRECT);
-
-    const already = await prisma.attempt.findFirst({
-      where: { userId, questionId: question.id },
-      select: { id: true },
-    });
-    if (already) continue;
 
     await prisma.attempt.create({
       data: {
@@ -297,14 +271,91 @@ async function seedAttempts(
         // pacing verdict is a real state and should be reached by being slow,
         // not by a fixture deciding it in advance.
         timeTakenSec: Math.max(15, Math.round(question.timeLimitSec * 0.4)),
+        // A millisecond apart and in order, ending at the moment given: never
+        // in the future, and never far enough back to cross midnight.
+        createdAt: new Date(answeredAt(index).getTime() - (count - index)),
       },
     });
   }
+}
 
-  // Active today, so the streak has a day to stand on. Idempotent per day, and
-  // the personas that need a longer streak add their own earlier days after
-  // this returns.
-  await engagement.touch(userId);
+/**
+ * The points ledger this account would have, rebuilt from what it did.
+ *
+ * **Replayed, not written beside.** The product writes ledger rows in exactly
+ * two places: an attempt (`answered`, `correct` if right, then the day's
+ * `daily-return` through `touch`) and the submission that closes a mock
+ * (`mock-completed`, then `touch`). This walks the account's attempts and its
+ * submitted sittings in time order and applies the same rules, through the same
+ * `award` and `entriesForReturn` that `EngagementService` uses, on the Addis
+ * day each one happened.
+ *
+ * Every number a tester can cross-check comes out of the same events: the
+ * streak is a COUNT of distinct ledger days, so a mock submitted in August is a
+ * study day; the activity grid counts `answered` rows per day, so it matches the
+ * attempts' own dates; and total points is the sum of the rules.
+ *
+ * Written directly rather than through `record` and `touch` for one reason:
+ * those stamp `createdAt` with the moment of the write, so an August mock would
+ * appear on `/me/points` as earned tonight. The rows here carry the instant of
+ * the event, as they would have when it happened.
+ *
+ * A paper that **expired** earns nothing, because nothing in the product awards
+ * one: `mock-completed` is written only by the submit that closes a sitting.
+ * The ledger is rebuilt from scratch every run, so its totals depend on what the
+ * account did and never on how many times this script has been run.
+ */
+async function rebuildLedger(userId: string): Promise<{ points: number; days: number }> {
+  await prisma.pointEntry.deleteMany({ where: { userId } });
+
+  const [attempts, sittings] = await Promise.all([
+    prisma.attempt.findMany({
+      where: { userId },
+      select: { createdAt: true, isCorrect: true },
+    }),
+    prisma.sitting.findMany({
+      where: { userId, closeReason: 'SUBMITTED', closedAt: { not: null } },
+      select: { closedAt: true },
+    }),
+  ]);
+
+  const events = [
+    ...attempts.map((a) => ({
+      at: a.createdAt,
+      rules: a.isCorrect ? [RULES.ANSWERED, RULES.CORRECT] : [RULES.ANSWERED],
+    })),
+    ...sittings.map((s) => ({ at: s.closedAt!, rules: [RULES.MOCK_COMPLETED] })),
+  ].sort((a, b) => a.at.getTime() - b.at.getTime());
+
+  const rows: {
+    userId: string;
+    ruleId: string;
+    points: number;
+    reason: string;
+    day: Day;
+    createdAt: Date;
+  }[] = [];
+  let lastDay: Day | null = null;
+  for (const event of events) {
+    const day = dayOf(event.at);
+    for (const rule of event.rules) {
+      rows.push({ userId, ...award(rule), day, createdAt: event.at });
+    }
+    // `touch`: once per day, and the gap is measured from the last day before
+    // this one, which in time order is simply the previous event's day.
+    if (day !== lastDay) {
+      for (const entry of entriesForReturn({ days: 0, lastActiveDay: lastDay }, day)) {
+        rows.push({ userId, ...entry, day, createdAt: event.at });
+      }
+      lastDay = day;
+    }
+  }
+  if (rows.length > 0) await prisma.pointEntry.createMany({ data: rows });
+
+  return {
+    points: rows.reduce((sum, row) => sum + row.points, 0),
+    days: new Set(rows.map((row) => row.day)).size,
+  };
 }
 
 /**
@@ -496,6 +547,7 @@ async function main(): Promise<void> {
    * was not new, and only the brief said it was.
    */
   await prisma.attempt.deleteMany({ where: { userId: userA } });
+  await prisma.sitting.deleteMany({ where: { userId: userA } });
   await prisma.pointEntry.deleteMany({ where: { userId: userA } });
   await clearBilling(userA);
   await prisma.user.update({ where: { id: userA }, data: { fieldId: null } });
@@ -608,7 +660,7 @@ async function main(): Promise<void> {
   if (!exam) {
     const builder = new ExamBuildService(
       prisma as PrismaService,
-      new TaxonomyService(prisma as PrismaService),
+      new TaxonomyService(prisma as PrismaService, audit),
       audit,
     );
     try {
@@ -669,6 +721,16 @@ async function main(): Promise<void> {
   await prisma.user.update({ where: { id: userF }, data: { fieldId: field.id } });
   await clearBilling(userF);
   await grantTwelveMonths(subscriptions, userF, adminId, 'Set up by dev:testers.');
+  /*
+   * One open paper and nothing else, every run.
+   *
+   * `start` settles a paper whose clock has run out before it opens a new one,
+   * which is right for a student and meant every run of this script left the
+   * previous run's paper behind as an expired one. A tester counted 26 past
+   * papers on an account whose brief says one open paper. Cleared here, answers
+   * and results with them (both cascade), so the account is what it claims.
+   */
+  await prisma.sitting.deleteMany({ where: { userId: userF } });
   let fNote = 'no paper to sit';
   if (exam) {
     const sessionF = await openSession(userF, 'Chrome on Android');
@@ -767,23 +829,19 @@ async function main(): Promise<void> {
 
   // ---- User H: five days engaged -------------------------------------------
   /*
-   * The streak counts **days engaged, and nothing takes it away** — so this is
-   * seeded as five days rather than five rows, through the same `touch` the
-   * product calls. A streak written as a number would be a number this script
-   * made up; this one is derived from the ledger the screen reads.
+   * The streak counts **days engaged, and nothing takes it away**, so this is
+   * seeded as answers on five days rather than as five rows. A streak written
+   * as a number would be a number this script made up; this one is derived
+   * from the attempts, through the ledger the screen reads.
    */
   const userH = ids.get('userh')!;
   await prisma.user.update({ where: { id: userH }, data: { fieldId: field.id } });
-  await seedAttempts(userH, field.id, USER_C_ANSWERED);
-  for (let back = USER_H_DAYS - 1; back >= 0; back--) {
-    const day = daysAgo(back);
-    await engagement.touch(userH, day);
-    const already = await prisma.pointEntry.findFirst({
-      where: { userId: userH, ruleId: RULES.ANSWERED.id, day: day.toISOString().slice(0, 10) },
-      select: { id: true },
-    });
-    if (!already) await engagement.record(userH, RULES.ANSWERED, day);
-  }
+  // The twelve answers spread across the five days, oldest first, ending today.
+  // The streak then comes out of `rebuildLedger` as five because there are
+  // answers on five days, not because a row was written for each.
+  await seedAttempts(userH, field.id, USER_C_ANSWERED, undefined, (index) =>
+    daysAgo(USER_H_DAYS - 1 - Math.floor((index * USER_H_DAYS) / USER_C_ANSWERED)),
+  );
 
   // ---- User I: answered a lot, and struggling ------------------------------
   /*
@@ -881,6 +939,20 @@ async function main(): Promise<void> {
     schoolNote = 'seeded';
   }
 
+  /*
+   * The ledger, last, for every student.
+   *
+   * After every attempt and sitting above is in its final state, so each
+   * account's points and study days are derived from exactly what it holds.
+   * Without this, User L and User O had answers today and "No study days yet",
+   * and User C had mocks on three dates and a streak of one.
+   */
+  const standing = new Map<string, { points: number; days: number }>();
+  for (const persona of PERSONAS) {
+    if (persona.label === 'admin' || persona.label === 'provider') continue;
+    standing.set(persona.label, await rebuildLedger(ids.get(persona.label)!));
+  }
+
   // The phone beside each persona, because it is what signs them in: the banner
   // above promised it for a long time while these lines never printed it.
   const line = (label: string, value: string): string =>
@@ -925,6 +997,16 @@ async function main(): Promise<void> {
   console.log(line('Admin', 'ADMIN staff — dashboard, payments, import, weights, students'));
   console.log(line('Provider', 'PROVIDER staff — the activity log and the live health board'));
   console.log(`\n  Mock paper: ${examNote}`);
+
+  // What Standing will say, so a tester can check the screen against the seed.
+  console.log("\n  Points ledger, rebuilt from each account's own answers and submitted mocks:");
+  for (const persona of PERSONAS) {
+    const s = standing.get(persona.label);
+    if (!s) continue;
+    console.log(
+      `  ${persona.name.padEnd(9)} ${s.days} study ${s.days === 1 ? 'day' : 'days'} · ${s.points} points`,
+    );
+  }
 }
 
 main()

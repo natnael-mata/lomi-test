@@ -74,7 +74,7 @@ export function gateBlockers(q: DraftQuestion): string[] {
   if (correct.length !== 1) {
     blockers.push(
       correct.length === 0
-        ? 'No correct option marked — a reviewer must supply and confirm the answer.'
+        ? 'No correct option marked. A reviewer must supply and confirm the answer.'
         : `Exactly one correct option (have ${correct.length}: ${correct.map((o) => o.label).join(', ')}).`,
     );
   }
@@ -108,14 +108,14 @@ export function gateBlockers(q: DraftQuestion): string[] {
   if (concept === '') {
     blockers.push('Concept line is missing.');
   } else if (countSentences(concept) > 1) {
-    blockers.push('Concept line must be a single sentence — split it or shorten it.');
+    blockers.push('Concept line must be a single sentence. Split it or shorten it.');
   }
 
   // T-043 — the solution has to be complete for the question's type.
   if (q.qType === 'CALCULATION') {
     const steps = [...(q.steps ?? [])].sort((a, b) => a.stepNo - b.stepNo);
     if (steps.length === 0) {
-      blockers.push('Add the worked steps — a calculation question needs its working shown.');
+      blockers.push('Add the worked steps. A calculation question needs its working shown.');
     } else if (correct.length === 1) {
       // Only checkable once the answer is known; with 0 or 2 correct options
       // the blocker above already covers it, and a second message about a
@@ -124,7 +124,7 @@ export function gateBlockers(q: DraftQuestion): string[] {
       const last = steps[steps.length - 1]!;
       const text = `${last.text} ${last.formula ?? ''}`;
       if (!new RegExp(String.raw`\banswer\s+${label}\b`, 'i').test(text)) {
-        blockers.push(`Final step must state the answer choice — e.g. "… → answer ${label}".`);
+        blockers.push(`Final step must state the answer choice. For example: "… → answer ${label}".`);
       }
     }
   } else if ((q.explanation ?? '').trim() === '') {
@@ -161,7 +161,7 @@ export function gateBlockers(q: DraftQuestion): string[] {
   // (T-067); the creator form need not, and would otherwise show a blocker the
   // author cannot act on from that screen.
   if (q.topic && q.topic.weightPct == null) {
-    blockers.push(`Topic "${q.topic.name}" has no weight — set it before publishing.`);
+    blockers.push(`Topic "${q.topic.name}" has no weight. Set it before publishing.`);
   }
 
   // T-044 — nobody approves their own question.
@@ -176,7 +176,7 @@ export function gateBlockers(q: DraftQuestion): string[] {
   // not here — the gate answers "is this question sound", not "has the workflow
   // been followed".
   if (q.reviewerId != null && q.authorId != null && q.reviewerId === q.authorId) {
-    blockers.push('You wrote this question — someone else has to review it.');
+    blockers.push('You wrote this question. Someone else has to review it.');
   }
 
   return blockers;

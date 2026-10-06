@@ -30,6 +30,13 @@ export const COVERAGE_TARGET_PCT = 80;
  *
  * It is a floor on the *ask*, never on the arithmetic: `toTarget` and
  * `daysToExam` are reported unchanged so the number can still be checked.
+ *
+ * **And it never asks for more than is left.** A small programme can have
+ * fewer than twelve questions still to beat: a Grade 12 Social student whose
+ * whole track holds four questions was shown "1/12, 11 questions to go" when
+ * one was left, and a Grade 6 student "4/12" against a track of six. Eleven
+ * questions that do not exist is a target nobody can meet, so the floor is
+ * capped at `toTarget`.
  */
 export const MIN_DAILY_QUESTIONS = 12;
 
@@ -81,7 +88,13 @@ export function planFor(total: number, beaten: number, daysToExam: number | null
   if (daysToExam <= 0) return { targetCount, toTarget, perDay: toTarget };
 
   const perDay = Math.ceil(toTarget / daysToExam);
-  return { targetCount, toTarget, perDay: Math.max(MIN_DAILY_QUESTIONS, perDay) };
+  // `perDay` is already at most `toTarget`, so capping the floor is enough to
+  // keep the ask inside what is left.
+  return {
+    targetCount,
+    toTarget,
+    perDay: Math.max(Math.min(MIN_DAILY_QUESTIONS, toTarget), perDay),
+  };
 }
 
 /**

@@ -14,7 +14,7 @@ import { CONFIRM_PREFIX, DECLINE_PREFIX, confirmText, type LoginApi } from './lo
 const BOT_INFO: UserFromGetMe = {
   id: 1,
   is_bot: true,
-  first_name: 'Lomi-Test',
+  first_name: 'Lomi-Exams',
   username: 'lomi_test_bot',
   can_join_groups: false,
   can_read_all_group_messages: false,
@@ -197,14 +197,14 @@ describe('signing in from the web (T-076)', () => {
      */
     it('welcomes a first-time visitor', async () => {
       await h.bot.handleUpdate(startUpdate(''));
-      expect(h.sent()[0]?.text).toContain('exit exam practice');
+      expect(h.sent()[0]?.text).toContain('Exit exam practice');
       expect(h.seen.prompted).toEqual([]);
     });
 
     it('ignores a payload that is not a login', async () => {
       await h.bot.handleUpdate(startUpdate('amb_123'));
       expect(h.seen.prompted).toEqual([]);
-      expect(h.sent()[0]?.text).toContain('exit exam practice');
+      expect(h.sent()[0]?.text).toContain('Exit exam practice');
     });
   });
 

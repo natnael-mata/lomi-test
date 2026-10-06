@@ -20,7 +20,7 @@ export function formatReport(report: ImportReport): string {
 
   const rejected = report.rows.filter((r) => r.action === 'rejected');
   if (rejected.length > 0) {
-    lines.push('', `rejected (${rejected.length}) — not imported:`);
+    lines.push('', `rejected (${rejected.length}), not imported:`);
     for (const row of rejected) lines.push(...bullets(row));
   }
 

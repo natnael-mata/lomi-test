@@ -48,13 +48,13 @@ export interface BotApi {
 export function dailyMessage(question: DailyQuestion): string {
   const options = question.options.map((o) => `${o.label}. ${o.text}`).join('\n');
   return [
-    `Today's question — ${question.topic}`,
+    `Today's question: ${question.topic}`,
     '',
     question.stem,
     '',
     options,
     '',
-    'Open Lomi-Test to answer it and see why.',
+    'Open Lomi-Exams to answer it and see why.',
   ].join('\n');
 }
 

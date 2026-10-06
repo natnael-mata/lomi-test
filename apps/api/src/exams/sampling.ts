@@ -122,7 +122,7 @@ export function sampleBlueprint(input: SampleInput): SampleResult {
     const have = byType[qType].length;
     const need = wanted[qType];
     if (have < need) {
-      blockers.push(`Need ${need} ${qType} questions, have ${have} — short ${need - have}.`);
+      blockers.push(`Need ${need} ${qType} questions, have ${have}. Short by ${need - have}.`);
     }
   }
   if (blockers.length > 0) return { ok: false, blockers };

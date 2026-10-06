@@ -202,7 +202,7 @@ describe('POST /admin/exams', () => {
     const body = await build(fieldId, 422);
     expect(body.error).toBe('CANNOT_BUILD_EXAM');
     expect(body.blockers.join(' ')).toContain('Need 40 CALCULATION questions, have 10');
-    expect(body.blockers.join(' ')).toContain('short 30');
+    expect(body.blockers.join(' ')).toContain('Short by 30');
     expect(await prisma.exam.count({ where: { fieldId } })).toBe(0);
   });
 
@@ -249,7 +249,7 @@ describe('POST /admin/exams', () => {
       expect(body.canBuild).toBe(false);
       expect(body.publishable).toEqual({ CONCEPT: 80, CALCULATION: 10 });
       expect(body.required).toEqual({ CONCEPT: 60, CALCULATION: 40 });
-      expect(body.blockers.join(' ')).toContain('short 30');
+      expect(body.blockers.join(' ')).toContain('Short by 30');
       expect(await prisma.exam.count({ where: { fieldId: field.id } })).toBe(0);
     });
 
@@ -275,7 +275,7 @@ describe('POST /admin/exams', () => {
 
       expect(body.unweightedTopics).toBe(1);
       expect(body.blockers.join(' ')).toContain('publish gate');
-      expect(body.blockers.join(' ')).toContain('T-134');
+      expect(body.blockers.join(' ')).toContain('Derive weights first');
     });
   });
 

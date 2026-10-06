@@ -89,8 +89,8 @@ export const RULES = {
     points: 0,
     reason: (context) =>
       context?.count && context.count > 1
-        ? `You were away for ${context.count} days. Your plan has been adjusted — nothing is lost.`
-        : 'You were away a day. Your plan has been adjusted — nothing is lost.',
+        ? `You were away for ${context.count} days. Your plan has been adjusted. Nothing is lost.`
+        : 'You were away a day. Your plan has been adjusted. Nothing is lost.',
   },
 } as const satisfies Record<string, PointRule>;
 

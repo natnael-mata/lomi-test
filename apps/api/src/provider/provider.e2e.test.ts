@@ -355,7 +355,7 @@ describe('the provider role and its screens (T-227, T-228, T-229)', () => {
         const body = await report();
         const security = body.components.find((c) => c.key === 'security')!;
         expect(security.status).toBe('ok');
-        expect(security.derivation).toContain('T-206a');
+        expect(security.derivation).toContain('smoke test bypass was removed');
         // The variable is dead. Nothing should be reading it.
         expect(security.derivation).not.toContain('DEV_LOGIN_SECRET');
       } finally {

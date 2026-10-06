@@ -43,7 +43,7 @@ export class StaffGuard implements CanActivate {
     // One message for "not staff" and "not senior enough". Which of the two
     // applies tells a prober whether they have found a real reviewer account.
     if (!staff || !satisfies(staff.role, this.required)) {
-      throw new ForbiddenException('This is a staff-only endpoint.');
+      throw new ForbiddenException('This endpoint is for staff only.');
     }
 
     req.staffRole = staff.role;

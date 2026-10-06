@@ -133,7 +133,7 @@ export class ImportService {
           action: 'rejected',
           messages: [
             `source_grade ${row.sourceGrade} was given, but ${field.name} does not draw on ` +
-              'school years — leave it blank for an exit exam.',
+              'school years. Leave it blank for an exit exam.',
           ],
         };
       }
@@ -144,7 +144,7 @@ export class ImportService {
           action: 'rejected',
           messages: [
             `source_grade ${row.sourceGrade} is outside ${field.name}, which draws on ` +
-              `grades ${minGrade}–${maxGrade}.`,
+              `grades ${minGrade} to ${maxGrade}.`,
           ],
         };
       }
@@ -253,7 +253,7 @@ export class ImportService {
       const prev = byLabel.get(option.label);
       const staleReasoning = prev != null && prev.whyWrong != null && prev.text !== option.text;
       if (staleReasoning) {
-        messages.push(`option ${option.label} was reworded — its why-wrong note was cleared`);
+        messages.push(`option ${option.label} was reworded, so its why wrong note was cleared`);
       }
 
       await this.prisma.option.upsert({
@@ -286,7 +286,7 @@ export class ImportService {
     const removed = existing.filter((o) => !incoming.has(o.label)).map((o) => o.label);
     if (removed.length > 0) {
       await this.prisma.option.deleteMany({ where: { questionId, label: { in: removed } } });
-      messages.push(`option(s) ${removed.join(', ')} no longer in the file — removed`);
+      messages.push(`option(s) ${removed.join(', ')} no longer in the file, so removed`);
     }
   }
 
@@ -325,7 +325,7 @@ export class ImportService {
       optionsDiffer(before.options, row.options);
 
     if (before.status === 'PUBLISHED' && changed) {
-      messages.push('published question changed by the import — sent back to review');
+      messages.push('published question changed by the import, so sent back to review');
       return { status: 'IN_REVIEW' };
     }
 

@@ -79,7 +79,7 @@ export function verifiedContact(message: ContactMessage): ContactOutcome {
 export const ASK_TEXT = [
   'To pay with telebirr or CBE Birr we send the request to your phone.',
   '',
-  'Tap the button below and Telegram shares your number with us — you will not have to type it,',
+  'Tap the button below and Telegram shares your number with us. You will not have to type it,',
   'and the payment request cannot go to the wrong handset.',
   '',
   'You can pay by bank transfer instead without sharing anything.',
@@ -102,7 +102,7 @@ export function acceptedText(phone: string): string {
 export const NOT_OWN_TEXT = [
   'That is somebody else’s number, so we have not saved it.',
   '',
-  'Use the button rather than picking a contact from your list — the button sends your own',
+  'Use the button rather than picking a contact from your list. The button sends your own',
   'number and nothing else.',
 ].join('\n');
 

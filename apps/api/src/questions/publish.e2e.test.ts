@@ -149,7 +149,7 @@ describe('POST /admin/questions/:id/publish', () => {
       .set(admin.auth)
       .send({})
       .expect(422);
-    expect(res.body.blockers).toContain('You wrote this question — someone else has to review it.');
+    expect(res.body.blockers).toContain('You wrote this question. Someone else has to review it.');
   });
 
   it('404s for a question that does not exist', async () => {

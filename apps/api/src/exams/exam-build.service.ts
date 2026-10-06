@@ -87,8 +87,8 @@ export class ExamBuildService {
     for (const qType of ['CONCEPT', 'CALCULATION'] as const) {
       if (publishable[qType] < required[qType]) {
         blockers.push(
-          `Need ${required[qType]} ${qType} questions, have ${publishable[qType]} — ` +
-            `short ${required[qType] - publishable[qType]}.`,
+          `Need ${required[qType]} ${qType} questions, have ${publishable[qType]}. ` +
+            `Short by ${required[qType] - publishable[qType]}.`,
         );
       }
     }
@@ -100,8 +100,8 @@ export class ExamBuildService {
       // pool is empty. Saying so turns a confusing "have 0" into an actionable
       // report.
       blockers.push(
-        `${unweighted} of ${topics.length} topics have no weight, so the publish gate (T-046) ` +
-          `refuses every question in them. Derive weights first (T-134).`,
+        `${unweighted} of ${topics.length} topics have no weight, so the publish gate ` +
+          `refuses every question in them. Derive weights first.`,
       );
     }
 

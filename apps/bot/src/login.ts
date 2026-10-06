@@ -34,25 +34,25 @@ export const DECLINE_PREFIX = 'login:no:';
 export function confirmText(pairingCode: string, deviceLabel: string | null): string {
   const where = deviceLabel ? ` on ${deviceLabel}` : '';
   return [
-    `Someone is signing in to Lomi-Test${where}.`,
+    `Someone is signing in to Lomi-Exams${where}.`,
     '',
     `The page should be showing this number: ${pairingCode}`,
     '',
     'If it does, tap "Yes, that is me".',
-    'If it does not — or you were not signing in just now — tap "No" and nothing happens.',
+    'If it does not, or you were not signing in just now, tap "No" and nothing happens.',
   ].join('\n');
 }
 
 /** After a confirm. Says where to look, because the browser is the other screen. */
-export const APPROVED_TEXT = 'Signed in. Go back to the page you opened — it is ready.';
+export const APPROVED_TEXT = 'Signed in. Go back to the page you opened. It is ready.';
 
 /** After a decline. Says what was and was not done. */
 export const DECLINED_TEXT =
-  'Nothing was signed in. If that was not you, you do not need to do anything else — the link is now dead.';
+  'Nothing was signed in. If that was not you, you do not need to do anything else. The link is now dead.';
 
 /** When the link is stale, already used, or was never real. */
 export const UNUSABLE_TEXT =
-  'That sign-in link has run out or has already been used. Open Lomi-Test again for a fresh one.';
+  'That sign in link has run out or has already been used. Open Lomi-Exams again for a fresh one.';
 
 /**
  * A plain `/start`, with no login payload.
@@ -62,7 +62,7 @@ export const UNUSABLE_TEXT =
  * every `/start` would be wrong far more often than right.
  */
 export const WELCOME_TEXT = [
-  'Lomi-Test — exit exam practice where every answer is explained.',
+  'Lomi-Exams. Exit exam practice where every answer is explained.',
   '',
   'Practice in the app, and I will send you a question a day.',
 ].join('\n');

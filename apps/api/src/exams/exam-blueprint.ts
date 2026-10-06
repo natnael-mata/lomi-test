@@ -71,7 +71,7 @@ export function assertBudgetsFitDuration(
   if (total <= durationSec) return [];
   return [
     `The sampled questions need ${total.toLocaleString('en')}s but the sitting is ` +
-      `${durationSec.toLocaleString('en')}s — over by ${(total - durationSec).toLocaleString('en')}s.`,
+      `${durationSec.toLocaleString('en')}s. It is over by ${(total - durationSec).toLocaleString('en')}s.`,
   ];
 }
 

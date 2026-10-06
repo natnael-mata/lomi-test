@@ -180,7 +180,7 @@ function codeRejected(verdict: CodeVerdict & { ok: false }, retryAt: Date | null
         ? 'Too many wrong codes. This number is locked for fifteen minutes.'
         : `Too many wrong codes. This number is locked until ${clockTime(retryAt)}.`
       : verdict.reason === 'expired'
-        ? 'That code has expired. Codes last ten minutes — ask for a new one.'
+        ? 'That code has expired. Codes last ten minutes. Ask for a new one.'
         : 'That code is not right. Ask for a new one if you need to.';
 
   return new UnauthorizedException({
@@ -368,7 +368,7 @@ export class AuthService {
     });
     if (holder && holder.id !== me.id) {
       throw new ConflictException(
-        'That Telegram account is already a separate Lomi-Test account. Merging two accounts has to be done by support.',
+        'That Telegram account is already a separate Lomi-Exams account. Merging two accounts has to be done by support.',
       );
     }
 
@@ -972,8 +972,8 @@ export class AuthService {
      * first giving up access they have already paid for.
      */
     return live.plan.code === 'SCHOOL_YEAR'
-      ? 'Your access was bought on a school plan. Exit-exam programmes are priced differently — message us and we will move you across.'
-      : 'Your access was bought on an exit-exam plan. Message us and we will move you across.';
+      ? 'Your access was bought on a school plan. Exit exam programmes are priced differently. Message us and we will move you across.'
+      : 'Your access was bought on an exit exam plan. Message us and we will move you across.';
   }
 
   async chooseField(
@@ -1024,7 +1024,7 @@ export class AuthService {
     if (published === 0) {
       throw new UnprocessableEntityException({
         error: 'PROGRAMME_NOT_READY',
-        message: `${field.name} has no questions yet. Choose another for now — this one is being written.`,
+        message: `${field.name} has no questions yet. Choose another for now. This one is being written.`,
       });
     }
 

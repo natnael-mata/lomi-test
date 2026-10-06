@@ -223,10 +223,10 @@ export class HealthService {
     return {
       key: 'security',
       status: 'ok',
-      value: 'Password sign-in only',
+      value: 'Password sign in only',
       derivation:
-        'The smoke-test bypass was removed in T-206a. Every session comes from ' +
-        '/auth/sign-in or a verified one-time code.',
+        'The smoke test bypass was removed. Every session comes from a password ' +
+        'sign in or a verified one time code.',
       details: [
         { label: 'Live sessions', value: String(liveSessions) },
         { label: 'Ended in 24h', value: String(revoked) },
@@ -305,7 +305,7 @@ export class HealthService {
       value: configured ? (process.env.SMS_PROVIDER ?? null) : null,
       derivation: configured
         ? 'SMS_PROVIDER is set on this server'
-        : 'no SMS provider is configured — the product notifies through Telegram',
+        : 'no SMS provider is configured. The product notifies through Telegram',
       details: [],
       latencyMs: null,
     };

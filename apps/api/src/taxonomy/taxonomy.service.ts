@@ -58,7 +58,7 @@ export class TaxonomyService {
       if (typeof raw !== 'string') {
         throw new BadRequestException({
           error: 'BAD_DATE',
-          message: 'Send the exam date as YYYY-MM-DD, or null to clear it.',
+          message: 'Send the exam date as an ISO date (year, month, day), or null to clear it.',
         });
       }
       // Parsed as a plain calendar day at UTC midnight. A sitting is a date,
@@ -68,7 +68,7 @@ export class TaxonomyService {
       if (Number.isNaN(parsed.getTime())) {
         throw new BadRequestException({
           error: 'BAD_DATE',
-          message: 'That is not a date we can read. Use YYYY-MM-DD.',
+          message: 'That is not a date we can read. Send an ISO date: year, month, day.',
         });
       }
       const ceiling = new Date(now);

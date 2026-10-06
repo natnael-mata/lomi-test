@@ -123,7 +123,7 @@ describe('mapRow — rejections are for rows nobody could finish', () => {
   });
 
   it('rejects a blank question_text', () => {
-    expect(rejected({ question_text: '' }).join(' ')).toContain('there is no question');
+    expect(rejected({ question_text: '' }).join(' ')).toContain('There is no question');
   });
 
   it('rejects a blank field, because a question in no programme is unservable', () => {
@@ -344,7 +344,7 @@ describe('mapRow — cleaning (T-058, T-059, T-060)', () => {
     const HEADER = 'MoE Exit Exam 2015';
     const result = mapRow(row({ question_text: HEADER }), { runningHeaders: [HEADER] });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reasons.join(' ')).toContain('there is no question');
+    if (!result.ok) expect(result.reasons.join(' ')).toContain('There is no question');
   });
 
   it('leaves every row of the real template untouched', () => {

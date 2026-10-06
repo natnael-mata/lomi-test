@@ -707,7 +707,7 @@ export class SubscriptionsService implements SubscriptionAccess {
           reference: payment.txRef,
           detail:
             `${payment.method} · Br ${payment.amountEtb}` +
-            (note?.trim() ? ` — ${note.trim()}` : ''),
+            (note?.trim() ? `. ${note.trim()}` : ''),
         },
         tx,
       );
